@@ -1,0 +1,1 @@
+dot -Tps filename.dot -o outfile.ps
