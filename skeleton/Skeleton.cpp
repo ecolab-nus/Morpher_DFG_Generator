@@ -34,6 +34,12 @@
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/raw_ostream.h"
 
+#include "llvm/ADT/GraphTraits.h"
+
+#include <iostream>
+#include <fstream>
+#include <string>
+
 
 namespace llvm {
 	void initializeSkeletonFunctionPassPass(PassRegistry &);
@@ -46,7 +52,74 @@ using namespace llvm;
 STATISTIC(LoopsAnalyzed, "Number of loops analyzed for vectorization");
 
 
+class dfgNode{
+		private :
+			Instruction* Node;
+			std::vector<Instruction*> Children;
+
+		public :
+			dfgNode(Instruction *ins){
+				this->Node = ins;
+			}
+
+			dfgNode(){
+
+			}
+
+			std::vector<Instruction*>::iterator getChildIterator(){
+				return Children.begin();
+			}
+
+			std::vector<Instruction*> getChildren(){
+				return Children;
+			}
+
+			Instruction* getNode(){
+				return Node;
+			}
+			void addChild(Instruction *child){
+				Children.push_back(child);
+			}
+	};
+
+	class DFG{
+		private :
+			std::vector<dfgNode> NodeList;
+
+		public :
+
+			DFG(){
+
+			}
+			dfgNode* getEntryNode(){
+				if(NodeList.size() > 0){
+					return &(NodeList[0]);
+				}
+				return NULL;
+			}
+
+			std::vector<dfgNode> getNodes(){
+				return NodeList;
+			}
+
+			void InsertNode(Instruction* Node){
+				dfgNode temp(Node);
+				NodeList.push_back(temp);
+			}
+
+			void InsertNode(dfgNode Node){
+				NodeList.push_back(Node);
+			}
+
+	};
+
+
+
+
+
+
 namespace {
+
 	struct SkeletonFunctionPass : public FunctionPass {
     static char ID;
     std::map<Instruction*,int> insMap;
@@ -70,10 +143,17 @@ namespace {
 				  L->dump();
 				  errs() << "\n\n";
 
+				  std::vector<DFG> DFGs;
+
+
 				  for (Loop::block_iterator bb = L->block_begin(); bb!= L->block_end(); ++bb){
 					 BasicBlock *B = *bb;
 
 					 errs() << "\n*********BasicBlock : " << B->getName() << "\n\n";
+
+
+					 DFG currBBDFG;
+
 
 					 int Icount = 0;
 					 for (auto &I : *B) {
@@ -82,15 +162,19 @@ namespace {
 							 continue;
 						 }
 
+
 						  errs() << "Instruction: ";
 						  I.dump();
+
 
 //						  if(I.mayReadOrWriteMemory()){
 //							  checkMemDepedency(&I,MD);
 //						  }
 
 						  int depth = 0;
-						  traverseDefTree(&I, depth);
+						  traverseDefTree(&I, depth, &currBBDFG);
+
+
 //						  for (User *U : I.users()) {
 //							if (Instruction *Inst = dyn_cast<Instruction>(U)) {
 //							  errs() << "\tI is used in instruction:\n";
@@ -100,6 +184,7 @@ namespace {
 
 						errs() << "Ins Count : " << Icount++ << "\n";
 					 }
+					 printDFGDOT (F.getName().str() + "_" + B->getName().str() + "_dfg.dot", &currBBDFG);
 				  }
 			  }
 
@@ -122,15 +207,75 @@ namespace {
 			} //END OF runOnFunction
 
 
-    	void traverseDefTree(Instruction *I, int depth){
+    	void traverseDefTree(Instruction *I, int depth, DFG* currBBDFG){
     		 insMap[I]++;
+    		 dfgNode temp(I);
     		 errs() << "DEPTH = " << depth << "\n";
 			  for (User *U : I->users()) {
 				if (Instruction *Inst = dyn_cast<Instruction>(U)) {
+				  temp.addChild(Inst);
 				  errs() << "\t" <<*Inst << "\n";
-				  traverseDefTree(Inst, depth + 1);
+				  traverseDefTree(Inst, depth + 1, currBBDFG);
 				}
 			  }
+			  currBBDFG->InsertNode(temp);
+    	}
+
+    	void printDFGDOT(std::string fileName ,DFG* currBBDFG){
+    		std::ofstream ofs;
+    		ofs.open(fileName.c_str());
+    		dfgNode node;
+    		int count = 0;
+
+    		//Write the initial info
+    		ofs << "digraph Region_18 {\n\tgraph [ nslimit = \"1000.0\",\n\torientation = landscape,\n\t\tcenter = true,\n\tpage = \"8.5,11\",\n\tsize = \"10,7.5\" ] ;" << std::endl;
+
+    		errs() << "Node List Size : " << currBBDFG->getNodes().size() << "\n";
+
+			if(currBBDFG->getNodes()[0].getNode() == NULL) {
+				errs() << "NULLL!\n";
+			}
+
+
+    		//fprintf(fp_dot, "\"Op_%d\" [ fontname = \"Helvetica\" shape = box, label = \"%d\"] ;\n", i, i);
+//    		std::vector<dfgNode>::iterator ii;
+//    		for(ii = currBBDFG->getNodes().begin(); ii != currBBDFG->getNodes().end() ; ii++ ){
+
+			for (int i = 0 ; i < currBBDFG->getNodes().size() ; i++) {
+    			node = currBBDFG->getNodes()[i];
+
+    			if(node.getNode() == NULL) {
+    				errs() << "NULLL! :" << i << "\n";
+    			}
+
+    			Instruction* ins = node.getNode();
+//    			errs() << "\"Op_" << *ins << "\" [ fontname = \"Helvetica\" shape = box, label = \"" << *ins << "\"]" << "\n" ;
+    			ofs << "\"Op_" << ins << "\" [ fontname = \"Helvetica\" shape = box, label = \"" << ins->getOpcodeName() << "\"]" << std::endl;
+    		}
+
+    		//	fprintf(fp_dot, "{ rank = same ;\n}\n");
+    		ofs << "{ rank = same ;\n}" << std::endl;
+
+//    		for(ii = currBBDFG->getNodes().begin(); ii != currBBDFG->getNodes().end() ; ii++ ){
+			for (int i = 0 ; i < currBBDFG->getNodes().size() ; i++) {
+//    			fprintf(fp_dot, "\"Op_%d\" -> \"Op_%d\" [style = bold, color = red] ;\n", i, j);
+    			node = currBBDFG->getNodes()[i];
+    			Instruction* destIns;
+//    			std::vector<Instruction*>::iterator cc;
+//    			for(cc = node.getChildren().begin(); cc != node.getChildren().end(); cc++){
+
+    			int j;
+    			for (j=0 ; j < node.getChildren().size(); j++){
+    				destIns = node.getChildren()[j];
+    				if(destIns != NULL) {
+    					errs() << destIns->getOpcodeName() << "\n";
+    					ofs << "\"Op_" << node.getNode() << "\" -> \"Op_" << destIns << "\" [style = bold, color = red];" << std::endl;
+    				}
+    			}
+    		}
+
+    		ofs << "}" << std::endl;
+    		ofs.close();
     	}
 
     	void checkMemDepedency(Instruction *I, MemoryDependenceAnalysis *MD){
