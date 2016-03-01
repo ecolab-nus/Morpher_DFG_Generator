@@ -44,6 +44,9 @@
 
 namespace llvm {
 	void initializeSkeletonFunctionPassPass(PassRegistry &);
+	void initializeSkeletonModulePassPass(PassRegistry &);
+
+	Pass* createskeleton();
 }
 
 using namespace llvm;
@@ -83,7 +86,7 @@ class dfgNode{
 			}
 	};
 
-	class DFG{
+class DFG{
 		private :
 			std::vector<dfgNode> NodeList;
 
@@ -145,10 +148,12 @@ class dfgNode{
 					if(NodeList[i].getNode()->getParent() == BB){
 						for(int j = 0; j < NodeList[i].getChildren().size(); j++){
 							dfgNode* nodeToBeRemoved = this->findNode(NodeList[i].getChildren()[j]);
-							errs() << "LeafNodes : nodeToBeRemoved found...! : ";
-							nodeToBeRemoved->getNode()->dump();
-							if (std::find(leafNodes.begin(), leafNodes.end(), nodeToBeRemoved) != leafNodes.end()){
-								leafNodes.erase(std::remove(leafNodes.begin(),leafNodes.end(), nodeToBeRemoved));
+							if(nodeToBeRemoved != NULL){
+								errs() << "LeafNodes : nodeToBeRemoved found...! : ";
+								nodeToBeRemoved->getNode()->dump();
+								if (std::find(leafNodes.begin(), leafNodes.end(), nodeToBeRemoved) != leafNodes.end()){
+									leafNodes.erase(std::remove(leafNodes.begin(),leafNodes.end(), nodeToBeRemoved));
+								}
 							}
 						}
 					}
@@ -181,7 +186,114 @@ class dfgNode{
 
 	};
 
+	void traverseDefTree(Instruction *I, int depth, DFG* currBBDFG, std::map<Instruction*,int>* insMapIn){
+		 	 	 errs() << "DEPTH = " << depth << "\n";
+//		 	 	 if(insMapIn->find(I) != insMapIn->end())
+//		 	 	 {
+//					 errs() << "Instruction = %" << *I << "% is already there\n";
+//					 return;
+//				 }
+				 (*insMapIn)[I]++;
+	    		 dfgNode curr(I);
+				 currBBDFG->InsertNode(curr);
+				 dfgNode* currPtr = currBBDFG->findNode(I);
+				  for (User *U : I->users()) {
+					if (Instruction *Inst = dyn_cast<Instruction>(U)) {
+						currBBDFG->findNode(I)->addChild(Inst);
+					  errs() << "\t" <<*Inst << "\n";
+//					  if(insMapIn->find(Inst) == insMapIn->end()){
+						  traverseDefTree(Inst, depth + 1, currBBDFG, insMapIn);
+//					  }
+					  errs() << "Depthfor : " << depth << " returned here!\n";
+					}
+				  }
+				  errs() << "Depthendfor : " << depth << " returned here!\n";
+				  if (I->getOpcode() == Instruction::Br ) {
+					  errs() << "Branch instruction met!\n";
+//					  I->getPrevNode()->dump();
 
+
+					  std::vector<dfgNode*> rootNodes = currBBDFG->getRoots();
+					  for (int i = 0; i < rootNodes.size(); i++){
+						  if ((rootNodes[i]->getNode() != I)&&(rootNodes[i]->getNode()->getParent() == I->getParent())){
+							  rootNodes[i]->addChild(I);
+						  }
+					  }
+
+				  }
+				  errs() << "Depthendfunc : " << depth << "returned here!\n";
+	    	}
+
+	    	void printDFGDOT(std::string fileName ,DFG* currBBDFG){
+	    		std::ofstream ofs;
+	    		ofs.open(fileName.c_str());
+	    		dfgNode node;
+	    		int count = 0;
+
+	    		//Write the initial info
+	    		ofs << "digraph Region_18 {\n\tgraph [ nslimit = \"1000.0\",\n\torientation = landscape,\n\t\tcenter = true,\n\tpage = \"8.5,11\",\n\tsize = \"10,7.5\" ] ;" << std::endl;
+
+	    		errs() << "Node List Size : " << currBBDFG->getNodes().size() << "\n";
+
+				if(currBBDFG->getNodes()[0].getNode() == NULL) {
+					errs() << "NULLL!\n";
+				}
+
+
+	    		//fprintf(fp_dot, "\"Op_%d\" [ fontname = \"Helvetica\" shape = box, label = \"%d\"] ;\n", i, i);
+	//    		std::vector<dfgNode>::iterator ii;
+	//    		for(ii = currBBDFG->getNodes().begin(); ii != currBBDFG->getNodes().end() ; ii++ ){
+
+				for (int i = 0 ; i < currBBDFG->getNodes().size() ; i++) {
+	    			node = currBBDFG->getNodes()[i];
+
+	    			if(node.getNode() == NULL) {
+	    				errs() << "NULLL! :" << i << "\n";
+	    			}
+
+	    			Instruction* ins = node.getNode();
+	//    			errs() << "\"Op_" << *ins << "\" [ fontname = \"Helvetica\" shape = box, label = \"" << *ins << "\"]" << "\n" ;
+	    			ofs << "\"Op_" << ins << "\" [ fontname = \"Helvetica\" shape = box, label = \"" << ins->getOpcodeName() << "\"]" << std::endl;
+	    		}
+
+	    		//	fprintf(fp_dot, "{ rank = same ;\n}\n");
+	    		ofs << "{ rank = same ;\n}" << std::endl;
+
+	//    		for(ii = currBBDFG->getNodes().begin(); ii != currBBDFG->getNodes().end() ; ii++ ){
+				for (int i = 0 ; i < currBBDFG->getNodes().size() ; i++) {
+	//    			fprintf(fp_dot, "\"Op_%d\" -> \"Op_%d\" [style = bold, color = red] ;\n", i, j);
+	    			node = currBBDFG->getNodes()[i];
+	    			Instruction* destIns;
+	//    			std::vector<Instruction*>::iterator cc;
+	//    			for(cc = node.getChildren().begin(); cc != node.getChildren().end(); cc++){
+
+	    			int j;
+	    			for (j=0 ; j < node.getChildren().size(); j++){
+	    				destIns = node.getChildren()[j];
+	    				if(destIns != NULL) {
+	    					errs() << destIns->getOpcodeName() << "\n";
+	    					ofs << "\"Op_" << node.getNode() << "\" -> \"Op_" << destIns << "\" [style = bold, color = red];" << std::endl;
+	    				}
+	    			}
+	    		}
+
+	    		ofs << "}" << std::endl;
+	    		ofs.close();
+	    	}
+
+	    	void checkMemDepedency(Instruction *I, MemoryDependenceAnalysis *MD){
+				  MemDepResult mRes;
+				  errs() << "#*#*#*#*#* This is a memory op #*#*#*#*#*\n";
+				  mRes = MD->getDependency(I);
+
+				  if(mRes.getInst() != NULL){
+					  errs() << "Dependency : \n";
+					  mRes.getInst()->dump();
+				  }
+				  else{
+					  errs() << "Not Dependent or cannot find the dependence : \n";
+				  }
+	    	}
 
 
 
@@ -191,6 +303,7 @@ namespace {
 	struct SkeletonFunctionPass : public FunctionPass {
     static char ID;
     std::map<Instruction*,int> insMap;
+    std::map<Instruction*,int> insMap2;
     SkeletonFunctionPass() : FunctionPass(ID) {
     	initializeSkeletonFunctionPassPass(*PassRegistry::getPassRegistry());
     }
@@ -205,9 +318,26 @@ namespace {
 			  int loopCounter = 0;
 			  errs() << F.getName() << "\n";
 
+			  DFG funcDFG;
+			  for (auto &B : F) {
+					 int Icount = 0;
+					 for (auto &I : B) {
+						 if(insMap2.find(&I) != insMap2.end()){
+							 continue;
+						 }
+						  int depth = 0;
+						  traverseDefTree((Instruction*)&I, depth, &funcDFG, &insMap2);
+						  errs() << "Ins Count : " << Icount++ << "\n";
+					 }
+
+			  }
+			  funcDFG.connectBB();
+			  printDFGDOT (F.getName().str() + "_funcdfg.dot", &funcDFG);
+
+
 			  for (LoopInfo::iterator i = LI.begin(); i != LI.end() ; ++i){
 				  Loop *L = *i;
-				  errs() << "*********Loop***********\n";
+				  errs() << "*********Loop***********" << "\n";
 				  L->dump();
 				  errs() << "\n\n";
 
@@ -242,8 +372,8 @@ namespace {
 //						  }
 
 						  int depth = 0;
-						  traverseDefTree(&I, depth, &currBBDFG);
-						  traverseDefTree(&I, depth, &LoopDFG);
+						  traverseDefTree(&I, depth, &currBBDFG, &insMap);
+						  traverseDefTree(&I, depth, &LoopDFG, &insMap);
 
 
 //						  for (User *U : I.users()) {
@@ -258,8 +388,9 @@ namespace {
 					 printDFGDOT (F.getName().str() + "_" + B->getName().str() + "_dfg.dot", &currBBDFG);
 				  }
 				  LoopDFG.connectBB();
-				  printDFGDOT (F.getName().str() + "_funcdfg.dot", &LoopDFG);
-			  }
+				  printDFGDOT (F.getName().str() + "_L" + std::to_string(loopCounter) + "_funcdfg.dot", &LoopDFG);
+				  loopCounter++;
+			  } //end loopIterator
 
 			  errs() << "Function body:\n";
 
@@ -280,117 +411,84 @@ namespace {
 			} //END OF runOnFunction
 
 
-    	void traverseDefTree(Instruction *I, int depth, DFG* currBBDFG){
-    		 insMap[I]++;
-    		 dfgNode curr(I);
-			 currBBDFG->InsertNode(curr);
-			 dfgNode* currPtr = currBBDFG->findNode(I);
-    		 errs() << "DEPTH = " << depth << "\n";
-			  for (User *U : I->users()) {
-				if (Instruction *Inst = dyn_cast<Instruction>(U)) {
-				  currPtr->addChild(Inst);
-				  errs() << "\t" <<*Inst << "\n";
-				  traverseDefTree(Inst, depth + 1, currBBDFG);
-				}
-			  }
 
-			  if (I->getOpcode() == Instruction::Br ) {
-				  errs() << "Branch instruction met!\n";
-				  I->getPrevNode()->dump();
 
-//				  dfgNode* temp1 = currBBDFG->findNode(I->getPrevNode());
-//				  if (temp1 == NULL){
-//					  errs() << "NULL yako...\n";
+
+		void getAnalysisUsage(AnalysisUsage &AU) const override {
+			AU.setPreservesAll();
+			AU.addRequired<LoopInfoWrapperPass>();
+			AU.addRequired<MemoryDependenceAnalysis>();
+		}
+
+	};
+
+
+}
+
+char SkeletonFunctionPass::ID = 1;
+
+
+namespace {
+	struct SkeletonLoopPass : public LoopPass {
+	  static char ID;
+	  SkeletonLoopPass() : LoopPass(ID) {}
+	  virtual bool runOnLoop(Loop* lp, LPPassManager &LPM) {
+		  lp->dump();
+
+
+		 std::vector<BasicBlock*> blkList = lp->getBlocks();
+		 for(BasicBlock* B : blkList){
+
+//			 for (auto &I : *B) {
+//				  errs() << "Instruction: ";
+//				  I.dump();
+//
+//				  for (User *U : I.users()) {
+//				    if (Instruction *Inst = dyn_cast<Instruction>(U)) {
+//				      errs() << "\tI is used in instruction:\n";
+//				      errs() << "\t" <<*Inst << "\n";
+//				    }
 //				  }
-//				  temp1->addChild(I);
+//			 }
 
-				  std::vector<dfgNode*> rootNodes = currBBDFG->getRoots();
-				  for (int i = 0; i < rootNodes.size(); i++){
-					  if ((rootNodes[i]->getNode() != I)&&(rootNodes[i]->getNode()->getParent() == I->getParent())){
-						  rootNodes[i]->addChild(I);
-					  }
-				  }
+//			 MemoryDependenceAnalysis *MD = &getAnalysisUsage<MemoryDependenceAnalysis>();
+		 }
+		  return false;
+	  }
 
+	    // We don't modify the program, so we preserve all analyses.
+	    void getAnalysisUsage(AnalysisUsage &AU) const override {
+	    	AU.setPreservesAll();
+	    }
+
+	};
+}
+
+char SkeletonLoopPass::ID = 0;
+
+
+namespace {
+	struct SkeletonModulePass : public ModulePass {
+		static char ID;
+		SkeletonModulePass() : ModulePass(ID) {
+			initializeSkeletonModulePassPass(*PassRegistry::getPassRegistry());
+		}
+
+		virtual bool runOnModule(Module &M){
+
+		  LoopInfo &LI = getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
+//		  MemoryDependenceAnalysis *MD = &getAnalysis<MemoryDependenceAnalysis>();
+
+			  for (LoopInfo::iterator i = LI.begin(); i != LI.end() ; ++i){
+				  Loop *L = *i;
+				  errs() << "*********Loop***********\n";
+				  L->dump();
+				  errs() << "\n\n";
 			  }
 
-//			  if (I->getNextNode()->getOpcode() == Instruction::Br ) {
-//				  errs() << "Next is the branch instruction.\n";
-//				//  I->dump();
-//			  }
 
-    	}
-
-    	void printDFGDOT(std::string fileName ,DFG* currBBDFG){
-    		std::ofstream ofs;
-    		ofs.open(fileName.c_str());
-    		dfgNode node;
-    		int count = 0;
-
-    		//Write the initial info
-    		ofs << "digraph Region_18 {\n\tgraph [ nslimit = \"1000.0\",\n\torientation = landscape,\n\t\tcenter = true,\n\tpage = \"8.5,11\",\n\tsize = \"10,7.5\" ] ;" << std::endl;
-
-    		errs() << "Node List Size : " << currBBDFG->getNodes().size() << "\n";
-
-			if(currBBDFG->getNodes()[0].getNode() == NULL) {
-				errs() << "NULLL!\n";
-			}
-
-
-    		//fprintf(fp_dot, "\"Op_%d\" [ fontname = \"Helvetica\" shape = box, label = \"%d\"] ;\n", i, i);
-//    		std::vector<dfgNode>::iterator ii;
-//    		for(ii = currBBDFG->getNodes().begin(); ii != currBBDFG->getNodes().end() ; ii++ ){
-
-			for (int i = 0 ; i < currBBDFG->getNodes().size() ; i++) {
-    			node = currBBDFG->getNodes()[i];
-
-    			if(node.getNode() == NULL) {
-    				errs() << "NULLL! :" << i << "\n";
-    			}
-
-    			Instruction* ins = node.getNode();
-//    			errs() << "\"Op_" << *ins << "\" [ fontname = \"Helvetica\" shape = box, label = \"" << *ins << "\"]" << "\n" ;
-    			ofs << "\"Op_" << ins << "\" [ fontname = \"Helvetica\" shape = box, label = \"" << ins->getOpcodeName() << "\"]" << std::endl;
-    		}
-
-    		//	fprintf(fp_dot, "{ rank = same ;\n}\n");
-    		ofs << "{ rank = same ;\n}" << std::endl;
-
-//    		for(ii = currBBDFG->getNodes().begin(); ii != currBBDFG->getNodes().end() ; ii++ ){
-			for (int i = 0 ; i < currBBDFG->getNodes().size() ; i++) {
-//    			fprintf(fp_dot, "\"Op_%d\" -> \"Op_%d\" [style = bold, color = red] ;\n", i, j);
-    			node = currBBDFG->getNodes()[i];
-    			Instruction* destIns;
-//    			std::vector<Instruction*>::iterator cc;
-//    			for(cc = node.getChildren().begin(); cc != node.getChildren().end(); cc++){
-
-    			int j;
-    			for (j=0 ; j < node.getChildren().size(); j++){
-    				destIns = node.getChildren()[j];
-    				if(destIns != NULL) {
-    					errs() << destIns->getOpcodeName() << "\n";
-    					ofs << "\"Op_" << node.getNode() << "\" -> \"Op_" << destIns << "\" [style = bold, color = red];" << std::endl;
-    				}
-    			}
-    		}
-
-    		ofs << "}" << std::endl;
-    		ofs.close();
-    	}
-
-    	void checkMemDepedency(Instruction *I, MemoryDependenceAnalysis *MD){
-			  MemDepResult mRes;
-			  errs() << "#*#*#*#*#* This is a memory op #*#*#*#*#*\n";
-			  mRes = MD->getDependency(I);
-
-			  if(mRes.getInst() != NULL){
-				  errs() << "Dependency : \n";
-				  mRes.getInst()->dump();
-			  }
-			  else{
-				  errs() << "Not Dependent or cannot find the dependence : \n";
-			  }
-    	}
-
+			return false;
+		}
 
 		void getAnalysisUsage(AnalysisUsage &AU) const override {
 			AU.setPreservesAll();
@@ -401,59 +499,32 @@ namespace {
 	};
 }
 
-char SkeletonFunctionPass::ID = 1;
-INITIALIZE_PASS_BEGIN(SkeletonFunctionPass, "sfp", "SkeletonFunctionPass", false, false)
+char SkeletonModulePass::ID = 2;
+
+
+INITIALIZE_PASS_BEGIN(SkeletonFunctionPass, "skeleton", "SkeletonFunctionPass", false, false)
 INITIALIZE_PASS_DEPENDENCY(LoopInfoWrapperPass)
 INITIALIZE_PASS_DEPENDENCY(MemoryDependenceAnalysis)
-INITIALIZE_PASS_END(SkeletonFunctionPass, "sfp", "SkeletonFunctionPass", false, false)
+INITIALIZE_PASS_END(SkeletonFunctionPass, "skeleton", "SkeletonFunctionPass", false, false)
 
-//namespace {
-//	struct SkeletonLoopPass : public LoopPass {
-//	  static char ID;
-//	  SkeletonLoopPass() : LoopPass(ID) {}
-//	  virtual bool runOnLoop(Loop* lp, LPPassManager &LPM) {
-//		  lp->dump();
-//
-//
-//		 std::vector<BasicBlock*> blkList = lp->getBlocks();
-//		 for(BasicBlock* B : blkList){
-//
-////			 for (auto &I : *B) {
-////				  errs() << "Instruction: ";
-////				  I.dump();
-////
-////				  for (User *U : I.users()) {
-////				    if (Instruction *Inst = dyn_cast<Instruction>(U)) {
-////				      errs() << "\tI is used in instruction:\n";
-////				      errs() << "\t" <<*Inst << "\n";
-////				    }
-////				  }
-////			 }
-//
-////			 MemoryDependenceAnalysis *MD = &getAnalysisUsage<MemoryDependenceAnalysis>();
-//		 }
-//		  return false;
-//	  }
-//
-//	    // We don't modify the program, so we preserve all analyses.
-//	    void getAnalysisUsage(AnalysisUsage &AU) const override {
-//	    	AU.setPreservesAll();
-//	    }
-//
-//	};
-//}
-//
-//char SkeletonLoopPass::ID = 0;
+Pass* llvm::createskeleton() {
+	return new SkeletonFunctionPass();
+}
 
 
+//INITIALIZE_PASS_BEGIN(SkeletonModulePass, "smp", "SkeletonModulePass", false, false)
+//INITIALIZE_PASS_DEPENDENCY(LoopInfoWrapperPass)
+//INITIALIZE_PASS_DEPENDENCY(MemoryDependenceAnalysis)
+//INITIALIZE_PASS_END(SkeletonModulePass, "smp", "SkeletonModulePass", false, false)
 
-
+//static RegisterPass<SkeletonFunctionPass> X("sfp", "Hello World Pass");
 
 // Automatically enable the pass.
 // http://adriansampson.net/blog/clangpass.html
 static void registerSkeletonPass(const PassManagerBuilder &,
                          legacy::PassManagerBase &PM) {
 //  PM.add(new SkeletonLoopPass());
+//  PM.add(new SkeletonModulePass());
   PM.add(new SkeletonFunctionPass());
 }
 static RegisterStandardPasses
