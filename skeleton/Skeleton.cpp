@@ -39,6 +39,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <algorithm>
 
 
 namespace llvm {
@@ -111,6 +112,73 @@ class dfgNode{
 				NodeList.push_back(Node);
 			}
 
+			dfgNode* findNode(Instruction* I){
+				for(int i = 0 ; i < NodeList.size() ; i++){
+					if (I == NodeList[i].getNode()){
+						return &(NodeList[i]);
+					}
+				}
+				return NULL;
+			}
+
+			std::vector<dfgNode*> getRoots(){
+				std::vector<dfgNode*> rootNodes;
+				for (int i = 0 ; i < NodeList.size() ; i++) {
+					if(NodeList[i].getChildren().size() == 0){
+						rootNodes.push_back(&NodeList[i]);
+					}
+				}
+				return rootNodes;
+			}
+
+			std::vector<dfgNode*> getLeafs(BasicBlock* BB){
+				errs() << "start getting the LeafNodes...!\n";
+				std::vector<dfgNode*> leafNodes;
+				for (int i = 0 ; i < NodeList.size() ; i++) {
+					if(NodeList[i].getNode()->getParent() == BB){
+						leafNodes.push_back(&NodeList[i]);
+					}
+				}
+				errs() << "LeafNodes init done...!\n";
+
+				for (int i = 0 ; i < NodeList.size() ; i++) {
+					if(NodeList[i].getNode()->getParent() == BB){
+						for(int j = 0; j < NodeList[i].getChildren().size(); j++){
+							dfgNode* nodeToBeRemoved = this->findNode(NodeList[i].getChildren()[j]);
+							errs() << "LeafNodes : nodeToBeRemoved found...! : ";
+							nodeToBeRemoved->getNode()->dump();
+							if (std::find(leafNodes.begin(), leafNodes.end(), nodeToBeRemoved) != leafNodes.end()){
+								leafNodes.erase(std::remove(leafNodes.begin(),leafNodes.end(), nodeToBeRemoved));
+							}
+						}
+					}
+				}
+				errs() << "got the LeafNodes...!\n";
+				return leafNodes;
+			}
+
+			void connectBB(){
+				std::vector<BasicBlock*> analysedBB;
+				for (int i = 0 ; i < NodeList.size() ; i++) {
+					if(NodeList[i].getNode()->getOpcode() == Instruction::Br){
+						if (std::find(analysedBB.begin(), analysedBB.end(), NodeList[i].getNode()->getParent()) == analysedBB.end()){
+							analysedBB.push_back(NodeList[i].getNode()->getParent());
+						}
+						BasicBlock* BB = NodeList[i].getNode()->getParent();
+						succ_iterator SI(succ_begin(BB)), SE(succ_end(BB));
+						 for (; SI != SE; ++SI){
+							 BasicBlock* succ = *SI;
+							 if (std::find(analysedBB.begin(), analysedBB.end(), succ) == analysedBB.end()){
+								 std::vector<dfgNode*> succLeafs = this->getLeafs(succ);
+								 for (int j = 0; j < succLeafs.size(); j++){
+									 NodeList[i].addChild(succLeafs[j]->getNode());
+								 }
+							 }
+						 }
+					}
+				}
+			}
+
 	};
 
 
@@ -146,6 +214,8 @@ namespace {
 				  std::vector<DFG> DFGs;
 
 
+				  DFG LoopDFG;
+
 				  for (Loop::block_iterator bb = L->block_begin(); bb!= L->block_end(); ++bb){
 					 BasicBlock *B = *bb;
 
@@ -173,6 +243,7 @@ namespace {
 
 						  int depth = 0;
 						  traverseDefTree(&I, depth, &currBBDFG);
+						  traverseDefTree(&I, depth, &LoopDFG);
 
 
 //						  for (User *U : I.users()) {
@@ -186,6 +257,8 @@ namespace {
 					 }
 					 printDFGDOT (F.getName().str() + "_" + B->getName().str() + "_dfg.dot", &currBBDFG);
 				  }
+				  LoopDFG.connectBB();
+				  printDFGDOT (F.getName().str() + "_funcdfg.dot", &LoopDFG);
 			  }
 
 			  errs() << "Function body:\n";
@@ -209,16 +282,42 @@ namespace {
 
     	void traverseDefTree(Instruction *I, int depth, DFG* currBBDFG){
     		 insMap[I]++;
-    		 dfgNode temp(I);
+    		 dfgNode curr(I);
+			 currBBDFG->InsertNode(curr);
+			 dfgNode* currPtr = currBBDFG->findNode(I);
     		 errs() << "DEPTH = " << depth << "\n";
 			  for (User *U : I->users()) {
 				if (Instruction *Inst = dyn_cast<Instruction>(U)) {
-				  temp.addChild(Inst);
+				  currPtr->addChild(Inst);
 				  errs() << "\t" <<*Inst << "\n";
 				  traverseDefTree(Inst, depth + 1, currBBDFG);
 				}
 			  }
-			  currBBDFG->InsertNode(temp);
+
+			  if (I->getOpcode() == Instruction::Br ) {
+				  errs() << "Branch instruction met!\n";
+				  I->getPrevNode()->dump();
+
+//				  dfgNode* temp1 = currBBDFG->findNode(I->getPrevNode());
+//				  if (temp1 == NULL){
+//					  errs() << "NULL yako...\n";
+//				  }
+//				  temp1->addChild(I);
+
+				  std::vector<dfgNode*> rootNodes = currBBDFG->getRoots();
+				  for (int i = 0; i < rootNodes.size(); i++){
+					  if ((rootNodes[i]->getNode() != I)&&(rootNodes[i]->getNode()->getParent() == I->getParent())){
+						  rootNodes[i]->addChild(I);
+					  }
+				  }
+
+			  }
+
+//			  if (I->getNextNode()->getOpcode() == Instruction::Br ) {
+//				  errs() << "Next is the branch instruction.\n";
+//				//  I->dump();
+//			  }
+
     	}
 
     	void printDFGDOT(std::string fileName ,DFG* currBBDFG){
