@@ -33,13 +33,29 @@
 #include "llvm/Pass.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Transforms/Utils/BasicBlockUtils.h"
+#include "llvm/CodeGen/MachineModuleInfo.h"
 
 #include "llvm/ADT/GraphTraits.h"
+
+#include "llvm/CodeGen/MachineFunction.h"
+#include "llvm/CodeGen/Passes.h"
 
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <sstream>
+#include <iomanip>
 #include <algorithm>
+
+
+//My Classes
+#include "edge.h"
+#include "dfgnode.h"
+#include "dfg.h"
+
+#define CDFG
+
 
 
 namespace llvm {
@@ -56,137 +72,8 @@ using namespace llvm;
 STATISTIC(LoopsAnalyzed, "Number of loops analyzed for vectorization");
 
 
-class dfgNode{
-		private :
-			Instruction* Node;
-			std::vector<Instruction*> Children;
 
-		public :
-			dfgNode(Instruction *ins){
-				this->Node = ins;
-			}
-
-			dfgNode(){
-
-			}
-
-			std::vector<Instruction*>::iterator getChildIterator(){
-				return Children.begin();
-			}
-
-			std::vector<Instruction*> getChildren(){
-				return Children;
-			}
-
-			Instruction* getNode(){
-				return Node;
-			}
-			void addChild(Instruction *child){
-				Children.push_back(child);
-			}
-	};
-
-class DFG{
-		private :
-			std::vector<dfgNode> NodeList;
-
-		public :
-
-			DFG(){
-
-			}
-			dfgNode* getEntryNode(){
-				if(NodeList.size() > 0){
-					return &(NodeList[0]);
-				}
-				return NULL;
-			}
-
-			std::vector<dfgNode> getNodes(){
-				return NodeList;
-			}
-
-			void InsertNode(Instruction* Node){
-				dfgNode temp(Node);
-				NodeList.push_back(temp);
-			}
-
-			void InsertNode(dfgNode Node){
-				NodeList.push_back(Node);
-			}
-
-			dfgNode* findNode(Instruction* I){
-				for(int i = 0 ; i < NodeList.size() ; i++){
-					if (I == NodeList[i].getNode()){
-						return &(NodeList[i]);
-					}
-				}
-				return NULL;
-			}
-
-			std::vector<dfgNode*> getRoots(){
-				std::vector<dfgNode*> rootNodes;
-				for (int i = 0 ; i < NodeList.size() ; i++) {
-					if(NodeList[i].getChildren().size() == 0){
-						rootNodes.push_back(&NodeList[i]);
-					}
-				}
-				return rootNodes;
-			}
-
-			std::vector<dfgNode*> getLeafs(BasicBlock* BB){
-				errs() << "start getting the LeafNodes...!\n";
-				std::vector<dfgNode*> leafNodes;
-				for (int i = 0 ; i < NodeList.size() ; i++) {
-					if(NodeList[i].getNode()->getParent() == BB){
-						leafNodes.push_back(&NodeList[i]);
-					}
-				}
-				errs() << "LeafNodes init done...!\n";
-
-				for (int i = 0 ; i < NodeList.size() ; i++) {
-					if(NodeList[i].getNode()->getParent() == BB){
-						for(int j = 0; j < NodeList[i].getChildren().size(); j++){
-							dfgNode* nodeToBeRemoved = this->findNode(NodeList[i].getChildren()[j]);
-							if(nodeToBeRemoved != NULL){
-								errs() << "LeafNodes : nodeToBeRemoved found...! : ";
-								nodeToBeRemoved->getNode()->dump();
-								if (std::find(leafNodes.begin(), leafNodes.end(), nodeToBeRemoved) != leafNodes.end()){
-									leafNodes.erase(std::remove(leafNodes.begin(),leafNodes.end(), nodeToBeRemoved));
-								}
-							}
-						}
-					}
-				}
-				errs() << "got the LeafNodes...!\n";
-				return leafNodes;
-			}
-
-			void connectBB(){
-				std::vector<BasicBlock*> analysedBB;
-				for (int i = 0 ; i < NodeList.size() ; i++) {
-					if(NodeList[i].getNode()->getOpcode() == Instruction::Br){
-						if (std::find(analysedBB.begin(), analysedBB.end(), NodeList[i].getNode()->getParent()) == analysedBB.end()){
-							analysedBB.push_back(NodeList[i].getNode()->getParent());
-						}
-						BasicBlock* BB = NodeList[i].getNode()->getParent();
-						succ_iterator SI(succ_begin(BB)), SE(succ_end(BB));
-						 for (; SI != SE; ++SI){
-							 BasicBlock* succ = *SI;
-							 if (std::find(analysedBB.begin(), analysedBB.end(), succ) == analysedBB.end()){
-								 std::vector<dfgNode*> succLeafs = this->getLeafs(succ);
-								 for (int j = 0; j < succLeafs.size(); j++){
-									 NodeList[i].addChild(succLeafs[j]->getNode());
-								 }
-							 }
-						 }
-					}
-				}
-			}
-
-	};
-
-	void traverseDefTree(Instruction *I, int depth, DFG* currBBDFG, std::map<Instruction*,int>* insMapIn){
+	void traverseDefTree(Instruction *I, int depth, DFG* currBBDFG, std::map<Instruction*,int>* insMapIn,MemoryDependenceAnalysis *MD = NULL){
 		 	 	 errs() << "DEPTH = " << depth << "\n";
 //		 	 	 if(insMapIn->find(I) != insMapIn->end())
 //		 	 	 {
@@ -194,16 +81,25 @@ class DFG{
 //					 return;
 //				 }
 				 (*insMapIn)[I]++;
-	    		 dfgNode curr(I);
+	    		 dfgNode curr(I,currBBDFG);
 				 currBBDFG->InsertNode(curr);
 				 dfgNode* currPtr = currBBDFG->findNode(I);
 				  for (User *U : I->users()) {
 					if (Instruction *Inst = dyn_cast<Instruction>(U)) {
 						currBBDFG->findNode(I)->addChild(Inst);
-					  errs() << "\t" <<*Inst << "\n";
-//					  if(insMapIn->find(Inst) == insMapIn->end()){
-						  traverseDefTree(Inst, depth + 1, currBBDFG, insMapIn);
-//					  }
+					    errs() << "\t" <<*Inst << "\n";
+
+					  if(insMapIn->find(Inst) == insMapIn->end()){
+						traverseDefTree(Inst, depth + 1, currBBDFG, insMapIn);
+					  }
+					  else{
+						  errs() << Inst << " Already found on the map\n";
+						  if(currBBDFG->findNode(Inst) == NULL) {
+							  errs() << "This is NULLL....\n";
+						  }
+					  }
+
+					  currBBDFG->findNode(Inst)->addAncestor(I);
 					  errs() << "Depthfor : " << depth << " returned here!\n";
 					}
 				  }
@@ -211,16 +107,23 @@ class DFG{
 				  if (I->getOpcode() == Instruction::Br ) {
 					  errs() << "Branch instruction met!\n";
 //					  I->getPrevNode()->dump();
+					  I->dump();
+					  I->getParent()->dump();
 
 
+
+#ifdef CDFG
 					  std::vector<dfgNode*> rootNodes = currBBDFG->getRoots();
 					  for (int i = 0; i < rootNodes.size(); i++){
 						  if ((rootNodes[i]->getNode() != I)&&(rootNodes[i]->getNode()->getParent() == I->getParent())){
-							  rootNodes[i]->addChild(I);
+							  rootNodes[i]->addChild(I,EDGE_TYPE_CTRL);
+							  currBBDFG->findNode(I)->addAncestor(rootNodes[i]->getNode());
 						  }
 					  }
+#endif
 
 				  }
+
 				  errs() << "Depthendfunc : " << depth << "returned here!\n";
 	    	}
 
@@ -253,7 +156,17 @@ class DFG{
 
 	    			Instruction* ins = node.getNode();
 	//    			errs() << "\"Op_" << *ins << "\" [ fontname = \"Helvetica\" shape = box, label = \"" << *ins << "\"]" << "\n" ;
-	    			ofs << "\"Op_" << ins << "\" [ fontname = \"Helvetica\" shape = box, label = \"" << ins->getOpcodeName() << "\"]" << std::endl;
+	    			ofs << "\"Op_" << ins << "\" [ fontname = \"Helvetica\" shape = box, label = \" ";
+
+	    			ofs << ins->getOpcodeName(); //<< " ( ";
+//	    			for (int j = 0; j < ins->getNumOperands(); ++j) {
+//	    				ofs << ins->getOperand(j)->getName().str() << ",";
+//					}
+//	    			ofs << " ) ";
+	    			ofs << ", " << node.getIdx() << ", ASAP=" << node.getASAPnumber()
+	    					                     << ", ALAP=" << node.getALAPnumber()
+												 << ", (t,y,x)=(" << node.getMappedLoc()->getT() << "," << node.getMappedLoc()->getY() << "," << node.getMappedLoc()->getX() << ")"
+												 << "\"]" << std::endl;
 	    		}
 
 	    		//	fprintf(fp_dot, "{ rank = same ;\n}\n");
@@ -272,7 +185,19 @@ class DFG{
 	    				destIns = node.getChildren()[j];
 	    				if(destIns != NULL) {
 	    					errs() << destIns->getOpcodeName() << "\n";
-	    					ofs << "\"Op_" << node.getNode() << "\" -> \"Op_" << destIns << "\" [style = bold, color = red];" << std::endl;
+//	    					ofs << "\"Op_" << node.getNode() << "\" -> \"Op_" << destIns << "\" [style = bold, color = red];" << std::endl;
+
+	    					assert(currBBDFG->findEdge(node.getNode(),node.getChildren()[j])!=NULL);
+	    					if(currBBDFG->findEdge(node.getNode(),node.getChildren()[j])->getType() == EDGE_TYPE_DATA){
+	    						ofs << "\"Op_" << node.getNode() << "\" -> \"Op_" << destIns << "\" [style = bold, color = red];" << std::endl;
+	    					}
+	    					else if(currBBDFG->findEdge(node.getNode(),node.getChildren()[j])->getType() == EDGE_TYPE_LDST){
+	    						ofs << "\"Op_" << node.getNode() << "\" -> \"Op_" << destIns << "\" [style = bold, color = green];" << std::endl;
+	    					}
+	    					else {
+	    						ofs << "\"Op_" << node.getNode() << "\" -> \"Op_" << destIns << "\" [style = bold, color = black];" << std::endl;
+	    					}
+
 	    				}
 	    			}
 	    		}
@@ -281,7 +206,7 @@ class DFG{
 	    		ofs.close();
 	    	}
 
-	    	void checkMemDepedency(Instruction *I, MemoryDependenceAnalysis *MD){
+	    	Instruction* checkMemDepedency(Instruction *I, MemoryDependenceAnalysis *MD){
 				  MemDepResult mRes;
 				  errs() << "#*#*#*#*#* This is a memory op #*#*#*#*#*\n";
 				  mRes = MD->getDependency(I);
@@ -293,7 +218,19 @@ class DFG{
 				  else{
 					  errs() << "Not Dependent or cannot find the dependence : \n";
 				  }
+
+				  return mRes.getInst();
 	    	}
+
+
+//	    	void analyzeMachineFunction(Function &F){
+//	    		  //Get MachineFunction
+//	    		  MachineFunction &MF = MachineFunction::get(&F);
+//
+//
+//	    		  //Print out machine function
+//	    		  DEBUG(MF.print(std::cerr));
+//	    	}
 
 
 
@@ -302,13 +239,14 @@ namespace {
 
 	struct SkeletonFunctionPass : public FunctionPass {
     static char ID;
-    std::map<Instruction*,int> insMap;
-    std::map<Instruction*,int> insMap2;
     SkeletonFunctionPass() : FunctionPass(ID) {
     	initializeSkeletonFunctionPassPass(*PassRegistry::getPassRegistry());
     }
 
     	virtual bool runOnFunction(Function &F) {
+				std::map<Instruction*,int> insMap;
+				std::map<Instruction*,int> insMap2;
+
 			  errs() << "In a function called " << F.getName() << "!\n";
 
 			  LoopInfo &LI = getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
@@ -332,7 +270,15 @@ namespace {
 
 			  }
 			  funcDFG.connectBB();
+			  funcDFG.addMemDepEdges(MD);
+			  funcDFG.removeAlloc();
+			  funcDFG.scheduleASAP();
+			  funcDFG.scheduleALAP();
+			  funcDFG.CreateSchList();
+			  funcDFG.MapCGRA(4,4);
 			  printDFGDOT (F.getName().str() + "_funcdfg.dot", &funcDFG);
+
+			  funcDFG.printXML(F.getName().str() + "_func.xml");
 
 
 			  for (LoopInfo::iterator i = LI.begin(); i != LI.end() ; ++i){
@@ -352,7 +298,7 @@ namespace {
 					 errs() << "\n*********BasicBlock : " << B->getName() << "\n\n";
 
 
-					 DFG currBBDFG;
+//					 DFG currBBDFG;
 
 
 					 int Icount = 0;
@@ -372,7 +318,7 @@ namespace {
 //						  }
 
 						  int depth = 0;
-						  traverseDefTree(&I, depth, &currBBDFG, &insMap);
+//						  traverseDefTree(&I, depth, &currBBDFG, &insMap);
 						  traverseDefTree(&I, depth, &LoopDFG, &insMap);
 
 
@@ -385,10 +331,11 @@ namespace {
 
 						errs() << "Ins Count : " << Icount++ << "\n";
 					 }
-					 printDFGDOT (F.getName().str() + "_" + B->getName().str() + "_dfg.dot", &currBBDFG);
+//					 printDFGDOT (F.getName().str() + "_" + B->getName().str() + "_dfg.dot", &currBBDFG);
 				  }
 				  LoopDFG.connectBB();
-				  printDFGDOT (F.getName().str() + "_L" + std::to_string(loopCounter) + "_funcdfg.dot", &LoopDFG);
+//				  printDFGDOT (F.getName().str() + "_L" + std::to_string(loopCounter) + "_loopdfg.dot", &LoopDFG);
+				  LoopDFG.printXML(F.getName().str() + "_L" + std::to_string(loopCounter) + "_loopdfg.xml");
 				  loopCounter++;
 			  } //end loopIterator
 

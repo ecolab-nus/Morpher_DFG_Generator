@@ -20,7 +20,6 @@ int main() {
 	A[i] = 2;
 	B[i] = 3;
 
-
 	for (i=1;i<SIZE;i++){
 		A[i] = A[i-1] + 3;
 		B[i] = i^2;

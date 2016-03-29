@@ -1,7 +1,18 @@
 add_library(SkeletonPass MODULE
     # List your source files here.
     Skeleton.cpp
+    CGRANode.h
+    CGRANode.cpp
+    CGRA.h
+    CGRA.cpp
+    edge.h
+    edge.cpp
+    dfgnode.h
+    dfgnode.cpp
+    dfg.h
+    dfg.cpp
 )
+
 
 # Use C++11 to compile our pass (i.e., supply -std=c++11).
 target_compile_features(SkeletonPass PRIVATE cxx_range_for cxx_auto_type)
