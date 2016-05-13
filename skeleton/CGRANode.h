@@ -32,6 +32,9 @@ class CGRANode{
 			int y;
 			int t;
 
+			int probCost = 0;
+			dfgNode* routingDFGNode = NULL;
+
 		public :
 			CGRANode(int x, int y, int t);
 			void addConnectedNode(CGRANode* node, int cost, std::string name = "unknown");
@@ -43,10 +46,14 @@ class CGRANode{
 			void setX(int x);
 			void setY(int y);
 			void setT(int t);
+			void setProbCost(int cost){probCost = cost;}
+			void setRoutingNode(dfgNode* src){routingDFGNode = src;}
 
 			int getX();
 			int getY();
 			int getT();
+			int getProbCost(){return probCost;}
+			dfgNode* getRoutingNode(){return routingDFGNode;}
 
 			std::vector<ConnectedCGRANode> getConnectedNodes();
 

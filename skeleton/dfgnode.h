@@ -27,6 +27,9 @@ class dfgNode{
 			CGRANode* mappedLoc = NULL;
 			std::vector<CGRANode*> routingLocs;
 
+			int routingPossibilities = 0;
+			int mappedRealTime = 0;
+
 		public :
 			dfgNode(Instruction *ins, DFG* parent);
 			dfgNode(){}
@@ -66,6 +69,12 @@ class dfgNode{
 			CGRANode* getMappedLoc();
 
 			std::vector<CGRANode*>* getRoutingLocs();
+
+			void setRoutingPossibilities(int n){routingPossibilities = n;}
+			int getRoutingPossibilities(){return routingPossibilities;}
+
+			void setMappedRealTime(int t){mappedRealTime = t;}
+			int getmappedRealTime(){return mappedRealTime;}
 
 
 	};

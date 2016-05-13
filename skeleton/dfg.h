@@ -5,6 +5,15 @@
 #include "dfgnode.h"
 #include "CGRANode.h"
 #include "CGRA.h"
+#include "llvm/Analysis/ScalarEvolution.h"
+#include "llvm/Analysis/ScalarEvolutionExpander.h"
+#include "llvm/Analysis/ScalarEvolutionExpressions.h"
+#include "llvm/Analysis/DependenceAnalysis.h"
+
+#include <iostream>
+#include <fstream>
+
+class AStar;
 
 using namespace llvm;
 
@@ -68,12 +77,19 @@ struct CostComparer{
 	}
 };
 
+struct phyLoc{
+	int x;
+	int y;
+	int t;
+};
+
 class DFG{
 		private :
 			std::vector<dfgNode> NodeList;
 			std::ofstream xmlFile;
 			std::vector<Edge> edgeList;
 			int maxASAPLevel = -1;
+
 
 
 			void renumber();
@@ -88,8 +104,21 @@ class DFG{
 			void eraseAlreadyMappedNodes(std::vector<ConnectedCGRANode>* candidates);
 			void backTrack(int nodeSeq);
 
+			std::vector<ConnectedCGRANode> ExpandCandidatesAddingRoutingNodes(std::vector<std::pair<Instruction*,int>>* candidateNumbers);
+			std::vector<ConnectedCGRANode> getConnectedCGRANodes(dfgNode* node);
+
+			int getConMatIdx(int t, int y, int x);
+
+			bool MapMultiDestRec(std::map<dfgNode*,std::vector< std::pair<CGRANode*,int> > > *nodeDestMap,
+					             std::map<CGRANode*,std::vector<dfgNode*> > *destNodeMap,
+								 std::map<dfgNode*,std::vector< std::pair<CGRANode*,int> > >::iterator it,
+								 std::map<CGRANode*,std::vector<CGRANode*> > cgraEdges,
+								 int index);
+
 
 		public :
+			std::ofstream mappingOutFile;
+			AStar* astar;
 
 			DFG(){}
 
@@ -115,6 +144,7 @@ class DFG{
 			void connectBB();
 
 			void addMemDepEdges(MemoryDependenceAnalysis *MD);
+			void addMemRecDepEdges(DependenceAnalysis *DA);
 
 		    int removeEdge(Edge* e);
 		    int removeNode(dfgNode* n);
@@ -150,6 +180,21 @@ class DFG{
 			void CreateSchList();
 
 			std::vector<ConnectedCGRANode> FindCandidateCGRANodes(dfgNode* node);
+
+			void MapCGRAsa(int XDim, int YDim);
+			bool MapMultiDest(std::map<dfgNode*,std::vector< std::pair<CGRANode*,int> > > *nodeDestMap, std::map<CGRANode*,std::vector<dfgNode*> > *destNodeMap);
+			bool MapASAPLevel(int MII, int XDim, int YDim);
+			int getAffinityCost(dfgNode* a, dfgNode* b);
+
+			std::vector<std::vector<int> > getConMat();
+			std::vector<std::vector<int> > selfMulConMat(std::vector<std::vector<int> > in);
+			std::map<dfgNode*,std::vector<CGRANode*> > getPrimarySlots(std::vector<dfgNode*> nodes);
+
+			std::vector<int> getIntersection(std::vector<std::vector<int> > vectors);
+			int AddRoutingEdges(dfgNode* node);
+			int AStarSP(CGRANode* src, CGRANode* dest, std::vector<CGRANode*>* path);
+			int getDist(CGRANode* a, CGRANode*b);
+
 
 	};
 

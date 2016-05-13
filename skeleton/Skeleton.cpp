@@ -41,6 +41,14 @@
 #include "llvm/CodeGen/MachineFunction.h"
 #include "llvm/CodeGen/Passes.h"
 
+#include "llvm/Analysis/ScalarEvolution.h"
+#include "llvm/Analysis/ScalarEvolutionExpander.h"
+#include "llvm/Analysis/ScalarEvolutionExpressions.h"
+#include "llvm/Analysis/DependenceAnalysis.h"
+#include "llvm/Analysis/CFG.h"
+
+//#include "/home/manupa/manycore/llvm-latest/llvm/lib/Transforms/Scalar/GVN.cpp"
+
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -54,7 +62,7 @@
 #include "dfgnode.h"
 #include "dfg.h"
 
-#define CDFG
+//#define CDFG
 
 
 
@@ -80,12 +88,24 @@ STATISTIC(LoopsAnalyzed, "Number of loops analyzed for vectorization");
 //					 errs() << "Instruction = %" << *I << "% is already there\n";
 //					 return;
 //				 }
+
+		 		SmallVector<std::pair<const BasicBlock *, const BasicBlock *>,1 > BackEdgesBB;
+		 		FindFunctionBackedges(*(I->getFunction()),BackEdgesBB);
+
+
 				 (*insMapIn)[I]++;
 	    		 dfgNode curr(I,currBBDFG);
 				 currBBDFG->InsertNode(curr);
 				 dfgNode* currPtr = currBBDFG->findNode(I);
 				  for (User *U : I->users()) {
+
 					if (Instruction *Inst = dyn_cast<Instruction>(U)) {
+
+						 std::pair <const BasicBlock*,const BasicBlock*> bbCouple(I->getParent(),Inst->getParent());
+						 if(std::find(BackEdgesBB.begin(),BackEdgesBB.end(),bbCouple)!=BackEdgesBB.end()){
+							 continue;
+						 }
+
 						currBBDFG->findNode(I)->addChild(Inst);
 					    errs() << "\t" <<*Inst << "\n";
 
@@ -165,7 +185,7 @@ STATISTIC(LoopsAnalyzed, "Number of loops analyzed for vectorization");
 //	    			ofs << " ) ";
 	    			ofs << ", " << node.getIdx() << ", ASAP=" << node.getASAPnumber()
 	    					                     << ", ALAP=" << node.getALAPnumber()
-												 << ", (t,y,x)=(" << node.getMappedLoc()->getT() << "," << node.getMappedLoc()->getY() << "," << node.getMappedLoc()->getX() << ")"
+//												 << ", (t,y,x)=(" << node.getMappedLoc()->getT() << "," << node.getMappedLoc()->getY() << "," << node.getMappedLoc()->getX() << ")"
 												 << "\"]" << std::endl;
 	    		}
 
@@ -223,6 +243,7 @@ STATISTIC(LoopsAnalyzed, "Number of loops analyzed for vectorization");
 	    	}
 
 
+
 //	    	void analyzeMachineFunction(Function &F){
 //	    		  //Get MachineFunction
 //	    		  MachineFunction &MF = MachineFunction::get(&F);
@@ -240,17 +261,25 @@ namespace {
 	struct SkeletonFunctionPass : public FunctionPass {
     static char ID;
     SkeletonFunctionPass() : FunctionPass(ID) {
-    	initializeSkeletonFunctionPassPass(*PassRegistry::getPassRegistry());
+//    	initializeSkeletonFunctionPassPass(*PassRegistry::getPassRegistry());
     }
 
     	virtual bool runOnFunction(Function &F) {
 				std::map<Instruction*,int> insMap;
 				std::map<Instruction*,int> insMap2;
 
-			  errs() << "In a function called " << F.getName() << "!\n";
+			  errs() << "In a function calledd " << F.getName() << "!\n";
+
+//			  //TODO : please remove this after dtw test
+//			  if (F.getName() != "fft_float"){
+//				  return false;
+//			  }
 
 			  LoopInfo &LI = getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
-			  MemoryDependenceAnalysis *MD = &getAnalysis<MemoryDependenceAnalysis>();
+//			  MemoryDependenceAnalysis *MD = &getAnalysis<MemoryDependenceAnalysis>();
+			  ScalarEvolution* SE = &getAnalysis<ScalarEvolutionWrapperPass>().getSE();
+			  DependenceAnalysis* DA = &getAnalysis<DependenceAnalysis>();
+
 			  MemDepResult mRes;
 
 			  int loopCounter = 0;
@@ -270,15 +299,21 @@ namespace {
 
 			  }
 			  funcDFG.connectBB();
-			  funcDFG.addMemDepEdges(MD);
+//			  funcDFG.addMemDepEdges(MD);
 			  funcDFG.removeAlloc();
 			  funcDFG.scheduleASAP();
 			  funcDFG.scheduleALAP();
 			  funcDFG.CreateSchList();
-			  funcDFG.MapCGRA(4,4);
+//			  funcDFG.addMemRecDepEdges(DA);
+			  funcDFG.MapCGRAsa(4,4);
 			  printDFGDOT (F.getName().str() + "_funcdfg.dot", &funcDFG);
+			  return true;
 
-			  funcDFG.printXML(F.getName().str() + "_func.xml");
+
+//			  funcDFG.MapCGRA(4,4);
+//			  printDFGDOT (F.getName().str() + "_funcdfg.dot", &funcDFG);
+
+//			  funcDFG.printXML(F.getName().str() + "_func.xml");
 
 
 			  for (LoopInfo::iterator i = LI.begin(); i != LI.end() ; ++i){
@@ -286,6 +321,15 @@ namespace {
 				  errs() << "*********Loop***********" << "\n";
 				  L->dump();
 				  errs() << "\n\n";
+
+
+				  //Only the innermost Loop
+
+				  if(L->getSubLoops().size() != 0){
+					  continue;
+				  }
+
+
 
 				  std::vector<DFG> DFGs;
 
@@ -334,8 +378,15 @@ namespace {
 //					 printDFGDOT (F.getName().str() + "_" + B->getName().str() + "_dfg.dot", &currBBDFG);
 				  }
 				  LoopDFG.connectBB();
-//				  printDFGDOT (F.getName().str() + "_L" + std::to_string(loopCounter) + "_loopdfg.dot", &LoopDFG);
-				  LoopDFG.printXML(F.getName().str() + "_L" + std::to_string(loopCounter) + "_loopdfg.xml");
+//				  LoopDFG.addMemDepEdges(MD);
+				  LoopDFG.removeAlloc();
+				  LoopDFG.scheduleASAP();
+				  LoopDFG.scheduleALAP();
+				  LoopDFG.CreateSchList();
+				  LoopDFG.addMemRecDepEdges(DA);
+//				  LoopDFG.MapCGRA(4,4);
+				  printDFGDOT (F.getName().str() + "_L" + std::to_string(loopCounter) + "_loopdfg.dot", &LoopDFG);
+//				  LoopDFG.printXML(F.getName().str() + "_L" + std::to_string(loopCounter) + "_loopdfg.xml");
 				  loopCounter++;
 			  } //end loopIterator
 
@@ -362,9 +413,19 @@ namespace {
 
 
 		void getAnalysisUsage(AnalysisUsage &AU) const override {
+//			AU.setPreservesAll();
+//			AU.addRequired<LoopInfoWrapperPass>();
+//			AU.addRequired<MemoryDependenceAnalysis>();
+
 			AU.setPreservesAll();
 			AU.addRequired<LoopInfoWrapperPass>();
-			AU.addRequired<MemoryDependenceAnalysis>();
+//			AU.addRequired<MemoryDependenceAnalysis>();
+		    AU.addRequired<ScalarEvolutionWrapperPass>();
+		    AU.addRequired<AAResultsWrapperPass>();
+		    AU.addRequired<DominatorTreeWrapperPass>();
+		    AU.addRequired<DependenceAnalysis>();
+		    AU.addRequiredID(LoopSimplifyID);
+		    AU.addRequiredID(LCSSAID);
 		}
 
 	};
@@ -440,7 +501,14 @@ namespace {
 		void getAnalysisUsage(AnalysisUsage &AU) const override {
 			AU.setPreservesAll();
 			AU.addRequired<LoopInfoWrapperPass>();
-			AU.addRequired<MemoryDependenceAnalysis>();
+//			AU.addRequired<MemoryDependenceAnalysis>();
+		    AU.addRequired<ScalarEvolutionWrapperPass>();
+		    AU.addRequired<AAResultsWrapperPass>();
+		    AU.addRequired<DominatorTreeWrapperPass>();
+//		    AU.addRequired<LoopInfoWrapperPass>();
+		    AU.addRequired<DependenceAnalysis>();
+		    AU.addRequiredID(LoopSimplifyID);
+		    AU.addRequiredID(LCSSAID);
 		}
 
 	};
@@ -449,14 +517,20 @@ namespace {
 char SkeletonModulePass::ID = 2;
 
 
-INITIALIZE_PASS_BEGIN(SkeletonFunctionPass, "skeleton", "SkeletonFunctionPass", false, false)
-INITIALIZE_PASS_DEPENDENCY(LoopInfoWrapperPass)
-INITIALIZE_PASS_DEPENDENCY(MemoryDependenceAnalysis)
-INITIALIZE_PASS_END(SkeletonFunctionPass, "skeleton", "SkeletonFunctionPass", false, false)
+//INITIALIZE_PASS_BEGIN(SkeletonFunctionPass, "skeleton", "SkeletonFunctionPass", false, false)
+//INITIALIZE_PASS_DEPENDENCY(LoopInfoWrapperPass)
+////INITIALIZE_PASS_DEPENDENCY(MemoryDependenceAnalysis)
+//INITIALIZE_PASS_DEPENDENCY(AAResultsWrapperPass)
+//INITIALIZE_PASS_DEPENDENCY(DependenceAnalysis)
+//INITIALIZE_PASS_DEPENDENCY(DominatorTreeWrapperPass)
+//INITIALIZE_PASS_DEPENDENCY(ScalarEvolutionWrapperPass)
+//INITIALIZE_PASS_DEPENDENCY(LoopSimplify)
+//INITIALIZE_PASS_DEPENDENCY(LCSSA)
+//INITIALIZE_PASS_END(SkeletonFunctionPass, "skeleton", "SkeletonFunctionPass", false, false)
 
-Pass* llvm::createskeleton() {
-	return new SkeletonFunctionPass();
-}
+//Pass* llvm::createskeleton() {
+//	return new SkeletonFunctionPass();
+//}
 
 
 //INITIALIZE_PASS_BEGIN(SkeletonModulePass, "smp", "SkeletonModulePass", false, false)
@@ -464,16 +538,17 @@ Pass* llvm::createskeleton() {
 //INITIALIZE_PASS_DEPENDENCY(MemoryDependenceAnalysis)
 //INITIALIZE_PASS_END(SkeletonModulePass, "smp", "SkeletonModulePass", false, false)
 
-//static RegisterPass<SkeletonFunctionPass> X("sfp", "Hello World Pass");
+static RegisterPass<SkeletonFunctionPass> X("skeleton", "SkeletonFunctionPass", false, false);
 
-// Automatically enable the pass.
-// http://adriansampson.net/blog/clangpass.html
-static void registerSkeletonPass(const PassManagerBuilder &,
-                         legacy::PassManagerBase &PM) {
-//  PM.add(new SkeletonLoopPass());
-//  PM.add(new SkeletonModulePass());
-  PM.add(new SkeletonFunctionPass());
-}
-static RegisterStandardPasses
-  RegisterMyPass(PassManagerBuilder::EP_EarlyAsPossible,
-                 registerSkeletonPass);
+//// Automatically enable the pass.
+//// http://adriansampson.net/blog/clangpass.html
+//static void registerSkeletonPass(const PassManagerBuilder &,
+//                         legacy::PassManagerBase &PM) {
+////  PM.add(new SkeletonLoopPass());
+////  PM.add(new SkeletonModulePass());
+////  PM.add(new GVN());
+//  PM.add(new SkeletonFunctionPass());
+//}
+//static RegisterStandardPasses
+//  RegisterMyPass(PassManagerBuilder::EP_EarlyAsPossible,
+//                 registerSkeletonPass);
