@@ -62,7 +62,7 @@
 #include "dfgnode.h"
 #include "dfg.h"
 
-//#define CDFG
+#define CDFG
 
 
 
@@ -183,10 +183,22 @@ STATISTIC(LoopsAnalyzed, "Number of loops analyzed for vectorization");
 //	    				ofs << ins->getOperand(j)->getName().str() << ",";
 //					}
 //	    			ofs << " ) ";
-	    			ofs << ", " << node.getIdx() << ", ASAP=" << node.getASAPnumber()
-	    					                     << ", ALAP=" << node.getALAPnumber()
-//												 << ", (t,y,x)=(" << node.getMappedLoc()->getT() << "," << node.getMappedLoc()->getY() << "," << node.getMappedLoc()->getX() << ")"
-												 << "\"]" << std::endl;
+
+	    			if(node.getMappedLoc() != NULL){
+						ofs << ", " << node.getIdx() << ", ASAP=" << node.getASAPnumber()
+													 << ", ALAP=" << node.getALAPnumber()
+													 << ", (t,y,x)=(" << node.getMappedLoc()->getT() << "," << node.getMappedLoc()->getY() << "," << node.getMappedLoc()->getX() << ")"
+													 << "\"]" << std::endl;
+	    			}
+	    			else{
+						ofs << ", " << node.getIdx() << ", ASAP=" << node.getASAPnumber()
+													 << ", ALAP=" << node.getALAPnumber()
+	//												 << ", (t,y,x)=(" << node.getMappedLoc()->getT() << "," << node.getMappedLoc()->getY() << "," << node.getMappedLoc()->getX() << ")"
+													 << "\"]" << std::endl;
+
+	    			}
+
+
 	    		}
 
 	    		//	fprintf(fp_dot, "{ rank = same ;\n}\n");

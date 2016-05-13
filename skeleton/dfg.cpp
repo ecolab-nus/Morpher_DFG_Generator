@@ -1111,7 +1111,8 @@ bool DFG::MapMultiDestRec(
 			cnodePair = it->second[i];
 			for (int j = 0; j < node->getAncestors().size(); ++j) {
 				parent = findNode(node->getAncestors()[j]);
-				parentExt = currCGRA->getCGRANode(cnode->getT(),parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
+//				parentExt = currCGRA->getCGRANode(cnode->getT(),parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
+				parentExt = parent->getMappedLoc();
 
 				errs() << "Path = "
 					   << "(" << parentExt->getT() << ","
@@ -1328,7 +1329,8 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim) {
 
 						for (int j = 0; j < node->getAncestors().size(); ++j) {
 							parent = findNode(node->getAncestors()[j]);
-							parentExt = currCGRA->getCGRANode(nodeBeingMapped->getT(),parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
+//							parentExt = currCGRA->getCGRANode(nodeBeingMapped->getT(),parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
+							parentExt = parent->getMappedLoc();
 							paths.push_back(std::make_pair(parentExt,nodeBeingMapped));
 						}
 
@@ -1368,9 +1370,11 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim) {
 }
 
 void DFG::MapCGRAsa(int XDim, int YDim) {
-	astar = new AStar(&mappingOutFile);
+		int MII = ceil((float)NodeList.size()/((float)XDim*(float)YDim));
+//		int MII = 11;
+	astar = new AStar(&mappingOutFile,MII);
 	mappingOutFile.open("Mapping.log");
-	int MII = ceil((float)NodeList.size()/((float)XDim*(float)YDim));
+
 	while(1){
 		if(MapASAPLevel(MII,XDim,YDim)){
 			break;

@@ -6,15 +6,18 @@
 
 
 int AStar::heuristic(CGRANode* a, CGRANode* b) {
-	assert(a->getT() == b->getT());
-	return abs(a->getX() - b->getX()) + abs(a->getY() - b->getY());
+//	assert(a->getT() == b->getT());
+	return abs(a->getX() - b->getX()) + abs(a->getY() - b->getY()) + (b->getT() - a->getT() + MII)%MII;
 }
 
 bool AStar::AStarSearch(std::map<CGRANode*,std::vector<CGRANode*> > graph, CGRANode* start, CGRANode* goal, std::map<CGRANode*,CGRANode*> *cameFrom, std::map<CGRANode*,int> *costSoFar) {
-	assert(start->getT() == goal->getT());
+//	assert(start->getT() == goal->getT());
 	std::priority_queue<CGRANodeWithCost, std::vector<CGRANodeWithCost>, LessThanCGRANodeWithCost> frontier;
-
 	frontier.push(CGRANodeWithCost(start,0));
+
+	cameFrom->clear();
+	costSoFar->clear();
+
 	(*cameFrom)[start] = NULL;
 	(*costSoFar)[start] = 0;
 
@@ -30,12 +33,17 @@ bool AStar::AStarSearch(std::map<CGRANode*,std::vector<CGRANode*> > graph, CGRAN
 
 //		errs() << "ASTAR::frontier_size = " << frontier.size() << "\n";
 
+////	if(start->getT() == 9){
 //		errs() << "ASTAR::current = " << "(" << current->getT() << ","
 //			   	   	  	  	  	  	  	  	 << current->getY() << ","
 //											 << current->getX() << ")\n";
+////	}
+
 
 		if(current == goal){
+////			if(start->getT() == 9){
 //			errs() << "ASTAR:: goal achieved!\n";
+////			}
 			break;
 		}
 
@@ -45,23 +53,31 @@ bool AStar::AStarSearch(std::map<CGRANode*,std::vector<CGRANode*> > graph, CGRAN
 		for (int i = 0; i < graph[current].size(); ++i) {
 			next = graph[current][i];
 
+////			if(start->getT() == 9){
 //			errs() << "ASTAR::next = " << "("    << next->getT() << ","
 //				   	   	  	  	  	  	  	  	 << next->getY() << ","
 //												 << next->getX() << ")\n";
+////			}
 
 			newCost = (*costSoFar)[current] + 1; //always graph.cost(current, next) = 1
 
+////			if(start->getT() == 9){
 //			errs() << "ASTAR::newCost = " << newCost << "\n";
+////			}
 
 			if(costSoFar->find(next) != costSoFar->end()){
 				if(newCost >= (*costSoFar)[next]){
+////					if(start->getT() == 9){
 //					errs() << "ASTAR::newCost is higher, abandoning\n";
+////					}
 					continue;
 				}
 			}
 			(*costSoFar)[next] = newCost;
 			priority = newCost + heuristic(goal,next);
+////			if(start->getT() == 9){
 //			errs() << "ASTAR::pusing to prqueue with priority" << priority << "\n";
+////			}
 			frontier.push(CGRANodeWithCost(next,priority));
 			(*cameFrom)[next] = current;
 		}
@@ -155,10 +171,12 @@ bool AStar::Route(std::vector<std::pair<CGRANode*, CGRANode*> > paths,
 			}
 
 //			cgra->removeEdge(cameFrom[current],current);
-			assert(cameFrom[current]->getT() == current->getT());
-			if(cgraEdges.find(cameFrom[current]) != cgraEdges.end()){
-				std::vector<CGRANode*> *vec = &(cgraEdges.find(cameFrom[current])->second);
-				vec->erase(std::remove(vec->begin(), vec->end(), current), vec->end());
+			if(cameFrom[current]->getT() == current->getT()){
+				assert(cameFrom[current]->getT() == current->getT());
+				if(cgraEdges.find(cameFrom[current]) != cgraEdges.end()){
+					std::vector<CGRANode*> *vec = &(cgraEdges.find(cameFrom[current])->second);
+					vec->erase(std::remove(vec->begin(), vec->end(), current), vec->end());
+				}
 			}
 
 			current = cameFrom[current];

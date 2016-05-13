@@ -150,6 +150,7 @@ void CGRA::connectNeighborsSMART() {
 				//Connect All the nodes in the time axis
 				for (int i = t+1; i < t+MII; ++i) {
 					CGRANodes[t][y][x].addConnectedNode(&CGRANodes[(i)%MII][y][x],i-(t+1),"REGconnections");
+					CGRAEdges[&CGRANodes[t][y][x]].push_back(&CGRANodes[(i)%MII][y][x]);
 				}
 
 				for (int yy = 0; yy < YDim; ++yy) {
