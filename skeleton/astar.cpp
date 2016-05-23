@@ -7,7 +7,7 @@
 
 int AStar::heuristic(CGRANode* a, CGRANode* b) {
 //	assert(a->getT() == b->getT());
-	return abs(a->getX() - b->getX()) + abs(a->getY() - b->getY()) + (b->getT() - a->getT() + MII)%MII;
+	return abs(a->getX() - b->getX()) + abs(a->getY() - b->getY()) + 16*((b->getT() - a->getT() + MII)%MII);
 }
 
 bool AStar::AStarSearch(std::map<CGRANode*,std::vector<CGRANode*> > graph, CGRANode* start, CGRANode* goal, std::map<CGRANode*,CGRANode*> *cameFrom, std::map<CGRANode*,int> *costSoFar) {
@@ -59,7 +59,11 @@ bool AStar::AStarSearch(std::map<CGRANode*,std::vector<CGRANode*> > graph, CGRAN
 //												 << next->getX() << ")\n";
 ////			}
 
-			newCost = (*costSoFar)[current] + 1; //always graph.cost(current, next) = 1
+			if(current->getT() == next->getT()){
+				newCost = (*costSoFar)[current] + 1; //always graph.cost(current, next) = 1
+			}else{
+				newCost = (*costSoFar)[current] + 16*((next->getT() - current->getT() + MII)%MII);
+			}
 
 ////			if(start->getT() == 9){
 //			errs() << "ASTAR::newCost = " << newCost << "\n";
@@ -93,7 +97,7 @@ bool AStar::AStarSearch(std::map<CGRANode*,std::vector<CGRANode*> > graph, CGRAN
 }
 
 bool AStar::Route(std::vector<std::pair<CGRANode*, CGRANode*> > paths,
-		std::map<CGRANode*,std::vector<CGRANode*> > cgraEdges, std::vector<std::pair<CGRANode*,CGRANode*> > *pathsNotRouted) {
+		std::map<CGRANode*,std::vector<CGRANode*> >* cgraEdges, std::vector<std::pair<CGRANode*,CGRANode*> > *pathsNotRouted) {
 
 	CGRANode* start;
 	CGRANode* goal;
@@ -123,7 +127,7 @@ bool AStar::Route(std::vector<std::pair<CGRANode*, CGRANode*> > paths,
 	for (int i = 0; i < paths.size(); ++i) {
 		start = paths[i].first;
 		goal = paths[i].second;
-		if(!AStarSearch(cgraEdges,start,goal,&cameFrom, &costSoFar)){
+		if(!AStarSearch(*cgraEdges,start,goal,&cameFrom, &costSoFar)){
 //			return false;
 			pathsNotRouted->push_back(paths[i]);
 
@@ -148,7 +152,7 @@ bool AStar::Route(std::vector<std::pair<CGRANode*, CGRANode*> > paths,
 	for (int i = 0; i < pathsWithCost.size(); ++i) {
 		start = pathsWithCost[i].path.first;
 		goal = pathsWithCost[i].path.second;
-		if(!AStarSearch(cgraEdges,start,goal,&cameFrom, &costSoFar)){
+		if(!AStarSearch(*cgraEdges,start,goal,&cameFrom, &costSoFar)){
 //			for (int j = i; j < pathsWithCost.size(); ++j) {
 			pathsNotRouted->push_back(pathsWithCost[i].path);
 //			}
@@ -173,9 +177,14 @@ bool AStar::Route(std::vector<std::pair<CGRANode*, CGRANode*> > paths,
 //			cgra->removeEdge(cameFrom[current],current);
 			if(cameFrom[current]->getT() == current->getT()){
 				assert(cameFrom[current]->getT() == current->getT());
-				if(cgraEdges.find(cameFrom[current]) != cgraEdges.end()){
-					std::vector<CGRANode*> *vec = &(cgraEdges.find(cameFrom[current])->second);
-					vec->erase(std::remove(vec->begin(), vec->end(), current), vec->end());
+				if(cgraEdges->find(cameFrom[current]) != cgraEdges->end()){
+//					*mappingOutFile << (*cgraEdges)[cameFrom[current]].size();
+//					*mappingOutFile << " R" << current << " ";
+//					std::vector<CGRANode*> *vec = &(cgraEdges.find(cameFrom[current])->second);
+//					std::vector<CGRANode*> *vec = &cgraEdges[cameFrom[current]];
+					(*cgraEdges)[cameFrom[current]].erase(std::remove((*cgraEdges)[cameFrom[current]].begin(), (*cgraEdges)[cameFrom[current]].end(), current), (*cgraEdges)[cameFrom[current]].end());
+					assert(std::find((*cgraEdges)[cameFrom[current]].begin(),(*cgraEdges)[cameFrom[current]].end(),current) == (*cgraEdges)[cameFrom[current]].end());
+//					*mappingOutFile << (*cgraEdges)[cameFrom[current]].size();
 				}
 			}
 

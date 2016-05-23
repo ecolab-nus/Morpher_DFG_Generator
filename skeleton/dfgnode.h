@@ -17,6 +17,10 @@ class dfgNode{
 			Instruction* Node;
 			std::vector<Instruction*> Children;
 			std::vector<Instruction*> Ancestors;
+
+			std::vector<Instruction*> RecChildren;
+			std::vector<Instruction*> RecAncestors;
+
 			DFG* Parent;
 
 			int ASAPnumber = -1;
@@ -45,16 +49,23 @@ class dfgNode{
 			std::vector<Instruction*>::iterator getChildIterator();
 
 			std::vector<Instruction*> getChildren();
-
 			std::vector<Instruction*> getAncestors();
+			std::vector<Instruction*> getRecChildren(){return RecChildren;};
+			std::vector<Instruction*> getRecAncestors(){return RecAncestors;};
+
+
 
 			Instruction* getNode();
 
 			void addChild(Instruction *child, int type=EDGE_TYPE_DATA);
 			void addAncestor(Instruction *anc, int type=EDGE_TYPE_DATA);
+			void addRecChild(Instruction *child, int type=EDGE_TYPE_LDST);
+			void addRecAncestor(Instruction *anc, int type=EDGE_TYPE_LDST);
 
 			int removeChild(Instruction *child);
 			int removeAncestor(Instruction *anc);
+			int removeRecChild(Instruction *child);
+			int removeRecAncestor(Instruction *anc);
 
 			void setASAPnumber(int n);
 			void setALAPnumber(int n);

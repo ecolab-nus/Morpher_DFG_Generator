@@ -62,7 +62,7 @@
 #include "dfgnode.h"
 #include "dfg.h"
 
-#define CDFG
+//#define CDFG
 
 
 
@@ -81,11 +81,17 @@ STATISTIC(LoopsAnalyzed, "Number of loops analyzed for vectorization");
 
 
 
-	void traverseDefTree(Instruction *I, int depth, DFG* currBBDFG, std::map<Instruction*,int>* insMapIn,MemoryDependenceAnalysis *MD = NULL){
-		 	 	 errs() << "DEPTH = " << depth << "\n";
+	void traverseDefTree(Instruction *I,
+				 	 	 int depth,
+						 DFG* currBBDFG, std::map<Instruction*,int>* insMapIn,
+						 std::map<const BasicBlock*,std::vector<const BasicBlock*>> BBSuccBasicBlocks,
+						 MemoryDependenceAnalysis *MD = NULL){
+
+
+		 	 	 //errs() << "DEPTH = " << depth << "\n";
 //		 	 	 if(insMapIn->find(I) != insMapIn->end())
 //		 	 	 {
-//					 errs() << "Instruction = %" << *I << "% is already there\n";
+//					 //errs() << "Instruction = %" << *I << "% is already there\n";
 //					 return;
 //				 }
 
@@ -106,26 +112,43 @@ STATISTIC(LoopsAnalyzed, "Number of loops analyzed for vectorization");
 							 continue;
 						 }
 
+						 if(std::find(BBSuccBasicBlocks[I->getParent()].begin(),BBSuccBasicBlocks[I->getParent()].end(),Inst->getParent())==BBSuccBasicBlocks[I->getParent()].end()){
+							 continue;
+						 }
+
+						 //TODO :: Handle nicely PHI that use values defined in the same basicblock
+						 if(Inst->getOpcode() == Instruction::PHI){
+							 if(I->getParent() == Inst->getParent()){
+								 //errs() << "Assertion is going to fail\n";
+								 //errs() << "Parent : ";
+								 I->dump();
+								 //errs() << "Child : ";
+								 Inst->dump();
+								 continue;
+							 }
+//							 assert(I->getParent() != Inst->getParent());
+						 }
+
 						currBBDFG->findNode(I)->addChild(Inst);
-					    errs() << "\t" <<*Inst << "\n";
+					    //errs() << "\t" <<*Inst << "\n";
 
 					  if(insMapIn->find(Inst) == insMapIn->end()){
-						traverseDefTree(Inst, depth + 1, currBBDFG, insMapIn);
+						traverseDefTree(Inst, depth + 1, currBBDFG, insMapIn,BBSuccBasicBlocks);
 					  }
 					  else{
-						  errs() << Inst << " Already found on the map\n";
+						  //errs() << Inst << " Already found on the map\n";
 						  if(currBBDFG->findNode(Inst) == NULL) {
-							  errs() << "This is NULLL....\n";
+							  //errs() << "This is NULLL....\n";
 						  }
 					  }
 
 					  currBBDFG->findNode(Inst)->addAncestor(I);
-					  errs() << "Depthfor : " << depth << " returned here!\n";
+					  //errs() << "Depthfor : " << depth << " returned here!\n";
 					}
 				  }
-				  errs() << "Depthendfor : " << depth << " returned here!\n";
+				  //errs() << "Depthendfor : " << depth << " returned here!\n";
 				  if (I->getOpcode() == Instruction::Br ) {
-					  errs() << "Branch instruction met!\n";
+					  //errs() << "Branch instruction met!\n";
 //					  I->getPrevNode()->dump();
 					  I->dump();
 					  I->getParent()->dump();
@@ -144,7 +167,7 @@ STATISTIC(LoopsAnalyzed, "Number of loops analyzed for vectorization");
 
 				  }
 
-				  errs() << "Depthendfunc : " << depth << "returned here!\n";
+				  //errs() << "Depthendfunc : " << depth << "returned here!\n";
 	    	}
 
 	    	void printDFGDOT(std::string fileName ,DFG* currBBDFG){
@@ -156,10 +179,10 @@ STATISTIC(LoopsAnalyzed, "Number of loops analyzed for vectorization");
 	    		//Write the initial info
 	    		ofs << "digraph Region_18 {\n\tgraph [ nslimit = \"1000.0\",\n\torientation = landscape,\n\t\tcenter = true,\n\tpage = \"8.5,11\",\n\tsize = \"10,7.5\" ] ;" << std::endl;
 
-	    		errs() << "Node List Size : " << currBBDFG->getNodes().size() << "\n";
+	    		//errs() << "Node List Size : " << currBBDFG->getNodes().size() << "\n";
 
 				if(currBBDFG->getNodes()[0].getNode() == NULL) {
-					errs() << "NULLL!\n";
+					//errs() << "NULLL!\n";
 				}
 
 
@@ -171,14 +194,14 @@ STATISTIC(LoopsAnalyzed, "Number of loops analyzed for vectorization");
 	    			node = currBBDFG->getNodes()[i];
 
 	    			if(node.getNode() == NULL) {
-	    				errs() << "NULLL! :" << i << "\n";
+	    				//errs() << "NULLL! :" << i << "\n";
 	    			}
 
 	    			Instruction* ins = node.getNode();
-	//    			errs() << "\"Op_" << *ins << "\" [ fontname = \"Helvetica\" shape = box, label = \"" << *ins << "\"]" << "\n" ;
-	    			ofs << "\"Op_" << ins << "\" [ fontname = \"Helvetica\" shape = box, label = \" ";
+	//    			//errs() << "\"Op_" << *ins << "\" [ fontname = \"Helvetica\" shape = box, label = \"" << *ins << "\"]" << "\n" ;
+	    			ofs << "\"Op_" << ins  << "\" [ fontname = \"Helvetica\" shape = box, label = \" ";
 
-	    			ofs << ins->getOpcodeName(); //<< " ( ";
+	    			ofs << ins->getOpcodeName() << " BB" << ins->getParent()->getName().str(); //<< " ( ";
 //	    			for (int j = 0; j < ins->getNumOperands(); ++j) {
 //	    				ofs << ins->getOperand(j)->getName().str() << ",";
 //					}
@@ -216,18 +239,30 @@ STATISTIC(LoopsAnalyzed, "Number of loops analyzed for vectorization");
 	    			for (j=0 ; j < node.getChildren().size(); j++){
 	    				destIns = node.getChildren()[j];
 	    				if(destIns != NULL) {
-	    					errs() << destIns->getOpcodeName() << "\n";
+	    					//errs() << destIns->getOpcodeName() << "\n";
 //	    					ofs << "\"Op_" << node.getNode() << "\" -> \"Op_" << destIns << "\" [style = bold, color = red];" << std::endl;
 
 	    					assert(currBBDFG->findEdge(node.getNode(),node.getChildren()[j])!=NULL);
 	    					if(currBBDFG->findEdge(node.getNode(),node.getChildren()[j])->getType() == EDGE_TYPE_DATA){
 	    						ofs << "\"Op_" << node.getNode() << "\" -> \"Op_" << destIns << "\" [style = bold, color = red];" << std::endl;
 	    					}
-	    					else if(currBBDFG->findEdge(node.getNode(),node.getChildren()[j])->getType() == EDGE_TYPE_LDST){
-	    						ofs << "\"Op_" << node.getNode() << "\" -> \"Op_" << destIns << "\" [style = bold, color = green];" << std::endl;
-	    					}
-	    					else {
+	    					else if (currBBDFG->findEdge(node.getNode(),node.getChildren()[j])->getType() == EDGE_TYPE_CTRL){
 	    						ofs << "\"Op_" << node.getNode() << "\" -> \"Op_" << destIns << "\" [style = bold, color = black];" << std::endl;
+	    					}
+
+	    				}
+	    			}
+
+	    			//adding recurrence edges
+	    			for (j=0 ; j < node.getRecChildren().size(); j++){
+	    				destIns = node.getRecChildren()[j];
+	    				if(destIns != NULL) {
+	    					//errs() << destIns->getOpcodeName() << "\n";
+//	    					ofs << "\"Op_" << node.getNode() << "\" -> \"Op_" << destIns << "\" [style = bold, color = red];" << std::endl;
+
+	    					assert(currBBDFG->findEdge(node.getNode(),node.getRecChildren()[j])!=NULL);
+	    					if(currBBDFG->findEdge(node.getNode(),node.getRecChildren()[j])->getType() == EDGE_TYPE_LDST){
+	    						ofs << "\"Op_" << node.getNode() << "\" -> \"Op_" << destIns << "\" [style = bold, color = green];" << std::endl;
 	    					}
 
 	    				}
@@ -240,32 +275,57 @@ STATISTIC(LoopsAnalyzed, "Number of loops analyzed for vectorization");
 
 	    	Instruction* checkMemDepedency(Instruction *I, MemoryDependenceAnalysis *MD){
 				  MemDepResult mRes;
-				  errs() << "#*#*#*#*#* This is a memory op #*#*#*#*#*\n";
+				  //errs() << "#*#*#*#*#* This is a memory op #*#*#*#*#*\n";
 				  mRes = MD->getDependency(I);
 
 				  if(mRes.getInst() != NULL){
-					  errs() << "Dependency : \n";
+					  //errs() << "Dependency : \n";
 					  mRes.getInst()->dump();
 				  }
 				  else{
-					  errs() << "Not Dependent or cannot find the dependence : \n";
+					  //errs() << "Not Dependent or cannot find the dependence : \n";
 				  }
 
 				  return mRes.getInst();
 	    	}
 
+	    	void dfsBB(SmallVector<std::pair<const BasicBlock *, const BasicBlock *>,1 > BackEdgesBB,
+	    			   std::map<const BasicBlock*,std::vector<const BasicBlock*>> *BBSuccBasicBlocksPtr,
+					   BasicBlock* currBB,
+					   const BasicBlock* startBB
+	    			  ){
 
+				succ_iterator SI(succ_begin(currBB)), SE(succ_end(currBB));
+				 for (; SI != SE; ++SI){
+					 BasicBlock* succ = *SI;
 
-//	    	void analyzeMachineFunction(Function &F){
-//	    		  //Get MachineFunction
-//	    		  MachineFunction &MF = MachineFunction::get(&F);
-//
-//
-//	    		  //Print out machine function
-//	    		  DEBUG(MF.print(std::cerr));
-//	    	}
+					 std::pair <const BasicBlock*,const BasicBlock*> bbCouple(currBB,succ);
+					 if(std::find(BackEdgesBB.begin(),BackEdgesBB.end(),bbCouple)!=BackEdgesBB.end()){
+						 return;
+					 }
 
+					 (*BBSuccBasicBlocksPtr)[startBB].push_back(succ);
+					 dfsBB(BackEdgesBB,BBSuccBasicBlocksPtr,succ,startBB);
+				 }
+				 return;
+	    	}
 
+	    	void printBBSuccMap(Function &F,
+	    					    std::map<const BasicBlock*,std::vector<const BasicBlock*>> BBSuccBasicBlocks){
+
+				  std::map<const BasicBlock*,std::vector<const BasicBlock*>>::iterator it;
+				  std::ofstream basicblockmapfile;
+				  std::string fname = F.getName().str() + "_basicblockmapfile.log";
+				  basicblockmapfile.open(fname.c_str());
+				  for (it = BBSuccBasicBlocks.begin(); it!=BBSuccBasicBlocks.end(); it++) {
+					  basicblockmapfile << "BB::" << it->first->getName().str() << " = ";
+					  for (int u = 0; u < it->second.size(); ++u) {
+						  basicblockmapfile << it->second[u]->getName().str() << ", ";
+					  }
+					  basicblockmapfile << "\n";
+				  }
+				  basicblockmapfile.close();
+	    	}
 
 
 namespace {
@@ -279,8 +339,16 @@ namespace {
     	virtual bool runOnFunction(Function &F) {
 				std::map<Instruction*,int> insMap;
 				std::map<Instruction*,int> insMap2;
+				std::error_code EC;
 
-			  errs() << "In a function calledd " << F.getName() << "!\n";
+
+				std::ofstream timeFile;
+				std::string timeFileName = "time." + F.getName().str() + ".log";
+				timeFile.open(timeFileName.c_str());
+				clock_t begin = clock();
+				clock_t end;
+
+			  //errs() << "In a function calledd " << F.getName() << "!\n";
 
 //			  //TODO : please remove this after dtw test
 //			  if (F.getName() != "fft_float"){
@@ -295,31 +363,61 @@ namespace {
 			  MemDepResult mRes;
 
 			  int loopCounter = 0;
-			  errs() << F.getName() << "\n";
+			  //errs() << F.getName() << "\n";
 
-			  DFG funcDFG;
+			  SmallVector<std::pair<const BasicBlock *, const BasicBlock *>,1 > BackEdgesBB;
+			  FindFunctionBackedges(F,BackEdgesBB);
+			  std::map<const BasicBlock*,std::vector<const BasicBlock*>> BBSuccBasicBlocks;
+
+			  //errs() << "Starting search of successive basic blocks :\n";
+
+			  int BBCount = 0;
 			  for (auto &B : F) {
-					 int Icount = 0;
-					 for (auto &I : B) {
-						 if(insMap2.find(&I) != insMap2.end()){
-							 continue;
-						 }
-						  int depth = 0;
-						  traverseDefTree((Instruction*)&I, depth, &funcDFG, &insMap2);
-						  errs() << "Ins Count : " << Icount++ << "\n";
-					 }
-
+				  BBCount++;
 			  }
-			  funcDFG.connectBB();
-//			  funcDFG.addMemDepEdges(MD);
-			  funcDFG.removeAlloc();
-			  funcDFG.scheduleASAP();
-			  funcDFG.scheduleALAP();
-			  funcDFG.CreateSchList();
-//			  funcDFG.addMemRecDepEdges(DA);
-			  funcDFG.MapCGRAsa(4,4);
-			  printDFGDOT (F.getName().str() + "_funcdfg.dot", &funcDFG);
-			  return true;
+
+			  //errs() << "Total BasicBlocks : " << BBCount << "\n";
+
+			  int currBBIdx = 0;
+			  for (auto &B : F) {
+				  currBBIdx++;
+				  //errs() << "Currently proessing = " << currBBIdx << "\n";
+				  BasicBlock* BB = dyn_cast<BasicBlock>(&B);
+				  BBSuccBasicBlocks[BB].push_back(BB);
+				  dfsBB(BackEdgesBB,&BBSuccBasicBlocks,BB,BB);
+			  }
+			  printBBSuccMap(F,BBSuccBasicBlocks);
+
+			  end = clock();
+			  timeFile << "Preprocessing Time = " << double(end-begin)/CLOCKS_PER_SEC << "\n";
+
+			  //errs() << "Succesive basic block search completed.\n";
+
+//			  DFG funcDFG;
+//			  funcDFG.setBBSuccBasicBlocks(BBSuccBasicBlocks);
+//
+//			  for (auto &B : F) {
+//					 int Icount = 0;
+//					 for (auto &I : B) {
+//						 if(insMap2.find(&I) != insMap2.end()){
+//							 continue;
+//						 }
+//						  int depth = 0;
+//						  traverseDefTree((Instruction*)&I, depth, &funcDFG, &insMap2,BBSuccBasicBlocks);
+//						  //errs() << "Ins Count : " << Icount++ << "\n";
+//					 }
+//
+//			  }
+//			  funcDFG.connectBB();
+////			  funcDFG.addMemDepEdges(MD);
+//			  funcDFG.removeAlloc();
+//			  funcDFG.scheduleASAP();
+//			  funcDFG.scheduleALAP();
+//			  funcDFG.CreateSchList();
+////			  funcDFG.addMemRecDepEdges(DA);
+//			  funcDFG.MapCGRAsa(4,4);
+//			  printDFGDOT (F.getName().str() + "_funcdfg.dot", &funcDFG);
+//			  return true;
 
 
 //			  funcDFG.MapCGRA(4,4);
@@ -330,9 +428,9 @@ namespace {
 
 			  for (LoopInfo::iterator i = LI.begin(); i != LI.end() ; ++i){
 				  Loop *L = *i;
-				  errs() << "*********Loop***********" << "\n";
-				  L->dump();
-				  errs() << "\n\n";
+				  //errs() << "*********Loop***********" << "\n";
+//				  L->dump();
+				  //errs() << "\n\n";
 
 
 				  //Only the innermost Loop
@@ -346,12 +444,15 @@ namespace {
 				  std::vector<DFG> DFGs;
 
 
+				  begin = clock();
+
 				  DFG LoopDFG;
+				  LoopDFG.setBBSuccBasicBlocks(BBSuccBasicBlocks);
 
 				  for (Loop::block_iterator bb = L->block_begin(); bb!= L->block_end(); ++bb){
 					 BasicBlock *B = *bb;
 
-					 errs() << "\n*********BasicBlock : " << B->getName() << "\n\n";
+					 //errs() << "\n*********BasicBlock : " << B->getName() << "\n\n";
 
 
 //					 DFG currBBDFG;
@@ -365,8 +466,8 @@ namespace {
 						 }
 
 
-						  errs() << "Instruction: ";
-						  I.dump();
+						  //errs() << "Instruction: ";
+//						  I.dump();
 
 
 //						  if(I.mayReadOrWriteMemory()){
@@ -375,46 +476,56 @@ namespace {
 
 						  int depth = 0;
 //						  traverseDefTree(&I, depth, &currBBDFG, &insMap);
-						  traverseDefTree(&I, depth, &LoopDFG, &insMap);
+						  traverseDefTree(&I, depth, &LoopDFG, &insMap,BBSuccBasicBlocks);
 
 
 //						  for (User *U : I.users()) {
 //							if (Instruction *Inst = dyn_cast<Instruction>(U)) {
-//							  errs() << "\tI is used in instruction:\n";
-//							  errs() << "\t" <<*Inst << "\n";
+//							  //errs() << "\tI is used in instruction:\n";
+//							  //errs() << "\t" <<*Inst << "\n";
 //							}
 //						  }
 
-						errs() << "Ins Count : " << Icount++ << "\n";
+						//errs() << "Ins Count : " << Icount++ << "\n";
 					 }
 //					 printDFGDOT (F.getName().str() + "_" + B->getName().str() + "_dfg.dot", &currBBDFG);
 				  }
 				  LoopDFG.connectBB();
 //				  LoopDFG.addMemDepEdges(MD);
 				  LoopDFG.removeAlloc();
+//				  LoopDFG.addMemRecDepEdges(DA);
+				  LoopDFG.addMemRecDepEdgesNew(DA);
 				  LoopDFG.scheduleASAP();
 				  LoopDFG.scheduleALAP();
 				  LoopDFG.CreateSchList();
-				  LoopDFG.addMemRecDepEdges(DA);
 //				  LoopDFG.MapCGRA(4,4);
+				  LoopDFG.MapCGRAsa(4,4,F.getName().str() + "_L" + std::to_string(loopCounter) + "_mapping.log");
 				  printDFGDOT (F.getName().str() + "_L" + std::to_string(loopCounter) + "_loopdfg.dot", &LoopDFG);
 //				  LoopDFG.printXML(F.getName().str() + "_L" + std::to_string(loopCounter) + "_loopdfg.xml");
+
+				  end = clock();
+				  timeFile << F.getName().str() << "_L" << std::to_string(loopCounter) << " time = " << double(end-begin)/CLOCKS_PER_SEC << "\n";
+
+
+
 				  loopCounter++;
 			  } //end loopIterator
 
-			  errs() << "Function body:\n";
+			  timeFile.close();
+
+			  //errs() << "Function body:\n";
 
 			  std::string Filename = ("cfg." + F.getName() + ".dot").str();
-			  errs() << "Writing '" << Filename << "'...";
+			  //errs() << "Writing '" << Filename << "'...";
 
-			  std::error_code EC;
+
 			  raw_fd_ostream File(Filename, EC, sys::fs::F_Text);
 
 			  if (!EC)
 				  WriteGraph(File, (const Function*)&F);
 			  else
-				  errs() << "  error opening file for writing!";
-			  errs() << "\n";
+				  //errs() << "  error opening file for writing!";
+			  //errs() << "\n";
 
 
 			  return false;
@@ -460,13 +571,13 @@ namespace {
 		 for(BasicBlock* B : blkList){
 
 //			 for (auto &I : *B) {
-//				  errs() << "Instruction: ";
+//				  //errs() << "Instruction: ";
 //				  I.dump();
 //
 //				  for (User *U : I.users()) {
 //				    if (Instruction *Inst = dyn_cast<Instruction>(U)) {
-//				      errs() << "\tI is used in instruction:\n";
-//				      errs() << "\t" <<*Inst << "\n";
+//				      //errs() << "\tI is used in instruction:\n";
+//				      //errs() << "\t" <<*Inst << "\n";
 //				    }
 //				  }
 //			 }
@@ -501,9 +612,9 @@ namespace {
 
 			  for (LoopInfo::iterator i = LI.begin(); i != LI.end() ; ++i){
 				  Loop *L = *i;
-				  errs() << "*********Loop***********\n";
+				  //errs() << "*********Loop***********\n";
 				  L->dump();
-				  errs() << "\n\n";
+				  //errs() << "\n\n";
 			  }
 
 

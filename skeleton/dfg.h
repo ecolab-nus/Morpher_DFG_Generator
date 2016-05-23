@@ -29,7 +29,7 @@ struct ScheduleOrder{
 		int slack1 = node1.getALAPnumber() - node1.getASAPnumber();
 		int slack2 = node2.getALAPnumber() - node2.getASAPnumber();
 
-		if(node1.getASAPnumber() <= node2.getASAPnumber()){
+		if(node1.getASAPnumber() < node2.getASAPnumber()){
 			return true;
 		}
 		else{
@@ -89,6 +89,8 @@ class DFG{
 			std::ofstream xmlFile;
 			std::vector<Edge> edgeList;
 			int maxASAPLevel = -1;
+			int maxRecDist = -1;
+			std::map<const BasicBlock*,std::vector<const BasicBlock*>> BBSuccBasicBlocks;
 
 
 
@@ -145,6 +147,7 @@ class DFG{
 
 			void addMemDepEdges(MemoryDependenceAnalysis *MD);
 			void addMemRecDepEdges(DependenceAnalysis *DA);
+			void addMemRecDepEdgesNew(DependenceAnalysis *DA);
 
 		    int removeEdge(Edge* e);
 		    int removeNode(dfgNode* n);
@@ -181,7 +184,7 @@ class DFG{
 
 			std::vector<ConnectedCGRANode> FindCandidateCGRANodes(dfgNode* node);
 
-			void MapCGRAsa(int XDim, int YDim);
+			void MapCGRAsa(int XDim, int YDim, std::string mapfileName = "Mapping.log");
 			bool MapMultiDest(std::map<dfgNode*,std::vector< std::pair<CGRANode*,int> > > *nodeDestMap, std::map<CGRANode*,std::vector<dfgNode*> > *destNodeMap);
 			bool MapASAPLevel(int MII, int XDim, int YDim);
 			int getAffinityCost(dfgNode* a, dfgNode* b);
@@ -194,6 +197,14 @@ class DFG{
 			int AddRoutingEdges(dfgNode* node);
 			int AStarSP(CGRANode* src, CGRANode* dest, std::vector<CGRANode*>* path);
 			int getDist(CGRANode* a, CGRANode*b);
+
+			void setMaxRecDist (int d){maxRecDist = d;}
+			int getMaxRecDist(){return maxRecDist;}
+
+			void findMaxRecDist();
+
+			void setBBSuccBasicBlocks(std::map<const BasicBlock*,std::vector<const BasicBlock*>> map){BBSuccBasicBlocks = map;}
+			std::map<const BasicBlock*,std::vector<const BasicBlock*>> getBBSuccBasicBlocks(){return BBSuccBasicBlocks;}
 
 
 	};

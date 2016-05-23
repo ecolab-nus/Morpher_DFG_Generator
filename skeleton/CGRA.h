@@ -38,7 +38,7 @@ class CGRA{
 			std::vector<std::vector<int> > getPhyConMat(){return phyConMat;}
 			std::vector<int> getPhyConMatNode(CGRANode* cnode){return phyConMat[getConMatIdx(cnode->getT(),cnode->getY(),cnode->getX())];}
 
-			std::map<CGRANode*,std::vector<CGRANode*> > getCGRAEdges(){return CGRAEdges;}
+			std::map<CGRANode*,std::vector<CGRANode*> >* getCGRAEdges(){return &CGRAEdges;}
 			void setCGRAEdges(std::map<CGRANode*,std::vector<CGRANode*> > cgraEdges){CGRAEdges = cgraEdges;}
 	};
 

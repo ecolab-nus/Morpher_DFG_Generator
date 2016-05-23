@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <queue>
 #include "astar.h"
+#include <ctime>
 
 
 dfgNode* DFG::getEntryNode(){
@@ -429,6 +430,160 @@ void DFG::addMemRecDepEdges(DependenceAnalysis* DA) {
 	log.close();
 }
 
+void DFG::findMaxRecDist() {
+	dfgNode* node;
+	int recDist;
+	for (int i = 0; i < NodeList.size(); ++i) {
+		node = &NodeList[i];
+
+		for (int j = 0; j < node->getRecAncestors().size(); ++j) {
+			recDist = node->getASAPnumber() - findNode(node->getRecAncestors()[j])->getASAPnumber();
+			if(maxRecDist < recDist){
+				maxRecDist = recDist;
+			}
+		}
+	}
+
+}
+
+
+
+void DFG::addMemRecDepEdgesNew(DependenceAnalysis* DA) {
+	std::vector<dfgNode*> memNodes;
+		dfgNode* nodePtr;
+		Instruction *Ins;
+		std::ofstream log;
+		int RecDist;
+
+		static int count = 0;
+		std::string Filename = (NodeList[0].getNode()->getFunction()->getName() + "_L" + std::to_string(count++) + "addMemRecDepEdges.log").str();
+		log.open(Filename.c_str());
+		log << "Started...\n";
+
+		errs() << "&&&&&&&&&&&&&&&&&&&&Recurrence search started.....!\n";
+
+		//Create a list of memory instructions
+		for (int i = 0; i < NodeList.size(); ++i) {
+			nodePtr = &NodeList[i];
+			Ins = dyn_cast<Instruction>(nodePtr->getNode());
+			if (!Ins)
+			return;
+
+			LoadInst *Ld = dyn_cast<LoadInst>(nodePtr->getNode());
+			StoreInst *St = dyn_cast<StoreInst>(nodePtr->getNode());
+
+			if (!St && !Ld)
+			continue;
+			if (Ld && !Ld->isSimple())
+			return;
+			if (St && !St->isSimple())
+			return;
+			errs() << "ID=" << nodePtr->getIdx() << " ,";
+			nodePtr->getNode()->dump();
+			memNodes.push_back(nodePtr);
+		}
+
+		log << "addMemRecDepEdges : Found " << memNodes.size() << "Loads and Stores to analyze\n";
+
+		for (int i = 0; i < memNodes.size(); ++i) {
+			for (int j = i; j < memNodes.size(); ++j) {
+				  std::vector<char> Dep;
+			      Instruction *Src = dyn_cast<Instruction>(memNodes[i]->getNode());
+			      Instruction *Des = dyn_cast<Instruction>(memNodes[j]->getNode());
+
+				  if (Src == Des)
+					  continue;
+
+				  if (isa<LoadInst>(Src) && isa<LoadInst>(Des))
+					  continue;
+
+				  if (auto D = DA->depends(Src, Des, true)) {
+					  log << "addMemRecDepEdges :" << "Found Dependency between Src=" << memNodes[i]->getIdx() << " Des=" << memNodes[j]->getIdx() << "\n";
+
+
+					  if (D->isFlow()) {
+					// TODO: Handle Flow dependence.Check if it is sufficient to populate
+					// the Dependence Matrix with the direction reversed.
+						  log << "addMemRecDepEdges :" << "Flow dependence not handled\n";
+						  continue;
+	//					  return;
+					  }
+					  if (D->isAnti()) {
+						  log << "Found Anti dependence \n";
+
+
+							 if(std::find(BBSuccBasicBlocks[Src->getParent()].begin(),BBSuccBasicBlocks[Src->getParent()].end(),Des->getParent())==BBSuccBasicBlocks[Src->getParent()].end()){
+								 continue;
+							 }
+
+							this->findNode(Src)->addRecChild(Des,EDGE_TYPE_LDST);
+							this->findNode(Des)->addRecAncestor(Src);
+
+//							RecDist = this->findNode(Des)->getASAPnumber() - this->findNode(Src)->getASAPnumber();
+//							if(maxRecDist < RecDist){
+//								maxRecDist = RecDist;
+//							}
+
+						  unsigned Levels = D->getLevels();
+						  char Direction;
+						  for (unsigned II = 1; II <= Levels; ++II) {
+							  const SCEV *Distance = D->getDistance(II);
+
+							  const SCEVConstant *SCEVConst = dyn_cast_or_null<SCEVConstant>(Distance);
+							  if (SCEVConst) {
+								  const ConstantInt *CI = SCEVConst->getValue();
+								  if (CI->isNegative()) {
+									  Direction = '<';
+								  }
+								  else if (CI->isZero()) {
+									  Direction = '=';
+								  }
+								  else {
+									  Direction = '>';
+								  }
+								  log << SCEVConst->getAPInt().abs().getZExtValue() << std::endl;
+								  Dep.push_back(Direction);
+							  }
+							  else if (D->isScalar(II)) {
+								Direction = 'S';
+								Dep.push_back(Direction);
+							  }
+							  else {
+								  unsigned Dir = D->getDirection(II);
+								  if (Dir == Dependence::DVEntry::LT || Dir == Dependence::DVEntry::LE){
+									  Direction = '<';
+								  }
+								  else if (Dir == Dependence::DVEntry::GT || Dir == Dependence::DVEntry::GE){
+									  Direction = '>';
+								  }
+								  else if (Dir == Dependence::DVEntry::EQ) {
+									  Direction = '=';
+								  }
+								  else {
+									  Direction = '*';
+								  }
+								  Dep.push_back(Direction);
+							  }
+						  }
+	//					while (Dep.size() != Level) {
+	//					  Dep.push_back('I');
+	//					}
+					  }
+
+					  for (int k = 0; k < Dep.size(); ++k) {
+						  log << Dep[k];
+					  }
+					  log << "\n";
+				  }
+			}
+		}
+
+
+
+		log.close();
+		errs() << "&&&&&&&&&&&&&&&&&&&&Recurrence search done.....!\n";
+}
+
 void DFG::addMemDepEdges(MemoryDependenceAnalysis *MD) {
 
 	assert(NodeList.size() > 0);
@@ -608,6 +763,19 @@ void DFG::traverseBFS(dfgNode* node, int ASAPlevel) {
 			traverseBFS(child,ASAPlevel+1);
 		}
 	}
+
+	for (int i = 0; i < node->getRecChildren().size(); ++i) {
+
+		if(maxASAPLevel < ASAPlevel){
+			maxASAPLevel = ASAPlevel;
+		}
+
+		child = findNode(node->getRecChildren()[i]);
+		if(child->getASAPnumber() < ASAPlevel){
+			child->setASAPnumber(ASAPlevel);
+			traverseBFS(child,ASAPlevel+1);
+		}
+	}
 }
 
 void DFG::traverseInvBFS(dfgNode* node, int ALAPlevel) {
@@ -619,6 +787,17 @@ void DFG::traverseInvBFS(dfgNode* node, int ALAPlevel) {
 			traverseInvBFS(ancestor,ALAPlevel+1);
 		}
 	}
+
+	for (int i = 0; i < node->getRecAncestors().size(); ++i) {
+		ancestor = findNode(node->getRecAncestors()[i]);
+		if(ancestor->getALAPnumber() < ALAPlevel){
+			ancestor->setALAPnumber(ALAPlevel);
+			traverseInvBFS(ancestor,ALAPlevel+1);
+		}
+	}
+
+
+
 }
 
 void DFG::scheduleASAP() {
@@ -1128,7 +1307,7 @@ bool DFG::MapMultiDestRec(
 
 			localCGRAEdges = cgraEdges;
 			mappingOutFile << "nodeIdx=" << node->getIdx() << ", placed=(" << cnode->getT() << "," << cnode->getY() << "," << cnode->getX() << ")" << "\n";
-			astar->Route(paths,localCGRAEdges,&pathsNotRouted);
+			astar->Route(paths,&localCGRAEdges,&pathsNotRouted);
 			paths.clear();
 			if(!pathsNotRouted.empty()){
 				errs() << "all paths are not routed.\n";
@@ -1236,7 +1415,7 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim) {
 	dfgNode* parent;
 	CGRANode* parentExt;
 
-	for (int level = 0; level < maxASAPLevel; ++level) {
+	for (int level = 0; level <= maxASAPLevel; ++level) {
 		currLevelNodes.clear();
 		nodeDestMap.clear();
 		destNodeMap.clear();
@@ -1271,20 +1450,54 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim) {
 						ll = parent->getmappedRealTime();
 					}
 
-					if(parent->getmappedRealTime() < el){
-						assert( parent->getmappedRealTime()%MII == parent->getMappedLoc()->getT() );
-						el = parent->getMappedLoc()->getT();
-//						el = parent->getmappedRealTime();
-					}
+//					if(parent->getmappedRealTime() < el){
+//						assert( parent->getmappedRealTime()%MII == parent->getMappedLoc()->getT() );
+//						el = parent->getMappedLoc()->getT();
+////						el = parent->getmappedRealTime();
+//					}
 
 				}
 
-//				if(el > ll){
-					el = ll;
-//				}
+				if(!node->getRecAncestors().empty()){
+					errs() << "RecAnc for Node" << node->getIdx();
+					mappingOutFile << "RecAnc for Node" << node->getIdx();
+				}
+
+				for (int j = 0; j < node->getRecAncestors().size(); ++j) {
+					parent = findNode(node->getRecAncestors()[j]);
+
+					errs() << " (Id=" << parent->getIdx() <<
+							  ",rt=" << parent->getmappedRealTime() <<
+							  ",t=" << parent->getMappedLoc()->getT() << "),";
+
+					mappingOutFile << " (Id=" << parent->getIdx() <<
+									  ",rt=" << parent->getmappedRealTime() <<
+									  ",t=" << parent->getMappedLoc()->getT() << "),";
+
+					if(parent->getmappedRealTime() < el){
+						assert( parent->getmappedRealTime()%MII == parent->getMappedLoc()->getT() );
+						el = parent->getmappedRealTime();
+					}
+				}
+
+				if(!node->getRecAncestors().empty()){
+					errs() << "\n";
+					mappingOutFile << "\n";
+					el = el%MII;
+				}
+
+////				if(el > ll){
+//					el = ll;
+////				}
 
 //				while((ll)%MII != el){
 					for (int var = 0; var < MII; ++var) {
+
+						if(ll + 1 == el){ //this is only set if reccurence ancestors are found.
+							mappingOutFile << "MapASAPLevel breaking since reccurence ancestor found\n";
+							break;
+						}
+
 						for (int y = 0; y < YDim; ++y) {
 							for (int x = 0; x < XDim; ++x) {
 								if(currCGRA->getCGRANode((ll+1)%MII,y,x)->getmappedDFGNode() == NULL){
@@ -1361,7 +1574,7 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim) {
 			}
 
 			//Multiple Desination Nodes
-			if(!MapMultiDestRec(&nodeDestMap,&destNodeMap,nodeDestMap.begin(),currCGRA->getCGRAEdges(),0)){
+			if(!MapMultiDestRec(&nodeDestMap,&destNodeMap,nodeDestMap.begin(),*(currCGRA->getCGRAEdges()),0)){
 				return false;
 			}
 //			return true;
@@ -1369,17 +1582,47 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim) {
 	return true;
 }
 
-void DFG::MapCGRAsa(int XDim, int YDim) {
-		int MII = ceil((float)NodeList.size()/((float)XDim*(float)YDim));
-//		int MII = 11;
+void DFG::MapCGRAsa(int XDim, int YDim, std::string mapfileName) {
+	mappingOutFile.open(mapfileName.c_str());
+	clock_t begin = clock();
+	int MII = ceil((float)NodeList.size()/((float)XDim*(float)YDim));
+	findMaxRecDist();
+
+	errs() << "MapCGRAsa:: Resource Constrained MII = " << MII << "\n";
+	errs() << "MapCGRAsa:: Recurrence Constrained MII = " << getMaxRecDist() << "\n";
+	mappingOutFile << "MapCGRAsa:: Number of nodes = " << NodeList.size() << "\n";
+	mappingOutFile << "MapCGRAsa:: Resource Constrained MII = " << MII << "\n";
+	mappingOutFile << "MapCGRAsa:: Recurrence Constrained MII = " << getMaxRecDist() << "\n";
+
+
+	MII = std::max(MII,getMaxRecDist());
+
 	astar = new AStar(&mappingOutFile,MII);
-	mappingOutFile.open("Mapping.log");
+
+
+
+
+	//Sanity Check
+	dfgNode* node;
+	for (int i = 0; i < NodeList.size(); ++i) {
+		node = &NodeList[i];
+		if (node->getAncestors().size() > 5){
+			errs() << "Cannot map applications that have Fan in nodes more than 5\n";
+			return;
+		}
+	}
 
 	while(1){
 		if(MapASAPLevel(MII,XDim,YDim)){
+			clock_t end = clock();
+			double elapsed_time = double(end - begin)/CLOCKS_PER_SEC;
+			errs() << "MapCGRAsa :: Mapping success with MII = " << MII << "\n";
+			mappingOutFile << "MapCGRAsa :: Mapping success with MII = " << MII << "\n";
+			mappingOutFile << "Duration :: " << elapsed_time << "\n";
 			break;
 		}
 		errs() << "MapCGRAsa :: Mapping failed with MII = " << MII << "\n";
+		mappingOutFile << "MapCGRAsa :: Mapping failed with MII = " << MII << "\n";
 		MII++;
 	}
 	mappingOutFile.close();
@@ -1511,7 +1754,16 @@ void DFG::CreateSchList() {
 	dfgNode* temp;
 
 	errs() << "#################Begin :: The Schedule List#################\n";
+
+//	for (int i = 0; i < NodeList.size(); ++i) {
+//		temp = &NodeList[i];
+//		errs() << "NodeIdx=" << temp->getIdx() << ", ASAP =" << temp->getASAPnumber() << ", ALAP =" << temp->getALAPnumber() << "\n";
+//	}
+//	errs() << "Done\n";
+
+
 	std::sort(NodeList.begin(),NodeList.end(),ScheduleOrder());
+	errs() << "CreateSchList::Done sorting...\n";
 	for (int i = 0; i < NodeList.size(); ++i) {
 		temp = &NodeList[i];
 		temp->setSchIdx(i);

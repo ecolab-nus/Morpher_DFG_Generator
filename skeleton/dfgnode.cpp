@@ -138,3 +138,67 @@ void dfgNode::setMappedLoc(CGRANode* cNode) {
 CGRANode* dfgNode::getMappedLoc() {
 	return mappedLoc;
 }
+
+void dfgNode::addRecChild(Instruction* child, int type) {
+	for (int i = 0; i < RecChildren.size(); ++i) {
+		if(child == RecChildren[i]){
+			return;
+		}
+	}
+
+	RecChildren.push_back(child);
+
+	Edge temp;
+	temp.setID(Parent->getEdges().size());
+
+	std::ostringstream ss;
+	ss << std::hex << static_cast<void*>(Node) << "_to_" << static_cast<void*>(child);
+	temp.setName(ss.str());
+	temp.setType(type);
+	temp.setSrc(Node);
+	temp.setDest(child);
+
+	Parent->InsertEdge(temp);
+}
+
+void dfgNode::addRecAncestor(Instruction* anc, int type) {
+	for (int i = 0; i < RecAncestors.size(); ++i) {
+		if(anc == RecAncestors[i]){
+			return;
+		}
+	}
+
+	RecAncestors.push_back(anc);
+}
+
+int dfgNode::removeRecChild(Instruction* child) {
+	Instruction* childRem = NULL;
+	for (int i = 0; i < getRecChildren().size(); ++i) {
+		if (child == getRecChildren()[i]){
+			childRem = getRecChildren()[i];
+		}
+	}
+
+	if(childRem == NULL){
+		return -1;
+	}
+
+	RecChildren.erase(std::remove(RecChildren.begin(),RecChildren.end(),childRem),RecChildren.end());
+	return 1;
+}
+
+int dfgNode::removeRecAncestor(Instruction* anc) {
+	Instruction* ancRem = NULL;
+	for (int i = 0; i < getRecAncestors().size(); ++i) {
+		if (anc == getRecAncestors()[i]){
+			ancRem = getRecAncestors()[i];
+		}
+	}
+
+	if(ancRem == NULL){
+		return -1;
+	}
+
+	RecAncestors.erase(std::remove(RecAncestors.begin(),RecAncestors.end(),ancRem),RecAncestors.end());
+	return 1;
+}
