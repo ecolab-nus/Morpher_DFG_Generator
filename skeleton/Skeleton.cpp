@@ -113,6 +113,12 @@ STATISTIC(LoopsAnalyzed, "Number of loops analyzed for vectorization");
 						 }
 
 						 if(std::find(BBSuccBasicBlocks[I->getParent()].begin(),BBSuccBasicBlocks[I->getParent()].end(),Inst->getParent())==BBSuccBasicBlocks[I->getParent()].end()){
+							 if(Inst->getOpcode() == Instruction::PHI){
+								 errs() << "#####TRAVDEFTREE :: PHI Child found!\n";
+								 currBBDFG->findNode(I)->addPHIchild(Inst);
+								 currBBDFG->findNode(Inst)->addPHIancestor(I);
+							 }
+							 errs() << "#####TRAVDEFTREE :: backedge found!\n";
 							 continue;
 						 }
 
@@ -121,6 +127,9 @@ STATISTIC(LoopsAnalyzed, "Number of loops analyzed for vectorization");
 							 if(I->getParent() == Inst->getParent()){
 								 //errs() << "Assertion is going to fail\n";
 								 //errs() << "Parent : ";
+								 errs() << "#####TRAVDEFTREE :: PHI Child found!\n";
+								 currBBDFG->findNode(I)->addPHIchild(Inst);
+								 currBBDFG->findNode(Inst)->addPHIancestor(I);
 								 I->dump();
 								 //errs() << "Child : ";
 								 Inst->dump();
@@ -267,6 +276,24 @@ STATISTIC(LoopsAnalyzed, "Number of loops analyzed for vectorization");
 
 	    				}
 	    			}
+
+	    			//adding recurrence edges
+	    			for (j=0 ; j < node.getPHIchildren().size(); j++){
+	    				destIns = node.getPHIchildren()[j];
+	    				if(destIns != NULL) {
+	    					//errs() << destIns->getOpcodeName() << "\n";
+//	    					ofs << "\"Op_" << node.getNode() << "\" -> \"Op_" << destIns << "\" [style = bold, color = red];" << std::endl;
+
+	    					assert(currBBDFG->findEdge(node.getNode(),node.getPHIchildren()[j])!=NULL);
+	    					if(currBBDFG->findEdge(node.getNode(),node.getPHIchildren()[j])->getType() == EDGE_TYPE_PHI){
+	    						ofs << "\"Op_" << node.getNode() << "\" -> \"Op_" << destIns << "\" [style = bold, color = orange];" << std::endl;
+	    					}
+
+	    				}
+	    			}
+
+
+
 	    		}
 
 	    		ofs << "}" << std::endl;

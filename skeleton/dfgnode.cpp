@@ -202,3 +202,29 @@ int dfgNode::removeRecAncestor(Instruction* anc) {
 	RecAncestors.erase(std::remove(RecAncestors.begin(),RecAncestors.end(),ancRem),RecAncestors.end());
 	return 1;
 }
+
+void dfgNode::addPHIchild(Instruction* child, int type) {
+	PHIchildren.push_back(child);
+
+	Edge temp;
+	temp.setID(Parent->getEdges().size());
+
+	std::ostringstream ss;
+	ss << std::hex << static_cast<void*>(Node) << "_to_" << static_cast<void*>(child);
+	temp.setName(ss.str());
+	temp.setType(type);
+	temp.setSrc(Node);
+	temp.setDest(child);
+
+	Parent->InsertEdge(temp);
+}
+
+void dfgNode::addPHIancestor(Instruction* anc, int type) {
+	for (int i = 0; i < PHIAncestors.size(); ++i) {
+		if(anc == PHIAncestors[i]){
+			return;
+		}
+	}
+
+	PHIAncestors.push_back(anc);
+}

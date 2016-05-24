@@ -21,6 +21,9 @@ class dfgNode{
 			std::vector<Instruction*> RecChildren;
 			std::vector<Instruction*> RecAncestors;
 
+			std::vector<Instruction*> PHIchildren;
+			std::vector<Instruction*> PHIAncestors;
+
 			DFG* Parent;
 
 			int ASAPnumber = -1;
@@ -52,8 +55,8 @@ class dfgNode{
 			std::vector<Instruction*> getAncestors();
 			std::vector<Instruction*> getRecChildren(){return RecChildren;};
 			std::vector<Instruction*> getRecAncestors(){return RecAncestors;};
-
-
+			std::vector<Instruction*> getPHIchildren(){return PHIchildren;}
+			std::vector<Instruction*> getPHIancestors(){return PHIAncestors;}
 
 			Instruction* getNode();
 
@@ -61,6 +64,8 @@ class dfgNode{
 			void addAncestor(Instruction *anc, int type=EDGE_TYPE_DATA);
 			void addRecChild(Instruction *child, int type=EDGE_TYPE_LDST);
 			void addRecAncestor(Instruction *anc, int type=EDGE_TYPE_LDST);
+			void addPHIchild(Instruction *child, int type=EDGE_TYPE_PHI);
+			void addPHIancestor(Instruction *anc, int type=EDGE_TYPE_PHI);
 
 			int removeChild(Instruction *child);
 			int removeAncestor(Instruction *anc);
