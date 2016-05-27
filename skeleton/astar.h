@@ -27,10 +27,11 @@ class AStar{
 private:
 	std::ofstream *mappingOutFile;
 	int MII;
+	int maxPathLength;
 
 
 public:
-	AStar(std::ofstream *mappingOutFile, int MII) : mappingOutFile(mappingOutFile), MII(MII){}
+	AStar(std::ofstream *mappingOutFile, int MII) : mappingOutFile(mappingOutFile), MII(MII), maxPathLength(0){}
 	int heuristic(CGRANode* a, CGRANode* b);
 	bool AStarSearch(std::map<CGRANode*,std::vector<CGRANode*> > graph, CGRANode* start, CGRANode* goal, std::map<CGRANode*,CGRANode*> *cameFrom, std::map<CGRANode*,int> *costSoFar);
 	bool Route(std::vector<std::pair<CGRANode*,CGRANode*> > paths, std::map<CGRANode*,std::vector<CGRANode*> >* cgraEdges, std::vector<std::pair<CGRANode*,CGRANode*> > *pathsNotRouted);

@@ -159,9 +159,11 @@ bool AStar::Route(std::vector<std::pair<CGRANode*, CGRANode*> > paths,
 //			return false;
 			continue;
 		}
+		int pathLength = 0;
 		current = goal;
 		*mappingOutFile << "The Path : ";
 		while(current!=start){
+			pathLength++;
 			*mappingOutFile << "(" << current->getT() << "," << current->getY() << "," << current->getX() << ")" << " <-- ";
 			if(cameFrom.find(current) == cameFrom.end()){
 				printf("ASTAR :: ROUTING FAILURE\n");
@@ -175,22 +177,33 @@ bool AStar::Route(std::vector<std::pair<CGRANode*, CGRANode*> > paths,
 			}
 
 //			cgra->removeEdge(cameFrom[current],current);
-			if(cameFrom[current]->getT() == current->getT()){
-				assert(cameFrom[current]->getT() == current->getT());
+//			if(cameFrom[current]->getT() == current->getT()){
+//				assert(cameFrom[current]->getT() == current->getT());
 				if(cgraEdges->find(cameFrom[current]) != cgraEdges->end()){
 //					*mappingOutFile << (*cgraEdges)[cameFrom[current]].size();
 //					*mappingOutFile << " R" << current << " ";
 //					std::vector<CGRANode*> *vec = &(cgraEdges.find(cameFrom[current])->second);
 //					std::vector<CGRANode*> *vec = &cgraEdges[cameFrom[current]];
-					(*cgraEdges)[cameFrom[current]].erase(std::remove((*cgraEdges)[cameFrom[current]].begin(), (*cgraEdges)[cameFrom[current]].end(), current), (*cgraEdges)[cameFrom[current]].end());
-					assert(std::find((*cgraEdges)[cameFrom[current]].begin(),(*cgraEdges)[cameFrom[current]].end(),current) == (*cgraEdges)[cameFrom[current]].end());
+
+					std::vector<CGRANode*>::iterator found = std::find((*cgraEdges)[cameFrom[current]].begin(), (*cgraEdges)[cameFrom[current]].end(), current);
+					if(found != (*cgraEdges)[cameFrom[current]].end()){
+						(*cgraEdges)[cameFrom[current]].erase(found);
+					}
+
+//					assert(std::find((*cgraEdges)[cameFrom[current]].begin(),(*cgraEdges)[cameFrom[current]].end(),current) == (*cgraEdges)[cameFrom[current]].end());
+
 //					*mappingOutFile << (*cgraEdges)[cameFrom[current]].size();
 				}
-			}
+//			}
 
 			current = cameFrom[current];
 		}
+		if(pathLength > maxPathLength){
+			maxPathLength = pathLength;
+		}
+
 		*mappingOutFile << "(" << current->getT() << "," << current->getY() << "," << current->getX() << ")" << "\n";
+		*mappingOutFile << "MAX SMART Path Length = " << maxPathLength << "\n";
 //		*mappingOutFile << "\n";
 	}
 

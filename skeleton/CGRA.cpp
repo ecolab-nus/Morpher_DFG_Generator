@@ -148,10 +148,13 @@ void CGRA::connectNeighborsSMART() {
 			for (int x = 0; x < XDim; ++x) {
 
 				//Connect All the nodes in the time axis
-				for (int i = t+1; i < t+MII; ++i) {
-					CGRANodes[t][y][x].addConnectedNode(&CGRANodes[(i)%MII][y][x],i-(t+1),"REGconnections");
-					CGRAEdges[&CGRANodes[t][y][x]].push_back(&CGRANodes[(i)%MII][y][x]);
+//				for (int i = t+1; i < t+MII; ++i) {
+//					CGRANodes[t][y][x].addConnectedNode(&CGRANodes[(i)%MII][y][x],i-(t+1),"REGconnections");
+
+				for (int reg = 0; reg < 8; ++reg) {
+					CGRAEdges[&CGRANodes[t][y][x]].push_back(&CGRANodes[(t+1)%MII][y][x]);
 				}
+//				}
 
 				for (int yy = 0; yy < YDim; ++yy) {
 					for (int xx = 0; xx < XDim; ++xx) {

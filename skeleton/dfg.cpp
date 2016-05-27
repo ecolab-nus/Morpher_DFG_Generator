@@ -1412,6 +1412,7 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim) {
 
 	std::vector<dfgNode*> currLevelNodes;
 	dfgNode* node;
+	dfgNode* phiChild;
 	dfgNode* parent;
 	CGRANode* parentExt;
 
@@ -1486,11 +1487,8 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim) {
 					el = el%MII;
 				}
 
-////				if(el > ll){
-//					el = ll;
-////				}
 
-//				while((ll)%MII != el){
+
 					for (int var = 0; var < MII; ++var) {
 
 						if(ll + 1 == el){ //this is only set if reccurence ancestors are found.
@@ -1498,17 +1496,36 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim) {
 							break;
 						}
 
-						for (int y = 0; y < YDim; ++y) {
-							for (int x = 0; x < XDim; ++x) {
-								if(currCGRA->getCGRANode((ll+1)%MII,y,x)->getmappedDFGNode() == NULL){
-									nodeDestMap[node].push_back(std::make_pair(currCGRA->getCGRANode((ll+1)%MII,y,x),(ll+1)));
-									destNodeMap[currCGRA->getCGRANode((ll+1)%MII,y,x)].push_back(node);
+						if(!node->getPHIchildren().empty()){
+
+							assert(node->getPHIchildren().size() == 1);
+							phiChild = findNode(node->getPHIchildren()[0]);
+							assert(phiChild->getMappedLoc() != NULL);
+							int y = phiChild->getMappedLoc()->getY();
+							int x = phiChild->getMappedLoc()->getX();
+
+							if(currCGRA->getCGRANode((ll+1)%MII,y,x)->getmappedDFGNode() == NULL){
+								nodeDestMap[node].push_back(std::make_pair(currCGRA->getCGRANode((ll+1)%MII,y,x),(ll+1)));
+								destNodeMap[currCGRA->getCGRANode((ll+1)%MII,y,x)].push_back(node);
+							}
+
+						}
+						else{
+
+							for (int y = 0; y < YDim; ++y) {
+								for (int x = 0; x < XDim; ++x) {
+									if(currCGRA->getCGRANode((ll+1)%MII,y,x)->getmappedDFGNode() == NULL){
+										nodeDestMap[node].push_back(std::make_pair(currCGRA->getCGRANode((ll+1)%MII,y,x),(ll+1)));
+										destNodeMap[currCGRA->getCGRANode((ll+1)%MII,y,x)].push_back(node);
+									}
 								}
 							}
+
 						}
+
+
 						ll = (ll+1);
 					}
-//				}
 				errs() << "MapASAPLevel:: nodeIdx=" << node->getIdx() << " ,Possible Dests = " << nodeDestMap[node].size() << "\n";
 			}
 
@@ -1582,7 +1599,7 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim) {
 	return true;
 }
 
-void DFG::MapCGRAsa(int XDim, int YDim, std::string mapfileName) {
+void DFG::MapCGRA_SMART(int XDim, int YDim, std::string mapfileName) {
 	mappingOutFile.open(mapfileName.c_str());
 	clock_t begin = clock();
 	int MII = ceil((float)NodeList.size()/((float)XDim*(float)YDim));
@@ -1618,6 +1635,28 @@ void DFG::MapCGRAsa(int XDim, int YDim, std::string mapfileName) {
 			double elapsed_time = double(end - begin)/CLOCKS_PER_SEC;
 			errs() << "MapCGRAsa :: Mapping success with MII = " << MII << "\n";
 			mappingOutFile << "MapCGRAsa :: Mapping success with MII = " << MII << "\n";
+
+			std::map<CGRANode*, std::vector<CGRANode*> >* cgraEdgesPtr = currCGRA->getCGRAEdges();
+			std::vector<CGRANode*> connections;
+			int count = 0;
+
+			mappingOutFile << "Reg Connections Available after use :: \n";
+
+			for (int t = 0; t < currCGRA->getMII(); ++t) {
+				for (int y = 0; y < currCGRA->getYdim(); ++y) {
+					for (int x = 0; x < currCGRA->getXdim(); ++x) {
+						connections = (*cgraEdgesPtr)[currCGRA->getCGRANode(t,y,x)];
+						for (int c = 0; c < connections.size(); ++c) {
+							if( (connections[c]->getY() == y) && (connections[c]->getX() == x) ){
+								count++;
+							}
+						}
+						mappingOutFile << "(" << t << "," << y << "," << x << ")" << "=" << count << "\n";
+						count = 0;
+					}
+				}
+			}
+
 			mappingOutFile << "Duration :: " << elapsed_time << "\n";
 			break;
 		}
