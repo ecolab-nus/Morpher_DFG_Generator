@@ -27,14 +27,37 @@ class AStar{
 private:
 	std::ofstream *mappingOutFile;
 	int MII;
-	int maxPathLength;
+
 
 
 public:
-	AStar(std::ofstream *mappingOutFile, int MII) : mappingOutFile(mappingOutFile), MII(MII), maxPathLength(0){}
+	AStar(std::ofstream *mappingOutFile, int MII) : mappingOutFile(mappingOutFile), MII(MII), maxPathLength(0), maxSMARTPathLength(0){}
 	int heuristic(CGRANode* a, CGRANode* b);
-	bool AStarSearch(std::map<CGRANode*,std::vector<CGRANode*> > graph, CGRANode* start, CGRANode* goal, std::map<CGRANode*,CGRANode*> *cameFrom, std::map<CGRANode*,int> *costSoFar);
-	bool Route(std::vector<std::pair<CGRANode*,CGRANode*> > paths, std::map<CGRANode*,std::vector<CGRANode*> >* cgraEdges, std::vector<std::pair<CGRANode*,CGRANode*> > *pathsNotRouted);
+	CGRANode* AStarSearch(std::map<CGRANode*,
+			         std::vector<CGRANode*> > graph,
+					 CGRANode* start,
+					 CGRANode* goal,
+					 std::map<CGRANode*,CGRANode*> *cameFrom,
+					 std::map<CGRANode*,int> *costSoFar);
+	bool Route(std::vector<dfgNode*> parents,
+			   std::vector<std::pair<CGRANode*,CGRANode*> > paths,
+			   std::map<CGRANode*,std::vector<CGRANode*> >* cgraEdges,
+			   std::vector<std::pair<CGRANode*,CGRANode*> > *pathsNotRouted);
+
+	bool EMSRoute(std::vector<dfgNode*> parents,
+				  std::vector<std::pair<CGRANode*,CGRANode*> > paths,
+			   	  std::map<CGRANode*,std::vector<CGRANode*> >* cgraEdges,
+				  std::vector<std::pair<CGRANode*,CGRANode*> > *pathsNotRouted);
+
+	//Logging
+	std::map<int,int> SMARTPathHist;
+	std::map<int,int> SMARTPredicatePathHist;
+	std::map<int,int> PathHist;
+	std::map<int,std::vector<int>> PathSMARTPaths;
+	std::map<int,int> PathSMARTPathCount;
+
+	int maxPathLength;
+	int maxSMARTPathLength;
 
 };
 

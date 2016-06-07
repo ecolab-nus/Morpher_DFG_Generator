@@ -15,6 +15,7 @@ class CGRA{
 			void connectNeighbors();
 			void connectNeighborsMESH();
 			void connectNeighborsSMART();
+			void connectNeighborsGRID();
 
 			int MII;
 			int XDim;
@@ -40,6 +41,8 @@ class CGRA{
 
 			std::map<CGRANode*,std::vector<CGRANode*> >* getCGRAEdges(){return &CGRAEdges;}
 			void setCGRAEdges(std::map<CGRANode*,std::vector<CGRANode*> > cgraEdges){CGRAEdges = cgraEdges;}
+
+			void clearMapping();
 	};
 
 

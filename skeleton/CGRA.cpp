@@ -85,6 +85,7 @@ CGRA::CGRA(int MII, int Xdim, int Ydim) {
 //	connectNeighbors();
 //	connectNeighborsMESH();
 	connectNeighborsSMART();
+//	connectNeighborsGRID();
 
 }
 
@@ -156,8 +157,8 @@ void CGRA::connectNeighborsSMART() {
 				}
 //				}
 
-				for (int yy = 0; yy < YDim; ++yy) {
-					for (int xx = 0; xx < XDim; ++xx) {
+//				for (int yy = 0; yy < YDim; ++yy) {
+//					for (int xx = 0; xx < XDim; ++xx) {
 
 						if(x > 0){
 							CGRAEdges[&CGRANodes[t][y][x]].push_back(&CGRANodes[t][y][x-1]);
@@ -175,8 +176,8 @@ void CGRA::connectNeighborsSMART() {
 							CGRAEdges[&CGRANodes[t][y][x]].push_back(&CGRANodes[t][y+1][x]);
 						}
 //						CGRANodes[t][y][x].addConnectedNode(&CGRANodes[(t+1)%MII][yy][xx],abs(yy-y) + abs(xx-x) + 1,"mesh");
-					}
-				}
+//					}
+//				}
 
 			}
 		}
@@ -196,7 +197,50 @@ void CGRA::removeEdge(CGRANode* a, CGRANode* b) {
 	}
 }
 
+
 int CGRA::getConMatIdx(int t, int y, int x) {
 	return t*YDim*XDim + y*XDim + x;
 }
 
+void CGRA::connectNeighborsGRID() {
+	for (int t = 0; t < MII; ++t) {
+		for (int y = 0; y < YDim; ++y) {
+			for (int x = 0; x < XDim; ++x) {
+
+				for (int reg = 0; reg < 4; ++reg) {
+					CGRAEdges[&CGRANodes[t][y][x]].push_back(&CGRANodes[(t+1)%MII][y][x]);
+				}
+
+//				for (int yy = 0; yy < YDim; ++yy) {
+//					for (int xx = 0; xx < XDim; ++xx) {
+
+						if(x > 0){
+							CGRAEdges[&CGRANodes[t][y][x]].push_back(&CGRANodes[(t+1)%MII][y][x-1]);
+						}
+
+						if(x < XDim - 1){
+							CGRAEdges[&CGRANodes[t][y][x]].push_back(&CGRANodes[(t+1)%MII][y][x+1]);
+						}
+
+						if(y > 0){
+							CGRAEdges[&CGRANodes[t][y][x]].push_back(&CGRANodes[(t+1)%MII][y-1][x]);
+						}
+
+						if(y < YDim - 1){
+							CGRAEdges[&CGRANodes[t][y][x]].push_back(&CGRANodes[(t+1)%MII][y+1][x]);
+						}
+//						CGRANodes[t][y][x].addConnectedNode(&CGRANodes[(t+1)%MII][yy][xx],abs(yy-y) + abs(xx-x) + 1,"mesh");
+//					}
+//				}
+
+
+
+
+			}
+		}
+	}
+}
+
+void CGRA::clearMapping() {
+
+}

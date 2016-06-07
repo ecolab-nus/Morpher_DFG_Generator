@@ -83,6 +83,21 @@ struct phyLoc{
 	int t;
 };
 
+struct nodeWithCost{
+	dfgNode* node;
+	CGRANode* cnode;
+	int cost;
+	int mappedRealTime;
+	nodeWithCost(dfgNode* node, CGRANode* cnode, int cost, int mappedRealTime) : node(node), cnode(cnode), cost(cost), mappedRealTime(mappedRealTime){}
+};
+
+struct LessThanNodeWithCost{
+    bool operator()(nodeWithCost const & p1, nodeWithCost const & p2) {
+        // return "true" if "p1" is ordered before "p2", for example:
+        return p1.cost < p2.cost;
+    }
+};
+
 class DFG{
 		private :
 			std::vector<dfgNode> NodeList;
@@ -185,6 +200,7 @@ class DFG{
 			std::vector<ConnectedCGRANode> FindCandidateCGRANodes(dfgNode* node);
 
 			void MapCGRA_SMART(int XDim, int YDim, std::string mapfileName = "Mapping.log");
+			void MapCGRA_SA(int XDim, int YDim, std::string mapfileName = "Mapping.log");
 			bool MapMultiDest(std::map<dfgNode*,std::vector< std::pair<CGRANode*,int> > > *nodeDestMap, std::map<CGRANode*,std::vector<dfgNode*> > *destNodeMap);
 			bool MapASAPLevel(int MII, int XDim, int YDim);
 			int getAffinityCost(dfgNode* a, dfgNode* b);
@@ -205,6 +221,18 @@ class DFG{
 
 			void setBBSuccBasicBlocks(std::map<const BasicBlock*,std::vector<const BasicBlock*>> map){BBSuccBasicBlocks = map;}
 			std::map<const BasicBlock*,std::vector<const BasicBlock*>> getBBSuccBasicBlocks(){return BBSuccBasicBlocks;}
+
+			void MapCGRA_EMS(int XDim, int YDim, std::string mapfileName = "Mapping.log");
+			bool MapCGRA_EMS_ASAPLevel(int MII,int XDim, int YDim);
+			bool MAPCGRA_EMS_MultDest(std::map<dfgNode*,std::vector< std::pair<CGRANode*,int> > > *nodeDestMap,
+								      std::map<CGRANode*,std::vector<dfgNode*> > *destNodeMap,
+//									  std::map<dfgNode*,std::vector< std::pair<CGRANode*,int> > >::iterator it,
+									  std::vector<nodeWithCost>::iterator it,
+									  std::map<CGRANode*,std::vector<CGRANode*> > cgraEdges,
+									  int index);
+
+			void clearMapping();
+
 
 
 	};

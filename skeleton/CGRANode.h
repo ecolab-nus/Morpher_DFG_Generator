@@ -54,6 +54,7 @@ class CGRANode{
 			int getT();
 			int getProbCost(){return probCost;}
 			dfgNode* getRoutingNode(){return routingDFGNode;}
+			std::string getName();
 
 			std::vector<ConnectedCGRANode> getConnectedNodes();
 

@@ -116,7 +116,7 @@ STATISTIC(LoopsAnalyzed, "Number of loops analyzed for vectorization");
 							 if(Inst->getOpcode() == Instruction::PHI){
 								 errs() << "#####TRAVDEFTREE :: PHI Child found!\n";
 								 currBBDFG->findNode(I)->addPHIchild(Inst);
-								 currBBDFG->findNode(Inst)->addPHIancestor(I);
+//								 currBBDFG->findNode(Inst)->addPHIancestor(I);
 							 }
 							 errs() << "#####TRAVDEFTREE :: backedge found!\n";
 							 continue;
@@ -466,6 +466,15 @@ namespace {
 					  continue;
 				  }
 
+//				 //---------------------------------------------------------------
+//				 //**************TODO :: PLease remove this after testing on dct
+//				 //---------------------------------------------------------------
+//				 if(loopCounter == 0){
+//					 loopCounter++;
+//					 continue;
+//				 }
+//				 //---------------------------------------------------------------
+
 
 
 				  std::vector<DFG> DFGs;
@@ -480,7 +489,6 @@ namespace {
 					 BasicBlock *B = *bb;
 
 					 //errs() << "\n*********BasicBlock : " << B->getName() << "\n\n";
-
 
 //					 DFG currBBDFG;
 
@@ -527,6 +535,7 @@ namespace {
 				  LoopDFG.CreateSchList();
 //				  LoopDFG.MapCGRA(4,4);
 				  LoopDFG.MapCGRA_SMART(4,4,F.getName().str() + "_L" + std::to_string(loopCounter) + "_mapping.log");
+//				  LoopDFG.MapCGRA_EMS(4,4,F.getName().str() + "_L" + std::to_string(loopCounter) + "_mapping.log");
 				  printDFGDOT (F.getName().str() + "_L" + std::to_string(loopCounter) + "_loopdfg.dot", &LoopDFG);
 //				  LoopDFG.printXML(F.getName().str() + "_L" + std::to_string(loopCounter) + "_loopdfg.xml");
 

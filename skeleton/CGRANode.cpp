@@ -50,3 +50,7 @@ int CGRANode::getT() {
 std::vector<ConnectedCGRANode> CGRANode::getConnectedNodes() {
 	return connectedNodes;
 }
+
+std::string CGRANode::getName() {
+	return "(" + std::to_string(t) + "," + std::to_string(y) + "," + std::to_string(x) + ")";
+}
