@@ -20,11 +20,12 @@ class CGRA{
 			int MII;
 			int XDim;
 			int YDim;
+			int regsPerNode;
 			std::vector<std::vector<int> > phyConMat;
 
 		public :
 			CGRA(){};
-			CGRA(int MII, int Xdim, int Ydim);
+			CGRA(int MII, int Xdim, int Ydim, int regs);
 			CGRANode* getCGRANode(int t, int y, int x);
 			CGRANode* getCGRANode(int phyLoc);
 

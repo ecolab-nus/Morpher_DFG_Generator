@@ -13,6 +13,8 @@
 #include <iostream>
 #include <fstream>
 
+#define REGS_PER_NODE 4
+
 class AStar;
 
 using namespace llvm;
@@ -98,6 +100,14 @@ struct LessThanNodeWithCost{
     }
 };
 
+struct TreePath{
+	std::vector<CGRANode*> sources;
+	CGRANode* bestSource;
+	int bestCost;
+	CGRANode* dest;
+	TreePath() : bestSource(NULL), dest(NULL), bestCost(-1){}
+};
+
 class DFG{
 		private :
 			std::vector<dfgNode> NodeList;
@@ -106,6 +116,7 @@ class DFG{
 			int maxASAPLevel = -1;
 			int maxRecDist = -1;
 			std::map<const BasicBlock*,std::vector<const BasicBlock*>> BBSuccBasicBlocks;
+			bool deadEndReached = false;
 
 
 
@@ -142,6 +153,8 @@ class DFG{
 			dfgNode* getEntryNode();
 
 			std::vector<dfgNode> getNodes();
+			std::vector<dfgNode>* getNodesPtr(){return &NodeList;}
+
 			std::vector<Edge> getEdges();
 			void InsertNode(Instruction* Node);
 
@@ -231,8 +244,12 @@ class DFG{
 									  std::map<CGRANode*,std::vector<CGRANode*> > cgraEdges,
 									  int index);
 
+			TreePath createTreePath(dfgNode* parent, CGRANode* dest);
 			void clearMapping();
 
+			CGRA* getCGRA(){return currCGRA;}
+
+			int findUtilTreeRoutingLocs(CGRANode* cnode, dfgNode* currNode);
 
 
 	};

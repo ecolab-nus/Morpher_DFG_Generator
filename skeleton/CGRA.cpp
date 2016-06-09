@@ -63,18 +63,19 @@ void CGRA::connectNeighbors() {
 
 }
 
-CGRA::CGRA(int MII, int Xdim, int Ydim) {
+CGRA::CGRA(int MII, int Xdim, int Ydim, int regs) {
 
 	this->MII = MII;
 	this->XDim = Xdim;
 	this->YDim = Ydim;
+	this->regsPerNode = regs;
 
 	for (int t = 0; t < MII; ++t) {
 		std::vector<std::vector<CGRANode> > tempL2;
 		for (int y = 0; y < Ydim; ++y) {
 			std::vector<CGRANode> tempL1;
 			for (int x = 0; x < Xdim; ++x) {
-				CGRANode tempNode(x,y,t);
+				CGRANode tempNode(x,y,t,this);
 				tempL1.push_back(tempNode);
 			}
 			tempL2.push_back(tempL1);
@@ -152,8 +153,9 @@ void CGRA::connectNeighborsSMART() {
 //				for (int i = t+1; i < t+MII; ++i) {
 //					CGRANodes[t][y][x].addConnectedNode(&CGRANodes[(i)%MII][y][x],i-(t+1),"REGconnections");
 
-				for (int reg = 0; reg < 8; ++reg) {
+				for (int reg = 0; reg < regsPerNode; ++reg) {
 					CGRAEdges[&CGRANodes[t][y][x]].push_back(&CGRANodes[(t+1)%MII][y][x]);
+					CGRANodes[t][y][x].originalEdgesSize++;
 				}
 //				}
 
@@ -162,18 +164,22 @@ void CGRA::connectNeighborsSMART() {
 
 						if(x > 0){
 							CGRAEdges[&CGRANodes[t][y][x]].push_back(&CGRANodes[t][y][x-1]);
+							CGRANodes[t][y][x].originalEdgesSize++;
 						}
 
 						if(x < XDim - 1){
 							CGRAEdges[&CGRANodes[t][y][x]].push_back(&CGRANodes[t][y][x+1]);
+							CGRANodes[t][y][x].originalEdgesSize++;
 						}
 
 						if(y > 0){
 							CGRAEdges[&CGRANodes[t][y][x]].push_back(&CGRANodes[t][y-1][x]);
+							CGRANodes[t][y][x].originalEdgesSize++;
 						}
 
 						if(y < YDim - 1){
 							CGRAEdges[&CGRANodes[t][y][x]].push_back(&CGRANodes[t][y+1][x]);
+							CGRANodes[t][y][x].originalEdgesSize++;
 						}
 //						CGRANodes[t][y][x].addConnectedNode(&CGRANodes[(t+1)%MII][yy][xx],abs(yy-y) + abs(xx-x) + 1,"mesh");
 //					}
@@ -207,8 +213,9 @@ void CGRA::connectNeighborsGRID() {
 		for (int y = 0; y < YDim; ++y) {
 			for (int x = 0; x < XDim; ++x) {
 
-				for (int reg = 0; reg < 4; ++reg) {
+				for (int reg = 0; reg < regsPerNode; ++reg) {
 					CGRAEdges[&CGRANodes[t][y][x]].push_back(&CGRANodes[(t+1)%MII][y][x]);
+					CGRANodes[t][y][x].originalEdgesSize++;
 				}
 
 //				for (int yy = 0; yy < YDim; ++yy) {
@@ -216,18 +223,22 @@ void CGRA::connectNeighborsGRID() {
 
 						if(x > 0){
 							CGRAEdges[&CGRANodes[t][y][x]].push_back(&CGRANodes[(t+1)%MII][y][x-1]);
+							CGRANodes[t][y][x].originalEdgesSize++;
 						}
 
 						if(x < XDim - 1){
 							CGRAEdges[&CGRANodes[t][y][x]].push_back(&CGRANodes[(t+1)%MII][y][x+1]);
+							CGRANodes[t][y][x].originalEdgesSize++;
 						}
 
 						if(y > 0){
 							CGRAEdges[&CGRANodes[t][y][x]].push_back(&CGRANodes[(t+1)%MII][y-1][x]);
+							CGRANodes[t][y][x].originalEdgesSize++;
 						}
 
 						if(y < YDim - 1){
 							CGRAEdges[&CGRANodes[t][y][x]].push_back(&CGRANodes[(t+1)%MII][y+1][x]);
+							CGRANodes[t][y][x].originalEdgesSize++;
 						}
 //						CGRANodes[t][y][x].addConnectedNode(&CGRANodes[(t+1)%MII][yy][xx],abs(yy-y) + abs(xx-x) + 1,"mesh");
 //					}

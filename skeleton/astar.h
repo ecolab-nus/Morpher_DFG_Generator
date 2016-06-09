@@ -21,17 +21,22 @@ struct LessThanCGRANodeWithCost {
     }
 };
 
+class DFG;
 
 class AStar{
 
 private:
 	std::ofstream *mappingOutFile;
 	int MII;
-
+	DFG* currDFG;
 
 
 public:
-	AStar(std::ofstream *mappingOutFile, int MII) : mappingOutFile(mappingOutFile), MII(MII), maxPathLength(0), maxSMARTPathLength(0){}
+	AStar(std::ofstream *mappingOutFile, int MII, DFG* currDFG) : mappingOutFile(mappingOutFile),
+																  MII(MII),
+																  currDFG(currDFG),
+																  maxPathLength(0),
+																  maxSMARTPathLength(0){}
 	int heuristic(CGRANode* a, CGRANode* b);
 	CGRANode* AStarSearch(std::map<CGRANode*,
 			         std::vector<CGRANode*> > graph,
@@ -39,10 +44,14 @@ public:
 					 CGRANode* goal,
 					 std::map<CGRANode*,CGRANode*> *cameFrom,
 					 std::map<CGRANode*,int> *costSoFar);
-	bool Route(std::vector<dfgNode*> parents,
-			   std::vector<std::pair<CGRANode*,CGRANode*> > paths,
+	bool Route(dfgNode* currNode,
+			   std::vector<dfgNode*> parents,
+//			   std::vector<std::pair<CGRANode*,CGRANode*> > paths,
+//			   std::vector<TreePath> treePaths,
+			   std::vector<CGRANode*> dests,
 			   std::map<CGRANode*,std::vector<CGRANode*> >* cgraEdges,
-			   std::vector<std::pair<CGRANode*,CGRANode*> > *pathsNotRouted);
+			   std::vector<std::pair<CGRANode*,CGRANode*> > *pathsNotRouted,
+			   bool* deadEndReached = NULL);
 
 	bool EMSRoute(std::vector<dfgNode*> parents,
 				  std::vector<std::pair<CGRANode*,CGRANode*> > paths,
@@ -58,6 +67,8 @@ public:
 
 	int maxPathLength;
 	int maxSMARTPathLength;
+
+	bool reportDeadEnd(CGRANode* end, dfgNode* currNode, std::map<CGRANode*,std::vector<CGRANode*> >* cgraEdges);
 
 };
 

@@ -20,7 +20,7 @@ struct less_than_cost{
 	}
 };
 
-
+class CGRA;
 
 using namespace llvm;
 
@@ -34,9 +34,12 @@ class CGRANode{
 
 			int probCost = 0;
 			dfgNode* routingDFGNode = NULL;
+			CGRA* Parent;
+
 
 		public :
-			CGRANode(int x, int y, int t);
+			int originalEdgesSize = 0;
+			CGRANode(int x, int y, int t, CGRA* ParentCGRA);
 			void addConnectedNode(CGRANode* node, int cost, std::string name = "unknown");
 			void sortConnectedNodes();
 
@@ -55,6 +58,10 @@ class CGRANode{
 			int getProbCost(){return probCost;}
 			dfgNode* getRoutingNode(){return routingDFGNode;}
 			std::string getName();
+			bool equals(int tt, int yy, int xx);
+			bool isCorner();
+			bool isBoundary(); //Corner is a subset of boundary
+			bool isMiddle();
 
 			std::vector<ConnectedCGRANode> getConnectedNodes();
 

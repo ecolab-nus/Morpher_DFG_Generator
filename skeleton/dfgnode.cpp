@@ -228,3 +228,4 @@ void dfgNode::addPHIancestor(Instruction* anc, int type) {
 
 	PHIAncestors.push_back(anc);
 }
+
