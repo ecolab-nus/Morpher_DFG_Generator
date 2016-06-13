@@ -477,12 +477,11 @@ namespace {
 
 
 
-				  std::vector<DFG> DFGs;
 
 
 				  begin = clock();
 
-				  DFG LoopDFG;
+				  DFG LoopDFG(F.getName().str() + "_L" + std::to_string(loopCounter));
 				  LoopDFG.setBBSuccBasicBlocks(BBSuccBasicBlocks);
 
 				  for (Loop::block_iterator bb = L->block_begin(); bb!= L->block_end(); ++bb){

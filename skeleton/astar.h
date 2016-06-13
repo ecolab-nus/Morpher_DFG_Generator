@@ -53,10 +53,19 @@ public:
 			   std::vector<std::pair<CGRANode*,CGRANode*> > *pathsNotRouted,
 			   bool* deadEndReached = NULL);
 
-	bool EMSRoute(std::vector<dfgNode*> parents,
-				  std::vector<std::pair<CGRANode*,CGRANode*> > paths,
-			   	  std::map<CGRANode*,std::vector<CGRANode*> >* cgraEdges,
-				  std::vector<std::pair<CGRANode*,CGRANode*> > *pathsNotRouted);
+//	bool EMSRoute(std::vector<dfgNode*> parents,
+//				  std::vector<std::pair<CGRANode*,CGRANode*> > paths,
+//			   	  std::map<CGRANode*,std::vector<CGRANode*> >* cgraEdges,
+//				  std::vector<std::pair<CGRANode*,CGRANode*> > *pathsNotRouted);
+
+	bool EMSRoute(dfgNode* currNode,
+			   std::vector<dfgNode*> parents,
+//			   std::vector<std::pair<CGRANode*,CGRANode*> > paths,
+//			   std::vector<TreePath> treePaths,
+			   std::vector<CGRANode*> dests,
+			   std::map<CGRANode*,std::vector<CGRANode*> >* cgraEdges,
+			   std::vector<std::pair<CGRANode*,CGRANode*> > *pathsNotRouted,
+			   bool* deadEndReached = NULL);
 
 	//Logging
 	std::map<int,int> SMARTPathHist;

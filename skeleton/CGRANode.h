@@ -58,6 +58,7 @@ class CGRANode{
 			int getProbCost(){return probCost;}
 			dfgNode* getRoutingNode(){return routingDFGNode;}
 			std::string getName();
+			std::string getNameWithOutTime();
 			bool equals(int tt, int yy, int xx);
 			bool isCorner();
 			bool isBoundary(); //Corner is a subset of boundary

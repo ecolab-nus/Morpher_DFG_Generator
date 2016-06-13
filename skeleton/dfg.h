@@ -117,6 +117,7 @@ class DFG{
 			int maxRecDist = -1;
 			std::map<const BasicBlock*,std::vector<const BasicBlock*>> BBSuccBasicBlocks;
 			bool deadEndReached = false;
+			std::string name;
 
 
 
@@ -148,7 +149,7 @@ class DFG{
 			std::ofstream mappingOutFile;
 			AStar* astar;
 
-			DFG(){}
+			DFG(std::string name) : name(name){}
 
 			dfgNode* getEntryNode();
 
@@ -250,6 +251,9 @@ class DFG{
 			CGRA* getCGRA(){return currCGRA;}
 
 			int findUtilTreeRoutingLocs(CGRANode* cnode, dfgNode* currNode);
+			void printOutSMARTRoutes();
+			int convertToPhyLoc(int t, int y, int x);
+			int convertToPhyLoc(int y, int x);
 
 
 	};

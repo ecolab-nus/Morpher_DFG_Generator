@@ -1719,6 +1719,9 @@ void DFG::MapCGRA_SMART(int XDim, int YDim, std::string mapfileName) {
 				}
 			}
 
+			//Printing out mapped routes
+			printOutSMARTRoutes();
+
 
 
 			std::map<CGRANode*, std::vector<CGRANode*> >* cgraEdgesPtr = currCGRA->getCGRAEdges();
@@ -2498,7 +2501,8 @@ bool DFG::MAPCGRA_EMS_MultDest(std::map<dfgNode*,std::vector< std::pair<CGRANode
 	CGRANode* parentExt;
 //	std::vector< std::pair<CGRANode*,int> > possibleDests;
 	std::vector<dfgNode*> parents;
-	std::vector<std::pair<CGRANode*, CGRANode*> > paths;
+//	std::vector<std::pair<CGRANode*, CGRANode*> > paths;
+	std::vector<CGRANode*> dests;
 	std::vector<std::pair<CGRANode*, CGRANode*> > pathsNotRouted;
 	bool success = false;
 //	int idx = index;
@@ -2543,14 +2547,16 @@ bool DFG::MAPCGRA_EMS_MultDest(std::map<dfgNode*,std::vector< std::pair<CGRANode
 //					   	   	  << cnode->getY() << ","
 //							  << cnode->getX() << ")\n";
 
-				paths.push_back(std::make_pair(parentExt,cnode));
+//				paths.push_back(std::make_pair(parentExt,cnode));
+				dests.push_back(cnode);
 				parents.push_back(parent);
 			}
 
 			localCGRAEdges = cgraEdges;
 			mappingOutFile << "nodeIdx=" << node->getIdx() << ", placed=(" << cnode->getT() << "," << cnode->getY() << "," << cnode->getX() << ")" << "\n";
-			astar->EMSRoute(parents,paths,&localCGRAEdges,&pathsNotRouted);
-			paths.clear();
+//			astar->EMSRoute(parents,paths,&localCGRAEdges,&pathsNotRouted);
+			astar->EMSRoute(node,parents,dests,&localCGRAEdges,&pathsNotRouted,&deadEndReached);
+			dests.clear();
 			if(!pathsNotRouted.empty()){
 				for (int j = 0; j < parents.size(); ++j) {
 					for (int k = 0; k < parents[j]->getRoutingLocs()->size(); ++k) {
@@ -2635,9 +2641,15 @@ void DFG::clearMapping() {
 TreePath DFG::createTreePath(dfgNode* parent, CGRANode* dest) {
 	TreePath tp;
 	dfgNode* child;
+	CGRANode* cnode;
+	int MII = currCGRA->getMII();
 
+	//Initial node, AKA the source
 	assert(parent->getMappedLoc() != NULL);
-	tp.sources.push_back(parent->getMappedLoc());
+	cnode = currCGRA->getCGRANode((parent->getMappedLoc()->getT()+1)%MII,parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
+	tp.sources.push_back(cnode);
+
+
 	tp.dest = dest;
 
 	for (int i = 0; i < parent->getChildren().size(); ++i) {
@@ -2684,8 +2696,118 @@ int DFG::findUtilTreeRoutingLocs(CGRANode* cnode, dfgNode* currNode) {
 					util++;
 				}
 
+
 			}
 		}
 	}
 	return util;
+}
+
+void DFG::printOutSMARTRoutes() {
+	dfgNode* node;
+	dfgNode* parent;
+	std::vector<std::ofstream> outFiles(currCGRA->getYdim()*currCGRA->getXdim());
+	std::ofstream *currOutFile;
+	CGRANode* cnode;
+	CGRANode* routingCnode;
+	std::map<int,std::vector<std::string> > logEntries;
+	bool noRouting = true;
+	int MII = currCGRA->getMII();
+
+	int pT = -1;
+	int pY = -1;
+	int pX = -1;
+
+
+	//Sanity check
+	for (int i = 0; i < NodeList.size(); ++i) {
+		node = &NodeList[i];
+		if(node->getMappedLoc() == NULL){
+			errs() << "printOutSMARTRoutes :: All the nodes are not mapped!\n";
+			return;
+		}
+	}
+
+	for (int y = 0; y < currCGRA->getYdim(); ++y) {
+		for (int x = 0; x < currCGRA->getXdim(); ++x) {
+			std::string tempOutFileName = name + "_SMRT_" + std::to_string(y) + "_" + std::to_string(x) + ".log";
+			outFiles[convertToPhyLoc(y,x)].open(tempOutFileName.c_str());
+		}
+	}
+
+	//Generate Log Entries
+	for (int t = 0; t < currCGRA->getMII(); ++t) {
+		for (int y = 0; y < currCGRA->getYdim(); ++y) {
+			for (int x = 0; x < currCGRA->getXdim(); ++x) {
+				cnode = currCGRA->getCGRANode(t,y,x);
+				if(cnode->getmappedDFGNode() != NULL){
+					node = cnode->getmappedDFGNode();
+					if(node->getMappedLoc() == cnode){ // node is not just a routing location
+						for (int i = 0; i < node->getAncestors().size(); ++i) {
+							parent = findNode(node->getAncestors()[i]);
+							assert(parent->getMappedLoc() != NULL);
+
+							std::string strEntry = node->getMappedLoc()->getNameWithOutTime();
+							routingCnode = node->getMappedLoc();
+							noRouting = true;
+							for (int j = 0; j < (*node->getTreeBasedRoutingLocs())[parent].size(); ++j) {
+								if(routingCnode->getT() != (*node->getTreeBasedRoutingLocs())[parent][j]->getT()){
+									if(!noRouting){
+										pT = routingCnode->getT();
+										pY = routingCnode->getY();
+										pX = routingCnode->getX();
+
+										logEntries[convertToPhyLoc(pT,pY,pX)].push_back(strEntry);
+									}
+									routingCnode = (*node->getTreeBasedRoutingLocs())[parent][j];
+									noRouting = true;
+									strEntry =  routingCnode->getNameWithOutTime();
+								}else{
+									routingCnode = (*node->getTreeBasedRoutingLocs())[parent][j];
+									noRouting = false;
+									strEntry = strEntry + " <-- " + routingCnode->getNameWithOutTime();
+								}
+							}
+							if(!noRouting){
+								pT = routingCnode->getT();
+								pY = routingCnode->getY();
+								pX = routingCnode->getX();
+
+								logEntries[convertToPhyLoc(pT,pY,pX)].push_back(strEntry);
+							}
+						}
+					}else{ // node is just a routing location, this will not happen in SMART based routing
+						logEntries[convertToPhyLoc(t,y,x)].push_back("ROUTING ONLY");
+					}
+				}
+				else{
+					logEntries[convertToPhyLoc(t,y,x)].push_back("NIL");
+				}
+
+			}
+		}
+	}
+
+	//Writeout Log Entries
+	for (int t = 0; t < currCGRA->getMII(); ++t) {
+		for (int y = 0; y < currCGRA->getYdim(); ++y) {
+			for (int x = 0; x < currCGRA->getXdim(); ++x) {
+				for (int i = 0; i < logEntries[convertToPhyLoc(t,y,x)].size(); ++i) {
+					outFiles[convertToPhyLoc(y,x)] << std::to_string(t) << "," << logEntries[convertToPhyLoc(t,y,x)][i] << std::endl;
+				}
+			}
+		}
+	}
+
+	for (int i = 0; i < outFiles.size(); ++i) {
+		outFiles[i].close();
+	}
+}
+
+int DFG::convertToPhyLoc(int t, int y, int x) {
+	return t*currCGRA->getYdim()*currCGRA->getXdim() + y*currCGRA->getXdim() + x;
+}
+
+int DFG::convertToPhyLoc(int y, int x) {
+	return y*currCGRA->getXdim() + x;
 }

@@ -49,6 +49,10 @@ int CGRANode::getT() {
 	return t;
 }
 
+std::string CGRANode::getNameWithOutTime() {
+	return "(" + std::to_string(y) + "," + std::to_string(x) + ")";
+}
+
 std::vector<ConnectedCGRANode> CGRANode::getConnectedNodes() {
 	return connectedNodes;
 }
