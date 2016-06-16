@@ -33,6 +33,7 @@ class dfgNode{
 
 			CGRANode* mappedLoc = NULL;
 			std::vector<CGRANode*> routingLocs;
+			std::map<dfgNode*,std::pair<dfgNode*,dfgNode*>> sourceRoutingPath;
 			std::map<dfgNode*,std::vector<CGRANode*>> treeBasedRoutingLocs;
 			std::map<dfgNode*,std::vector<CGRANode*>> treeBasedGoalLocs;
 
@@ -88,6 +89,7 @@ class dfgNode{
 			CGRANode* getMappedLoc();
 
 			std::vector<CGRANode*>* getRoutingLocs();
+			std::map<dfgNode*,std::pair<dfgNode*,dfgNode*>>* getSourceRoutingPath(){return &sourceRoutingPath;}
 			std::map<dfgNode*,std::vector<CGRANode*>>* getTreeBasedRoutingLocs(){return &treeBasedRoutingLocs;}
 			std::map<dfgNode*,std::vector<CGRANode*>>* getTreeBasedGoalLocs(){return &treeBasedGoalLocs;}
 
@@ -96,6 +98,8 @@ class dfgNode{
 
 			void setMappedRealTime(int t){mappedRealTime = t;}
 			int getmappedRealTime(){return mappedRealTime;}
+
+			std::map<dfgNode*,std::vector<CGRANode*>> getMergeRoutingLocs();
 
 
 

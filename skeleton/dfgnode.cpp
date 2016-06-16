@@ -229,3 +229,20 @@ void dfgNode::addPHIancestor(Instruction* anc, int type) {
 	PHIAncestors.push_back(anc);
 }
 
+std::map<dfgNode*, std::vector<CGRANode*> > dfgNode::getMergeRoutingLocs() {
+	std::map<dfgNode*, std::vector<CGRANode*> > temp = treeBasedRoutingLocs;
+
+	std::map<dfgNode*, std::vector<CGRANode*> >::iterator tempIt;
+	for(tempIt = temp.begin();
+		tempIt != temp.end();
+		tempIt++){
+
+		if(treeBasedGoalLocs.find(tempIt->first) != treeBasedGoalLocs.end()){
+			for (int i = 0; i < treeBasedGoalLocs[tempIt->first].size(); ++i) {
+				temp[tempIt->first].insert(temp[tempIt->first].begin(),treeBasedGoalLocs[tempIt->first][i]);
+			}
+		}
+	}
+
+	return temp;
+}

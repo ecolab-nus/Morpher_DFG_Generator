@@ -102,11 +102,14 @@ struct LessThanNodeWithCost{
 
 struct TreePath{
 	std::vector<CGRANode*> sources;
+	std::map<CGRANode*,std::pair<dfgNode*,dfgNode*> > sourcePaths;
 	CGRANode* bestSource;
 	int bestCost;
 	CGRANode* dest;
 	TreePath() : bestSource(NULL), dest(NULL), bestCost(-1){}
 };
+
+enum MemOp {LOAD,STORE,INVALID};
 
 class DFG{
 		private :
@@ -118,6 +121,9 @@ class DFG{
 			std::map<const BasicBlock*,std::vector<const BasicBlock*>> BBSuccBasicBlocks;
 			bool deadEndReached = false;
 			std::string name;
+			std::vector<nodeWithCost> globalNodesWithCost;
+//			std::vector<std::vector<int> > conMat;
+			std::vector<std::vector<std::vector<unsigned char> > > conMatArr;
 
 
 
@@ -177,6 +183,7 @@ class DFG{
 			void addMemDepEdges(MemoryDependenceAnalysis *MD);
 			void addMemRecDepEdges(DependenceAnalysis *DA);
 			void addMemRecDepEdgesNew(DependenceAnalysis *DA);
+			MemOp isMemoryOp(dfgNode* node);
 
 		    int removeEdge(Edge* e);
 		    int removeNode(dfgNode* n);
@@ -185,7 +192,7 @@ class DFG{
 			void traverseDFS(dfgNode* startNode, int dfsCount=0);
 
 
-			void printXML(std::string fileName);
+			void printXML();
 
 			void printInEdges(dfgNode* node, int depth = 0);
 
@@ -219,8 +226,8 @@ class DFG{
 			bool MapASAPLevel(int MII, int XDim, int YDim);
 			int getAffinityCost(dfgNode* a, dfgNode* b);
 
-			std::vector<std::vector<int> > getConMat();
-			std::vector<std::vector<int> > selfMulConMat(std::vector<std::vector<int> > in);
+			std::vector<std::vector<unsigned char> > getConMat();
+			std::vector<std::vector<unsigned char> > selfMulConMat(std::vector<std::vector<unsigned char> > in);
 			std::map<dfgNode*,std::vector<CGRANode*> > getPrimarySlots(std::vector<dfgNode*> nodes);
 
 			std::vector<int> getIntersection(std::vector<std::vector<int> > vectors);
@@ -245,6 +252,10 @@ class DFG{
 									  std::map<CGRANode*,std::vector<CGRANode*> > cgraEdges,
 									  int index);
 
+			void EMSSortNodeDest(std::map<dfgNode*,std::vector< std::pair<CGRANode*,int> > > *nodeDestMap,
+									 std::map<CGRANode*,std::vector<CGRANode*> > cgraEdges,
+									 int index);
+
 			TreePath createTreePath(dfgNode* parent, CGRANode* dest);
 			void clearMapping();
 
@@ -254,6 +265,8 @@ class DFG{
 			void printOutSMARTRoutes();
 			int convertToPhyLoc(int t, int y, int x);
 			int convertToPhyLoc(int y, int x);
+			int getDistCGRANodes(CGRANode* a, CGRANode* b);
+			int getStaticRoutingCost(dfgNode* node, CGRANode* dest, std::map<CGRANode*,std::vector<CGRANode*> > Edges);
 
 
 	};

@@ -115,7 +115,11 @@ STATISTIC(LoopsAnalyzed, "Number of loops analyzed for vectorization");
 						 if(std::find(BBSuccBasicBlocks[I->getParent()].begin(),BBSuccBasicBlocks[I->getParent()].end(),Inst->getParent())==BBSuccBasicBlocks[I->getParent()].end()){
 							 if(Inst->getOpcode() == Instruction::PHI){
 								 errs() << "#####TRAVDEFTREE :: PHI Child found!\n";
-								 currBBDFG->findNode(I)->addPHIchild(Inst);
+
+								 //TODO :: Please uncomment in order to have phi relationships.
+								 // This was done because of EPIMap
+
+//								 currBBDFG->findNode(I)->addPHIchild(Inst);
 //								 currBBDFG->findNode(Inst)->addPHIancestor(I);
 							 }
 							 errs() << "#####TRAVDEFTREE :: backedge found!\n";
@@ -128,8 +132,12 @@ STATISTIC(LoopsAnalyzed, "Number of loops analyzed for vectorization");
 								 //errs() << "Assertion is going to fail\n";
 								 //errs() << "Parent : ";
 								 errs() << "#####TRAVDEFTREE :: PHI Child found!\n";
-								 currBBDFG->findNode(I)->addPHIchild(Inst);
-								 currBBDFG->findNode(Inst)->addPHIancestor(I);
+
+								 //TODO :: Please uncomment in order to have phi relationships
+								 // This was done because of EPIMap
+
+//								 currBBDFG->findNode(I)->addPHIchild(Inst);
+//								 currBBDFG->findNode(Inst)->addPHIancestor(I);
 								 I->dump();
 								 //errs() << "Child : ";
 								 Inst->dump();
@@ -528,11 +536,12 @@ namespace {
 //				  LoopDFG.addMemDepEdges(MD);
 				  LoopDFG.removeAlloc();
 //				  LoopDFG.addMemRecDepEdges(DA);
-				  LoopDFG.addMemRecDepEdgesNew(DA);
+//				  LoopDFG.addMemRecDepEdgesNew(DA);
 				  LoopDFG.scheduleASAP();
 				  LoopDFG.scheduleALAP();
 				  LoopDFG.CreateSchList();
 //				  LoopDFG.MapCGRA(4,4);
+				  LoopDFG.printXML();
 				  LoopDFG.MapCGRA_SMART(4,4,F.getName().str() + "_L" + std::to_string(loopCounter) + "_mapping.log");
 //				  LoopDFG.MapCGRA_EMS(4,4,F.getName().str() + "_L" + std::to_string(loopCounter) + "_mapping.log");
 				  printDFGDOT (F.getName().str() + "_L" + std::to_string(loopCounter) + "_loopdfg.dot", &LoopDFG);

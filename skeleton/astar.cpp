@@ -264,12 +264,14 @@ bool AStar::Route(dfgNode* currNode,
 			return false;
 		}
 
+		std::pair<dfgNode*,dfgNode*> currSourcePath;
 		//start routing
 		routingComplete = false;
 		for (int j = 0; j < treePaths[i].sources.size(); ++j) {
 			start = treePaths[i].sources[j];
 			goal = treePaths[i].dest;
 			currParent = parents[i];
+			currSourcePath = treePaths[i].sourcePaths[start];
 
 			*mappingOutFile << "start = (" << start->getT() << "," << start->getY() << "," << start->getX() << ")\n";
 			*mappingOutFile << "goal = (" << goal->getT() << "," << goal->getY() << "," << goal->getX() << ")\n";
@@ -311,6 +313,8 @@ bool AStar::Route(dfgNode* currNode,
 			errs() << ", util = " << currDFG->findUtilTreeRoutingLocs(goal,currNode);
 			errs() << "\n";
 		}
+
+		(*currNode->getSourceRoutingPath())[currParent] = currSourcePath;
 
 		*mappingOutFile << "The Path : ";
 		while(current!=start){
@@ -862,31 +866,35 @@ bool AStar::EMSRoute(dfgNode* currNode,
 							errs() << ", util = " << currDFG->findUtilTreeRoutingLocs(cameFrom[current],currNode);
 							errs() << ", MII =" << currDFG->getCGRA()->getMII();
 
-							assert((currDFG->findUtilTreeRoutingLocs(cameFrom[current],currNode) +
-									(*cgraEdges)[cameFrom[current]].size() == cameFrom[current]->originalEdgesSize));
+//							assert((currDFG->findUtilTreeRoutingLocs(cameFrom[current],currNode) +
+//									(*cgraEdges)[cameFrom[current]].size() == cameFrom[current]->originalEdgesSize));
 
 							errs() << "\n";
 						}
 					}
 				}
-//					std::map<CGRANode*, std::vector<CGRANode*> >::iterator cgraEdgeIter;
-//					for(cgraEdgeIter = cgraEdges->begin(); cgraEdgeIter != cgraEdges->end(); cgraEdgeIter++){
-//
-//
-//						if(cameFrom[current] != cgraEdgeIter->first){
-//							if( (cgraEdgeIter->first->getX() == current->getX())&&(cgraEdgeIter->first->getY() == current->getY()) ){
-//								continue;
-//							}
-//						}
-//
-//					    std::vector<CGRANode*>::iterator found = std::find((*cgraEdges)[cgraEdgeIter->first].begin(), (*cgraEdges)[cgraEdgeIter->first].end(), current);
-//					    if(found != (*cgraEdges)[cgraEdgeIter->first].end()){
-//					    	*mappingOutFile << "DEBUG :: " << "removing edge=" << cgraEdgeIter->first->getName() << " to " << (*found)->getName();
-//					    	*mappingOutFile << " Number of edges=" << (*cgraEdges)[cgraEdgeIter->first].size() << " reduced to ";
-//						    (*cgraEdges)[cgraEdgeIter->first].erase(found);
-//						    *mappingOutFile << (*cgraEdges)[cgraEdgeIter->first].size() << "\n";
-//					    }
-//					}
+
+				if(current!=goal){
+					//Remove other edges
+					std::map<CGRANode*, std::vector<CGRANode*> >::iterator cgraEdgeIter;
+					for(cgraEdgeIter = cgraEdges->begin(); cgraEdgeIter != cgraEdges->end(); cgraEdgeIter++){
+						if(cameFrom[current] != cgraEdgeIter->first){
+							if( (cgraEdgeIter->first->getX() == current->getX())&&(cgraEdgeIter->first->getY() == current->getY()) ){
+								continue;
+							}
+
+
+							std::vector<CGRANode*>::iterator found = std::find((*cgraEdges)[cgraEdgeIter->first].begin(), (*cgraEdges)[cgraEdgeIter->first].end(), current);
+							if(found != (*cgraEdges)[cgraEdgeIter->first].end()){
+								*mappingOutFile << "DEBUG :: " << "removing edge=" << cgraEdgeIter->first->getName() << " to " << (*found)->getName();
+								*mappingOutFile << " Number of edges=" << (*cgraEdges)[cgraEdgeIter->first].size() << " reduced to ";
+								(*cgraEdges)[cgraEdgeIter->first].erase(found);
+								*mappingOutFile << (*cgraEdges)[cgraEdgeIter->first].size() << "\n";
+							}
+						}
+					}
+				}
+
 //				}
 
 			if(cameFrom[current] != start){
@@ -1081,8 +1089,12 @@ bool AStar::reportDeadEnd(CGRANode* end,
 	}
 	errs() << "]";
 	errs() << ", MII =" << currDFG->getCGRA()->getMII();
-	errs() << ", utilization = " << util << "\n";
+	errs() << ", util = " << util << "\n";
+	errs() << ", oriEdgesSize = " << end->originalEdgesSize << "\n";
 
+	if((*cgraEdges)[end].size() == 0){
+		return true;
+	}
 
 	if(util >= end->originalEdgesSize){
 		return true;
