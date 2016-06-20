@@ -660,7 +660,7 @@ bool AStar::EMSRoute(dfgNode* currNode,
 			for (int j = 0; j < treePaths[i].sources.size(); ++j) {
 				start = treePaths[i].sources[j];
 				goal = treePaths[i].dest;
-				end = AStarSearch(*cgraEdges,start,goal,&cameFrom, &costSoFar);
+				end = AStarSearchEMS(*cgraEdges,start,goal,&cameFrom, &costSoFar);
 				if(end != goal){
 					continue;
 				}
@@ -744,7 +744,7 @@ bool AStar::EMSRoute(dfgNode* currNode,
 		pathsWithCost.clear();
 		for (int j = 0; j < currPath.tp.sources.size(); ++j) {
 			start = currPath.tp.sources[j];
-			end = AStarSearch(*cgraEdges,start,goal,&cameFrom, &costSoFar);
+			end = AStarSearchEMS(*cgraEdges,start,goal,&cameFrom, &costSoFar);
 			if(end != goal){
 				*mappingOutFile << "Routing Failed : " << start->getName() << "->" << goal->getName() << ",only routed to " << end->getName() << std::endl;
 				continue;
@@ -786,7 +786,7 @@ bool AStar::EMSRoute(dfgNode* currNode,
 			*mappingOutFile << "start = (" << start->getT() << "," << start->getY() << "," << start->getX() << ")\n";
 			*mappingOutFile << "goal = (" << goal->getT() << "," << goal->getY() << "," << goal->getX() << ")\n";
 
-			end = AStarSearch(*cgraEdges,start,goal,&cameFrom, &costSoFar);
+			end = AStarSearchEMS(*cgraEdges,start,goal,&cameFrom, &costSoFar);
 			if(end != goal){
 				errs() << "EMSRouteReal :: " << "Path is not routed = " << start->getName() << " to " << goal->getName() << "\n";
 				errs() << "EMSRouteReal :: " << "But Routed until : " << (end)->getName() << "\n";
@@ -974,6 +974,103 @@ bool AStar::EMSRoute(dfgNode* currNode,
 		}
 	}
 	return true;
+}
+
+CGRANode* AStar::AStarSearchEMS(
+		std::map<CGRANode*, std::vector<CGRANode*> > graph, CGRANode* start,
+		CGRANode* goal, std::map<CGRANode*, CGRANode*>* cameFrom,
+		std::map<CGRANode*, int>* costSoFar) {
+	//	assert(start->getT() == goal->getT());
+		std::priority_queue<CGRANodeWithCost, std::vector<CGRANodeWithCost>, LessThanCGRANodeWithCost> frontier;
+		frontier.push(CGRANodeWithCost(start,0));
+
+		cameFrom->clear();
+		costSoFar->clear();
+
+		(*cameFrom)[start] = NULL;
+		(*costSoFar)[start] = 0;
+
+		CGRANode* current;
+		CGRANode* next;
+
+		int newCost = 0;
+		int priority = 0;
+
+		while(!frontier.empty()){
+			current = frontier.top().Cnode;
+			frontier.pop();
+
+	//		errs() << "ASTAR::frontier_size = " << frontier.size() << "\n";
+
+	////	if(start->getT() == 9){
+	//		errs() << "ASTAR::current = " << "(" << current->getT() << ","
+	//			   	   	  	  	  	  	  	  	 << current->getY() << ","
+	//											 << current->getX() << ")\n";
+	////	}
+
+
+			if(current == goal){
+	////			if(start->getT() == 9){
+	//			errs() << "ASTAR:: goal achieved!\n";
+	////			}
+				break;
+			}
+
+
+
+	//		std::map<CGRANode*,std::vector<CGRANode*> > graph = cgra->getCGRAEdges();
+			for (int i = 0; i < graph[current].size(); ++i) {
+				next = graph[current][i];
+
+	////			if(start->getT() == 9){
+	//			errs() << "ASTAR::next = " << "("    << next->getT() << ","
+	//				   	   	  	  	  	  	  	  	 << next->getY() << ","
+	//												 << next->getX() << ")\n";
+	////			}
+
+				if((current->getX() == next->getX())&&
+				   (current->getY() == next->getY())){
+					newCost = (*costSoFar)[current] + 1; //always graph.cost(current, next) = 1
+				}else{
+					if(next == goal){
+						newCost = (*costSoFar)[current] + 0;
+					}
+					else{
+						newCost = (*costSoFar)[current] + MII;
+					}
+				}
+//				newCost = newCost + (currDFG->getCGRA()->getCGRANode(0,1,1)->originalEdgesSize - (*currDFG->getCGRA()->getCGRAEdges())[next].size());
+
+	////			if(start->getT() == 9){
+	//			errs() << "ASTAR::newCost = " << newCost << "\n";
+	////			}
+
+				if(costSoFar->find(next) != costSoFar->end()){
+					if(newCost >= (*costSoFar)[next]){
+	////					if(start->getT() == 9){
+	//					errs() << "ASTAR::newCost is higher, abandoning\n";
+	////					}
+						continue;
+					}
+				}
+				(*costSoFar)[next] = newCost;
+				priority = newCost + heuristic(goal,next);
+	////			if(start->getT() == 9){
+	//			errs() << "ASTAR::pusing to prqueue with priority" << priority << "\n";
+	////			}
+				frontier.push(CGRANodeWithCost(next,priority));
+				(*cameFrom)[next] = current;
+			}
+		}
+
+		return current;
+	//	if(current != goal){
+	//		return false;
+	//	}
+	//	else{
+	////		errs() << "ASTAR:: goal achieved and returning!\n";
+	//		return true;
+	//	}
 }
 
 //	for (int i = 0; i < pathsWithCost.size(); ++i) {

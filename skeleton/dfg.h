@@ -90,6 +90,8 @@ struct nodeWithCost{
 	CGRANode* cnode;
 	int cost;
 	int mappedRealTime;
+	int routingCost;
+	int affinityCost;
 	nodeWithCost(dfgNode* node, CGRANode* cnode, int cost, int mappedRealTime) : node(node), cnode(cnode), cost(cost), mappedRealTime(mappedRealTime){}
 };
 
@@ -227,6 +229,7 @@ class DFG{
 			int getAffinityCost(dfgNode* a, dfgNode* b);
 
 			std::vector<std::vector<unsigned char> > getConMat();
+			void printConMat(std::vector<std::vector<unsigned char> > conMat);
 			std::vector<std::vector<unsigned char> > selfMulConMat(std::vector<std::vector<unsigned char> > in);
 			std::map<dfgNode*,std::vector<CGRANode*> > getPrimarySlots(std::vector<dfgNode*> nodes);
 
@@ -248,11 +251,11 @@ class DFG{
 			bool MAPCGRA_EMS_MultDest(std::map<dfgNode*,std::vector< std::pair<CGRANode*,int> > > *nodeDestMap,
 								      std::map<CGRANode*,std::vector<dfgNode*> > *destNodeMap,
 //									  std::map<dfgNode*,std::vector< std::pair<CGRANode*,int> > >::iterator it,
-									  std::vector<nodeWithCost>::iterator it,
+									  const std::vector<nodeWithCost>::iterator it,
 									  std::map<CGRANode*,std::vector<CGRANode*> > cgraEdges,
 									  int index);
 
-			void EMSSortNodeDest(std::map<dfgNode*,std::vector< std::pair<CGRANode*,int> > > *nodeDestMap,
+			bool EMSSortNodeDest(std::map<dfgNode*,std::vector< std::pair<CGRANode*,int> > > *nodeDestMap,
 									 std::map<CGRANode*,std::vector<CGRANode*> > cgraEdges,
 									 int index);
 

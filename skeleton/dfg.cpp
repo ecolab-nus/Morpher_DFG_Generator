@@ -887,7 +887,12 @@ std::vector<std::vector<unsigned char> > DFG::selfMulConMat(
 
 	std::vector<std::vector<unsigned char> > out;
 
+
 	for (int i = 0; i < in.size(); ++i) {
+
+		//Only support square matrices
+		assert(in.size() == in[i].size());
+
 		std::vector<unsigned char> tempVec;
 		for (int j = 0; j < in.size(); ++j) {
 			unsigned char tempInt = 0;
@@ -2241,6 +2246,7 @@ void DFG::MapCGRA_EMS(int XDim, int YDim, std::string mapfileName) {
 	findMaxRecDist();
 //	conMat = getConMat();
 	conMatArr.push_back(getConMat());
+	printConMat(conMatArr[0]);
 
 	errs() << "MapCGRAsa:: Resource Constrained MII = " << MII << "\n";
 	errs() << "MapCGRAsa:: Recurrence Constrained MII = " << getMaxRecDist() << "\n";
@@ -2491,7 +2497,7 @@ bool DFG::MapCGRA_EMS_ASAPLevel(int MII, int XDim, int YDim) {
 					path = std::make_pair(parentExt,cnode);
 
 					//Calculate cost for the path
-					astar->AStarSearch(*(currCGRA->getCGRAEdges()),parentExt,cnode,&cameFrom,&costSoFar);
+					astar->AStarSearchEMS(*(currCGRA->getCGRAEdges()),parentExt,cnode,&cameFrom,&costSoFar);
 					cost += costSoFar[cnode];
 				}
 				nodesWithCost.push_back( nodeWithCost(node,cnode,cost,mappedRealTime));
@@ -2523,7 +2529,7 @@ bool DFG::MapCGRA_EMS_ASAPLevel(int MII, int XDim, int YDim) {
 bool DFG::MAPCGRA_EMS_MultDest(std::map<dfgNode*,std::vector< std::pair<CGRANode*,int> > > *nodeDestMap,
 	      	  	  	  	  	   std::map<CGRANode*,std::vector<dfgNode*> > *destNodeMap,
 //							   std::map<dfgNode*,std::vector< std::pair<CGRANode*,int> > >::iterator it,
-							   std::vector<nodeWithCost>::iterator it,
+							   const std::vector<nodeWithCost>::iterator it,
 							   std::map<CGRANode*,std::vector<CGRANode*> > cgraEdges,
 							   int index) {
 
@@ -2642,16 +2648,20 @@ bool DFG::MAPCGRA_EMS_MultDest(std::map<dfgNode*,std::vector< std::pair<CGRANode
 //			idx++;
 
 			if(index + 1 < nodeDestMap->size()){
-				EMSSortNodeDest(&localNodeDestMap,localCGRAEdges,index + 1);
-				itlocal = globalNodesWithCost.begin() + index + 1;
-				errs() << "&& EMSSortNodeDest Done \n";
-				success = MAPCGRA_EMS_MultDest(
-						&localNodeDestMap,
-						&localdestNodeMap,
-						itlocal,
-						localCGRAEdges,
-						index + 1);
-
+				if(!EMSSortNodeDest(&localNodeDestMap,localCGRAEdges,index + 1)){
+					errs() << "&& EMSSortNodeDest Done and Some nodes does not have destination retrying...\n";
+					success = false;
+				}
+				else{
+					itlocal = globalNodesWithCost.begin() + index + 1;
+					errs() << "&& EMSSortNodeDest Done \n";
+					success = MAPCGRA_EMS_MultDest(
+							&localNodeDestMap,
+							&localdestNodeMap,
+							itlocal,
+							localCGRAEdges,
+							index + 1);
+				}
 			}
 			else{
 				errs() << "nodeDestMap end reached..\n";
@@ -2941,7 +2951,7 @@ int DFG::convertToPhyLoc(int y, int x) {
 
 //This function should be called on the incremented pointers, i.e. Nodes upto index are mapped
 //This function should reorder nodeDestMap, i.e. nodes that are not yet mapped considering the tree based routing
-void DFG::EMSSortNodeDest(
+bool DFG::EMSSortNodeDest(
 		std::map<dfgNode*, std::vector<std::pair<CGRANode*, int> > >* nodeDestMap,
 		std::map<CGRANode*,std::vector<CGRANode*> > cgraEdges,
 		int index) {
@@ -2957,6 +2967,7 @@ void DFG::EMSSortNodeDest(
 	std::map<dfgNode*, std::vector<std::pair<CGRANode*, int> > > newNodeDestMap;
 	CGRANode* cnode;
 	int mappedRealTime = -1;
+	bool result = true;
 
 	//Loop through mapped nodes
 	for(localtItPrev = it-1; localtItPrev != it ; localtItPrev++){
@@ -2970,6 +2981,8 @@ void DFG::EMSSortNodeDest(
 				errs() << "getAffinityCost started.\n";
 			}
 			affCost = getAffinityCost(localtItForward->node,localtItPrev->node);
+			//TODO :removing affcost for now, add it later
+//			affCost = 0;
 			if(localtItForward->node->getASAPnumber() == 16){
 				errs() << "getAffinityCost done.\n";
 				errs() << "(*nodeDestMap)[localtItForward->node].size = " <<  (*nodeDestMap)[localtItForward->node].size() << "\n";
@@ -2986,25 +2999,35 @@ void DFG::EMSSortNodeDest(
 
 				routeCost = getStaticRoutingCost(localtItForward->node,cnode,cgraEdges);
 				if(routeCost == INT_MAX){ //Not Routed
-					localNodesWithCost.push_back(nodeWithCost(localtItForward->node,cnode,INT_MAX,mappedRealTime));
+//					localNodesWithCost.push_back(nodeWithCost(localtItForward->node,cnode,INT_MAX,mappedRealTime));
+//					localNodesWithCost[localNodesWithCost.size()-1].affinityCost = 0;
+//					localNodesWithCost[localNodesWithCost.size()-1].routingCost = routeCost;
 				}
 				else{
 					affCost = affCost*getDistCGRANodes(cnode,localtItPrev->node->getMappedLoc());
 					localNodesWithCost.push_back(nodeWithCost(localtItForward->node,cnode,routeCost + affCost,mappedRealTime));
+					localNodesWithCost[localNodesWithCost.size()-1].affinityCost = affCost;
+					localNodesWithCost[localNodesWithCost.size()-1].routingCost = routeCost;
 				}
 			}
-			assert(localNodesWithCost.size() == (*nodeDestMap)[localtItForward->node].size());
-
-			std::sort(localNodesWithCost.begin(),localNodesWithCost.end(),LessThanNodeWithCost());
-			(*nodeDestMap)[localtItForward->node].clear();
-			for (int j = 0; j < localNodesWithCost.size(); ++j) {
-				(*nodeDestMap)[localtItForward->node].push_back(std::make_pair(localNodesWithCost[j].cnode,localNodesWithCost[j].mappedRealTime));
+//			assert(localNodesWithCost.size() == (*nodeDestMap)[localtItForward->node].size());
+			if(localNodesWithCost.size() == 0){
+				result = false;
 			}
-			assert(localNodesWithCost.size() != 0);
-			localtItForward->cost = localNodesWithCost[0].cost;
+			else{
+				std::sort(localNodesWithCost.begin(),localNodesWithCost.end(),LessThanNodeWithCost());
+				(*nodeDestMap)[localtItForward->node].clear();
+				for (int j = 0; j < localNodesWithCost.size(); ++j) {
+					(*nodeDestMap)[localtItForward->node].push_back(std::make_pair(localNodesWithCost[j].cnode,localNodesWithCost[j].mappedRealTime));
+				}
+				assert(localNodesWithCost.size() != 0);
+				localtItForward->cost = localNodesWithCost[0].cost;
+				errs() << "routeCost=" << localNodesWithCost[0].routingCost << ", affCost=" << localNodesWithCost[0].affinityCost << ", Total=" << localNodesWithCost[0].cost <<"\n";
+			}
 		}
 	}
 	std::sort(it,globalNodesWithCost.end(),LessThanNodeWithCost());
+	return result;
 }
 
 int DFG::getDistCGRANodes(CGRANode* a, CGRANode* b) {
@@ -3019,11 +3042,24 @@ int DFG::getDistCGRANodes(CGRANode* a, CGRANode* b) {
 	return abs(aX - bX) + abs(aY - bY) + abs(aT - bT);
 }
 
+void DFG::printConMat(std::vector<std::vector<unsigned char> > conMat) {
+	errs() << "Printing ConMat....\n";
+	for (int i = 0; i < conMat.size(); ++i) {
+		for (int j = 0; j < conMat[i].size(); ++j) {
+			errs() << (int)conMat[i][j] << " ";
+		}
+		errs() << "\n";
+	}
+	errs() << "Done Printing ConMat....\n";
+}
+
 int DFG::getStaticRoutingCost(dfgNode* node, CGRANode* dest, std::map<CGRANode*,std::vector<CGRANode*> > Edges) {
 	dfgNode* parent;
 	TreePath tp;
 	CGRANode* end;
 
+	CGRANode* cnode;
+	int currCost = 0;
 	int bestCost = INT_MAX;
 	CGRANode* bestSource = NULL;
 
@@ -3038,12 +3074,35 @@ int DFG::getStaticRoutingCost(dfgNode* node, CGRANode* dest, std::map<CGRANode*,
 
 		bestSource = NULL;
 		for (int j = 0; j < tp.sources.size(); ++j) {
-			end = astar->AStarSearch(Edges,tp.sources[j],dest,&cameFrom,&costSoFar);
+			end = astar->AStarSearchEMS(Edges,tp.sources[j],dest,&cameFrom,&costSoFar);
 			if(end != dest){
 				continue;
 			}
-			if(costSoFar[dest] < bestCost){
-				bestCost = costSoFar[dest];
+
+			//traverse the path
+			cnode = dest;
+			currCost = 0;
+			while(cnode != tp.sources[j]){
+				if((cnode->getX() == cameFrom[cnode]->getX())&&
+				   (cnode->getY() == cameFrom[cnode]->getY())
+						){
+					currCost++;
+				}
+				else{
+					if(cnode == dest){
+
+					}
+					else{
+						currCost += currCGRA->getMII();
+					}
+
+				}
+//				currCost += (currCGRA->getCGRANode(0,1,1)->originalEdgesSize - (*currCGRA->getCGRAEdges())[cnode].size());
+				cnode = cameFrom[cnode];
+			}
+
+			if(currCost < bestCost){
+				bestCost = currCost;
 				bestSource = tp.sources[j];
 			}
 		}

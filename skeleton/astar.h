@@ -43,6 +43,14 @@ public:
 						  CGRANode* goal,
 						  std::map<CGRANode*,CGRANode*> *cameFrom,
 						  std::map<CGRANode*,int> *costSoFar);
+
+	CGRANode* AStarSearchEMS(std::map<CGRANode*,std::vector<CGRANode*> > graph,
+					 	  CGRANode* start,
+						  CGRANode* goal,
+						  std::map<CGRANode*,CGRANode*> *cameFrom,
+						  std::map<CGRANode*,int> *costSoFar);
+
+
 	bool Route(dfgNode* currNode,
 			   std::vector<dfgNode*> parents,
 //			   std::vector<std::pair<CGRANode*,CGRANode*> > paths,
