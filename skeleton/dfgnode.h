@@ -17,12 +17,17 @@ class dfgNode{
 			Instruction* Node;
 			std::vector<Instruction*> Children;
 			std::vector<Instruction*> Ancestors;
-
 			std::vector<Instruction*> RecChildren;
 			std::vector<Instruction*> RecAncestors;
-
 			std::vector<Instruction*> PHIchildren;
 			std::vector<Instruction*> PHIAncestors;
+
+			std::vector<dfgNode*> ChildNodes;
+			std::vector<dfgNode*> AncestorNodes;
+			std::vector<dfgNode*> RecChildNodes;
+			std::vector<dfgNode*> RecAncestorNodes;
+			std::vector<dfgNode*> PHIchildNodes;
+			std::vector<dfgNode*> PHIAncestorNodes;
 
 			DFG* Parent;
 
@@ -55,12 +60,16 @@ class dfgNode{
 
 			std::vector<Instruction*>::iterator getChildIterator();
 
-			std::vector<Instruction*> getChildren();
-			std::vector<Instruction*> getAncestors();
+//			std::vector<Instruction*> getChildren(){return Children;};
+//			std::vector<Instruction*> getAncestors(){return Ancestors;};
+						std::vector<dfgNode*> getChildren(){return ChildNodes;};
+						std::vector<dfgNode*> getAncestors(){return AncestorNodes;};
 			std::vector<Instruction*> getRecChildren(){return RecChildren;};
 			std::vector<Instruction*> getRecAncestors(){return RecAncestors;};
 			std::vector<Instruction*> getPHIchildren(){return PHIchildren;}
 			std::vector<Instruction*> getPHIancestors(){return PHIAncestors;}
+
+			void addChildNode(dfgNode* node){ChildNodes.push_back(node);}
 
 			Instruction* getNode();
 

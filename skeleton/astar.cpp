@@ -158,7 +158,7 @@ bool AStar::Route(dfgNode* currNode,
 
 	//Clearing all the routing associated with current node on previous routing attempts
 	for (int i = 0; i < currNode->getAncestors().size(); ++i) {
-		currParent = currDFG->findNode(currNode->getAncestors()[i]);
+		currParent = currNode->getAncestors()[i];
 		(*currNode->getTreeBasedRoutingLocs())[currParent].clear();
 		(*currNode->getTreeBasedGoalLocs())[currParent].clear();
 	}
@@ -643,7 +643,7 @@ bool AStar::EMSRoute(dfgNode* currNode,
 
 	//Clearing all the routing associated with current node on previous routing attempts
 	for (int i = 0; i < currNode->getAncestors().size(); ++i) {
-		currParent = currDFG->findNode(currNode->getAncestors()[i]);
+		currParent = currNode->getAncestors()[i];
 		(*currNode->getTreeBasedRoutingLocs())[currParent].clear();
 		(*currNode->getTreeBasedGoalLocs())[currParent].clear();
 	}

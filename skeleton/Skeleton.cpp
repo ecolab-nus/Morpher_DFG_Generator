@@ -254,16 +254,16 @@ STATISTIC(LoopsAnalyzed, "Number of loops analyzed for vectorization");
 
 	    			int j;
 	    			for (j=0 ; j < node.getChildren().size(); j++){
-	    				destIns = node.getChildren()[j];
+	    				destIns = node.getChildren()[j]->getNode();
 	    				if(destIns != NULL) {
 	    					//errs() << destIns->getOpcodeName() << "\n";
 //	    					ofs << "\"Op_" << node.getNode() << "\" -> \"Op_" << destIns << "\" [style = bold, color = red];" << std::endl;
 
-	    					assert(currBBDFG->findEdge(node.getNode(),node.getChildren()[j])!=NULL);
-	    					if(currBBDFG->findEdge(node.getNode(),node.getChildren()[j])->getType() == EDGE_TYPE_DATA){
+	    					assert(currBBDFG->findEdge(node.getNode(),node.getChildren()[j]->getNode())!=NULL);
+	    					if(currBBDFG->findEdge(node.getNode(),node.getChildren()[j]->getNode())->getType() == EDGE_TYPE_DATA){
 	    						ofs << "\"Op_" << node.getNode() << "\" -> \"Op_" << destIns << "\" [style = bold, color = red];" << std::endl;
 	    					}
-	    					else if (currBBDFG->findEdge(node.getNode(),node.getChildren()[j])->getType() == EDGE_TYPE_CTRL){
+	    					else if (currBBDFG->findEdge(node.getNode(),node.getChildren()[j]->getNode())->getType() == EDGE_TYPE_CTRL){
 	    						ofs << "\"Op_" << node.getNode() << "\" -> \"Op_" << destIns << "\" [style = bold, color = black];" << std::endl;
 	    					}
 

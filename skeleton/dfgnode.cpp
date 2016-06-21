@@ -10,14 +10,6 @@ std::vector<Instruction*>::iterator dfgNode::getChildIterator(){
 	return Children.begin();
 }
 
-std::vector<Instruction*> dfgNode::getChildren(){
-	return Children;
-}
-
-std::vector<Instruction*> dfgNode::getAncestors(){
-	return Ancestors;
-}
-
 Instruction* dfgNode::getNode(){
 	return Node;
 }
@@ -57,6 +49,9 @@ void dfgNode::addAncestor(Instruction *anc, int type){
 	}
 
 	Ancestors.push_back(anc);
+	dfgNode* ancNode = Parent->findNode(anc);
+	ancNode->addChildNode(this);
+	AncestorNodes.push_back(ancNode);
 }
 
 void dfgNode::setIdx(int Idx) {
@@ -66,8 +61,8 @@ void dfgNode::setIdx(int Idx) {
 int dfgNode::removeChild(Instruction* child) {
 	Instruction* childRem = NULL;
 	for (int i = 0; i < getChildren().size(); ++i) {
-		if (child == getChildren()[i]){
-			childRem = getChildren()[i];
+		if (child == getChildren()[i]->getNode()){
+			childRem = getChildren()[i]->getNode();
 		}
 	}
 
@@ -82,8 +77,8 @@ int dfgNode::removeChild(Instruction* child) {
 int dfgNode::removeAncestor(Instruction* anc) {
 	Instruction* ancRem = NULL;
 	for (int i = 0; i < getAncestors().size(); ++i) {
-		if (anc == getAncestors()[i]){
-			ancRem = getAncestors()[i];
+		if (anc == getAncestors()[i]->getNode()){
+			ancRem = getAncestors()[i]->getNode();
 		}
 	}
 
