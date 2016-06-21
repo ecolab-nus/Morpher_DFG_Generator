@@ -26,12 +26,12 @@ struct less_than_schIdx{
 };
 
 struct ScheduleOrder{
-	inline bool operator()(dfgNode node1, dfgNode node2){
+	inline bool operator()(dfgNode* node1, dfgNode* node2){
 
-		int slack1 = node1.getALAPnumber() - node1.getASAPnumber();
-		int slack2 = node2.getALAPnumber() - node2.getASAPnumber();
+		int slack1 = node1->getALAPnumber() - node1->getASAPnumber();
+		int slack2 = node2->getALAPnumber() - node2->getASAPnumber();
 
-		if(node1.getASAPnumber() < node2.getASAPnumber()){
+		if(node1->getASAPnumber() < node2->getASAPnumber()){
 			return true;
 		}
 		else{
@@ -115,7 +115,7 @@ enum MemOp {LOAD,STORE,INVALID};
 
 class DFG{
 		private :
-			std::vector<dfgNode> NodeList;
+			std::vector<dfgNode*> NodeList;
 			std::ofstream xmlFile;
 			std::vector<Edge> edgeList;
 			int maxASAPLevel = -1;
@@ -161,13 +161,13 @@ class DFG{
 
 			dfgNode* getEntryNode();
 
-			std::vector<dfgNode> getNodes();
-			std::vector<dfgNode>* getNodesPtr(){return &NodeList;}
+			std::vector<dfgNode*> getNodes();
+			std::vector<dfgNode*>* getNodesPtr(){return &NodeList;}
 
 			std::vector<Edge> getEdges();
 			void InsertNode(Instruction* Node);
 
-			void InsertNode(dfgNode Node);
+//			void InsertNode(dfgNode Node);
 
 			void InsertEdge(Edge e);
 

@@ -101,7 +101,7 @@ STATISTIC(LoopsAnalyzed, "Number of loops analyzed for vectorization");
 
 				 (*insMapIn)[I]++;
 	    		 dfgNode curr(I,currBBDFG);
-				 currBBDFG->InsertNode(curr);
+				 currBBDFG->InsertNode(I);
 				 dfgNode* currPtr = currBBDFG->findNode(I);
 				  for (User *U : I->users()) {
 
@@ -198,7 +198,7 @@ STATISTIC(LoopsAnalyzed, "Number of loops analyzed for vectorization");
 
 	    		//errs() << "Node List Size : " << currBBDFG->getNodes().size() << "\n";
 
-				if(currBBDFG->getNodes()[0].getNode() == NULL) {
+				if(currBBDFG->getNodes()[0]->getNode() == NULL) {
 					//errs() << "NULLL!\n";
 				}
 
@@ -208,7 +208,7 @@ STATISTIC(LoopsAnalyzed, "Number of loops analyzed for vectorization");
 	//    		for(ii = currBBDFG->getNodes().begin(); ii != currBBDFG->getNodes().end() ; ii++ ){
 
 				for (int i = 0 ; i < currBBDFG->getNodes().size() ; i++) {
-	    			node = currBBDFG->getNodes()[i];
+	    			node = *currBBDFG->getNodes()[i];
 
 	    			if(node.getNode() == NULL) {
 	    				//errs() << "NULLL! :" << i << "\n";
@@ -247,7 +247,7 @@ STATISTIC(LoopsAnalyzed, "Number of loops analyzed for vectorization");
 	//    		for(ii = currBBDFG->getNodes().begin(); ii != currBBDFG->getNodes().end() ; ii++ ){
 				for (int i = 0 ; i < currBBDFG->getNodes().size() ; i++) {
 	//    			fprintf(fp_dot, "\"Op_%d\" -> \"Op_%d\" [style = bold, color = red] ;\n", i, j);
-	    			node = currBBDFG->getNodes()[i];
+	    			node = *currBBDFG->getNodes()[i];
 	    			Instruction* destIns;
 	//    			std::vector<Instruction*>::iterator cc;
 	//    			for(cc = node.getChildren().begin(); cc != node.getChildren().end(); cc++){
@@ -542,8 +542,8 @@ namespace {
 				  LoopDFG.CreateSchList();
 //				  LoopDFG.MapCGRA(4,4);
 				  LoopDFG.printXML();
-//				  LoopDFG.MapCGRA_SMART(4,4,F.getName().str() + "_L" + std::to_string(loopCounter) + "_mapping.log");
-				  LoopDFG.MapCGRA_EMS(4,4,F.getName().str() + "_L" + std::to_string(loopCounter) + "_mapping.log");
+				  LoopDFG.MapCGRA_SMART(4,4,F.getName().str() + "_L" + std::to_string(loopCounter) + "_mapping.log");
+//				  LoopDFG.MapCGRA_EMS(4,4,F.getName().str() + "_L" + std::to_string(loopCounter) + "_mapping.log");
 				  printDFGDOT (F.getName().str() + "_L" + std::to_string(loopCounter) + "_loopdfg.dot", &LoopDFG);
 //				  LoopDFG.printXML(F.getName().str() + "_L" + std::to_string(loopCounter) + "_loopdfg.xml");
 
