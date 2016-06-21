@@ -14,7 +14,7 @@ class dfgNode{
 		private :
 			int idx;
 			int DFSidx;
-			Instruction* Node;
+			Instruction* Node = NULL;
 			std::vector<Instruction*> Children;
 			std::vector<Instruction*> Ancestors;
 			std::vector<Instruction*> RecChildren;

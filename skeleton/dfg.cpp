@@ -1309,12 +1309,12 @@ bool DFG::MapMultiDestRec(
 	node = it->first;
 //	possibleDests = it->second;
 
-	if(node == NULL){
-		errs() << "Node is NULL...\n";
-	}else{
-		errs() << "Node = \n";
-		node->getNode()->dump();
-	}
+//	if(node == NULL){
+//		errs() << "Node is NULL...\n";
+//	}else{
+//		errs() << "Node = \n";
+//		node->getNode()->dump();
+//	}
 
 	errs() << "MapMultiDestRec : Procesing NodeIdx = " << node->getIdx();
 	errs() << ", PossibleDests = " << it->second.size();
@@ -2385,7 +2385,7 @@ bool DFG::MapCGRA_EMS_ASAPLevel(int MII, int XDim, int YDim) {
 				//every parent should be mapped
 				if(parent->getMappedLoc() == NULL){
 					errs() << "parent :: nodeIdx=" << parent->getIdx() << ", ASAP=" << parent->getASAPnumber() << "\n";
-					parent->getNode()->dump();
+//					parent->getNode()->dump();
 
 				}
 				assert(parent->getMappedLoc() != NULL);
@@ -2557,12 +2557,12 @@ bool DFG::MAPCGRA_EMS_MultDest(std::map<dfgNode*,std::vector< std::pair<CGRANode
 	node = it->node;
 //	possibleDests = it->second;
 
-	if(node == NULL){
-		errs() << "Node is NULL...\n";
-	}else{
-		errs() << "Node = \n";
-		node->getNode()->dump();
-	}
+//	if(node == NULL){
+//		errs() << "Node is NULL...\n";
+//	}else{
+//		errs() << "Node = \n";
+//		node->getNode()->dump();
+//	}
 
 //	errs() << "MapMultiDestRec : Procesing NodeIdx = " << node->getIdx() << " ,PossibleDests = " << (*nodeDestMap)[node].size() << "\n";
 
@@ -3159,7 +3159,7 @@ MemOp DFG::isMemoryOp(dfgNode* node) {
 #endif
 
 
-int DFG::readXML(std::string fileName, DFG* dfg) {
+int DFG::readXML(std::string fileName) {
 	tinyxml2::XMLDocument inputDFG;
 	std::vector<dfgNode*> nodelist;
 
@@ -3170,25 +3170,30 @@ int DFG::readXML(std::string fileName, DFG* dfg) {
 
 	tinyxml2::XMLError err;
 	tinyxml2::XMLElement* nextElem;
-	tinyxml2::XMLElement* inElem;
+	tinyxml2::XMLElement* inElem1;
+	tinyxml2::XMLElement* inElem2;
 	tinyxml2::XMLNode* pRoot;
 	int ancNumber = -1;
 	int childNumber = -1;
 
 	int tempInt1 = -1;
 	int tempInt2 = -1;
-	std::string tempString;
+	const char* tempchararr;
+//	std::string tempString;
 
-
+	errs() << "Reading xml input file : " << fileName << "\n";
 	err = inputDFG.LoadFile(fileName.c_str());
 	XMLCheckResult(err);
 
 	pRoot = inputDFG.FirstChild();
 	XMLCheckNULL(pRoot);
+	errs() << pRoot->Value() << "\n";
 
+	errs() << "Reading OPs\n";
 	nextElem = pRoot->FirstChildElement("OPs");
 	XMLCheckNULL(nextElem);
 
+	errs() << "Reading OP-number\n";
 	nextElem = nextElem->FirstChildElement("OP-number");
 	XMLCheckNULL(nextElem);
 	err = nextElem->QueryIntText(&totalNumberOps);
@@ -3199,62 +3204,68 @@ int DFG::readXML(std::string fileName, DFG* dfg) {
 
 	while(nextElem != NULL){
 		dfgNode* node = new dfgNode();
+		errs() << "Reading OP," << opManualCount << "\n";
 
-		inElem = nextElem->FirstChildElement("ID");
-		XMLCheckNULL(inElem);
-		err = inElem->QueryIntText(&tempInt1);
+		inElem1 = nextElem->FirstChildElement("ID");
+		XMLCheckNULL(inElem1);
+		err = inElem1->QueryIntText(&tempInt1);
 		XMLCheckResult(err);
 		node->setIdx(tempInt1);
 
-		inElem = nextElem->FirstChildElement("OP-type");
-		XMLCheckNULL(inElem);
-		tempString = inElem->Value();
-		XMLCheckNULL(tempString);
+		inElem1 = nextElem->FirstChildElement("OP-type");
+		XMLCheckNULL(inElem1);
+		tempchararr = inElem1->GetText();
+		std::string tempString = tempchararr;
+		errs() << tempchararr << "\n";
 		node->setNameType(tempString);
 
-		inElem = nextElem->FirstChildElement("In-edge-number");
-		XMLCheckNULL(inElem);
-		err = inElem->QueryIntText(&tempInt1);
-		XMLCheckResult(err);
-		ancNumber = tempInt1;
-
-		if(ancNumber > 0){
-			//traverse to in-edges
-			inElem = nextElem->FirstChildElement("In-edges");
-			XMLCheckNULL(inElem);
-
-			inElem = inElem->FirstChildElement("Edge");
-			XMLCheckNULL(inElem);
-			for (int i = 0; i < ancNumber; ++i) {
-				err = inElem->QueryIntText(&tempInt1);
-				XMLCheckResult(err);
-				node->InEdgesIdx.push_back(tempInt1);
-
-				inElem = inElem->NextSiblingElement("Edge");
-			}
-		}
-
-		inElem = nextElem->FirstChildElement("Out-edge-number");
-		XMLCheckNULL(inElem);
-		err = inElem->QueryIntText(&tempInt1);
-		XMLCheckResult(err);
-		childNumber = tempInt1;
-
-		if(childNumber > 0){
-			//traverse to in-edges
-			inElem = nextElem->FirstChildElement("Out-edges");
-			XMLCheckNULL(inElem);
-
-			inElem = inElem->FirstChildElement("Edge");
-			XMLCheckNULL(inElem);
-			for (int i = 0; i < ancNumber; ++i) {
-				err = inElem->QueryIntText(&tempInt1);
-				XMLCheckResult(err);
-				node->OutEdgesIdx.push_back(tempInt1);
-
-				inElem = inElem->NextSiblingElement("Edge");
-			}
-		}
+//		errs() << "Reading In-edge-number : ";
+//		inElem1 = nextElem->FirstChildElement("In-edge-number");
+//		XMLCheckNULL(inElem1);
+//		err = inElem1->QueryIntText(&tempInt1);
+//		XMLCheckResult(err);
+//		ancNumber = tempInt1;
+//		errs() << ancNumber << "\n";
+//
+//		if(ancNumber > 0){
+//			//traverse to in-edges
+//			inElem1 = nextElem->FirstChildElement("In-edges");
+//			XMLCheckNULL(inElem1);
+//
+//			inElem1 = inElem1->FirstChildElement("Edge");
+//			XMLCheckNULL(inElem1);
+//			for (int i = 0; i < ancNumber; ++i) {
+//				errs() << "Read in-edge \n";
+//				err = inElem1->QueryIntText(&tempInt1);
+//				XMLCheckResult(err);
+//				node->InEdgesIdx.push_back(tempInt1);
+//
+//				inElem1 = inElem1->NextSiblingElement("Edge");
+//			}
+//		}
+//
+//		errs() << "Reading Out-edge-number : \n";
+//		inElem1 = nextElem->FirstChildElement("Out-edge-number");
+//		XMLCheckNULL(inElem1);
+//		err = inElem1->QueryIntText(&tempInt1);
+//		XMLCheckResult(err);
+//		childNumber = tempInt1;
+//
+//		if(childNumber > 0){
+//			//traverse to in-edges
+//			inElem1 = nextElem->FirstChildElement("Out-edges");
+//			XMLCheckNULL(inElem1);
+//
+//			inElem1 = inElem1->FirstChildElement("Edge");
+//			XMLCheckNULL(inElem1);
+//			for (int i = 0; i < ancNumber; ++i) {
+//				err = inElem1->QueryIntText(&tempInt1);
+//				XMLCheckResult(err);
+//				node->OutEdgesIdx.push_back(tempInt1);
+//
+//				inElem1 = inElem1->NextSiblingElement("Edge");
+//			}
+//		}
 		nextElem = nextElem->NextSiblingElement("OP");
 		opManualCount++;
 		nodelist.push_back(node);
@@ -3263,49 +3274,56 @@ int DFG::readXML(std::string fileName, DFG* dfg) {
 	assert(opManualCount == totalNumberOps);
 
 	//EDGES
-
+	errs() << "Reading EDGEs\n";
 	nextElem = pRoot->FirstChildElement("EDGEs");
 	XMLCheckNULL(nextElem);
 
+	errs() << "Reading Edge-number\n";
 	nextElem = nextElem->FirstChildElement("Edge-number");
 	XMLCheckNULL(nextElem);
 	err = nextElem->QueryIntText(&totalNumberEdges);
 	XMLCheckResult(err);
 
-	nextElem = nextElem->NextSiblingElement("Edge");
+	nextElem = nextElem->NextSiblingElement("EDGE");
 	XMLCheckNULL(nextElem);
 
 	while(nextElem != NULL){
-		inElem = nextElem->FirstChildElement("Start-OP");
-		XMLCheckNULL(inElem);
-		err = nextElem->QueryIntText(&tempInt1);
+		errs() << "Reading Edge, "<< edgeManualCount << "\n";
+		inElem1 = nextElem->FirstChildElement("Start-OP");
+		XMLCheckNULL(inElem1);
+		err = inElem1->QueryIntText(&tempInt1);
 		XMLCheckResult(err);
-		inElem = nextElem->FirstChildElement("End-OP");
-		XMLCheckNULL(inElem);
-		err = nextElem->QueryIntText(&tempInt2);
+		inElem1 = nextElem->FirstChildElement("End-OP");
+		XMLCheckNULL(inElem1);
+		err = inElem1->QueryIntText(&tempInt2);
 		XMLCheckResult(err);
 
 		for (int i = 0; i < nodelist.size(); ++i) {
 			if(nodelist[i]->getIdx() == tempInt1){
-				inElem = nextElem->FirstChildElement("Start-OP");
-				XMLCheckNULL(inElem);
-				err = nextElem->QueryIntText(&tempInt1);
-				XMLCheckResult(err);
-
 				for (int j = 0; j < nodelist.size(); ++j) {
 					if(nodelist[j]->getIdx() == tempInt2){
 						nodelist[i]->addChildNode(nodelist[j]);
 						nodelist[j]->addAncestorNode(nodelist[i]);
+
+						Edge temp;
+						temp.setID(this->getEdges().size());
+						std::ostringstream ss;
+						ss << std::dec << nodelist[i]->getIdx() << "_to_" << nodelist[j]->getIdx();
+						temp.setName(ss.str());
+						temp.setType(EDGE_TYPE_DATA);
+						temp.setSrc(nodelist[i]);
+						temp.setDest(nodelist[j]);
+						this->InsertEdge(temp);
 					}
 				}
 			}
 		}
-		nextElem = nextElem->NextSiblingElement("Edge");
+		nextElem = nextElem->NextSiblingElement("EDGE");
 		edgeManualCount++;
 	}
 
 	assert(edgeManualCount == totalNumberEdges);
-	dfg->setNodes(nodelist);
-	dfg->setName(fileName);
+	this->setNodes(nodelist);
+	this->setName(fileName);
 	return 0;
 }

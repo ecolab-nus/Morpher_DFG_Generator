@@ -360,15 +360,19 @@ bool AStar::Route(dfgNode* currNode,
 					SMARTPathEnd = true;
 					if(SMARTPathHist.find(SMARTpathLength) == SMARTPathHist.end()){
 						SMARTPathHist[SMARTpathLength] = 1;
-						if(currParent->getNode()->getOpcode() == Instruction::Br){
-							SMARTPredicatePathHist[SMARTpathLength] = 1;
+						if(currParent->getNode() != NULL){
+							if(currParent->getNode()->getOpcode() == Instruction::Br){
+								SMARTPredicatePathHist[SMARTpathLength] = 1;
+							}
 						}
 
 					}
 					else{
 						SMARTPathHist[SMARTpathLength]++;
-						if(currParent->getNode()->getOpcode() == Instruction::Br){
-							SMARTPredicatePathHist[SMARTpathLength]++;
+						if(currParent->getNode() != NULL){
+							if(currParent->getNode()->getOpcode() == Instruction::Br){
+								SMARTPredicatePathHist[SMARTpathLength]++;
+							}
 						}
 					}
 
@@ -396,14 +400,18 @@ bool AStar::Route(dfgNode* currNode,
 		if(SMARTpathLength != 0){
 			if(SMARTPathHist.find(SMARTpathLength) == SMARTPathHist.end()){
 				SMARTPathHist[SMARTpathLength] = 1;
-				if(currParent->getNode()->getOpcode() == Instruction::Br){
-					SMARTPredicatePathHist[SMARTpathLength] = 1;
+				if(currParent->getNode() != NULL){
+					if(currParent->getNode()->getOpcode() == Instruction::Br){
+						SMARTPredicatePathHist[SMARTpathLength] = 1;
+					}
 				}
 			}
 			else{
 				SMARTPathHist[SMARTpathLength]++;
-				if(currParent->getNode()->getOpcode() == Instruction::Br){
-					SMARTPredicatePathHist[SMARTpathLength]++;
+				if(currParent->getNode() != NULL){
+					if(currParent->getNode()->getOpcode() == Instruction::Br){
+						SMARTPredicatePathHist[SMARTpathLength]++;
+					}
 				}
 			}
 

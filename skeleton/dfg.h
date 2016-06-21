@@ -160,6 +160,7 @@ class DFG{
 
 			DFG(std::string name) : name(name){}
 			void setName(std::string str){name = str;}
+			std::string getName(){return name;}
 
 			dfgNode* getEntryNode();
 
@@ -277,7 +278,7 @@ class DFG{
 
 
 			//readXML
-			int readXML(std::string fileName, DFG* dfg);
+			int readXML(std::string fileName);
 
 
 	};

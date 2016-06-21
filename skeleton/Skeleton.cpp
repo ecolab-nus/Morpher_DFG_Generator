@@ -197,6 +197,7 @@ STATISTIC(LoopsAnalyzed, "Number of loops analyzed for vectorization");
 	    		ofs << "digraph Region_18 {\n\tgraph [ nslimit = \"1000.0\",\n\torientation = landscape,\n\t\tcenter = true,\n\tpage = \"8.5,11\",\n\tsize = \"10,7.5\" ] ;" << std::endl;
 
 	    		//errs() << "Node List Size : " << currBBDFG->getNodes().size() << "\n";
+	    		assert(currBBDFG->getNodes().size() != 0);
 
 				if(currBBDFG->getNodes()[0]->getNode() == NULL) {
 					//errs() << "NULLL!\n";
@@ -547,7 +548,7 @@ namespace {
 				  LoopDFG.CreateSchList();
 //				  LoopDFG.MapCGRA(4,4);
 				  LoopDFG.printXML();
-				  LoopDFG.MapCGRA_SMART(4,4,F.getName().str() + "_L" + std::to_string(loopCounter) + "_mapping.log");
+//				  LoopDFG.MapCGRA_SMART(4,4,F.getName().str() + "_L" + std::to_string(loopCounter) + "_mapping.log");
 //				  LoopDFG.MapCGRA_EMS(4,4,F.getName().str() + "_L" + std::to_string(loopCounter) + "_mapping.log");
 				  printDFGDOT (F.getName().str() + "_L" + std::to_string(loopCounter) + "_loopdfg.dot", &LoopDFG);
 //				  LoopDFG.printXML(F.getName().str() + "_L" + std::to_string(loopCounter) + "_loopdfg.xml");
@@ -559,6 +560,14 @@ namespace {
 
 				  loopCounter++;
 			  } //end loopIterator
+
+			  DFG xmlDFG("asdsa");
+			  assert(xmlDFG.readXML("DFG.xml") == 0);
+			  xmlDFG.scheduleASAP();
+			  xmlDFG.scheduleALAP();
+			  xmlDFG.CreateSchList();
+			  xmlDFG.MapCGRA_SMART(4,4,xmlDFG.getName()+ "_mapping.log");
+			  printDFGDOT(xmlDFG.getName(),&xmlDFG);
 
 			  timeFile.close();
 
@@ -575,6 +584,8 @@ namespace {
 			  else
 				  //errs() << "  error opening file for writing!";
 			  //errs() << "\n";
+
+
 
 
 			  return false;
