@@ -190,7 +190,7 @@ STATISTIC(LoopsAnalyzed, "Number of loops analyzed for vectorization");
 	    	void printDFGDOT(std::string fileName ,DFG* currBBDFG){
 	    		std::ofstream ofs;
 	    		ofs.open(fileName.c_str());
-	    		dfgNode node;
+	    		dfgNode* node;
 	    		int count = 0;
 
 	    		//Write the initial info
@@ -208,31 +208,36 @@ STATISTIC(LoopsAnalyzed, "Number of loops analyzed for vectorization");
 	//    		for(ii = currBBDFG->getNodes().begin(); ii != currBBDFG->getNodes().end() ; ii++ ){
 
 				for (int i = 0 ; i < currBBDFG->getNodes().size() ; i++) {
-	    			node = *currBBDFG->getNodes()[i];
+	    			node = currBBDFG->getNodes()[i];
 
-	    			if(node.getNode() == NULL) {
+	    			if(node->getNode() == NULL) {
 	    				//errs() << "NULLL! :" << i << "\n";
 	    			}
 
-	    			Instruction* ins = node.getNode();
+//	    			Instruction* ins = node->getNode();
 	//    			//errs() << "\"Op_" << *ins << "\" [ fontname = \"Helvetica\" shape = box, label = \"" << *ins << "\"]" << "\n" ;
-	    			ofs << "\"Op_" << ins  << "\" [ fontname = \"Helvetica\" shape = box, label = \" ";
+	    			ofs << "\"Op_" << node->getIdx()  << "\" [ fontname = \"Helvetica\" shape = box, label = \" ";
 
-	    			ofs << ins->getOpcodeName() << " BB" << ins->getParent()->getName().str(); //<< " ( ";
+	    			if(node->getNode() != NULL){
+		    			ofs << node->getNode()->getOpcodeName() << " BB" << node->getNode()->getParent()->getName().str();
+	    			}
+	    			else{
+	    				ofs << node->getNameType();
+	    			}
 //	    			for (int j = 0; j < ins->getNumOperands(); ++j) {
 //	    				ofs << ins->getOperand(j)->getName().str() << ",";
 //					}
 //	    			ofs << " ) ";
 
-	    			if(node.getMappedLoc() != NULL){
-						ofs << ", " << node.getIdx() << ", ASAP=" << node.getASAPnumber()
-													 << ", ALAP=" << node.getALAPnumber()
-													 << ", (t,y,x)=(" << node.getMappedLoc()->getT() << "," << node.getMappedLoc()->getY() << "," << node.getMappedLoc()->getX() << ")"
+	    			if(node->getMappedLoc() != NULL){
+						ofs << ", " << node->getIdx() << ", ASAP=" << node->getASAPnumber()
+													 << ", ALAP=" << node->getALAPnumber()
+													 << ", (t,y,x)=(" << node->getMappedLoc()->getT() << "," << node->getMappedLoc()->getY() << "," << node->getMappedLoc()->getX() << ")"
 													 << "\"]" << std::endl;
 	    			}
 	    			else{
-						ofs << ", " << node.getIdx() << ", ASAP=" << node.getASAPnumber()
-													 << ", ALAP=" << node.getALAPnumber()
+						ofs << ", " << node->getIdx() << ", ASAP=" << node->getASAPnumber()
+													 << ", ALAP=" << node->getALAPnumber()
 	//												 << ", (t,y,x)=(" << node.getMappedLoc()->getT() << "," << node.getMappedLoc()->getY() << "," << node.getMappedLoc()->getX() << ")"
 													 << "\"]" << std::endl;
 
@@ -247,57 +252,57 @@ STATISTIC(LoopsAnalyzed, "Number of loops analyzed for vectorization");
 	//    		for(ii = currBBDFG->getNodes().begin(); ii != currBBDFG->getNodes().end() ; ii++ ){
 				for (int i = 0 ; i < currBBDFG->getNodes().size() ; i++) {
 	//    			fprintf(fp_dot, "\"Op_%d\" -> \"Op_%d\" [style = bold, color = red] ;\n", i, j);
-	    			node = *currBBDFG->getNodes()[i];
-	    			Instruction* destIns;
+	    			node = currBBDFG->getNodes()[i];
+//	    			Instruction* destIns;
 	//    			std::vector<Instruction*>::iterator cc;
 	//    			for(cc = node.getChildren().begin(); cc != node.getChildren().end(); cc++){
 
 	    			int j;
-	    			for (j=0 ; j < node.getChildren().size(); j++){
-	    				destIns = node.getChildren()[j]->getNode();
-	    				if(destIns != NULL) {
+	    			for (j=0 ; j < node->getChildren().size(); j++){
+//	    				destIns = node->getChildren()[j]->getNode();
+//	    				if(destIns != NULL) {
 	    					//errs() << destIns->getOpcodeName() << "\n";
 //	    					ofs << "\"Op_" << node.getNode() << "\" -> \"Op_" << destIns << "\" [style = bold, color = red];" << std::endl;
 
-	    					assert(currBBDFG->findEdge(node.getNode(),node.getChildren()[j]->getNode())!=NULL);
-	    					if(currBBDFG->findEdge(node.getNode(),node.getChildren()[j]->getNode())->getType() == EDGE_TYPE_DATA){
-	    						ofs << "\"Op_" << node.getNode() << "\" -> \"Op_" << destIns << "\" [style = bold, color = red];" << std::endl;
+	    					assert(currBBDFG->findEdge(node,node->getChildren()[j])!=NULL);
+	    					if(currBBDFG->findEdge(node,node->getChildren()[j])->getType() == EDGE_TYPE_DATA){
+	    						ofs << "\"Op_" << node->getIdx() << "\" -> \"Op_" << node->getChildren()[j]->getIdx() << "\" [style = bold, color = red];" << std::endl;
 	    					}
-	    					else if (currBBDFG->findEdge(node.getNode(),node.getChildren()[j]->getNode())->getType() == EDGE_TYPE_CTRL){
-	    						ofs << "\"Op_" << node.getNode() << "\" -> \"Op_" << destIns << "\" [style = bold, color = black];" << std::endl;
+	    					else if (currBBDFG->findEdge(node,node->getChildren()[j])->getType() == EDGE_TYPE_CTRL){
+	    						ofs << "\"Op_" << node->getIdx() << "\" -> \"Op_" << node->getChildren()[j]->getIdx() << "\" [style = bold, color = black];" << std::endl;
 	    					}
 
-	    				}
+//	    				}
 	    			}
 
 	    			//adding recurrence edges
-	    			for (j=0 ; j < node.getRecChildren().size(); j++){
-	    				destIns = node.getRecChildren()[j];
-	    				if(destIns != NULL) {
+	    			for (j=0 ; j < node->getRecChildren().size(); j++){
+//	    				destIns = node->getRecChildren()[j];
+//	    				if(destIns != NULL) {
 	    					//errs() << destIns->getOpcodeName() << "\n";
 //	    					ofs << "\"Op_" << node.getNode() << "\" -> \"Op_" << destIns << "\" [style = bold, color = red];" << std::endl;
 
-	    					assert(currBBDFG->findEdge(node.getNode(),node.getRecChildren()[j])!=NULL);
-	    					if(currBBDFG->findEdge(node.getNode(),node.getRecChildren()[j])->getType() == EDGE_TYPE_LDST){
-	    						ofs << "\"Op_" << node.getNode() << "\" -> \"Op_" << destIns << "\" [style = bold, color = green];" << std::endl;
+	    					assert(currBBDFG->findEdge(node,node->getRecChildren()[j])!=NULL);
+	    					if(currBBDFG->findEdge(node,node->getRecChildren()[j])->getType() == EDGE_TYPE_LDST){
+	    						ofs << "\"Op_" << node->getIdx() << "\" -> \"Op_" << node->getRecChildren()[j]->getIdx() << "\" [style = bold, color = green];" << std::endl;
 	    					}
 
-	    				}
+//	    				}
 	    			}
 
-	    			//adding recurrence edges
-	    			for (j=0 ; j < node.getPHIchildren().size(); j++){
-	    				destIns = node.getPHIchildren()[j];
-	    				if(destIns != NULL) {
+	    			//adding phi edges
+	    			for (j=0 ; j < node->getPHIchildren().size(); j++){
+//	    				destIns = node->getPHIchildren()[j];
+//	    				if(destIns != NULL) {
 	    					//errs() << destIns->getOpcodeName() << "\n";
 //	    					ofs << "\"Op_" << node.getNode() << "\" -> \"Op_" << destIns << "\" [style = bold, color = red];" << std::endl;
 
-	    					assert(currBBDFG->findEdge(node.getNode(),node.getPHIchildren()[j])!=NULL);
-	    					if(currBBDFG->findEdge(node.getNode(),node.getPHIchildren()[j])->getType() == EDGE_TYPE_PHI){
-	    						ofs << "\"Op_" << node.getNode() << "\" -> \"Op_" << destIns << "\" [style = bold, color = orange];" << std::endl;
+	    					assert(currBBDFG->findEdge(node,node->getPHIchildren()[j])!=NULL);
+	    					if(currBBDFG->findEdge(node,node->getPHIchildren()[j])->getType() == EDGE_TYPE_PHI){
+	    						ofs << "\"Op_" << node->getIdx() << "\" -> \"Op_" << node->getPHIchildren()[j]->getIdx() << "\" [style = bold, color = orange];" << std::endl;
 	    					}
 
-	    				}
+//	    				}
 	    			}
 
 

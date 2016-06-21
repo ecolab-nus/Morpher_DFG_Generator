@@ -13,6 +13,7 @@
 #include <iostream>
 #include <fstream>
 
+
 #define REGS_PER_NODE 4
 
 class AStar;
@@ -158,6 +159,7 @@ class DFG{
 			AStar* astar;
 
 			DFG(std::string name) : name(name){}
+			void setName(std::string str){name = str;}
 
 			dfgNode* getEntryNode();
 
@@ -167,13 +169,15 @@ class DFG{
 			std::vector<Edge> getEdges();
 			void InsertNode(Instruction* Node);
 
+			void setNodes(std::vector<dfgNode*> nodes){NodeList = nodes;}
+
 //			void InsertNode(dfgNode Node);
 
 			void InsertEdge(Edge e);
 
 			dfgNode* findNode(Instruction* I);
 
-			Edge* findEdge(Instruction* src, Instruction* dest);
+			Edge* findEdge(dfgNode* src, dfgNode* dest);
 
 			std::vector<dfgNode*> getRoots();
 
@@ -270,6 +274,10 @@ class DFG{
 			int convertToPhyLoc(int y, int x);
 			int getDistCGRANodes(CGRANode* a, CGRANode* b);
 			int getStaticRoutingCost(dfgNode* node, CGRANode* dest, std::map<CGRANode*,std::vector<CGRANode*> > Edges);
+
+
+			//readXML
+			int readXML(std::string fileName, DFG* dfg);
 
 
 	};

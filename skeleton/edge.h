@@ -54,12 +54,14 @@
 
 using namespace llvm;
 
+class dfgNode;
+
 class Edge {
 	private :
 		int ID;
 		std::string name;
-		Instruction* src;
-		Instruction * dest;
+		dfgNode* src;
+		dfgNode* dest;
 		int type;
 
 	public :
@@ -69,10 +71,10 @@ class Edge {
 		void setID (int id);
 		void setName (std::string Name);
 		std::string getName();
-		void setSrc(Instruction* Src);
-		Instruction* getSrc();
-		void setDest(Instruction* Dest);
-		Instruction* getDest();
+		void setSrc(dfgNode* Src);
+		dfgNode* getSrc();
+		void setDest(dfgNode* Dest);
+		dfgNode* getDest();
 		void setType(int Type);
 		int getType();
 };

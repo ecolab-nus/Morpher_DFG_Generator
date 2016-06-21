@@ -5,6 +5,7 @@
 #include <queue>
 #include "astar.h"
 #include <ctime>
+#include "tinyxml2.h"
 
 
 dfgNode* DFG::getEntryNode(){
@@ -47,7 +48,7 @@ dfgNode* DFG::findNode(Instruction* I){
 	return NULL;
 }
 
-Edge* DFG::findEdge(Instruction* src, Instruction* dest){
+Edge* DFG::findEdge(dfgNode* src, dfgNode* dest){
 	for (int i = 0; i < edgeList.size(); ++i) {
 		if(edgeList[i].getSrc() == src && edgeList[i].getDest() == dest) {
 			return &(edgeList[i]);
@@ -168,7 +169,7 @@ void DFG::printInEdges(dfgNode* node, int depth){
 
 		printHeaderTag("ID",depth+2);
 //		xmlFile << node->getAncestors()[i] << "to" << node->getNode();
-		xmlFile << findEdge(node->getAncestors()[i]->getNode(),node->getNode())->getID() ;
+		xmlFile << findEdge(node->getAncestors()[i],node)->getID() ;
 		printFooterTag("ID",depth+2);
 
 		printFooterTag("Edge",depth+1);
@@ -188,7 +189,7 @@ void DFG::printOutEdges(dfgNode* node, int depth){
 
 		printHeaderTag("ID",depth+2);
 //		xmlFile << node->getNode() << "to" << node->getChildren()[i];
-		xmlFile << findEdge(node->getNode(),node->getChildren()[i]->getNode())->getID() ;
+		xmlFile << findEdge(node,node->getChildren()[i])->getID() ;
 		printFooterTag("ID",depth+2);
 
 		printFooterTag("Edge",depth+1);
@@ -322,12 +323,12 @@ void DFG::printEdge(Edge* e, int depth) {
 
 	printHeaderTag("Start-OP",depth+1);
 //	xmlFile << e->getSrc();
-	xmlFile << findNode(e->getSrc())->getIdx();
+	xmlFile << e->getSrc()->getIdx();
 	printFooterTag("Start-OP",depth+1);
 
 	printHeaderTag("End-OP",depth+1);
 //	xmlFile << e->getDest();
-	xmlFile << findNode(e->getDest())->getIdx();
+	xmlFile << e->getDest()->getIdx();
 	printFooterTag("End-OP",depth+1);
 
 	printFooterTag("EDGE",depth);
@@ -464,7 +465,7 @@ void DFG::findMaxRecDist() {
 		node = NodeList[i];
 
 		for (int j = 0; j < node->getRecAncestors().size(); ++j) {
-			recDist = node->getASAPnumber() - findNode(node->getRecAncestors()[j])->getASAPnumber();
+			recDist = node->getASAPnumber() - node->getRecAncestors()[j]->getASAPnumber();
 			if(maxRecDist < recDist){
 				maxRecDist = recDist;
 			}
@@ -720,7 +721,7 @@ int DFG::removeNode(dfgNode* n) {
 			nodeTmp2->addAncestor(nodePtr->getAncestors()[i]->getNode());
 		}
 
-		edgeTmp = findEdge(nodePtr->getAncestors()[i]->getNode(),nodePtr->getNode());
+		edgeTmp = findEdge(nodePtr->getAncestors()[i],nodePtr);
 		assert(removeEdge(edgeTmp) != -1);
 	}
 
@@ -737,7 +738,7 @@ int DFG::removeNode(dfgNode* n) {
 			nodeTmp2->addChild(nodePtr->getChildren()[i]->getNode());
 		}
 
-		edgeTmp = findEdge(nodePtr->getNode(),nodePtr->getChildren()[i]->getNode());
+		edgeTmp = findEdge(nodePtr,nodePtr->getChildren()[i]);
 		assert(removeEdge(edgeTmp) != -1);
 	}
 
@@ -797,7 +798,7 @@ void DFG::traverseBFS(dfgNode* node, int ASAPlevel) {
 			maxASAPLevel = ASAPlevel;
 		}
 
-		child = findNode(node->getRecChildren()[i]);
+		child = node->getRecChildren()[i];
 		if(child->getASAPnumber() < ASAPlevel){
 			child->setASAPnumber(ASAPlevel);
 			traverseBFS(child,ASAPlevel+1);
@@ -816,7 +817,7 @@ void DFG::traverseInvBFS(dfgNode* node, int ALAPlevel) {
 	}
 
 	for (int i = 0; i < node->getRecAncestors().size(); ++i) {
-		ancestor = findNode(node->getRecAncestors()[i]);
+		ancestor = node->getRecAncestors()[i];
 		if(ancestor->getALAPnumber() < ALAPlevel){
 			ancestor->setALAPnumber(ALAPlevel);
 			traverseInvBFS(ancestor,ALAPlevel+1);
@@ -1532,7 +1533,7 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim) {
 				}
 
 				for (int j = 0; j < node->getRecAncestors().size(); ++j) {
-					parent = findNode(node->getRecAncestors()[j]);
+					parent = node->getRecAncestors()[j];
 
 					errs() << " (Id=" << parent->getIdx() <<
 							  ",rt=" << parent->getmappedRealTime() <<
@@ -1566,7 +1567,7 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim) {
 						if(!node->getPHIchildren().empty()){
 
 							assert(node->getPHIchildren().size() == 1);
-							phiChild = findNode(node->getPHIchildren()[0]);
+							phiChild = node->getPHIchildren()[0];
 							assert(phiChild->getMappedLoc() != NULL);
 							int y = phiChild->getMappedLoc()->getY();
 							int x = phiChild->getMappedLoc()->getX();
@@ -2415,7 +2416,7 @@ bool DFG::MapCGRA_EMS_ASAPLevel(int MII, int XDim, int YDim) {
 			}
 
 			for (int j = 0; j < node->getRecAncestors().size(); ++j) {
-				parent = findNode(node->getRecAncestors()[j]);
+				parent = node->getRecAncestors()[j];
 
 				errs() << " (Id=" << parent->getIdx() <<
 						  ",rt=" << parent->getmappedRealTime() <<
@@ -2449,7 +2450,7 @@ bool DFG::MapCGRA_EMS_ASAPLevel(int MII, int XDim, int YDim) {
 					if(!node->getPHIchildren().empty()){
 
 						assert(node->getPHIchildren().size() == 1);
-						phiChild = findNode(node->getPHIchildren()[0]);
+						phiChild = node->getPHIchildren()[0];
 						assert(phiChild->getMappedLoc() != NULL);
 						int y = phiChild->getMappedLoc()->getY();
 						int x = phiChild->getMappedLoc()->getX();
@@ -3147,4 +3148,164 @@ MemOp DFG::isMemoryOp(dfgNode* node) {
 	}
 
 	return INVALID;
+}
+
+#ifndef XMLCheckResult
+	#define XMLCheckResult(a_eResult) if (a_eResult != tinyxml2::XML_SUCCESS) { printf("Error: %i\n", a_eResult); return a_eResult; }
+#endif
+
+#ifndef XMLCheckNULL
+	#define XMLCheckNULL(xmlNode) if(xmlNode == NULL) return tinyxml2::XML_ERROR_FILE_READ_ERROR;
+#endif
+
+
+int DFG::readXML(std::string fileName, DFG* dfg) {
+	tinyxml2::XMLDocument inputDFG;
+	std::vector<dfgNode*> nodelist;
+
+	int totalNumberOps = -1;
+	int opManualCount = 0;
+	int totalNumberEdges = -1;
+	int edgeManualCount = 0;
+
+	tinyxml2::XMLError err;
+	tinyxml2::XMLElement* nextElem;
+	tinyxml2::XMLElement* inElem;
+	tinyxml2::XMLNode* pRoot;
+	int ancNumber = -1;
+	int childNumber = -1;
+
+	int tempInt1 = -1;
+	int tempInt2 = -1;
+	std::string tempString;
+
+
+	err = inputDFG.LoadFile(fileName.c_str());
+	XMLCheckResult(err);
+
+	pRoot = inputDFG.FirstChild();
+	XMLCheckNULL(pRoot);
+
+	nextElem = pRoot->FirstChildElement("OPs");
+	XMLCheckNULL(nextElem);
+
+	nextElem = nextElem->FirstChildElement("OP-number");
+	XMLCheckNULL(nextElem);
+	err = nextElem->QueryIntText(&totalNumberOps);
+	XMLCheckResult(err);
+
+	nextElem = nextElem->NextSiblingElement("OP");
+	XMLCheckNULL(nextElem);
+
+	while(nextElem != NULL){
+		dfgNode* node = new dfgNode();
+
+		inElem = nextElem->FirstChildElement("ID");
+		XMLCheckNULL(inElem);
+		err = inElem->QueryIntText(&tempInt1);
+		XMLCheckResult(err);
+		node->setIdx(tempInt1);
+
+		inElem = nextElem->FirstChildElement("OP-type");
+		XMLCheckNULL(inElem);
+		tempString = inElem->Value();
+		XMLCheckNULL(tempString);
+		node->setNameType(tempString);
+
+		inElem = nextElem->FirstChildElement("In-edge-number");
+		XMLCheckNULL(inElem);
+		err = inElem->QueryIntText(&tempInt1);
+		XMLCheckResult(err);
+		ancNumber = tempInt1;
+
+		if(ancNumber > 0){
+			//traverse to in-edges
+			inElem = nextElem->FirstChildElement("In-edges");
+			XMLCheckNULL(inElem);
+
+			inElem = inElem->FirstChildElement("Edge");
+			XMLCheckNULL(inElem);
+			for (int i = 0; i < ancNumber; ++i) {
+				err = inElem->QueryIntText(&tempInt1);
+				XMLCheckResult(err);
+				node->InEdgesIdx.push_back(tempInt1);
+
+				inElem = inElem->NextSiblingElement("Edge");
+			}
+		}
+
+		inElem = nextElem->FirstChildElement("Out-edge-number");
+		XMLCheckNULL(inElem);
+		err = inElem->QueryIntText(&tempInt1);
+		XMLCheckResult(err);
+		childNumber = tempInt1;
+
+		if(childNumber > 0){
+			//traverse to in-edges
+			inElem = nextElem->FirstChildElement("Out-edges");
+			XMLCheckNULL(inElem);
+
+			inElem = inElem->FirstChildElement("Edge");
+			XMLCheckNULL(inElem);
+			for (int i = 0; i < ancNumber; ++i) {
+				err = inElem->QueryIntText(&tempInt1);
+				XMLCheckResult(err);
+				node->OutEdgesIdx.push_back(tempInt1);
+
+				inElem = inElem->NextSiblingElement("Edge");
+			}
+		}
+		nextElem = nextElem->NextSiblingElement("OP");
+		opManualCount++;
+		nodelist.push_back(node);
+	}
+
+	assert(opManualCount == totalNumberOps);
+
+	//EDGES
+
+	nextElem = pRoot->FirstChildElement("EDGEs");
+	XMLCheckNULL(nextElem);
+
+	nextElem = nextElem->FirstChildElement("Edge-number");
+	XMLCheckNULL(nextElem);
+	err = nextElem->QueryIntText(&totalNumberEdges);
+	XMLCheckResult(err);
+
+	nextElem = nextElem->NextSiblingElement("Edge");
+	XMLCheckNULL(nextElem);
+
+	while(nextElem != NULL){
+		inElem = nextElem->FirstChildElement("Start-OP");
+		XMLCheckNULL(inElem);
+		err = nextElem->QueryIntText(&tempInt1);
+		XMLCheckResult(err);
+		inElem = nextElem->FirstChildElement("End-OP");
+		XMLCheckNULL(inElem);
+		err = nextElem->QueryIntText(&tempInt2);
+		XMLCheckResult(err);
+
+		for (int i = 0; i < nodelist.size(); ++i) {
+			if(nodelist[i]->getIdx() == tempInt1){
+				inElem = nextElem->FirstChildElement("Start-OP");
+				XMLCheckNULL(inElem);
+				err = nextElem->QueryIntText(&tempInt1);
+				XMLCheckResult(err);
+
+				for (int j = 0; j < nodelist.size(); ++j) {
+					if(nodelist[j]->getIdx() == tempInt2){
+						nodelist[i]->addChildNode(nodelist[j]);
+						nodelist[j]->addAncestorNode(nodelist[i]);
+					}
+				}
+			}
+		}
+		nextElem = nextElem->NextSiblingElement("Edge");
+		edgeManualCount++;
+	}
+
+	assert(edgeManualCount == totalNumberEdges);
+	dfg->setNodes(nodelist);
+	dfg->setName(fileName);
+	return 0;
 }
