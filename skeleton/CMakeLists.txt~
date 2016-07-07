@@ -13,6 +13,8 @@ add_library(SkeletonPass MODULE
     dfg.cpp
     astar.h
     astar.cpp
+    tinyxml2.h
+    tinyxml2.cpp
 )
 
 

@@ -13,6 +13,7 @@
 #include <iostream>
 #include <fstream>
 
+
 #define REGS_PER_NODE 4
 
 class AStar;
@@ -26,12 +27,12 @@ struct less_than_schIdx{
 };
 
 struct ScheduleOrder{
-	inline bool operator()(dfgNode node1, dfgNode node2){
+	inline bool operator()(dfgNode* node1, dfgNode* node2){
 
-		int slack1 = node1.getALAPnumber() - node1.getASAPnumber();
-		int slack2 = node2.getALAPnumber() - node2.getASAPnumber();
+		int slack1 = node1->getALAPnumber() - node1->getASAPnumber();
+		int slack2 = node2->getALAPnumber() - node2->getASAPnumber();
 
-		if(node1.getASAPnumber() < node2.getASAPnumber()){
+		if(node1->getASAPnumber() < node2->getASAPnumber()){
 			return true;
 		}
 		else{
@@ -115,7 +116,7 @@ enum MemOp {LOAD,STORE,INVALID};
 
 class DFG{
 		private :
-			std::vector<dfgNode> NodeList;
+			std::vector<dfgNode*> NodeList;
 			std::ofstream xmlFile;
 			std::vector<Edge> edgeList;
 			int maxASAPLevel = -1;
@@ -158,22 +159,26 @@ class DFG{
 			AStar* astar;
 
 			DFG(std::string name) : name(name){}
+			void setName(std::string str){name = str;}
+			std::string getName(){return name;}
 
 			dfgNode* getEntryNode();
 
-			std::vector<dfgNode> getNodes();
-			std::vector<dfgNode>* getNodesPtr(){return &NodeList;}
+			std::vector<dfgNode*> getNodes();
+			std::vector<dfgNode*>* getNodesPtr(){return &NodeList;}
 
 			std::vector<Edge> getEdges();
 			void InsertNode(Instruction* Node);
 
-			void InsertNode(dfgNode Node);
+			void setNodes(std::vector<dfgNode*> nodes){NodeList = nodes;}
+
+//			void InsertNode(dfgNode Node);
 
 			void InsertEdge(Edge e);
 
 			dfgNode* findNode(Instruction* I);
 
-			Edge* findEdge(Instruction* src, Instruction* dest);
+			Edge* findEdge(dfgNode* src, dfgNode* dest);
 
 			std::vector<dfgNode*> getRoots();
 
@@ -270,6 +275,10 @@ class DFG{
 			int convertToPhyLoc(int y, int x);
 			int getDistCGRANodes(CGRANode* a, CGRANode* b);
 			int getStaticRoutingCost(dfgNode* node, CGRANode* dest, std::map<CGRANode*,std::vector<CGRANode*> > Edges);
+
+
+			//readXML
+			int readXML(std::string fileName);
 
 
 	};

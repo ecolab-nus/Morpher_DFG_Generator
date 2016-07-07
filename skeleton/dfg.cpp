@@ -5,16 +5,17 @@
 #include <queue>
 #include "astar.h"
 #include <ctime>
+#include "tinyxml2.h"
 
 
 dfgNode* DFG::getEntryNode(){
 	if(NodeList.size() > 0){
-		return &(NodeList[0]);
+		return NodeList[0];
 	}
 	return NULL;
 }
 
-std::vector<dfgNode> DFG::getNodes(){
+std::vector<dfgNode*> DFG::getNodes(){
 	return NodeList;
 }
 
@@ -23,16 +24,16 @@ std::vector<Edge> DFG::getEdges(){
 }
 
 void DFG::InsertNode(Instruction* Node){
-	dfgNode temp(Node, this);
-	temp.setIdx(NodeList.size());
+	dfgNode* temp = new dfgNode(Node, this);
+	temp->setIdx(NodeList.size());
 	NodeList.push_back(temp);
 }
 
-void DFG::InsertNode(dfgNode Node){
-	errs() << "Inserted Node with Instruction : " << Node.getNode() << "\n";
-	Node.setIdx(NodeList.size());
-	NodeList.push_back(Node);
-}
+//void DFG::InsertNode(dfgNode Node){
+//	errs() << "Inserted Node with Instruction : " << Node.getNode() << "\n";
+//	Node.setIdx(NodeList.size());
+//	NodeList.push_back(Node);
+//}
 
 void DFG::InsertEdge(Edge e){
 	edgeList.push_back(e);
@@ -40,14 +41,14 @@ void DFG::InsertEdge(Edge e){
 
 dfgNode* DFG::findNode(Instruction* I){
 	for(int i = 0 ; i < NodeList.size() ; i++){
-		if (I == NodeList[i].getNode()){
-			return &(NodeList[i]);
+		if (I == NodeList[i]->getNode()){
+			return NodeList[i];
 		}
 	}
 	return NULL;
 }
 
-Edge* DFG::findEdge(Instruction* src, Instruction* dest){
+Edge* DFG::findEdge(dfgNode* src, dfgNode* dest){
 	for (int i = 0; i < edgeList.size(); ++i) {
 		if(edgeList[i].getSrc() == src && edgeList[i].getDest() == dest) {
 			return &(edgeList[i]);
@@ -59,8 +60,8 @@ Edge* DFG::findEdge(Instruction* src, Instruction* dest){
 std::vector<dfgNode*> DFG::getRoots(){
 	std::vector<dfgNode*> rootNodes;
 	for (int i = 0 ; i < NodeList.size() ; i++) {
-		if(NodeList[i].getChildren().size() == 0){
-			rootNodes.push_back(&NodeList[i]);
+		if(NodeList[i]->getChildren().size() == 0){
+			rootNodes.push_back(NodeList[i]);
 		}
 	}
 	return rootNodes;
@@ -70,16 +71,16 @@ std::vector<dfgNode*> DFG::getLeafs(BasicBlock* BB){
 	errs() << "start getting the LeafNodes...!\n";
 	std::vector<dfgNode*> leafNodes;
 	for (int i = 0 ; i < NodeList.size() ; i++) {
-		if(NodeList[i].getNode()->getParent() == BB){
-			leafNodes.push_back(&NodeList[i]);
+		if(NodeList[i]->getNode()->getParent() == BB){
+			leafNodes.push_back(NodeList[i]);
 		}
 	}
 	errs() << "LeafNodes init done...!\n";
 
 	for (int i = 0 ; i < NodeList.size() ; i++) {
-		if(NodeList[i].getNode()->getParent() == BB){
-			for(int j = 0; j < NodeList[i].getChildren().size(); j++){
-				dfgNode* nodeToBeRemoved = this->findNode(NodeList[i].getChildren()[j]);
+		if(NodeList[i]->getNode()->getParent() == BB){
+			for(int j = 0; j < NodeList[i]->getChildren().size(); j++){
+				dfgNode* nodeToBeRemoved = NodeList[i]->getChildren()[j];
 				if(nodeToBeRemoved != NULL){
 					errs() << "LeafNodes : nodeToBeRemoved found...! : ";
 					nodeToBeRemoved->getNode()->dump();
@@ -98,7 +99,7 @@ void DFG::connectBB(){
 	errs() << "ConnectBB called!\n";
 
 	assert(NodeList.size() > 0);
-	dfgNode firstNode = NodeList[0];
+	dfgNode firstNode = *NodeList[0];
 	SmallVector<std::pair<const BasicBlock *, const BasicBlock *>,1 > Result;
 	FindFunctionBackedges(*(firstNode.getNode()->getFunction()),Result);
 
@@ -112,13 +113,13 @@ void DFG::connectBB(){
 
 	std::vector<BasicBlock*> analysedBB;
 	for (int i = 0 ; i < NodeList.size() ; i++) {
-		if(NodeList[i].getNode()->getOpcode() == Instruction::Br){
+		if(NodeList[i]->getNode()->getOpcode() == Instruction::Br){
 			errs() << "$$$$$ This belongs to BB";
-			NodeList[i].getNode()->getParent()->dump();
+			NodeList[i]->getNode()->getParent()->dump();
 //			if (std::find(analysedBB.begin(), analysedBB.end(), NodeList[i].getNode()->getParent()) == analysedBB.end()){
 //				analysedBB.push_back(NodeList[i].getNode()->getParent());
 //			}
-			BasicBlock* BB = NodeList[i].getNode()->getParent();
+			BasicBlock* BB = NodeList[i]->getNode()->getParent();
 			succ_iterator SI(succ_begin(BB)), SE(succ_end(BB));
 			 for (; SI != SE; ++SI){
 				 BasicBlock* succ = *SI;
@@ -137,8 +138,8 @@ void DFG::connectBB(){
 //					 analysedBB.push_back(succ);
 					 std::vector<dfgNode*> succLeafs = this->getLeafs(succ);
 					 for (int j = 0; j < succLeafs.size(); j++){
-						 NodeList[i].addChild(succLeafs[j]->getNode());
-						 succLeafs[j]->addAncestor(NodeList[i].getNode());
+						 NodeList[i]->addChild(succLeafs[j]->getNode());
+						 succLeafs[j]->addAncestor(NodeList[i]->getNode());
 					 }
 //				 }
 			 }
@@ -168,7 +169,7 @@ void DFG::printInEdges(dfgNode* node, int depth){
 
 		printHeaderTag("ID",depth+2);
 //		xmlFile << node->getAncestors()[i] << "to" << node->getNode();
-		xmlFile << findEdge(node->getAncestors()[i],node->getNode())->getID() ;
+		xmlFile << findEdge(node->getAncestors()[i],node)->getID() ;
 		printFooterTag("ID",depth+2);
 
 		printFooterTag("Edge",depth+1);
@@ -188,7 +189,7 @@ void DFG::printOutEdges(dfgNode* node, int depth){
 
 		printHeaderTag("ID",depth+2);
 //		xmlFile << node->getNode() << "to" << node->getChildren()[i];
-		xmlFile << findEdge(node->getNode(),node->getChildren()[i])->getID() ;
+		xmlFile << findEdge(node,node->getChildren()[i])->getID() ;
 		printFooterTag("ID",depth+2);
 
 		printFooterTag("Edge",depth+1);
@@ -240,7 +241,7 @@ void DFG::printOPs(int depth){
 	printFooterTag("OP-number",depth+1);
 
 	for (int i = 0; i < NodeList.size(); ++i) {
-		printOP(&(NodeList[i]),depth+1);
+		printOP(NodeList[i],depth+1);
 	}
 	printFooterTag("OPs",depth);
 }
@@ -300,7 +301,7 @@ void DFG::printEdges(int depth) {
 
 void DFG::renumber() {
 	for (int i = 0; i < NodeList.size(); ++i) {
-		NodeList[i].setIdx(i);
+		NodeList[i]->setIdx(i);
 	}
 
 	for (int i = 0; i < edgeList.size(); ++i) {
@@ -322,12 +323,12 @@ void DFG::printEdge(Edge* e, int depth) {
 
 	printHeaderTag("Start-OP",depth+1);
 //	xmlFile << e->getSrc();
-	xmlFile << findNode(e->getSrc())->getIdx();
+	xmlFile << e->getSrc()->getIdx();
 	printFooterTag("Start-OP",depth+1);
 
 	printHeaderTag("End-OP",depth+1);
 //	xmlFile << e->getDest();
-	xmlFile << findNode(e->getDest())->getIdx();
+	xmlFile << e->getDest()->getIdx();
 	printFooterTag("End-OP",depth+1);
 
 	printFooterTag("EDGE",depth);
@@ -340,7 +341,7 @@ void DFG::addMemRecDepEdges(DependenceAnalysis* DA) {
 	std::ofstream log;
 
 	static int count = 0;
-	std::string Filename = (NodeList[0].getNode()->getFunction()->getName() + "_L" + std::to_string(count++) + "addMemRecDepEdges.log").str();
+	std::string Filename = (NodeList[0]->getNode()->getFunction()->getName() + "_L" + std::to_string(count++) + "addMemRecDepEdges.log").str();
 	log.open(Filename.c_str());
 	log << "Started...\n";
 
@@ -348,7 +349,7 @@ void DFG::addMemRecDepEdges(DependenceAnalysis* DA) {
 
 	//Create a list of memory instructions
 	for (int i = 0; i < NodeList.size(); ++i) {
-		nodePtr = &NodeList[i];
+		nodePtr = NodeList[i];
 		Ins = dyn_cast<Instruction>(nodePtr->getNode());
 		if (!Ins)
 		return;
@@ -461,10 +462,10 @@ void DFG::findMaxRecDist() {
 	dfgNode* node;
 	int recDist;
 	for (int i = 0; i < NodeList.size(); ++i) {
-		node = &NodeList[i];
+		node = NodeList[i];
 
 		for (int j = 0; j < node->getRecAncestors().size(); ++j) {
-			recDist = node->getASAPnumber() - findNode(node->getRecAncestors()[j])->getASAPnumber();
+			recDist = node->getASAPnumber() - node->getRecAncestors()[j]->getASAPnumber();
 			if(maxRecDist < recDist){
 				maxRecDist = recDist;
 			}
@@ -483,7 +484,7 @@ void DFG::addMemRecDepEdgesNew(DependenceAnalysis* DA) {
 		int RecDist;
 
 		static int count = 0;
-		std::string Filename = (NodeList[0].getNode()->getFunction()->getName() + "_L" + std::to_string(count++) + "addMemRecDepEdges.log").str();
+		std::string Filename = (NodeList[0]->getNode()->getFunction()->getName() + "_L" + std::to_string(count++) + "addMemRecDepEdges.log").str();
 		log.open(Filename.c_str());
 		log << "Started...\n";
 
@@ -491,7 +492,7 @@ void DFG::addMemRecDepEdgesNew(DependenceAnalysis* DA) {
 
 		//Create a list of memory instructions
 		for (int i = 0; i < NodeList.size(); ++i) {
-			nodePtr = &NodeList[i];
+			nodePtr = NodeList[i];
 			Ins = dyn_cast<Instruction>(nodePtr->getNode());
 			if (!Ins)
 			return;
@@ -614,7 +615,7 @@ void DFG::addMemRecDepEdgesNew(DependenceAnalysis* DA) {
 void DFG::addMemDepEdges(MemoryDependenceAnalysis *MD) {
 
 	assert(NodeList.size() > 0);
-	dfgNode firstNode = NodeList[0];
+	dfgNode firstNode = *NodeList[0];
 	SmallVector<std::pair<const BasicBlock *, const BasicBlock *>,1 > Result;
 	FindFunctionBackedges(*(firstNode.getNode()->getFunction()),Result);
 
@@ -622,7 +623,7 @@ void DFG::addMemDepEdges(MemoryDependenceAnalysis *MD) {
 	MemDepResult mRes;
 	SmallVector<NonLocalDepResult,1> result;
 	for (int i = 0; i < NodeList.size(); ++i) {
-		it = NodeList[i].getNode();
+		it = NodeList[i]->getNode();
 		if(it->mayReadOrWriteMemory()){
 			mRes = MD->getDependency(it);
 
@@ -653,7 +654,7 @@ void DFG::addMemDepEdges(MemoryDependenceAnalysis *MD) {
 
 								result[j].getResult().getInst()->dump();
 								this->findNode(result[j].getResult().getInst())->addChild(it,EDGE_TYPE_LDST);
-								NodeList[i].addAncestor(result[j].getResult().getInst());
+								NodeList[i]->addAncestor(result[j].getResult().getInst());
 							}
 
 						}
@@ -673,7 +674,7 @@ void DFG::addMemDepEdges(MemoryDependenceAnalysis *MD) {
 				}
 				else {
 					this->findNode(mRes.getInst())->addChild(it,EDGE_TYPE_LDST);
-					NodeList[i].addAncestor(mRes.getInst());
+					NodeList[i]->addAncestor(mRes.getInst());
 				}
 			}
 		}
@@ -709,42 +710,42 @@ int DFG::removeNode(dfgNode* n) {
 
 	//Treat the ancestors
 	for (int i = 0; i < nodePtr->getAncestors().size(); ++i) {
-		nodeTmp = findNode(nodePtr->getAncestors()[i]);
+		nodeTmp = nodePtr->getAncestors()[i];
 		assert(nodeTmp->removeChild(nodePtr->getNode()) != -1);
 
 		for (int j = 0; j < nodePtr->getChildren().size(); ++j) {
-			nodeTmp->addChild(nodePtr->getChildren()[j]);  //TODO : Generalize for types of children
-			nodeTmp2 = findNode(nodePtr->getChildren()[j]);
+			nodeTmp->addChild(nodePtr->getChildren()[j]->getNode());  //TODO : Generalize for types of children
+			nodeTmp2 = nodePtr->getChildren()[j];
 
 			assert(nodeTmp2->removeAncestor(nodePtr->getNode()) != -1);
-			nodeTmp2->addAncestor(nodePtr->getAncestors()[i]);
+			nodeTmp2->addAncestor(nodePtr->getAncestors()[i]->getNode());
 		}
 
-		edgeTmp = findEdge(nodePtr->getAncestors()[i],nodePtr->getNode());
+		edgeTmp = findEdge(nodePtr->getAncestors()[i],nodePtr);
 		assert(removeEdge(edgeTmp) != -1);
 	}
 
 	//Treat the children
 	for (int i = 0; i < nodePtr->getChildren().size(); ++i) {
-		nodeTmp = findNode(nodePtr->getChildren()[i]);
+		nodeTmp = nodePtr->getChildren()[i];
 		assert(nodeTmp->removeAncestor(nodePtr->getNode()) != -1);
 
 		for (int j = 0; j < nodePtr->getAncestors().size(); ++j) {
-			nodeTmp->addAncestor(nodePtr->getAncestors()[j]);
-			nodeTmp2 = findNode(nodePtr->getAncestors()[j]);
+			nodeTmp->addAncestor(nodePtr->getAncestors()[j]->getNode());
+			nodeTmp2 = nodePtr->getAncestors()[j];
 
 			assert(nodeTmp2->removeChild(nodePtr->getNode()) != -1);
-			nodeTmp2->addChild(nodePtr->getChildren()[i]);
+			nodeTmp2->addChild(nodePtr->getChildren()[i]->getNode());
 		}
 
-		edgeTmp = findEdge(nodePtr->getNode(),nodePtr->getChildren()[i]);
+		edgeTmp = findEdge(nodePtr,nodePtr->getChildren()[i]);
 		assert(removeEdge(edgeTmp) != -1);
 	}
 
 //	NodeList.erase(std::remove(NodeList.begin(),NodeList.end(),*n),NodeList.end());
 
 	for (int i = 0; i < NodeList.size(); ++i) {
-		if(nodePtr == &(NodeList[i])){
+		if(nodePtr == NodeList[i]){
 			NodeList.erase(NodeList.begin()+i);
 		}
 	}
@@ -755,9 +756,9 @@ int DFG::removeNode(dfgNode* n) {
 void DFG::removeAlloc() {
 	Instruction* insTmp;
 	for (int i = 0; i < NodeList.size(); ++i) {
-		insTmp = NodeList[i].getNode();
+		insTmp = NodeList[i]->getNode();
 		if(insTmp->getOpcode() == Instruction::Alloca /*|| insTmp->getOpcode() == Instruction::PHI*/){
-			removeNode(&(NodeList[i]));
+			removeNode(NodeList[i]);
 		}
 	}
 	renumber();
@@ -784,7 +785,7 @@ void DFG::traverseBFS(dfgNode* node, int ASAPlevel) {
 			maxASAPLevel = ASAPlevel;
 		}
 
-		child = findNode(node->getChildren()[i]);
+		child = node->getChildren()[i];
 		if(child->getASAPnumber() < ASAPlevel){
 			child->setASAPnumber(ASAPlevel);
 			traverseBFS(child,ASAPlevel+1);
@@ -797,7 +798,7 @@ void DFG::traverseBFS(dfgNode* node, int ASAPlevel) {
 			maxASAPLevel = ASAPlevel;
 		}
 
-		child = findNode(node->getRecChildren()[i]);
+		child = node->getRecChildren()[i];
 		if(child->getASAPnumber() < ASAPlevel){
 			child->setASAPnumber(ASAPlevel);
 			traverseBFS(child,ASAPlevel+1);
@@ -808,7 +809,7 @@ void DFG::traverseBFS(dfgNode* node, int ASAPlevel) {
 void DFG::traverseInvBFS(dfgNode* node, int ALAPlevel) {
 	dfgNode* ancestor;
 	for (int i = 0; i < node->getAncestors().size(); ++i) {
-		ancestor = findNode(node->getAncestors()[i]);
+		ancestor = node->getAncestors()[i];
 		if(ancestor->getALAPnumber() < ALAPlevel){
 			ancestor->setALAPnumber(ALAPlevel);
 			traverseInvBFS(ancestor,ALAPlevel+1);
@@ -816,7 +817,7 @@ void DFG::traverseInvBFS(dfgNode* node, int ALAPlevel) {
 	}
 
 	for (int i = 0; i < node->getRecAncestors().size(); ++i) {
-		ancestor = findNode(node->getRecAncestors()[i]);
+		ancestor = node->getRecAncestors()[i];
 		if(ancestor->getALAPnumber() < ALAPlevel){
 			ancestor->setALAPnumber(ALAPlevel);
 			traverseInvBFS(ancestor,ALAPlevel+1);
@@ -865,7 +866,7 @@ void DFG::scheduleALAP() {
 	}
 
 	for (int i = 0; i < NodeList.size(); ++i) {
-		NodeList[i].setALAPnumber(maxASAPLevel - NodeList[i].getALAPnumber());
+		NodeList[i]->setALAPnumber(maxASAPLevel - NodeList[i]->getALAPnumber());
 	}
 
 
@@ -875,8 +876,8 @@ void DFG::scheduleALAP() {
 std::vector<dfgNode*> DFG::getLeafs() {
 	std::vector<dfgNode*> leafNodes;
 	for (int i = 0 ; i < NodeList.size() ; i++) {
-		if(NodeList[i].getAncestors().size() == 0){
-			leafNodes.push_back(&NodeList[i]);
+		if(NodeList[i]->getAncestors().size() == 0){
+			leafNodes.push_back(NodeList[i]);
 		}
 	}
 	return leafNodes;
@@ -926,9 +927,9 @@ std::vector<std::vector<unsigned char> > DFG::getConMat() {
 	}
 
 	for (int i = 0; i < nodelistSize; ++i) {
-		node = &NodeList[i];
+		node = NodeList[i];
 		for (int j = 0; j < node->getChildren().size(); ++j) {
-			child = findNode(node->getChildren()[j]);
+			child = node->getChildren()[j];
 			conMat[node->getIdx()][child->getIdx()] = 1;
 		}
 	}
@@ -1135,7 +1136,7 @@ int DFG::AddRoutingEdges(dfgNode* node){
 
 
 	for (int j = 0; j < node->getAncestors().size(); ++j) {
-		parents.push_back(findNode(node->getAncestors()[j]));
+		parents.push_back(node->getAncestors()[j]);
 	}
 
 	for (int j = 0; j < parents.size(); ++j) {
@@ -1189,7 +1190,7 @@ std::map<dfgNode*, std::vector<CGRANode*> > DFG::getPrimarySlots(
 	for (int i = 0; i < nodes.size(); ++i) {
 		node = nodes[i];
 		for (int j = 0; j < node->getAncestors().size(); ++j) {
-			parents.push_back(findNode(node->getAncestors()[j]));
+			parents.push_back(node->getAncestors()[j]);
 		}
 
 
@@ -1238,7 +1239,7 @@ std::map<dfgNode*, std::vector<CGRANode*> > DFG::getPrimarySlots(
 	for (int i = 0; i < nodes.size(); ++i) {
 		node = nodes[i];
 		for (int j = 0; j < node->getAncestors().size(); ++j) {
-			parents.push_back(findNode(node->getAncestors()[j]));
+			parents.push_back(node->getAncestors()[j]);
 
 		}
 
@@ -1308,12 +1309,12 @@ bool DFG::MapMultiDestRec(
 	node = it->first;
 //	possibleDests = it->second;
 
-	if(node == NULL){
-		errs() << "Node is NULL...\n";
-	}else{
-		errs() << "Node = \n";
-		node->getNode()->dump();
-	}
+//	if(node == NULL){
+//		errs() << "Node is NULL...\n";
+//	}else{
+//		errs() << "Node = \n";
+//		node->getNode()->dump();
+//	}
 
 	errs() << "MapMultiDestRec : Procesing NodeIdx = " << node->getIdx();
 	errs() << ", PossibleDests = " << it->second.size();
@@ -1334,7 +1335,7 @@ bool DFG::MapMultiDestRec(
 			cnode = it->second[i].first;
 			cnodePair = it->second[i];
 			for (int j = 0; j < node->getAncestors().size(); ++j) {
-				parent = findNode(node->getAncestors()[j]);
+				parent = node->getAncestors()[j];
 //				parentExt = currCGRA->getCGRANode(cnode->getT(),parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
 //				parentExt = parent->getMappedLoc();
 				parentExt = currCGRA->getCGRANode((parent->getMappedLoc()->getT() + 1)%(currCGRA->getMII()),parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
@@ -1487,7 +1488,7 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim) {
 		errs() << "level = " << level << "\n";
 
 		for (int j = 0; j < NodeList.size(); ++j) {
-			node = &NodeList[j];
+			node = NodeList[j];
 
 			if(node->getASAPnumber() == level){
 				currLevelNodes.push_back(node);
@@ -1501,7 +1502,7 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim) {
 				int ll = 0;
 				int el = INT32_MAX;
 				for (int j = 0; j < node->getAncestors().size(); ++j) {
-					parent = findNode(node->getAncestors()[j]);
+					parent = node->getAncestors()[j];
 
 
 					//every parent should be mapped
@@ -1532,7 +1533,7 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim) {
 				}
 
 				for (int j = 0; j < node->getRecAncestors().size(); ++j) {
-					parent = findNode(node->getRecAncestors()[j]);
+					parent = node->getRecAncestors()[j];
 
 					errs() << " (Id=" << parent->getIdx() <<
 							  ",rt=" << parent->getmappedRealTime() <<
@@ -1566,7 +1567,7 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim) {
 						if(!node->getPHIchildren().empty()){
 
 							assert(node->getPHIchildren().size() == 1);
-							phiChild = findNode(node->getPHIchildren()[0]);
+							phiChild = node->getPHIchildren()[0];
 							assert(phiChild->getMappedLoc() != NULL);
 							int y = phiChild->getMappedLoc()->getY();
 							int x = phiChild->getMappedLoc()->getX();
@@ -1692,7 +1693,7 @@ void DFG::MapCGRA_SMART(int XDim, int YDim, std::string mapfileName) {
 	//Sanity Check
 	dfgNode* node;
 	for (int i = 0; i < NodeList.size(); ++i) {
-		node = &NodeList[i];
+		node = NodeList[i];
 		if (node->getAncestors().size() > 5){
 			errs() << "Cannot map applications that have Fan in nodes more than 5\n";
 			return;
@@ -1708,7 +1709,7 @@ void DFG::MapCGRA_SMART(int XDim, int YDim, std::string mapfileName) {
 			errs() << "MapCGRAsa :: Mapping success with MII = " << MII << "\n";
 
 			for (int i = 0; i < NodeList.size(); ++i) {
-				node = &NodeList[i];
+				node = NodeList[i];
 				if(node->getmappedRealTime() > latency){
 					latency = node->getmappedRealTime();
 				}
@@ -1821,7 +1822,7 @@ void DFG::MapCGRA(int XDim, int YDim) {
 		}
 
 		while(1){
-			temp = &NodeList[nodeListSequencer];
+			temp = NodeList[nodeListSequencer];
 			errs() << "Mapping " << nodeListSequencer << "/" << NodeList.size() << "..." << ", with MII = " << MII << "\n";
 
 			if(nodeListSequencer == NodeList.size()){
@@ -1929,7 +1930,7 @@ void DFG::CreateSchList() {
 	std::sort(NodeList.begin(),NodeList.end(),ScheduleOrder());
 	errs() << "CreateSchList::Done sorting...\n";
 	for (int i = 0; i < NodeList.size(); ++i) {
-		temp = &NodeList[i];
+		temp = NodeList[i];
 		temp->setSchIdx(i);
 
 		errs() << "NodeIdx=" << temp->getIdx() << ", ASAP =" << temp->getASAPnumber() << ", ALAP =" << temp->getALAPnumber() << "\n";
@@ -1941,7 +1942,7 @@ void DFG::CreateSchList() {
 std::vector<ConnectedCGRANode> DFG::searchCandidates(CGRANode* mappedLoc, dfgNode* node, std::vector<std::pair<Instruction*,int>>* candidateNumbers) {
 			std::vector<ConnectedCGRANode> candidates = mappedLoc->getConnectedNodes();
 			eraseAlreadyMappedNodes(&candidates);
-			candidateNumbers->push_back(std::make_pair(node->getAncestors()[0],candidates.size()));
+			candidateNumbers->push_back(std::make_pair(node->getAncestors()[0]->getNode(),candidates.size()));
 			dfgNode* temp;
 	//		candidateNumbers[node->getAncestors()[0]] = candidates.size();
 
@@ -1950,14 +1951,14 @@ std::vector<ConnectedCGRANode> DFG::searchCandidates(CGRANode* mappedLoc, dfgNod
 			bool matchFound = false;
 
 			for (int i = 0; i < node->getAncestors().size(); ++i) {
-				if(mappedLoc->getmappedDFGNode()->getNode() != node->getAncestors()[i]) {
-					temp = findNode(node->getAncestors()[i]);
+				if(mappedLoc->getmappedDFGNode()->getNode() != node->getAncestors()[i]->getNode()) {
+					temp = findNode(node->getAncestors()[i]->getNode());
 					assert(temp->getMappedLoc() != NULL);
 					candidates2 = getConnectedCGRANodes(temp);
 //					candidates2 = temp->getMappedLoc()->getConnectedNodes();
 //					eraseAlreadyMappedNodes(&candidates2);
 
-					candidateNumbers->push_back(std::make_pair(node->getAncestors()[i],candidates2.size()));
+					candidateNumbers->push_back(std::make_pair(node->getAncestors()[i]->getNode(),candidates2.size()));
 
 					for (int j = 0; j < candidates.size(); ++j) {
 						for (int k = 0; k < candidates2.size(); ++k) {
@@ -1997,7 +1998,7 @@ void DFG::eraseAlreadyMappedNodes(std::vector<ConnectedCGRANode>* candidates) {
 }
 
 void DFG::backTrack(int nodeSeq) {
-	dfgNode* temp = &NodeList[nodeSeq];
+	dfgNode* temp = NodeList[nodeSeq];
 	dfgNode* anc;
 //	errs() << "Backtrack : NodeSeq=" << nodeSeq << "\n";
 
@@ -2009,7 +2010,7 @@ void DFG::backTrack(int nodeSeq) {
 	}
 
 	for (int i = 0; i < temp->getAncestors().size(); ++i) {
-		anc = findNode(temp->getAncestors()[i]);
+		anc = temp->getAncestors()[i];
 
 		std::vector<CGRANode*>::iterator it = anc->getRoutingLocs()->begin();
 
@@ -2152,7 +2153,7 @@ std::vector<ConnectedCGRANode> DFG::FindCandidateCGRANodes(dfgNode* node) {
 		return candidates;
 	}
 	else if (node->getAncestors().size() == 1){
-		temp = findNode(node->getAncestors()[0]);
+		temp = node->getAncestors()[0];
 		assert(temp->getMappedLoc() != NULL);
 
 		candidates = getConnectedCGRANodes(temp);
@@ -2167,7 +2168,7 @@ std::vector<ConnectedCGRANode> DFG::FindCandidateCGRANodes(dfgNode* node) {
 
 		return candidates;
 	} else{ //(node->getAncestors().size() > 1
-		temp = findNode(node->getAncestors()[0]);
+		temp = node->getAncestors()[0];
 
 		if(temp->getMappedLoc() == NULL){
 			errs() << "Unmapped ancestor : " << temp->getIdx() << "\n";
@@ -2265,7 +2266,7 @@ void DFG::MapCGRA_EMS(int XDim, int YDim, std::string mapfileName) {
 	//Sanity Check
 	dfgNode* node;
 	for (int i = 0; i < NodeList.size(); ++i) {
-		node = &NodeList[i];
+		node = NodeList[i];
 		if (node->getAncestors().size() > 5){
 			errs() << "Cannot map applications that have Fan in nodes more than 5\n";
 			return;
@@ -2364,7 +2365,7 @@ bool DFG::MapCGRA_EMS_ASAPLevel(int MII, int XDim, int YDim) {
 		errs() << "level = " << level << "\n";
 
 		for (int j = 0; j < NodeList.size(); ++j) {
-			node = &NodeList[j];
+			node = NodeList[j];
 
 			if(node->getASAPnumber() == level){
 				currLevelNodes.push_back(node);
@@ -2378,13 +2379,13 @@ bool DFG::MapCGRA_EMS_ASAPLevel(int MII, int XDim, int YDim) {
 			int ll = 0;
 			int el = INT32_MAX;
 			for (int j = 0; j < node->getAncestors().size(); ++j) {
-				parent = findNode(node->getAncestors()[j]);
+				parent = node->getAncestors()[j];
 
 
 				//every parent should be mapped
 				if(parent->getMappedLoc() == NULL){
 					errs() << "parent :: nodeIdx=" << parent->getIdx() << ", ASAP=" << parent->getASAPnumber() << "\n";
-					parent->getNode()->dump();
+//					parent->getNode()->dump();
 
 				}
 				assert(parent->getMappedLoc() != NULL);
@@ -2415,7 +2416,7 @@ bool DFG::MapCGRA_EMS_ASAPLevel(int MII, int XDim, int YDim) {
 			}
 
 			for (int j = 0; j < node->getRecAncestors().size(); ++j) {
-				parent = findNode(node->getRecAncestors()[j]);
+				parent = node->getRecAncestors()[j];
 
 				errs() << " (Id=" << parent->getIdx() <<
 						  ",rt=" << parent->getmappedRealTime() <<
@@ -2449,7 +2450,7 @@ bool DFG::MapCGRA_EMS_ASAPLevel(int MII, int XDim, int YDim) {
 					if(!node->getPHIchildren().empty()){
 
 						assert(node->getPHIchildren().size() == 1);
-						phiChild = findNode(node->getPHIchildren()[0]);
+						phiChild = node->getPHIchildren()[0];
 						assert(phiChild->getMappedLoc() != NULL);
 						int y = phiChild->getMappedLoc()->getY();
 						int x = phiChild->getMappedLoc()->getX();
@@ -2491,7 +2492,7 @@ bool DFG::MapCGRA_EMS_ASAPLevel(int MII, int XDim, int YDim) {
 
 				cost = 0;
 				for (int j = 0; j < node->getAncestors().size(); ++j) {
-					parent = findNode(node->getAncestors()[j]);
+					parent = node->getAncestors()[j];
 					parentExt = parent->getMappedLoc();
 //					parentExt = currCGRA->getCGRANode((parent->getMappedLoc()->getT() + 1)%(currCGRA->getMII()),parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
 					path = std::make_pair(parentExt,cnode);
@@ -2556,12 +2557,12 @@ bool DFG::MAPCGRA_EMS_MultDest(std::map<dfgNode*,std::vector< std::pair<CGRANode
 	node = it->node;
 //	possibleDests = it->second;
 
-	if(node == NULL){
-		errs() << "Node is NULL...\n";
-	}else{
-		errs() << "Node = \n";
-		node->getNode()->dump();
-	}
+//	if(node == NULL){
+//		errs() << "Node is NULL...\n";
+//	}else{
+//		errs() << "Node = \n";
+//		node->getNode()->dump();
+//	}
 
 //	errs() << "MapMultiDestRec : Procesing NodeIdx = " << node->getIdx() << " ,PossibleDests = " << (*nodeDestMap)[node].size() << "\n";
 
@@ -2584,7 +2585,7 @@ bool DFG::MAPCGRA_EMS_MultDest(std::map<dfgNode*,std::vector< std::pair<CGRANode
 			cnode = (*nodeDestMap)[node][i].first;
 			cnodePair = (*nodeDestMap)[node][i];
 			for (int j = 0; j < node->getAncestors().size(); ++j) {
-				parent = findNode(node->getAncestors()[j]);
+				parent = node->getAncestors()[j];
 //				parentExt = currCGRA->getCGRANode(cnode->getT(),parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
 				parentExt = parent->getMappedLoc();
 //				parentExt = currCGRA->getCGRANode((parent->getMappedLoc()->getT() + 1)%(currCGRA->getMII()),parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
@@ -2699,7 +2700,7 @@ bool DFG::MAPCGRA_EMS_MultDest(std::map<dfgNode*,std::vector< std::pair<CGRANode
 void DFG::clearMapping() {
 	dfgNode* node;
 	for (int i = 0; i < NodeList.size(); ++i) {
-		node = &NodeList[i];
+		node = NodeList[i];
 		node->setMappedLoc(NULL);
 		node->setMappedRealTime(-1);
 		node->getRoutingLocs()->clear();
@@ -2723,7 +2724,7 @@ TreePath DFG::createTreePath(dfgNode* parent, CGRANode* dest) {
 	tp.dest = dest;
 
 	for (int i = 0; i < parent->getChildren().size(); ++i) {
-		child = findNode(parent->getChildren()[i]);
+		child = parent->getChildren()[i];
 		if(child->getMappedLoc() != NULL){
 			if((*child->getTreeBasedRoutingLocs()).find(parent) != (*child->getTreeBasedRoutingLocs()).end()){
 				for (int j = 0; j < (*child->getTreeBasedRoutingLocs())[parent].size(); ++j) {
@@ -2763,7 +2764,7 @@ int DFG::findUtilTreeRoutingLocs(CGRANode* cnode, dfgNode* currNode) {
 	int util = 0;
 
 	for (int i = 0; i < NodeList.size(); ++i) {
-		node = &NodeList[i];
+		node = NodeList[i];
 
 		if( (node->getMappedLoc() != NULL) || (node == currNode)/*&&(node->getASAPnumber() <= currNode->getASAPnumber())*/){
 
@@ -2807,7 +2808,7 @@ void DFG::printOutSMARTRoutes() {
 
 	//Sanity check
 	for (int i = 0; i < NodeList.size(); ++i) {
-		node = &NodeList[i];
+		node = NodeList[i];
 		if(node->getMappedLoc() == NULL){
 			errs() << "printOutSMARTRoutes :: All the nodes are not mapped!\n";
 			return;
@@ -2832,7 +2833,7 @@ void DFG::printOutSMARTRoutes() {
 					node = cnode->getmappedDFGNode();
 					if(node->getMappedLoc() == cnode){ // node is not just a routing location
 						for (int i = 0; i < node->getAncestors().size(); ++i) {
-							parent = findNode(node->getAncestors()[i]);
+							parent = node->getAncestors()[i];
 							parentExt = currCGRA->getCGRANode((parent->getMappedLoc()->getT()+1)%MII,parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
 							routeStart = 0;
 							std::string strEntry;
@@ -3069,7 +3070,7 @@ int DFG::getStaticRoutingCost(dfgNode* node, CGRANode* dest, std::map<CGRANode*,
 	std::map<CGRANode*,int> costSoFar;
 
 	for (int i = 0; i < node->getAncestors().size(); ++i) {
-		parent = findNode(node->getAncestors()[i]);
+		parent = node->getAncestors()[i];
 		tp = createTreePath(parent,dest);
 
 		bestSource = NULL;
@@ -3147,4 +3148,182 @@ MemOp DFG::isMemoryOp(dfgNode* node) {
 	}
 
 	return INVALID;
+}
+
+#ifndef XMLCheckResult
+	#define XMLCheckResult(a_eResult) if (a_eResult != tinyxml2::XML_SUCCESS) { printf("Error: %i\n", a_eResult); return a_eResult; }
+#endif
+
+#ifndef XMLCheckNULL
+	#define XMLCheckNULL(xmlNode) if(xmlNode == NULL) return tinyxml2::XML_ERROR_FILE_READ_ERROR;
+#endif
+
+
+int DFG::readXML(std::string fileName) {
+	tinyxml2::XMLDocument inputDFG;
+	std::vector<dfgNode*> nodelist;
+
+	int totalNumberOps = -1;
+	int opManualCount = 0;
+	int totalNumberEdges = -1;
+	int edgeManualCount = 0;
+
+	tinyxml2::XMLError err;
+	tinyxml2::XMLElement* nextElem;
+	tinyxml2::XMLElement* inElem1;
+	tinyxml2::XMLElement* inElem2;
+	tinyxml2::XMLNode* pRoot;
+	int ancNumber = -1;
+	int childNumber = -1;
+
+	int tempInt1 = -1;
+	int tempInt2 = -1;
+	const char* tempchararr;
+//	std::string tempString;
+
+	errs() << "Reading xml input file : " << fileName << "\n";
+	err = inputDFG.LoadFile(fileName.c_str());
+	XMLCheckResult(err);
+
+	pRoot = inputDFG.FirstChild();
+	XMLCheckNULL(pRoot);
+	errs() << pRoot->Value() << "\n";
+
+	errs() << "Reading OPs\n";
+	nextElem = pRoot->FirstChildElement("OPs");
+	XMLCheckNULL(nextElem);
+
+	errs() << "Reading OP-number\n";
+	nextElem = nextElem->FirstChildElement("OP-number");
+	XMLCheckNULL(nextElem);
+	err = nextElem->QueryIntText(&totalNumberOps);
+	XMLCheckResult(err);
+
+	nextElem = nextElem->NextSiblingElement("OP");
+	XMLCheckNULL(nextElem);
+
+	while(nextElem != NULL){
+		dfgNode* node = new dfgNode();
+		errs() << "Reading OP," << opManualCount << "\n";
+
+		inElem1 = nextElem->FirstChildElement("ID");
+		XMLCheckNULL(inElem1);
+		err = inElem1->QueryIntText(&tempInt1);
+		XMLCheckResult(err);
+		node->setIdx(tempInt1);
+
+		inElem1 = nextElem->FirstChildElement("OP-type");
+		XMLCheckNULL(inElem1);
+		tempchararr = inElem1->GetText();
+		std::string tempString = tempchararr;
+		errs() << tempchararr << "\n";
+		node->setNameType(tempString);
+
+//		errs() << "Reading In-edge-number : ";
+//		inElem1 = nextElem->FirstChildElement("In-edge-number");
+//		XMLCheckNULL(inElem1);
+//		err = inElem1->QueryIntText(&tempInt1);
+//		XMLCheckResult(err);
+//		ancNumber = tempInt1;
+//		errs() << ancNumber << "\n";
+//
+//		if(ancNumber > 0){
+//			//traverse to in-edges
+//			inElem1 = nextElem->FirstChildElement("In-edges");
+//			XMLCheckNULL(inElem1);
+//
+//			inElem1 = inElem1->FirstChildElement("Edge");
+//			XMLCheckNULL(inElem1);
+//			for (int i = 0; i < ancNumber; ++i) {
+//				errs() << "Read in-edge \n";
+//				err = inElem1->QueryIntText(&tempInt1);
+//				XMLCheckResult(err);
+//				node->InEdgesIdx.push_back(tempInt1);
+//
+//				inElem1 = inElem1->NextSiblingElement("Edge");
+//			}
+//		}
+//
+//		errs() << "Reading Out-edge-number : \n";
+//		inElem1 = nextElem->FirstChildElement("Out-edge-number");
+//		XMLCheckNULL(inElem1);
+//		err = inElem1->QueryIntText(&tempInt1);
+//		XMLCheckResult(err);
+//		childNumber = tempInt1;
+//
+//		if(childNumber > 0){
+//			//traverse to in-edges
+//			inElem1 = nextElem->FirstChildElement("Out-edges");
+//			XMLCheckNULL(inElem1);
+//
+//			inElem1 = inElem1->FirstChildElement("Edge");
+//			XMLCheckNULL(inElem1);
+//			for (int i = 0; i < ancNumber; ++i) {
+//				err = inElem1->QueryIntText(&tempInt1);
+//				XMLCheckResult(err);
+//				node->OutEdgesIdx.push_back(tempInt1);
+//
+//				inElem1 = inElem1->NextSiblingElement("Edge");
+//			}
+//		}
+		nextElem = nextElem->NextSiblingElement("OP");
+		opManualCount++;
+		nodelist.push_back(node);
+	}
+
+	assert(opManualCount == totalNumberOps);
+
+	//EDGES
+	errs() << "Reading EDGEs\n";
+	nextElem = pRoot->FirstChildElement("EDGEs");
+	XMLCheckNULL(nextElem);
+
+	errs() << "Reading Edge-number\n";
+	nextElem = nextElem->FirstChildElement("Edge-number");
+	XMLCheckNULL(nextElem);
+	err = nextElem->QueryIntText(&totalNumberEdges);
+	XMLCheckResult(err);
+
+	nextElem = nextElem->NextSiblingElement("EDGE");
+	XMLCheckNULL(nextElem);
+
+	while(nextElem != NULL){
+		errs() << "Reading Edge, "<< edgeManualCount << "\n";
+		inElem1 = nextElem->FirstChildElement("Start-OP");
+		XMLCheckNULL(inElem1);
+		err = inElem1->QueryIntText(&tempInt1);
+		XMLCheckResult(err);
+		inElem1 = nextElem->FirstChildElement("End-OP");
+		XMLCheckNULL(inElem1);
+		err = inElem1->QueryIntText(&tempInt2);
+		XMLCheckResult(err);
+
+		for (int i = 0; i < nodelist.size(); ++i) {
+			if(nodelist[i]->getIdx() == tempInt1){
+				for (int j = 0; j < nodelist.size(); ++j) {
+					if(nodelist[j]->getIdx() == tempInt2){
+						nodelist[i]->addChildNode(nodelist[j]);
+						nodelist[j]->addAncestorNode(nodelist[i]);
+
+						Edge temp;
+						temp.setID(this->getEdges().size());
+						std::ostringstream ss;
+						ss << std::dec << nodelist[i]->getIdx() << "_to_" << nodelist[j]->getIdx();
+						temp.setName(ss.str());
+						temp.setType(EDGE_TYPE_DATA);
+						temp.setSrc(nodelist[i]);
+						temp.setDest(nodelist[j]);
+						this->InsertEdge(temp);
+					}
+				}
+			}
+		}
+		nextElem = nextElem->NextSiblingElement("EDGE");
+		edgeManualCount++;
+	}
+
+	assert(edgeManualCount == totalNumberEdges);
+	this->setNodes(nodelist);
+	this->setName(fileName);
+	return 0;
 }

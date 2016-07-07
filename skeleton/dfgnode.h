@@ -14,15 +14,21 @@ class dfgNode{
 		private :
 			int idx;
 			int DFSidx;
-			Instruction* Node;
+			Instruction* Node = NULL;
 			std::vector<Instruction*> Children;
 			std::vector<Instruction*> Ancestors;
-
 			std::vector<Instruction*> RecChildren;
 			std::vector<Instruction*> RecAncestors;
-
 			std::vector<Instruction*> PHIchildren;
 			std::vector<Instruction*> PHIAncestors;
+
+			std::vector<dfgNode*> ChildNodes;
+			std::vector<dfgNode*> AncestorNodes;
+			std::vector<dfgNode*> RecChildNodes;
+			std::vector<dfgNode*> RecAncestorNodes;
+			std::vector<dfgNode*> PHIchildNodes;
+			std::vector<dfgNode*> PHIAncestorNodes;
+			std::string nameType;
 
 			DFG* Parent;
 
@@ -42,6 +48,14 @@ class dfgNode{
 			int mappedRealTime = 0;
 
 		public :
+
+			//For XML
+			std::vector<int> ChildNodesIdx;
+			std::vector<int> AncestorNodesIdx;
+			std::vector<int> InEdgesIdx;
+			std::vector<int> OutEdgesIdx;
+
+
 			dfgNode(Instruction *ins, DFG* parent);
 			dfgNode(){}
 
@@ -55,17 +69,33 @@ class dfgNode{
 
 			std::vector<Instruction*>::iterator getChildIterator();
 
-			std::vector<Instruction*> getChildren();
-			std::vector<Instruction*> getAncestors();
-			std::vector<Instruction*> getRecChildren(){return RecChildren;};
-			std::vector<Instruction*> getRecAncestors(){return RecAncestors;};
-			std::vector<Instruction*> getPHIchildren(){return PHIchildren;}
-			std::vector<Instruction*> getPHIancestors(){return PHIAncestors;}
+//			std::vector<Instruction*> getChildren(){return Children;};
+//			std::vector<Instruction*> getAncestors(){return Ancestors;};
+						std::vector<dfgNode*> getChildren(){return ChildNodes;};
+						std::vector<dfgNode*> getAncestors(){return AncestorNodes;};
+//			std::vector<Instruction*> getRecChildren(){return RecChildren;};
+//			std::vector<Instruction*> getRecAncestors(){return RecAncestors;};
+//			std::vector<Instruction*> getPHIchildren(){return PHIchildren;}
+//			std::vector<Instruction*> getPHIancestors(){return PHIAncestors;}
+						std::vector<dfgNode*> getRecChildren(){return RecChildNodes;};
+						std::vector<dfgNode*> getRecAncestors(){return RecAncestorNodes;};
+						std::vector<dfgNode*> getPHIchildren(){return PHIchildNodes;}
+						std::vector<dfgNode*> getPHIancestors(){return PHIAncestorNodes;}
+
+
+			void addChildNode(dfgNode* node){ChildNodes.push_back(node);}
+			void addAncestorNode(dfgNode* node){AncestorNodes.push_back(node);}
+			void addRecChildNode(dfgNode* node){RecChildNodes.push_back(node);}
+			void addRecAncestorNode(dfgNode* node){RecAncestorNodes.push_back(node);}
+			void addPHIChildNode(dfgNode* node){PHIchildNodes.push_back(node);}
+			void addPHIAncestorNode(dfgNode* node){PHIAncestorNodes.push_back(node);}
 
 			Instruction* getNode();
 
 			void addChild(Instruction *child, int type=EDGE_TYPE_DATA);
 			void addAncestor(Instruction *anc, int type=EDGE_TYPE_DATA);
+
+
 			void addRecChild(Instruction *child, int type=EDGE_TYPE_LDST);
 			void addRecAncestor(Instruction *anc, int type=EDGE_TYPE_LDST);
 			void addPHIchild(Instruction *child, int type=EDGE_TYPE_PHI);
@@ -100,6 +130,9 @@ class dfgNode{
 			int getmappedRealTime(){return mappedRealTime;}
 
 			std::map<dfgNode*,std::vector<CGRANode*>> getMergeRoutingLocs();
+
+			void setNameType(std::string name){nameType = name;}
+			std::string getNameType(){return nameType;}
 
 
 

@@ -10,14 +10,6 @@ std::vector<Instruction*>::iterator dfgNode::getChildIterator(){
 	return Children.begin();
 }
 
-std::vector<Instruction*> dfgNode::getChildren(){
-	return Children;
-}
-
-std::vector<Instruction*> dfgNode::getAncestors(){
-	return Ancestors;
-}
-
 Instruction* dfgNode::getNode(){
 	return Node;
 }
@@ -31,18 +23,6 @@ void dfgNode::addChild(Instruction *child, int type){
 	}
 
 	Children.push_back(child);
-
-	Edge temp;
-	temp.setID(Parent->getEdges().size());
-
-	std::ostringstream ss;
-	ss << std::hex << static_cast<void*>(Node) << "_to_" << static_cast<void*>(child);
-	temp.setName(ss.str());
-	temp.setType(type);
-	temp.setSrc(Node);
-	temp.setDest(child);
-
-	Parent->InsertEdge(temp);
 }
 
 int dfgNode::getIdx() {
@@ -57,6 +37,21 @@ void dfgNode::addAncestor(Instruction *anc, int type){
 	}
 
 	Ancestors.push_back(anc);
+	dfgNode* ancNode = Parent->findNode(anc);
+	ancNode->addChildNode(this);
+	AncestorNodes.push_back(ancNode);
+
+	Edge temp;
+	temp.setID(Parent->getEdges().size());
+
+	std::ostringstream ss;
+	ss << std::dec << ancNode->getIdx() << "_to_" << this->getIdx();
+	temp.setName(ss.str());
+	temp.setType(type);
+	temp.setSrc(ancNode);
+	temp.setDest(this);
+
+	Parent->InsertEdge(temp);
 }
 
 void dfgNode::setIdx(int Idx) {
@@ -66,8 +61,8 @@ void dfgNode::setIdx(int Idx) {
 int dfgNode::removeChild(Instruction* child) {
 	Instruction* childRem = NULL;
 	for (int i = 0; i < getChildren().size(); ++i) {
-		if (child == getChildren()[i]){
-			childRem = getChildren()[i];
+		if (child == getChildren()[i]->getNode()){
+			childRem = getChildren()[i]->getNode();
 		}
 	}
 
@@ -82,8 +77,8 @@ int dfgNode::removeChild(Instruction* child) {
 int dfgNode::removeAncestor(Instruction* anc) {
 	Instruction* ancRem = NULL;
 	for (int i = 0; i < getAncestors().size(); ++i) {
-		if (anc == getAncestors()[i]){
-			ancRem = getAncestors()[i];
+		if (anc == getAncestors()[i]->getNode()){
+			ancRem = getAncestors()[i]->getNode();
 		}
 	}
 
@@ -148,17 +143,17 @@ void dfgNode::addRecChild(Instruction* child, int type) {
 
 	RecChildren.push_back(child);
 
-	Edge temp;
-	temp.setID(Parent->getEdges().size());
-
-	std::ostringstream ss;
-	ss << std::hex << static_cast<void*>(Node) << "_to_" << static_cast<void*>(child);
-	temp.setName(ss.str());
-	temp.setType(type);
-	temp.setSrc(Node);
-	temp.setDest(child);
-
-	Parent->InsertEdge(temp);
+//	Edge temp;
+//	temp.setID(Parent->getEdges().size());
+//
+//	std::ostringstream ss;
+//	ss << std::hex << static_cast<void*>(Node) << "_to_" << static_cast<void*>(child);
+//	temp.setName(ss.str());
+//	temp.setType(type);
+//	temp.setSrc(Node);
+//	temp.setDest(child);
+//
+//	Parent->InsertEdge(temp);
 }
 
 void dfgNode::addRecAncestor(Instruction* anc, int type) {
@@ -169,13 +164,29 @@ void dfgNode::addRecAncestor(Instruction* anc, int type) {
 	}
 
 	RecAncestors.push_back(anc);
+
+	dfgNode* recAncNode = Parent->findNode(anc);
+	recAncNode->addRecChildNode(this);
+	RecAncestorNodes.push_back(recAncNode);
+
+	Edge temp;
+	temp.setID(Parent->getEdges().size());
+
+	std::ostringstream ss;
+	ss << std::dec << recAncNode->getIdx() << "_to_" << this->getIdx();
+	temp.setName(ss.str());
+	temp.setType(type);
+	temp.setSrc(recAncNode);
+	temp.setDest(this);
+
+	Parent->InsertEdge(temp);
 }
 
 int dfgNode::removeRecChild(Instruction* child) {
 	Instruction* childRem = NULL;
 	for (int i = 0; i < getRecChildren().size(); ++i) {
-		if (child == getRecChildren()[i]){
-			childRem = getRecChildren()[i];
+		if (child == getRecChildren()[i]->getNode()){
+			childRem = getRecChildren()[i]->getNode();
 		}
 	}
 
@@ -190,8 +201,8 @@ int dfgNode::removeRecChild(Instruction* child) {
 int dfgNode::removeRecAncestor(Instruction* anc) {
 	Instruction* ancRem = NULL;
 	for (int i = 0; i < getRecAncestors().size(); ++i) {
-		if (anc == getRecAncestors()[i]){
-			ancRem = getRecAncestors()[i];
+		if (anc == getRecAncestors()[i]->getNode()){
+			ancRem = getRecAncestors()[i]->getNode();
 		}
 	}
 
@@ -206,17 +217,17 @@ int dfgNode::removeRecAncestor(Instruction* anc) {
 void dfgNode::addPHIchild(Instruction* child, int type) {
 	PHIchildren.push_back(child);
 
-	Edge temp;
-	temp.setID(Parent->getEdges().size());
-
-	std::ostringstream ss;
-	ss << std::hex << static_cast<void*>(Node) << "_to_" << static_cast<void*>(child);
-	temp.setName(ss.str());
-	temp.setType(type);
-	temp.setSrc(Node);
-	temp.setDest(child);
-
-	Parent->InsertEdge(temp);
+//	Edge temp;
+//	temp.setID(Parent->getEdges().size());
+//
+//	std::ostringstream ss;
+//	ss << std::hex << static_cast<void*>(Node) << "_to_" << static_cast<void*>(child);
+//	temp.setName(ss.str());
+//	temp.setType(type);
+//	temp.setSrc(Node);
+//	temp.setDest(child);
+//
+//	Parent->InsertEdge(temp);
 }
 
 void dfgNode::addPHIancestor(Instruction* anc, int type) {
@@ -227,6 +238,22 @@ void dfgNode::addPHIancestor(Instruction* anc, int type) {
 	}
 
 	PHIAncestors.push_back(anc);
+
+	dfgNode* phiAncNode = Parent->findNode(anc);
+	phiAncNode->addPHIChildNode(this);
+	PHIAncestorNodes.push_back(phiAncNode);
+
+	Edge temp;
+	temp.setID(Parent->getEdges().size());
+
+	std::ostringstream ss;
+	ss << std::dec << phiAncNode->getIdx() << "_to_" << this->getIdx();
+	temp.setName(ss.str());
+	temp.setType(type);
+	temp.setSrc(phiAncNode);
+	temp.setDest(this);
+
+	Parent->InsertEdge(temp);
 }
 
 std::map<dfgNode*, std::vector<CGRANode*> > dfgNode::getMergeRoutingLocs() {

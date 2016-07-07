@@ -158,7 +158,7 @@ bool AStar::Route(dfgNode* currNode,
 
 	//Clearing all the routing associated with current node on previous routing attempts
 	for (int i = 0; i < currNode->getAncestors().size(); ++i) {
-		currParent = currDFG->findNode(currNode->getAncestors()[i]);
+		currParent = currNode->getAncestors()[i];
 		(*currNode->getTreeBasedRoutingLocs())[currParent].clear();
 		(*currNode->getTreeBasedGoalLocs())[currParent].clear();
 	}
@@ -360,15 +360,19 @@ bool AStar::Route(dfgNode* currNode,
 					SMARTPathEnd = true;
 					if(SMARTPathHist.find(SMARTpathLength) == SMARTPathHist.end()){
 						SMARTPathHist[SMARTpathLength] = 1;
-						if(currParent->getNode()->getOpcode() == Instruction::Br){
-							SMARTPredicatePathHist[SMARTpathLength] = 1;
+						if(currParent->getNode() != NULL){
+							if(currParent->getNode()->getOpcode() == Instruction::Br){
+								SMARTPredicatePathHist[SMARTpathLength] = 1;
+							}
 						}
 
 					}
 					else{
 						SMARTPathHist[SMARTpathLength]++;
-						if(currParent->getNode()->getOpcode() == Instruction::Br){
-							SMARTPredicatePathHist[SMARTpathLength]++;
+						if(currParent->getNode() != NULL){
+							if(currParent->getNode()->getOpcode() == Instruction::Br){
+								SMARTPredicatePathHist[SMARTpathLength]++;
+							}
 						}
 					}
 
@@ -396,14 +400,18 @@ bool AStar::Route(dfgNode* currNode,
 		if(SMARTpathLength != 0){
 			if(SMARTPathHist.find(SMARTpathLength) == SMARTPathHist.end()){
 				SMARTPathHist[SMARTpathLength] = 1;
-				if(currParent->getNode()->getOpcode() == Instruction::Br){
-					SMARTPredicatePathHist[SMARTpathLength] = 1;
+				if(currParent->getNode() != NULL){
+					if(currParent->getNode()->getOpcode() == Instruction::Br){
+						SMARTPredicatePathHist[SMARTpathLength] = 1;
+					}
 				}
 			}
 			else{
 				SMARTPathHist[SMARTpathLength]++;
-				if(currParent->getNode()->getOpcode() == Instruction::Br){
-					SMARTPredicatePathHist[SMARTpathLength]++;
+				if(currParent->getNode() != NULL){
+					if(currParent->getNode()->getOpcode() == Instruction::Br){
+						SMARTPredicatePathHist[SMARTpathLength]++;
+					}
 				}
 			}
 
@@ -643,7 +651,7 @@ bool AStar::EMSRoute(dfgNode* currNode,
 
 	//Clearing all the routing associated with current node on previous routing attempts
 	for (int i = 0; i < currNode->getAncestors().size(); ++i) {
-		currParent = currDFG->findNode(currNode->getAncestors()[i]);
+		currParent = currNode->getAncestors()[i];
 		(*currNode->getTreeBasedRoutingLocs())[currParent].clear();
 		(*currNode->getTreeBasedGoalLocs())[currParent].clear();
 	}

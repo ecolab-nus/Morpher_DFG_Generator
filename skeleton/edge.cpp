@@ -1,4 +1,5 @@
 #include "edge.h"
+#include "dfgnode.h"
 
 int Edge::getID(){
 	return ID;
@@ -16,19 +17,19 @@ std::string Edge::getName(){
 	return name;
 }
 
-void Edge::setSrc(Instruction* Src){
+void Edge::setSrc(dfgNode* Src){
 	this->src = Src;
 }
 
-Instruction* Edge::getSrc(){
+dfgNode* Edge::getSrc(){
 	return src;
 }
 
-void Edge::setDest(Instruction* Dest){
+void Edge::setDest(dfgNode* Dest){
 	this->dest = Dest;
 }
 
-Instruction* Edge::getDest(){
+dfgNode* Edge::getDest(){
 	return dest;
 }
 
