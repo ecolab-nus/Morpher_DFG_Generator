@@ -6,6 +6,7 @@
 #include "astar.h"
 #include <ctime>
 #include "tinyxml2.h"
+#include <functional>
 
 
 dfgNode* DFG::getEntryNode(){
@@ -3325,5 +3326,53 @@ int DFG::readXML(std::string fileName) {
 	assert(edgeManualCount == totalNumberEdges);
 	this->setNodes(nodelist);
 	this->setName(fileName);
+	return 0;
+}
+
+int DFG::printREGIMapOuts() {
+	std::ofstream nodeFile;
+	std::ofstream edgeFile;
+	dfgNode* node;
+	Edge* edge;
+	std::string fName;
+	std::hash<std::string> strHash;
+	std::hash<const char*> charArrHash;
+
+	//Printing Nodes
+	fName = name + "_REGIMAP_nodefile.txt";
+	nodeFile.open(fName.c_str());
+	for (int i = 0; i < NodeList.size(); ++i) {
+		node = NodeList[i];
+
+		if(node->getNode() != NULL){
+			nodeFile << std::to_string(node->getIdx()) << "\t";
+			nodeFile << std::to_string((int)charArrHash(node->getNode()->getOpcodeName())) << "\t";
+			nodeFile << node->getNode()->getOpcodeName() << std::endl;
+		}
+		else{
+			nodeFile << std::to_string(node->getIdx()) << "\t";
+			nodeFile << std::to_string((int)strHash(node->getNameType())) << "\t";
+			nodeFile << node->getNameType() << std::endl;
+		}
+	}
+	nodeFile.close();
+
+	//Printing Edges
+	fName = name + "_REGIMAP_edgefile.txt";
+	edgeFile.open(fName.c_str());
+	for (int i = 0; i < edgeList.size(); ++i) {
+		edge = &edgeList[i];
+
+		//currenlty assuming all the edges are data
+		assert(edge->getType() == EDGE_TYPE_DATA);
+
+		edgeFile << std::to_string(edge->getSrc()->getIdx()) << "\t";
+		edgeFile << std::to_string(edge->getDest()->getIdx()) << "\t";
+		edgeFile << "0" << "\t";
+		edgeFile << "TRU" << std::endl;
+	}
+	edgeFile.close();
+
+
 	return 0;
 }

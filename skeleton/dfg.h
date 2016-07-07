@@ -280,6 +280,9 @@ class DFG{
 			//readXML
 			int readXML(std::string fileName);
 
+			//Print REGIMap Outs
+			int printREGIMapOuts();
+
 
 	};
 
