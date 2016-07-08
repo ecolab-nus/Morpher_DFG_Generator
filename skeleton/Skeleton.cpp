@@ -388,6 +388,7 @@ namespace {
 				timeFile.open(timeFileName.c_str());
 				clock_t begin = clock();
 				clock_t end;
+				std::string loopCFGFileName;
 
 			  //errs() << "In a function calledd " << F.getName() << "!\n";
 
@@ -540,7 +541,7 @@ namespace {
 				  }
 				  LoopDFG.connectBB();
 //				  LoopDFG.addMemDepEdges(MD);
-				  LoopDFG.removeAlloc();
+//				  LoopDFG.removeAlloc();
 //				  LoopDFG.addMemRecDepEdges(DA);
 //				  LoopDFG.addMemRecDepEdgesNew(DA);
 				  LoopDFG.scheduleASAP();
@@ -556,6 +557,13 @@ namespace {
 
 				  end = clock();
 				  timeFile << F.getName().str() << "_L" << std::to_string(loopCounter) << " time = " << double(end-begin)/CLOCKS_PER_SEC << "\n";
+
+//				  loopCFGFileName = "cfg" + LoopDFG.getName() + ".dot";
+//				  raw_fd_ostream File(loopCFGFileName, EC, sys::fs::F_Text);
+//				  if (!EC){
+//					  WriteGraph(File, (const Function*)L);
+//				  }
+
 
 
 

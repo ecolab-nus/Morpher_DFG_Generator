@@ -99,6 +99,11 @@ std::vector<dfgNode*> DFG::getLeafs(BasicBlock* BB){
 void DFG::connectBB(){
 	errs() << "ConnectBB called!\n";
 
+	std::map<dfgNode*,std::vector<dfgNode*> > BrSuccesors;
+	std::map<const BasicBlock*,dfgNode*> BBPredicate;
+	dfgNode* temp;
+	dfgNode* node;
+
 	assert(NodeList.size() > 0);
 	dfgNode firstNode = *NodeList[0];
 	SmallVector<std::pair<const BasicBlock *, const BasicBlock *>,1 > Result;
@@ -139,13 +144,94 @@ void DFG::connectBB(){
 //					 analysedBB.push_back(succ);
 					 std::vector<dfgNode*> succLeafs = this->getLeafs(succ);
 					 for (int j = 0; j < succLeafs.size(); j++){
-						 NodeList[i]->addChild(succLeafs[j]->getNode());
-						 succLeafs[j]->addAncestor(NodeList[i]->getNode());
+						 BrSuccesors[succLeafs[j]].push_back(NodeList[i]);
+//						 NodeList[i]->addChild(succLeafs[j]->getNode());
+//						 succLeafs[j]->addAncestor(NodeList[i]->getNode());
 					 }
 //				 }
 			 }
 		}
 	}
+
+
+	//Connect the BBs here using the BrSuccesors Map
+	std::map<dfgNode*,std::vector<dfgNode*> >::iterator it;
+	std::vector<dfgNode*> workingSet;
+	std::vector<dfgNode*> nextWorkingSet;
+	int numberofbrs = 0;
+	for(it = BrSuccesors.begin(); it != BrSuccesors.end(); it++){
+		numberofbrs = it->second.size();
+		node = it->first;
+		workingSet.clear();
+		nextWorkingSet.clear();
+		errs() << "ConnectBB :: " << "Init Round\n";
+
+		if(BBPredicate.find(it->first->getNode()->getParent()) != BBPredicate.end()){
+			BBPredicate[node->getNode()->getParent()]->addChildNode(node);
+			node->addAncestorNode(BBPredicate[node->getNode()->getParent()]);
+			errs() << "ConnectBB :: " << "BB already done\n";
+			continue;
+		}
+
+		if(numberofbrs == 1){
+			BrSuccesors[node][0]->addChildNode(node);
+			node->addAncestorNode(BrSuccesors[node][0]);
+			BBPredicate[node->getNode()->getParent()] = BrSuccesors[node][0];
+			continue;
+		}
+
+		for (int i = 0; i < numberofbrs-1; i = i+2) {
+			temp = new dfgNode(this);
+			NodeList.push_back(temp);
+			temp->setIdx(NodeList.size());
+			temp->setNameType("CTRLBrOR");
+			temp->addAncestorNode(BrSuccesors[node][i]);
+			temp->addAncestorNode(BrSuccesors[node][i+1]);
+			BrSuccesors[node][i]->addChildNode(temp);
+			BrSuccesors[node][i+1]->addChildNode(temp);
+			workingSet.push_back(temp);
+		}
+
+		if(numberofbrs%2==1){
+			workingSet.push_back(BrSuccesors[node][numberofbrs-1]);
+		}
+		errs() << "ConnectBB :: " << "Rest Rounds\n";
+		while(workingSet.size() > 1){
+			errs() << "ConnectBB :: " << "workingSet.size() = " << workingSet.size() << "\n";
+			for (int i = 0; i < workingSet.size()-1; i=i+2) {
+				temp = new dfgNode(this);
+				NodeList.push_back(temp);
+				temp->setIdx(NodeList.size());
+				temp->setNameType("CTRLBrOR");
+				workingSet[i]->addChildNode(temp);
+				errs() << "ConnectBB :: " << "workingSet[i+1] = " << workingSet[i+1]->getIdx() << "\n";
+				workingSet[i+1]->addChildNode(temp);
+				temp->addAncestorNode(workingSet[i]);
+				temp->addAncestorNode(workingSet[i+1]);
+				nextWorkingSet.push_back(temp);
+			}
+			if(workingSet.size()%2==1){
+				nextWorkingSet.push_back(workingSet[workingSet.size()-1]);
+			}
+
+			workingSet.clear();
+			for (int i = 0; i < nextWorkingSet.size(); ++i) {
+				workingSet.push_back(nextWorkingSet[i]);
+			}
+			nextWorkingSet.clear();
+		}
+
+		assert(workingSet.size()==1);
+		workingSet[0]->addChildNode(node);
+		node->addAncestorNode(workingSet[0]);
+		BBPredicate[node->getNode()->getParent()] = workingSet[0];
+	}
+
+	//Sanity Check
+	for (int i = 0; i < NodeList.size(); ++i) {
+		assert(NodeList[i]->getAncestors().size() <= 3);
+	}
+
 }
 
 void DFG::printXML(){
@@ -210,17 +296,24 @@ void DFG::printOP(dfgNode* node, int depth){
 
 	printHeaderTag("OP-type",depth+1);
 //	xmlFile << "NORMAL"; //TODO :: Hardcoded to be Normal, fix the hardcoding
-	switch(isMemoryOp(node)){
-		case LOAD :
-			xmlFile << "LOAD";
-			break;
-		case STORE :
-			xmlFile << "STORE";
-			break;
-		default :
-			xmlFile << "NORMAL";
-			break;
+
+	if(node->getNode() != NULL){
+		switch(isMemoryOp(node)){
+			case LOAD :
+				xmlFile << "LOAD";
+				break;
+			case STORE :
+				xmlFile << "STORE";
+				break;
+			default :
+				xmlFile << "NORMAL";
+				break;
+		}
 	}
+	else{
+		xmlFile << node->getNameType();
+	}
+
 	printFooterTag("OP-type",depth+1);
 
 	printHeaderTag("Cycles",depth+1);
