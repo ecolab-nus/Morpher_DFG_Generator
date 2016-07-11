@@ -182,9 +182,9 @@ void DFG::connectBB(){
 
 		for (int i = 0; i < numberofbrs-1; i = i+2) {
 			temp = new dfgNode(this);
-			NodeList.push_back(temp);
-			temp->setIdx(NodeList.size());
 			temp->setNameType("CTRLBrOR");
+			temp->setIdx(NodeList.size());
+			NodeList.push_back(temp);
 			temp->addAncestorNode(BrSuccesors[node][i]);
 			temp->addAncestorNode(BrSuccesors[node][i+1]);
 			BrSuccesors[node][i]->addChildNode(temp);
@@ -200,8 +200,8 @@ void DFG::connectBB(){
 			errs() << "ConnectBB :: " << "workingSet.size() = " << workingSet.size() << "\n";
 			for (int i = 0; i < workingSet.size()-1; i=i+2) {
 				temp = new dfgNode(this);
-				NodeList.push_back(temp);
 				temp->setIdx(NodeList.size());
+				NodeList.push_back(temp);
 				temp->setNameType("CTRLBrOR");
 				workingSet[i]->addChildNode(temp);
 				errs() << "ConnectBB :: " << "workingSet[i+1] = " << workingSet[i+1]->getIdx() << "\n";
