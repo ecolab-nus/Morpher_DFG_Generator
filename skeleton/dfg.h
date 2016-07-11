@@ -283,6 +283,9 @@ class DFG{
 			//Print REGIMap Outs
 			int printREGIMapOuts();
 
+			//Print out turn information for each CGRANode
+			int printTurns();
+
 
 	};
 

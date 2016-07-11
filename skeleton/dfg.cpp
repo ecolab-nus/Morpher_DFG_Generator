@@ -1853,6 +1853,7 @@ void DFG::MapCGRA_SMART(int XDim, int YDim, std::string mapfileName) {
 
 			//Printing out mapped routes
 			printOutSMARTRoutes();
+			printTurns();
 
 
 
@@ -3467,5 +3468,109 @@ int DFG::printREGIMapOuts() {
 	edgeFile.close();
 
 
+	return 0;
+}
+
+int DFG::printTurns() {
+	dfgNode* node;
+	dfgNode* parent;
+	CGRANode* cnode;
+	CGRANode* nextCnode;
+
+	int xdiff;
+	int ydiff;
+
+	std::map<dfgNode*,std::vector<CGRANode*> > parentRouteMap;
+	std::map<dfgNode*,std::vector<CGRANode*> >::iterator parentRouteMapIt;
+
+	enum TurnDirs {NORTH,EAST,WEST,SOUTH,TILE};
+	std::map<CGRANode*,std::map<TurnDirs,int> > CGRANodeTurnStatsMap;
+
+	for (int t = 0; t < currCGRA->getMII(); ++t) {
+		for (int y = 0; y < currCGRA->getYdim(); ++y) {
+			for (int x = 0; x < currCGRA->getXdim(); ++x) {
+				CGRANodeTurnStatsMap[currCGRA->getCGRANode(t,y,x)][NORTH] = 0;
+				CGRANodeTurnStatsMap[currCGRA->getCGRANode(t,y,x)][EAST] = 0;
+				CGRANodeTurnStatsMap[currCGRA->getCGRANode(t,y,x)][WEST] = 0;
+				CGRANodeTurnStatsMap[currCGRA->getCGRANode(t,y,x)][SOUTH] = 0;
+				CGRANodeTurnStatsMap[currCGRA->getCGRANode(t,y,x)][TILE] = 0;
+			}
+		}
+	}
+
+	for (int i = 0; i < NodeList.size(); ++i) {
+		node = NodeList[i];
+		parentRouteMap = node->getMergeRoutingLocs();
+
+		for (parentRouteMapIt = parentRouteMap.begin();
+			 parentRouteMapIt != parentRouteMap.end();
+			 ++parentRouteMapIt) {
+
+			parent = parentRouteMapIt->first;
+
+			if(parentRouteMap[parent].size() > 0){
+				CGRANodeTurnStatsMap[parentRouteMap[parent][0]][TILE]++;
+			}
+			else{
+				continue;
+			}
+
+			for (int j = 1; j < parentRouteMap[parent].size(); ++j) {
+				cnode = parentRouteMap[parent][j];
+				nextCnode = parentRouteMap[parent][j-1];
+
+				if(cnode->getT() == nextCnode->getT()){ //SMART Routes
+					xdiff = nextCnode->getX() - cnode->getX();
+					ydiff = nextCnode->getY() - cnode->getY();
+
+					//either one should not be zero
+					assert((xdiff != 0)||(ydiff != 0));
+
+					if(ydiff > 0){
+						assert(xdiff == 0);
+						CGRANodeTurnStatsMap[cnode][SOUTH]++;
+					}
+					else if(ydiff == 0){
+						if(xdiff > 0){
+							CGRANodeTurnStatsMap[cnode][EAST]++;
+						}
+						else{ // xdiff < 0
+							CGRANodeTurnStatsMap[cnode][WEST]++;
+						}
+					}
+					else{ //ydiff < 0
+						assert(xdiff == 0);
+						CGRANodeTurnStatsMap[cnode][NORTH]++;
+					}
+				}
+
+			}
+
+
+		}
+
+
+
+	}
+
+	std::ofstream outFile;
+	std::string fName = name + "_TURNSTATS.csv";
+	outFile.open(fName.c_str());
+
+	outFile << "Cycle,Y,X,NORTH,EAST,WEST,SOUTH,TILE" << std::endl;
+	for (int y = 0; y < currCGRA->getYdim(); ++y) {
+		for (int x = 0; x < currCGRA->getXdim(); ++x) {
+			for (int t = 0; t < currCGRA->getMII(); ++t) {
+				cnode = currCGRA->getCGRANode(t,y,x);
+				outFile << cnode->getName() << ",";
+				outFile << std::to_string(CGRANodeTurnStatsMap[cnode][NORTH]) << ",";
+				outFile << std::to_string(CGRANodeTurnStatsMap[cnode][EAST]) << ",";
+				outFile << std::to_string(CGRANodeTurnStatsMap[cnode][WEST]) << ",";
+				outFile << std::to_string(CGRANodeTurnStatsMap[cnode][SOUTH]) << ",";
+				outFile << std::to_string(CGRANodeTurnStatsMap[cnode][TILE]) << std::endl;
+			}
+		}
+	}
+	outFile.close();
 	return 0;
 }
