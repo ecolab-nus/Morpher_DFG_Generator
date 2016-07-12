@@ -57,7 +57,7 @@ class dfgNode{
 
 
 			dfgNode(Instruction *ins, DFG* parent);
-			dfgNode(){}
+//			dfgNode(){}
 			dfgNode(DFG* parent) : Parent(parent){}
 			void setIdx(int Idx);
 

@@ -3298,7 +3298,7 @@ int DFG::readXML(std::string fileName) {
 	XMLCheckNULL(nextElem);
 
 	while(nextElem != NULL){
-		dfgNode* node = new dfgNode();
+		dfgNode* node = new dfgNode(this);
 		errs() << "Reading OP," << opManualCount << "\n";
 
 		inElem1 = nextElem->FirstChildElement("ID");
