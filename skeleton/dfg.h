@@ -286,6 +286,9 @@ class DFG{
 			//Print out turn information for each CGRANode
 			int printTurns();
 
+			//Print out switching statistics for registers
+			int printRegStats();
+
 
 	};
 

@@ -337,6 +337,10 @@ bool AStar::Route(dfgNode* currNode,
 				std::vector<CGRANode*>::iterator found = std::find((*cgraEdges)[cameFrom[current]].begin(), (*cgraEdges)[cameFrom[current]].end(), current);
 
 				if(found != (*cgraEdges)[cameFrom[current]].end()){
+
+//					assert(currDFG->findEdge(currParent,currNode) != NULL);
+//					cameFrom[current]->regAllocation[current].push_back(currDFG->findEdge(currParent,currNode));
+
 					(*cgraEdges)[cameFrom[current]].erase(found);
 					if(cameFrom[current]->equals(4,3,0)){
 						errs() << "%% removing edge" << cameFrom[current]->getName() <<"to " << current->getName();

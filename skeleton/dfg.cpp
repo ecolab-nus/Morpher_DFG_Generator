@@ -3543,6 +3543,11 @@ int DFG::printTurns() {
 						CGRANodeTurnStatsMap[cnode][NORTH]++;
 					}
 				}
+				else{
+					if(std::find(cnode->regAllocation[nextCnode].begin(),cnode->regAllocation[nextCnode].end(),findEdge(parent,node)) == cnode->regAllocation[nextCnode].end()){
+						cnode->regAllocation[nextCnode].push_back(findEdge(parent,node));
+					}
+				}
 
 			}
 
@@ -3572,5 +3577,127 @@ int DFG::printTurns() {
 		}
 	}
 	outFile.close();
+
+	//calling Reg stats
+	printRegStats();
+
+	return 0;
+}
+
+int DFG::printRegStats() {
+
+	std::ofstream outFileRegStats;
+	std::ofstream outFileRegToggle;
+
+	std::string fName = name + "_REGSTATS.csv";
+	outFileRegStats.open(fName.c_str());
+	fName = name + "_REGTOGGLE.csv";
+	outFileRegToggle.open(fName.c_str());
+
+	std::map<CGRANode*,std::vector<Edge*> >::iterator it;
+
+	CGRANode* cnode;
+	CGRANode* nextCnode;
+	std::map<int,Edge*> regAlloc;
+	std::map<int,int> regToggle;
+	std::vector<Edge*> tempEdgeVec;
+	std::vector<Edge*>::iterator tempEdgeVecIt;
+
+	int freeSlots;
+	int totalToggles = NodeList.size(); //This is for output register of the ALU
+	const int maxToggles = currCGRA->getXdim()*currCGRA->getYdim()*currCGRA->getMII()*(currCGRA->getRegsPerNode()+1);
+
+
+	for (int y = 0; y < currCGRA->getYdim(); ++y) {
+		for (int x = 0; x < currCGRA->getXdim(); ++x) {
+			outFileRegToggle << currCGRA->getCGRANode(0,y,x)->getNameWithOutTime() << ",";
+
+			//Init regAlloc
+			for (int i = 0; i < currCGRA->getRegsPerNode(); ++i) {
+				regAlloc[i] = NULL;
+				regToggle[i] = 0;
+			}
+
+			for (int t = 0; t < currCGRA->getMII(); ++t) {
+				cnode = currCGRA->getCGRANode(t,y,x);
+				outFileRegStats << cnode->getName() << ",";
+
+				for (it = cnode->regAllocation.begin();
+					 it != cnode->regAllocation.end();
+					 it++){
+
+					nextCnode = it->first;
+					if(nextCnode->getT() != cnode->getT()){
+						tempEdgeVec = it->second;
+
+						if(tempEdgeVec.size() > 4){
+							errs() << "init tempEdgeVec.size() =" << tempEdgeVec.size() << "\n";
+							for (int i = 0; i < tempEdgeVec.size(); ++i) {
+								errs() << tempEdgeVec[i]->getName() << "\n";
+							}
+						}
+
+						freeSlots = 0;
+						for (int i = 0; i < currCGRA->getRegsPerNode(); ++i) {
+							if(regAlloc[i]!=NULL){
+								tempEdgeVecIt = std::find(tempEdgeVec.begin(),tempEdgeVec.end(),regAlloc[i]);
+								if(tempEdgeVecIt != tempEdgeVec.end()){
+									tempEdgeVec.erase(tempEdgeVecIt);
+								}
+								else{
+									regAlloc[i]=NULL;
+									freeSlots++;
+								}
+							}
+							else{
+								freeSlots++;
+							}
+						}
+
+						if(freeSlots < tempEdgeVec.size()){
+							errs() << "freeSlots=" << freeSlots << ",tempEdgeVec.size()=" << tempEdgeVec.size() << "\n";
+						}
+						assert(freeSlots >= tempEdgeVec.size());
+
+						for (int i = 0; i < tempEdgeVec.size(); ++i) {
+							for (int j = 0; j < currCGRA->getRegsPerNode(); ++j) {
+								if(regAlloc[j]==NULL){
+									regAlloc[j]=tempEdgeVec[i];
+									regToggle[j]++;
+									totalToggles++;
+									break;
+								}
+							}
+						}
+
+						for (int i = 0; i < it->second.size(); ++i) {
+							outFileRegStats << it->second[i]->getName();
+							for (int j = 0; j < currCGRA->getRegsPerNode(); ++j) {
+								if(regAlloc[j] == it->second[i]){
+									outFileRegStats << "-R" << std::to_string(j) << ",";
+									break;
+								}
+							}
+						}
+//						outFile << it->second->getName() << ",";
+					}
+				}
+				outFileRegStats << std::endl;
+			}
+
+			for (int i = 0; i < currCGRA->getRegsPerNode(); ++i) {
+				outFileRegToggle << std::to_string(regToggle[i]) << ",";
+			}
+			outFileRegToggle << std::endl;
+		}
+	}
+
+	outFileRegToggle << std::endl;
+	outFileRegToggle << "TOTAL Toggles," << std::to_string(totalToggles) << std::endl;
+	outFileRegToggle << "Max Toggles," << std::to_string(maxToggles) << std::endl;
+	outFileRegToggle << "Toggle Percentage," << std::to_string((double(totalToggles)*100.0)/double(maxToggles)) << std::endl;
+
+	outFileRegStats.close();
+	outFileRegToggle.close();
 	return 0;
 }
