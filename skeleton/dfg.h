@@ -280,6 +280,15 @@ class DFG{
 			//readXML
 			int readXML(std::string fileName);
 
+			//Print REGIMap Outs
+			int printREGIMapOuts();
+
+			//Print out turn information for each CGRANode
+			int printTurns();
+
+			//Print out switching statistics for registers
+			int printRegStats();
+
 
 	};
 

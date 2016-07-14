@@ -44,6 +44,8 @@ class CGRA{
 			void setCGRAEdges(std::map<CGRANode*,std::vector<CGRANode*> > cgraEdges){CGRAEdges = cgraEdges;}
 
 			void clearMapping();
+
+			int getRegsPerNode(){return regsPerNode;}
 	};
 
 

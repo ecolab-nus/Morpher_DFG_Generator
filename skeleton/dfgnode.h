@@ -57,8 +57,8 @@ class dfgNode{
 
 
 			dfgNode(Instruction *ins, DFG* parent);
-			dfgNode(){}
-
+//			dfgNode(){}
+			dfgNode(DFG* parent) : Parent(parent){}
 			void setIdx(int Idx);
 
 			int getIdx();
@@ -83,8 +83,10 @@ class dfgNode{
 						std::vector<dfgNode*> getPHIancestors(){return PHIAncestorNodes;}
 
 
-			void addChildNode(dfgNode* node){ChildNodes.push_back(node);}
-			void addAncestorNode(dfgNode* node){AncestorNodes.push_back(node);}
+//			void addChildNode(dfgNode* node){ChildNodes.push_back(node);}
+//			void addAncestorNode(dfgNode* node){AncestorNodes.push_back(node);}
+			void addChildNode(dfgNode* node, int type=EDGE_TYPE_DATA);
+			void addAncestorNode(dfgNode* node, int type=EDGE_TYPE_DATA);
 			void addRecChildNode(dfgNode* node){RecChildNodes.push_back(node);}
 			void addRecAncestorNode(dfgNode* node){RecAncestorNodes.push_back(node);}
 			void addPHIChildNode(dfgNode* node){PHIchildNodes.push_back(node);}

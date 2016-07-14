@@ -388,6 +388,7 @@ namespace {
 				timeFile.open(timeFileName.c_str());
 				clock_t begin = clock();
 				clock_t end;
+				std::string loopCFGFileName;
 
 			  //errs() << "In a function calledd " << F.getName() << "!\n";
 
@@ -540,7 +541,7 @@ namespace {
 				  }
 				  LoopDFG.connectBB();
 //				  LoopDFG.addMemDepEdges(MD);
-				  LoopDFG.removeAlloc();
+//				  LoopDFG.removeAlloc();
 //				  LoopDFG.addMemRecDepEdges(DA);
 //				  LoopDFG.addMemRecDepEdgesNew(DA);
 				  LoopDFG.scheduleASAP();
@@ -548,13 +549,22 @@ namespace {
 				  LoopDFG.CreateSchList();
 //				  LoopDFG.MapCGRA(4,4);
 				  LoopDFG.printXML();
-//				  LoopDFG.MapCGRA_SMART(4,4,F.getName().str() + "_L" + std::to_string(loopCounter) + "_mapping.log");
+				  LoopDFG.printREGIMapOuts();
+				  LoopDFG.MapCGRA_SMART(4,4,F.getName().str() + "_L" + std::to_string(loopCounter) + "_mapping.log");
 //				  LoopDFG.MapCGRA_EMS(4,4,F.getName().str() + "_L" + std::to_string(loopCounter) + "_mapping.log");
 				  printDFGDOT (F.getName().str() + "_L" + std::to_string(loopCounter) + "_loopdfg.dot", &LoopDFG);
-//				  LoopDFG.printXML(F.getName().str() + "_L" + std::to_string(loopCounter) + "_loopdfg.xml");
+				  LoopDFG.printTurns();
+
 
 				  end = clock();
 				  timeFile << F.getName().str() << "_L" << std::to_string(loopCounter) << " time = " << double(end-begin)/CLOCKS_PER_SEC << "\n";
+
+//				  loopCFGFileName = "cfg" + LoopDFG.getName() + ".dot";
+//				  raw_fd_ostream File(loopCFGFileName, EC, sys::fs::F_Text);
+//				  if (!EC){
+//					  WriteGraph(File, (const Function*)L);
+//				  }
+
 
 
 
@@ -562,12 +572,14 @@ namespace {
 			  } //end loopIterator
 
 			  DFG xmlDFG("asdsa");
-			  assert(xmlDFG.readXML("DFG.xml") == 0);
+			  assert(xmlDFG.readXML("epimap_benchmarks/tiff2bw/DFG.xml") == 0);
 			  xmlDFG.scheduleASAP();
 			  xmlDFG.scheduleALAP();
 			  xmlDFG.CreateSchList();
 			  xmlDFG.MapCGRA_SMART(4,4,xmlDFG.getName()+ "_mapping.log");
-			  printDFGDOT(xmlDFG.getName(),&xmlDFG);
+			  printDFGDOT(xmlDFG.getName() + ".dot",&xmlDFG);
+			  xmlDFG.printREGIMapOuts();
+			  xmlDFG.printTurns();
 
 			  timeFile.close();
 

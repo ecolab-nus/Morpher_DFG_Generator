@@ -14,6 +14,10 @@ Instruction* dfgNode::getNode(){
 	return Node;
 }
 
+int dfgNode::getIdx() {
+	return idx;
+}
+
 void dfgNode::addChild(Instruction *child, int type){
 
 	for (int i = 0; i < Children.size(); ++i) {
@@ -23,10 +27,6 @@ void dfgNode::addChild(Instruction *child, int type){
 	}
 
 	Children.push_back(child);
-}
-
-int dfgNode::getIdx() {
-	return idx;
 }
 
 void dfgNode::addAncestor(Instruction *anc, int type){
@@ -49,6 +49,25 @@ void dfgNode::addAncestor(Instruction *anc, int type){
 	temp.setName(ss.str());
 	temp.setType(type);
 	temp.setSrc(ancNode);
+	temp.setDest(this);
+
+	Parent->InsertEdge(temp);
+}
+
+void dfgNode::addChildNode(dfgNode* node, int type) {
+	ChildNodes.push_back(node);
+}
+
+void dfgNode::addAncestorNode(dfgNode* node, int type) {
+	AncestorNodes.push_back(node);
+	Edge temp;
+	temp.setID(Parent->getEdges().size());
+
+	std::ostringstream ss;
+	ss << std::dec << node->getIdx() << "_to_" << this->getIdx();
+	temp.setName(ss.str());
+	temp.setType(type);
+	temp.setSrc(node);
 	temp.setDest(this);
 
 	Parent->InsertEdge(temp);
@@ -273,3 +292,5 @@ std::map<dfgNode*, std::vector<CGRANode*> > dfgNode::getMergeRoutingLocs() {
 
 	return temp;
 }
+
+

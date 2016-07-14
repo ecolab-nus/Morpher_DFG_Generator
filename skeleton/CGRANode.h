@@ -66,6 +66,9 @@ class CGRANode{
 
 			std::vector<ConnectedCGRANode> getConnectedNodes();
 
+			//RegAllocation - this will initially consists of edges allocation
+			std::map<CGRANode*,std::vector<Edge*> > regAllocation;
+
 
 	};
 

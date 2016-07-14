@@ -6,6 +6,7 @@
 #include "astar.h"
 #include <ctime>
 #include "tinyxml2.h"
+#include <functional>
 
 
 dfgNode* DFG::getEntryNode(){
@@ -98,6 +99,11 @@ std::vector<dfgNode*> DFG::getLeafs(BasicBlock* BB){
 void DFG::connectBB(){
 	errs() << "ConnectBB called!\n";
 
+	std::map<dfgNode*,std::vector<dfgNode*> > BrSuccesors;
+	std::map<const BasicBlock*,dfgNode*> BBPredicate;
+	dfgNode* temp;
+	dfgNode* node;
+
 	assert(NodeList.size() > 0);
 	dfgNode firstNode = *NodeList[0];
 	SmallVector<std::pair<const BasicBlock *, const BasicBlock *>,1 > Result;
@@ -138,13 +144,94 @@ void DFG::connectBB(){
 //					 analysedBB.push_back(succ);
 					 std::vector<dfgNode*> succLeafs = this->getLeafs(succ);
 					 for (int j = 0; j < succLeafs.size(); j++){
-						 NodeList[i]->addChild(succLeafs[j]->getNode());
-						 succLeafs[j]->addAncestor(NodeList[i]->getNode());
+						 BrSuccesors[succLeafs[j]].push_back(NodeList[i]);
+//						 NodeList[i]->addChild(succLeafs[j]->getNode());
+//						 succLeafs[j]->addAncestor(NodeList[i]->getNode());
 					 }
 //				 }
 			 }
 		}
 	}
+
+
+	//Connect the BBs here using the BrSuccesors Map
+	std::map<dfgNode*,std::vector<dfgNode*> >::iterator it;
+	std::vector<dfgNode*> workingSet;
+	std::vector<dfgNode*> nextWorkingSet;
+	int numberofbrs = 0;
+	for(it = BrSuccesors.begin(); it != BrSuccesors.end(); it++){
+		numberofbrs = it->second.size();
+		node = it->first;
+		workingSet.clear();
+		nextWorkingSet.clear();
+		errs() << "ConnectBB :: " << "Init Round\n";
+
+		if(BBPredicate.find(it->first->getNode()->getParent()) != BBPredicate.end()){
+			BBPredicate[node->getNode()->getParent()]->addChildNode(node);
+			node->addAncestorNode(BBPredicate[node->getNode()->getParent()]);
+			errs() << "ConnectBB :: " << "BB already done\n";
+			continue;
+		}
+
+		if(numberofbrs == 1){
+			BrSuccesors[node][0]->addChildNode(node);
+			node->addAncestorNode(BrSuccesors[node][0]);
+			BBPredicate[node->getNode()->getParent()] = BrSuccesors[node][0];
+			continue;
+		}
+
+		for (int i = 0; i < numberofbrs-1; i = i+2) {
+			temp = new dfgNode(this);
+			temp->setNameType("CTRLBrOR");
+			temp->setIdx(NodeList.size());
+			NodeList.push_back(temp);
+			temp->addAncestorNode(BrSuccesors[node][i]);
+			temp->addAncestorNode(BrSuccesors[node][i+1]);
+			BrSuccesors[node][i]->addChildNode(temp);
+			BrSuccesors[node][i+1]->addChildNode(temp);
+			workingSet.push_back(temp);
+		}
+
+		if(numberofbrs%2==1){
+			workingSet.push_back(BrSuccesors[node][numberofbrs-1]);
+		}
+		errs() << "ConnectBB :: " << "Rest Rounds\n";
+		while(workingSet.size() > 1){
+			errs() << "ConnectBB :: " << "workingSet.size() = " << workingSet.size() << "\n";
+			for (int i = 0; i < workingSet.size()-1; i=i+2) {
+				temp = new dfgNode(this);
+				temp->setIdx(NodeList.size());
+				NodeList.push_back(temp);
+				temp->setNameType("CTRLBrOR");
+				workingSet[i]->addChildNode(temp);
+				errs() << "ConnectBB :: " << "workingSet[i+1] = " << workingSet[i+1]->getIdx() << "\n";
+				workingSet[i+1]->addChildNode(temp);
+				temp->addAncestorNode(workingSet[i]);
+				temp->addAncestorNode(workingSet[i+1]);
+				nextWorkingSet.push_back(temp);
+			}
+			if(workingSet.size()%2==1){
+				nextWorkingSet.push_back(workingSet[workingSet.size()-1]);
+			}
+
+			workingSet.clear();
+			for (int i = 0; i < nextWorkingSet.size(); ++i) {
+				workingSet.push_back(nextWorkingSet[i]);
+			}
+			nextWorkingSet.clear();
+		}
+
+		assert(workingSet.size()==1);
+		workingSet[0]->addChildNode(node);
+		node->addAncestorNode(workingSet[0]);
+		BBPredicate[node->getNode()->getParent()] = workingSet[0];
+	}
+
+	//Sanity Check
+	for (int i = 0; i < NodeList.size(); ++i) {
+		assert(NodeList[i]->getAncestors().size() <= 3);
+	}
+
 }
 
 void DFG::printXML(){
@@ -209,17 +296,24 @@ void DFG::printOP(dfgNode* node, int depth){
 
 	printHeaderTag("OP-type",depth+1);
 //	xmlFile << "NORMAL"; //TODO :: Hardcoded to be Normal, fix the hardcoding
-	switch(isMemoryOp(node)){
-		case LOAD :
-			xmlFile << "LOAD";
-			break;
-		case STORE :
-			xmlFile << "STORE";
-			break;
-		default :
-			xmlFile << "NORMAL";
-			break;
+
+	if(node->getNode() != NULL){
+		switch(isMemoryOp(node)){
+			case LOAD :
+				xmlFile << "LOAD";
+				break;
+			case STORE :
+				xmlFile << "STORE";
+				break;
+			default :
+				xmlFile << "NORMAL";
+				break;
+		}
 	}
+	else{
+		xmlFile << node->getNameType();
+	}
+
 	printFooterTag("OP-type",depth+1);
 
 	printHeaderTag("Cycles",depth+1);
@@ -1759,6 +1853,7 @@ void DFG::MapCGRA_SMART(int XDim, int YDim, std::string mapfileName) {
 
 			//Printing out mapped routes
 			printOutSMARTRoutes();
+			printTurns();
 
 
 
@@ -3203,7 +3298,7 @@ int DFG::readXML(std::string fileName) {
 	XMLCheckNULL(nextElem);
 
 	while(nextElem != NULL){
-		dfgNode* node = new dfgNode();
+		dfgNode* node = new dfgNode(this);
 		errs() << "Reading OP," << opManualCount << "\n";
 
 		inElem1 = nextElem->FirstChildElement("ID");
@@ -3325,5 +3420,284 @@ int DFG::readXML(std::string fileName) {
 	assert(edgeManualCount == totalNumberEdges);
 	this->setNodes(nodelist);
 	this->setName(fileName);
+	return 0;
+}
+
+int DFG::printREGIMapOuts() {
+	std::ofstream nodeFile;
+	std::ofstream edgeFile;
+	dfgNode* node;
+	Edge* edge;
+	std::string fName;
+	std::hash<std::string> strHash;
+	std::hash<const char*> charArrHash;
+
+	//Printing Nodes
+	fName = name + "_REGIMAP_nodefile.txt";
+	nodeFile.open(fName.c_str());
+	for (int i = 0; i < NodeList.size(); ++i) {
+		node = NodeList[i];
+
+		if(node->getNode() != NULL){
+			nodeFile << std::to_string(node->getIdx()) << "\t";
+			nodeFile << std::to_string((int)charArrHash(node->getNode()->getOpcodeName())) << "\t";
+			nodeFile << node->getNode()->getOpcodeName() << std::endl;
+		}
+		else{
+			nodeFile << std::to_string(node->getIdx()) << "\t";
+			nodeFile << std::to_string((int)strHash(node->getNameType())) << "\t";
+			nodeFile << node->getNameType() << std::endl;
+		}
+	}
+	nodeFile.close();
+
+	//Printing Edges
+	fName = name + "_REGIMAP_edgefile.txt";
+	edgeFile.open(fName.c_str());
+	for (int i = 0; i < edgeList.size(); ++i) {
+		edge = &edgeList[i];
+
+		//currenlty assuming all the edges are data
+		assert(edge->getType() == EDGE_TYPE_DATA);
+
+		edgeFile << std::to_string(edge->getSrc()->getIdx()) << "\t";
+		edgeFile << std::to_string(edge->getDest()->getIdx()) << "\t";
+		edgeFile << "0" << "\t";
+		edgeFile << "TRU" << std::endl;
+	}
+	edgeFile.close();
+
+
+	return 0;
+}
+
+int DFG::printTurns() {
+	dfgNode* node;
+	dfgNode* parent;
+	CGRANode* cnode;
+	CGRANode* nextCnode;
+
+	int xdiff;
+	int ydiff;
+
+	std::map<dfgNode*,std::vector<CGRANode*> > parentRouteMap;
+	std::map<dfgNode*,std::vector<CGRANode*> >::iterator parentRouteMapIt;
+
+	enum TurnDirs {NORTH,EAST,WEST,SOUTH,TILE};
+	std::map<CGRANode*,std::map<TurnDirs,int> > CGRANodeTurnStatsMap;
+
+	for (int t = 0; t < currCGRA->getMII(); ++t) {
+		for (int y = 0; y < currCGRA->getYdim(); ++y) {
+			for (int x = 0; x < currCGRA->getXdim(); ++x) {
+				CGRANodeTurnStatsMap[currCGRA->getCGRANode(t,y,x)][NORTH] = 0;
+				CGRANodeTurnStatsMap[currCGRA->getCGRANode(t,y,x)][EAST] = 0;
+				CGRANodeTurnStatsMap[currCGRA->getCGRANode(t,y,x)][WEST] = 0;
+				CGRANodeTurnStatsMap[currCGRA->getCGRANode(t,y,x)][SOUTH] = 0;
+				CGRANodeTurnStatsMap[currCGRA->getCGRANode(t,y,x)][TILE] = 0;
+			}
+		}
+	}
+
+	for (int i = 0; i < NodeList.size(); ++i) {
+		node = NodeList[i];
+		parentRouteMap = node->getMergeRoutingLocs();
+
+		for (parentRouteMapIt = parentRouteMap.begin();
+			 parentRouteMapIt != parentRouteMap.end();
+			 ++parentRouteMapIt) {
+
+			parent = parentRouteMapIt->first;
+
+			if(parentRouteMap[parent].size() > 0){
+				CGRANodeTurnStatsMap[parentRouteMap[parent][0]][TILE]++;
+			}
+			else{
+				continue;
+			}
+
+			for (int j = 1; j < parentRouteMap[parent].size(); ++j) {
+				cnode = parentRouteMap[parent][j];
+				nextCnode = parentRouteMap[parent][j-1];
+
+				if(cnode->getT() == nextCnode->getT()){ //SMART Routes
+					xdiff = nextCnode->getX() - cnode->getX();
+					ydiff = nextCnode->getY() - cnode->getY();
+
+					//either one should not be zero
+					assert((xdiff != 0)||(ydiff != 0));
+
+					if(ydiff > 0){
+						assert(xdiff == 0);
+						CGRANodeTurnStatsMap[cnode][SOUTH]++;
+					}
+					else if(ydiff == 0){
+						if(xdiff > 0){
+							CGRANodeTurnStatsMap[cnode][EAST]++;
+						}
+						else{ // xdiff < 0
+							CGRANodeTurnStatsMap[cnode][WEST]++;
+						}
+					}
+					else{ //ydiff < 0
+						assert(xdiff == 0);
+						CGRANodeTurnStatsMap[cnode][NORTH]++;
+					}
+				}
+				else{
+					if(std::find(cnode->regAllocation[nextCnode].begin(),cnode->regAllocation[nextCnode].end(),findEdge(parent,node)) == cnode->regAllocation[nextCnode].end()){
+						cnode->regAllocation[nextCnode].push_back(findEdge(parent,node));
+					}
+				}
+
+			}
+
+
+		}
+
+
+
+	}
+
+	std::ofstream outFile;
+	std::string fName = name + "_TURNSTATS.csv";
+	outFile.open(fName.c_str());
+
+	outFile << "Cycle,Y,X,NORTH,EAST,WEST,SOUTH,TILE" << std::endl;
+	for (int y = 0; y < currCGRA->getYdim(); ++y) {
+		for (int x = 0; x < currCGRA->getXdim(); ++x) {
+			for (int t = 0; t < currCGRA->getMII(); ++t) {
+				cnode = currCGRA->getCGRANode(t,y,x);
+				outFile << cnode->getName() << ",";
+				outFile << std::to_string(CGRANodeTurnStatsMap[cnode][NORTH]) << ",";
+				outFile << std::to_string(CGRANodeTurnStatsMap[cnode][EAST]) << ",";
+				outFile << std::to_string(CGRANodeTurnStatsMap[cnode][WEST]) << ",";
+				outFile << std::to_string(CGRANodeTurnStatsMap[cnode][SOUTH]) << ",";
+				outFile << std::to_string(CGRANodeTurnStatsMap[cnode][TILE]) << std::endl;
+			}
+		}
+	}
+	outFile.close();
+
+	//calling Reg stats
+	printRegStats();
+
+	return 0;
+}
+
+int DFG::printRegStats() {
+
+	std::ofstream outFileRegStats;
+	std::ofstream outFileRegToggle;
+
+	std::string fName = name + "_REGSTATS.csv";
+	outFileRegStats.open(fName.c_str());
+	fName = name + "_REGTOGGLE.csv";
+	outFileRegToggle.open(fName.c_str());
+
+	std::map<CGRANode*,std::vector<Edge*> >::iterator it;
+
+	CGRANode* cnode;
+	CGRANode* nextCnode;
+	std::map<int,Edge*> regAlloc;
+	std::map<int,int> regToggle;
+	std::vector<Edge*> tempEdgeVec;
+	std::vector<Edge*>::iterator tempEdgeVecIt;
+
+	int freeSlots;
+	int totalToggles = NodeList.size(); //This is for output register of the ALU
+	const int maxToggles = currCGRA->getXdim()*currCGRA->getYdim()*currCGRA->getMII()*(currCGRA->getRegsPerNode()+1);
+
+
+	for (int y = 0; y < currCGRA->getYdim(); ++y) {
+		for (int x = 0; x < currCGRA->getXdim(); ++x) {
+			outFileRegToggle << currCGRA->getCGRANode(0,y,x)->getNameWithOutTime() << ",";
+
+			//Init regAlloc
+			for (int i = 0; i < currCGRA->getRegsPerNode(); ++i) {
+				regAlloc[i] = NULL;
+				regToggle[i] = 0;
+			}
+
+			for (int t = 0; t < currCGRA->getMII(); ++t) {
+				cnode = currCGRA->getCGRANode(t,y,x);
+				outFileRegStats << cnode->getName() << ",";
+
+				for (it = cnode->regAllocation.begin();
+					 it != cnode->regAllocation.end();
+					 it++){
+
+					nextCnode = it->first;
+					if(nextCnode->getT() != cnode->getT()){
+						tempEdgeVec = it->second;
+
+						if(tempEdgeVec.size() > 4){
+							errs() << "init tempEdgeVec.size() =" << tempEdgeVec.size() << "\n";
+							for (int i = 0; i < tempEdgeVec.size(); ++i) {
+								errs() << tempEdgeVec[i]->getName() << "\n";
+							}
+						}
+
+						freeSlots = 0;
+						for (int i = 0; i < currCGRA->getRegsPerNode(); ++i) {
+							if(regAlloc[i]!=NULL){
+								tempEdgeVecIt = std::find(tempEdgeVec.begin(),tempEdgeVec.end(),regAlloc[i]);
+								if(tempEdgeVecIt != tempEdgeVec.end()){
+									tempEdgeVec.erase(tempEdgeVecIt);
+								}
+								else{
+									regAlloc[i]=NULL;
+									freeSlots++;
+								}
+							}
+							else{
+								freeSlots++;
+							}
+						}
+
+						if(freeSlots < tempEdgeVec.size()){
+							errs() << "freeSlots=" << freeSlots << ",tempEdgeVec.size()=" << tempEdgeVec.size() << "\n";
+						}
+						assert(freeSlots >= tempEdgeVec.size());
+
+						for (int i = 0; i < tempEdgeVec.size(); ++i) {
+							for (int j = 0; j < currCGRA->getRegsPerNode(); ++j) {
+								if(regAlloc[j]==NULL){
+									regAlloc[j]=tempEdgeVec[i];
+									regToggle[j]++;
+									totalToggles++;
+									break;
+								}
+							}
+						}
+
+						for (int i = 0; i < it->second.size(); ++i) {
+							outFileRegStats << it->second[i]->getName();
+							for (int j = 0; j < currCGRA->getRegsPerNode(); ++j) {
+								if(regAlloc[j] == it->second[i]){
+									outFileRegStats << "-R" << std::to_string(j) << ",";
+									break;
+								}
+							}
+						}
+//						outFile << it->second->getName() << ",";
+					}
+				}
+				outFileRegStats << std::endl;
+			}
+
+			for (int i = 0; i < currCGRA->getRegsPerNode(); ++i) {
+				outFileRegToggle << std::to_string(regToggle[i]) << ",";
+			}
+			outFileRegToggle << std::endl;
+		}
+	}
+
+	outFileRegToggle << std::endl;
+	outFileRegToggle << "TOTAL Toggles," << std::to_string(totalToggles) << std::endl;
+	outFileRegToggle << "Max Toggles," << std::to_string(maxToggles) << std::endl;
+	outFileRegToggle << "Toggle Percentage," << std::to_string((double(totalToggles)*100.0)/double(maxToggles)) << std::endl;
+
+	outFileRegStats.close();
+	outFileRegToggle.close();
 	return 0;
 }
