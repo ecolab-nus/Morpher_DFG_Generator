@@ -1376,7 +1376,7 @@ bool DFG::MapMultiDestRec(
 		std::map<dfgNode*,std::vector<std::pair<CGRANode*,int>> > *nodeDestMap,
 		std::map<CGRANode*, std::vector<dfgNode*> >* destNodeMap,
 		std::map<dfgNode*,std::vector< std::pair<CGRANode*,int> > >::iterator it,
-		std::map<CGRANode*,std::vector<CGRANode*> > cgraEdges,
+		std::map<CGRANode*,std::vector<CGRAEdge> > cgraEdges,
 		int index) {
 
 	std::map<dfgNode*,std::vector<std::pair<CGRANode*,int>> > localNodeDestMap = *nodeDestMap;
@@ -1398,7 +1398,7 @@ bool DFG::MapMultiDestRec(
 	bool success = false;
 
 //	CGRA localCGRA = *inCGRA;
-	std::map<CGRANode*,std::vector<CGRANode*> > localCGRAEdges = cgraEdges;
+	std::map<CGRANode*,std::vector<CGRAEdge> > localCGRAEdges = cgraEdges;
 
 	node = it->first;
 //	possibleDests = it->second;
@@ -1857,8 +1857,8 @@ void DFG::MapCGRA_SMART(int XDim, int YDim, std::string mapfileName) {
 
 
 
-			std::map<CGRANode*, std::vector<CGRANode*> >* cgraEdgesPtr = currCGRA->getCGRAEdges();
-			std::vector<CGRANode*> connections;
+			std::map<CGRANode*, std::vector<CGRAEdge> >* cgraEdgesPtr = currCGRA->getCGRAEdges();
+			std::vector<CGRAEdge> connections;
 			int count = 0;
 
 			mappingOutFile << "Reg Connections Available after use :: \n";
@@ -1868,8 +1868,14 @@ void DFG::MapCGRA_SMART(int XDim, int YDim, std::string mapfileName) {
 					for (int x = 0; x < currCGRA->getXdim(); ++x) {
 						connections = (*cgraEdgesPtr)[currCGRA->getCGRANode(t,y,x)];
 						for (int c = 0; c < connections.size(); ++c) {
-							if( (connections[c]->getY() == y) && (connections[c]->getX() == x) ){
-								count++;
+							if((connections[c].SrcPort == R0)||
+							   (connections[c].SrcPort == R1)||
+							   (connections[c].SrcPort == R2)||
+							   (connections[c].SrcPort == R3))
+							{
+								if(connections[c].mappedDFGEdge == NULL){
+									count++;
+								}
 							}
 						}
 						mappingOutFile << "(" << t << "," << y << "," << x << ")" << "=" << count << "\n";
@@ -2375,7 +2381,7 @@ void DFG::MapCGRA_EMS(int XDim, int YDim, std::string mapfileName) {
 			mappingOutFile << "Duration :: " << elapsed_time << "\n";
 			mappingOutFile << "MapCGRAsa :: Mapping success with MII = " << MII << "\n";
 
-			std::map<CGRANode*, std::vector<CGRANode*> >* cgraEdgesPtr = currCGRA->getCGRAEdges();
+			std::map<CGRANode*, std::vector<CGRAEdge> >* cgraEdgesPtr = currCGRA->getCGRAEdges();
 			std::vector<CGRANode*> connections;
 			int count = 0;
 
@@ -2626,7 +2632,7 @@ bool DFG::MAPCGRA_EMS_MultDest(std::map<dfgNode*,std::vector< std::pair<CGRANode
 	      	  	  	  	  	   std::map<CGRANode*,std::vector<dfgNode*> > *destNodeMap,
 //							   std::map<dfgNode*,std::vector< std::pair<CGRANode*,int> > >::iterator it,
 							   const std::vector<nodeWithCost>::iterator it,
-							   std::map<CGRANode*,std::vector<CGRANode*> > cgraEdges,
+							   std::map<CGRANode*,std::vector<CGRAEdge> > cgraEdges,
 							   int index) {
 
 	std::map<dfgNode*,std::vector<std::pair<CGRANode*,int>> > localNodeDestMap = *nodeDestMap;
@@ -2647,7 +2653,7 @@ bool DFG::MAPCGRA_EMS_MultDest(std::map<dfgNode*,std::vector< std::pair<CGRANode
 //	int idx = index;
 
 //	CGRA localCGRA = *inCGRA;
-	std::map<CGRANode*,std::vector<CGRANode*> > localCGRAEdges = cgraEdges;
+	std::map<CGRANode*,std::vector<CGRAEdge> > localCGRAEdges = cgraEdges;
 
 	node = it->node;
 //	possibleDests = it->second;
@@ -3049,7 +3055,7 @@ int DFG::convertToPhyLoc(int y, int x) {
 //This function should reorder nodeDestMap, i.e. nodes that are not yet mapped considering the tree based routing
 bool DFG::EMSSortNodeDest(
 		std::map<dfgNode*, std::vector<std::pair<CGRANode*, int> > >* nodeDestMap,
-		std::map<CGRANode*,std::vector<CGRANode*> > cgraEdges,
+		std::map<CGRANode*,std::vector<CGRAEdge> > cgraEdges,
 		int index) {
 
 	//Nodes upto index are mapped
@@ -3149,7 +3155,7 @@ void DFG::printConMat(std::vector<std::vector<unsigned char> > conMat) {
 	errs() << "Done Printing ConMat....\n";
 }
 
-int DFG::getStaticRoutingCost(dfgNode* node, CGRANode* dest, std::map<CGRANode*,std::vector<CGRANode*> > Edges) {
+int DFG::getStaticRoutingCost(dfgNode* node, CGRANode* dest, std::map<CGRANode*,std::vector<CGRAEdge> > Edges) {
 	dfgNode* parent;
 	TreePath tp;
 	CGRANode* end;

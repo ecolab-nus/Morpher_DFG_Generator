@@ -150,7 +150,7 @@ class DFG{
 			bool MapMultiDestRec(std::map<dfgNode*,std::vector< std::pair<CGRANode*,int> > > *nodeDestMap,
 					             std::map<CGRANode*,std::vector<dfgNode*> > *destNodeMap,
 								 std::map<dfgNode*,std::vector< std::pair<CGRANode*,int> > >::iterator it,
-								 std::map<CGRANode*,std::vector<CGRANode*> > cgraEdges,
+								 std::map<CGRANode*,std::vector<CGRAEdge> > cgraEdges,
 								 int index);
 
 
@@ -257,11 +257,11 @@ class DFG{
 								      std::map<CGRANode*,std::vector<dfgNode*> > *destNodeMap,
 //									  std::map<dfgNode*,std::vector< std::pair<CGRANode*,int> > >::iterator it,
 									  const std::vector<nodeWithCost>::iterator it,
-									  std::map<CGRANode*,std::vector<CGRANode*> > cgraEdges,
+									  std::map<CGRANode*,std::vector<CGRAEdge> > cgraEdges,
 									  int index);
 
 			bool EMSSortNodeDest(std::map<dfgNode*,std::vector< std::pair<CGRANode*,int> > > *nodeDestMap,
-									 std::map<CGRANode*,std::vector<CGRANode*> > cgraEdges,
+									 std::map<CGRANode*,std::vector<CGRAEdge> > cgraEdges,
 									 int index);
 
 			TreePath createTreePath(dfgNode* parent, CGRANode* dest);
@@ -274,7 +274,7 @@ class DFG{
 			int convertToPhyLoc(int t, int y, int x);
 			int convertToPhyLoc(int y, int x);
 			int getDistCGRANodes(CGRANode* a, CGRANode* b);
-			int getStaticRoutingCost(dfgNode* node, CGRANode* dest, std::map<CGRANode*,std::vector<CGRANode*> > Edges);
+			int getStaticRoutingCost(dfgNode* node, CGRANode* dest, std::map<CGRANode*,std::vector<CGRAEdge> > Edges);
 
 
 			//readXML

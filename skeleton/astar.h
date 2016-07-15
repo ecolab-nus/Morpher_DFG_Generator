@@ -11,7 +11,8 @@
 struct CGRANodeWithCost{
 	CGRANode* Cnode;
 	int cost;
-	CGRANodeWithCost(CGRANode* Cnode, int cost) : Cnode(Cnode),  cost(cost){}
+	Port port;
+	CGRANodeWithCost(CGRANode* Cnode, int cost, Port port) : Cnode(Cnode),  cost(cost), port(port){}
 };
 
 struct LessThanCGRANodeWithCost {
@@ -38,17 +39,18 @@ public:
 																  maxPathLength(0),
 																  maxSMARTPathLength(0){}
 	int heuristic(CGRANode* a, CGRANode* b);
-	CGRANode* AStarSearch(std::map<CGRANode*,std::vector<CGRANode*> > graph,
-					 	  CGRANode* start,
-						  CGRANode* goal,
-						  std::map<CGRANode*,CGRANode*> *cameFrom,
-						  std::map<CGRANode*,int> *costSoFar);
+	CGRANode* AStarSearch(	std::map<CGRANode*,std::vector<CGRAEdge> > graph,
+							CGRANode* start,
+							CGRANode* goal,
+							std::map<std::pair<CGRANode*,Port>,std::pair<CGRANode*,Port>> *cameFrom,
+							std::map<CGRANode*,int> *costSoFar,
+							Port* endPort);
 
-	CGRANode* AStarSearchEMS(std::map<CGRANode*,std::vector<CGRANode*> > graph,
-					 	  CGRANode* start,
-						  CGRANode* goal,
-						  std::map<CGRANode*,CGRANode*> *cameFrom,
-						  std::map<CGRANode*,int> *costSoFar);
+	CGRANode* AStarSearchEMS(std::map<CGRANode*, std::vector<CGRAEdge> > graph,
+							 CGRANode* start,
+							 CGRANode* goal,
+							 std::map<std::pair<CGRANode*,Port>, std::pair<CGRANode*,Port>>* cameFrom,
+							 std::map<CGRANode*, int>* costSoFar);
 
 
 	bool Route(dfgNode* currNode,
@@ -56,7 +58,7 @@ public:
 //			   std::vector<std::pair<CGRANode*,CGRANode*> > paths,
 //			   std::vector<TreePath> treePaths,
 			   std::vector<CGRANode*> dests,
-			   std::map<CGRANode*,std::vector<CGRANode*> >* cgraEdges,
+			   std::map<CGRANode*,std::vector<CGRAEdge> >* cgraEdges,
 			   std::vector<std::pair<CGRANode*,CGRANode*> > *pathsNotRouted,
 			   bool* deadEndReached = NULL);
 
@@ -70,7 +72,7 @@ public:
 //			   std::vector<std::pair<CGRANode*,CGRANode*> > paths,
 //			   std::vector<TreePath> treePaths,
 			   std::vector<CGRANode*> dests,
-			   std::map<CGRANode*,std::vector<CGRANode*> >* cgraEdges,
+			   std::map<CGRANode*,std::vector<CGRAEdge> >* cgraEdges,
 			   std::vector<std::pair<CGRANode*,CGRANode*> > *pathsNotRouted,
 			   bool* deadEndReached = NULL);
 
@@ -84,7 +86,7 @@ public:
 	int maxPathLength;
 	int maxSMARTPathLength;
 
-	bool reportDeadEnd(CGRANode* end, dfgNode* currNode, std::map<CGRANode*,std::vector<CGRANode*> >* cgraEdges);
+	bool reportDeadEnd(CGRANode* end, Port endPort, dfgNode* currNode, std::map<CGRANode*,std::vector<CGRAEdge> >* cgraEdges);
 
 };
 
