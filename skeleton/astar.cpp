@@ -17,14 +17,16 @@ CGRANode* AStar::AStarSearch(std::map<CGRANode*,std::vector<CGRAEdge> > graph,
 						std::map<CGRANode*,int> *costSoFar,
 						Port* endPort) {
 //	assert(start->getT() == goal->getT());
+
+
 	std::priority_queue<CGRANodeWithCost, std::vector<CGRANodeWithCost>, LessThanCGRANodeWithCost> frontier;
-	std::vector<CGRAEdge*> tempCGRAEdges;
+	std::vector<CGRAEdge> tempCGRAEdges;
 	frontier.push(CGRANodeWithCost(start,0,TILE));
 
 	cameFrom->clear();
 	costSoFar->clear();
 
-	(*cameFrom)[std::make_pair(start,TILE)] = NULL;
+//	(*cameFrom)[std::make_pair(start,TILE)] = NULL;
 	(*costSoFar)[start] = 0;
 
 	CGRANode* current;
@@ -44,10 +46,11 @@ CGRANode* AStar::AStarSearch(std::map<CGRANode*,std::vector<CGRAEdge> > graph,
 			break;
 		}
 
+		CameFromVerify(cameFrom);
 		tempCGRAEdges = currDFG->getCGRA()->findCGRAEdges(current,currentPort,&graph);
 		for (int i = 0; i < tempCGRAEdges.size(); ++i) {
-			next = tempCGRAEdges[i]->Dst;
-			nextPort = tempCGRAEdges[i]->DstPort;
+			next = tempCGRAEdges[i].Dst;
+			nextPort = tempCGRAEdges[i].DstPort;
 
 			if(current->getT() == next->getT()){
 				newCost = (*costSoFar)[current] + 1; //always graph.cost(current, next) = 1
@@ -62,7 +65,7 @@ CGRANode* AStar::AStarSearch(std::map<CGRANode*,std::vector<CGRAEdge> > graph,
 			}
 			(*costSoFar)[next] = newCost;
 			priority = newCost + heuristic(goal,next);
-			frontier.push(CGRANodeWithCost(next,priority));
+			frontier.push(CGRANodeWithCost(next,priority,nextPort));
 			(*cameFrom)[std::make_pair(next,nextPort)] = std::make_pair(current,currentPort);
 		}
 	}
@@ -100,7 +103,7 @@ bool AStar::Route(dfgNode* currNode,
 	std::map<CGRANode*,int> costSoFar;
 	bool routingComplete = false;
 
-	std::vector<CGRAEdge*> tempCGRAEdges;
+	std::vector<CGRAEdge> tempCGRAEdges;
 
 	struct pathWithCost{
 		std::pair<CGRANode*, CGRANode*> path;
@@ -155,7 +158,17 @@ bool AStar::Route(dfgNode* currNode,
 		//Sorting TreePath Paths
 		for (int j = 0; j < treePaths[i].sources.size(); ++j) {
 			start = treePaths[i].sources[j];
+			start = currDFG->getCGRA()->getCGRANode(start->getT(),start->getY(),start->getX());
 			goal = treePaths[i].dest;
+			goal = currDFG->getCGRA()->getCGRANode(goal->getT(),goal->getY(),goal->getX());
+
+//			if(start != currDFG->getCGRA()->getCGRANode(start->getT(),start->getY(),start->getX())){
+//				start = currDFG->getCGRA()->getCGRANode(start->getT(),start->getY(),start->getX());
+//			}
+
+//			assert(start == currDFG->getCGRA()->getCGRANode(start->getT(),start->getY(),start->getX()));
+//			assert(goal == currDFG->getCGRA()->getCGRANode(goal->getT(),goal->getY(),goal->getX()));
+
 			end = AStarSearch(*cgraEdges,start,goal,&cameFrom, &costSoFar,&endPort);
 			if(end != goal){
 				continue;
@@ -209,6 +222,7 @@ bool AStar::Route(dfgNode* currNode,
 
 	for (int i = 0; i < treePathsWithCost.size(); ++i) {
 		goal = treePathsWithCost[i].tp.dest;
+		goal = currDFG->getCGRA()->getCGRANode(goal->getT(),goal->getY(),goal->getX());
 		currParent = treePathsWithCost[i].parent;
 		errs() << "Nodes cleared for NodeIdx=" << currNode->getIdx() << ", ParentIdx=" << currParent->getIdx() << "\n";
 
@@ -219,7 +233,10 @@ bool AStar::Route(dfgNode* currNode,
 		pathsWithCost.clear();
 		for (int j = 0; j < treePathsWithCost[i].tp.sources.size(); ++j) {
 			start = treePathsWithCost[i].tp.sources[j];
+			start = currDFG->getCGRA()->getCGRANode(start->getT(),start->getY(),start->getX());
+			errs() << "AStar Search starts...\n";
 			end = AStarSearch(*cgraEdges,start,goal,&cameFrom, &costSoFar,&endPort);
+			errs() << "AStar Search ends...\n";
 			if(end != goal){
 				*mappingOutFile << "Routing Failed : " << start->getName() << "->" << goal->getName() << ",only routed to " << end->getName() << std::endl;
 				continue;
@@ -250,7 +267,9 @@ bool AStar::Route(dfgNode* currNode,
 		routingComplete = false;
 		for (int j = 0; j < treePaths[i].sources.size(); ++j) {
 			start = treePaths[i].sources[j];
+			start = currDFG->getCGRA()->getCGRANode(start->getT(),start->getY(),start->getX());
 			goal = treePaths[i].dest;
+			goal = currDFG->getCGRA()->getCGRANode(goal->getT(),goal->getY(),goal->getX());
 			currParent = parents[i];
 			currSourcePath = treePaths[i].sourcePaths[start];
 
@@ -258,6 +277,9 @@ bool AStar::Route(dfgNode* currNode,
 			*mappingOutFile << "goal = (" << goal->getT() << "," << goal->getY() << "," << goal->getX() << ")\n";
 
 			end = AStarSearch(*cgraEdges,start,goal,&cameFrom, &costSoFar,&endPort);
+//			CameFromVerify(&cameFrom);
+
+
 			if(end != goal){
 				errs() << "SMARTRouteReal :: " << "Path is not routed = " << start->getName() << " to " << goal->getName() << "\n";
 				errs() << "SMARTRouteReal :: " << "But Routed until : " << (end)->getName() << "\n";
@@ -297,6 +319,17 @@ bool AStar::Route(dfgNode* currNode,
 
 		(*currNode->getSourceRoutingPath())[currParent] = currSourcePath;
 
+		if(cameFrom.size() > 0){
+			cameFromSearch = false;
+			for(cameFromIt = cameFrom.begin(); cameFromIt != cameFrom.end(); ++cameFromIt){
+				if(cameFromIt->second.first == start){
+					cameFromSearch = true;
+					break;
+				}
+			}
+			assert(cameFromSearch);
+		}
+
 		*mappingOutFile << "The Path : ";
 		while(current!=start){
 			*mappingOutFile << "(" << current->getT() << "," << current->getY() << "," << current->getX() << ")" << " <-- ";
@@ -317,24 +350,22 @@ bool AStar::Route(dfgNode* currNode,
 //			if(cameFrom[current] != start){
 
 				//TODO :: //change this to record the port also.
-				(*currNode->getTreeBasedRoutingLocs())[currParent].push_back(cameFrom[currNodePortPair].first);
+				assert(current == currDFG->getCGRA()->getCGRANode(current->getT(),current->getY(),current->getX()));
+				(*currNode->getTreeBasedRoutingLocs())[currParent].push_back(current);
 
 //			}
-				if(cameFrom[currNodePortPair].first->equals(4,3,0)){
-					errs() << "%% currNodeIdx=" << currNode->getIdx();
-					errs() << ", currParentIdx=" << currParent->getIdx();
-					errs() << start->getName() << " to " << goal->getName();
-					errs() << "\n";
-				}
+
 
 //			assert(cgraEdges->find(cameFrom[current]) != cgraEdges->end());
+
+//			CameFromVerify(&cameFrom);
 			tempCGRAEdges = currDFG->getCGRA()->findCGRAEdges(cameFrom[currNodePortPair].first,cameFrom[currNodePortPair].second,cgraEdges);
 			assert(tempCGRAEdges.size() != 0);
 
 //			std::vector<CGRANode*>::iterator found = std::find((*cgraEdges)[cameFrom[current]].begin(), (*cgraEdges)[cameFrom[current]].end(), current);
 			for (int j = 0; j < tempCGRAEdges.size(); ++j) {
-				if(tempCGRAEdges[j]->Dst == current){
-					tempCGRAEdges[j]->mappedDFGEdge = currDFG->findEdge(currParent,currNode);
+				if(tempCGRAEdges[j].Dst == current){
+					tempCGRAEdges[j].mappedDFGEdge = currDFG->findEdge(currParent,currNode);
 					break;
 				}
 			}
@@ -379,7 +410,7 @@ bool AStar::Route(dfgNode* currNode,
 			//Logging - End
 
 			pathLength++;
-			current = cameFrom[current];
+			current = cameFrom[currNodePortPair].first;
 		}
 
 		//Logging - SMART Path Length
@@ -425,6 +456,7 @@ bool AStar::Route(dfgNode* currNode,
 
 		*mappingOutFile << "(" << current->getT() << "," << current->getY() << "," << current->getX() << ")" << "\n";
 	}
+	errs() << "AStar search done...\n";
 	return true;
 }
 
@@ -593,13 +625,20 @@ bool AStar::EMSRoute(dfgNode* currNode,
 	Port currPort;
 	CGRANode* end;
 	Port endPort;
+	std::pair<CGRANode*,Port> currNodePortPair;
+	std::vector<CGRAEdge> tempCGRAEdges;
 
 	CGRANode* TwoNodesBeforeCurrent;
 
 	dfgNode* currParent;
 	std::vector<TreePath> treePaths;
 
-	std::map<CGRANode*,CGRANode*> cameFrom;
+//	std::map<CGRANode*,CGRANode*> cameFrom;
+	std::map<std::pair<CGRANode*,Port>,std::pair<CGRANode*,Port> > cameFrom;
+	std::map<std::pair<CGRANode*,Port>,std::pair<CGRANode*,Port> >::iterator cameFromIt;
+	bool cameFromSearch = false;
+
+
 	std::map<CGRANode*,int> costSoFar;
 	bool routingComplete = false;
 	bool localDeadEndReached = false;
@@ -658,7 +697,7 @@ bool AStar::EMSRoute(dfgNode* currNode,
 			for (int j = 0; j < treePaths[i].sources.size(); ++j) {
 				start = treePaths[i].sources[j];
 				goal = treePaths[i].dest;
-				end = AStarSearchEMS(*cgraEdges,start,goal,&cameFrom, &costSoFar);
+				end = AStarSearchEMS(*cgraEdges,start,goal,&cameFrom, &costSoFar, &endPort);
 				if(end != goal){
 					continue;
 				}
@@ -670,7 +709,7 @@ bool AStar::EMSRoute(dfgNode* currNode,
 			if(pathsWithCost.size() == 0){
 				errs() << "SMARTRouteEst :: " << "Path is not routed = " << start->getName() << " to " << goal->getName() << "\n";
 				errs() << "SMARTRouteEst :: " << "But Routed until : " << (end)->getName() << "\n";
-				localDeadEndReached = reportDeadEnd(end,currNode,cgraEdges);
+				localDeadEndReached = reportDeadEnd(end, endPort,currNode,cgraEdges);
 				if(deadEndReached != NULL){
 					*deadEndReached = localDeadEndReached;
 				}
@@ -742,7 +781,7 @@ bool AStar::EMSRoute(dfgNode* currNode,
 		pathsWithCost.clear();
 		for (int j = 0; j < currPath.tp.sources.size(); ++j) {
 			start = currPath.tp.sources[j];
-			end = AStarSearchEMS(*cgraEdges,start,goal,&cameFrom, &costSoFar);
+			end = AStarSearchEMS(*cgraEdges,start,goal,&cameFrom, &costSoFar, &endPort);
 			if(end != goal){
 				*mappingOutFile << "Routing Failed : " << start->getName() << "->" << goal->getName() << ",only routed to " << end->getName() << std::endl;
 				continue;
@@ -767,7 +806,7 @@ bool AStar::EMSRoute(dfgNode* currNode,
 		if(currPath.tp.sources.size() == 0){
 			*mappingOutFile << "routing not completed as it only routed until : " << end->getName() << std::endl;
 			pathsNotRouted->push_back(std::make_pair(start,goal));
-			localDeadEndReached = reportDeadEnd(end,currNode,cgraEdges);
+			localDeadEndReached = reportDeadEnd(end,endPort,currNode,cgraEdges);
 			if(deadEndReached != NULL){
 				*deadEndReached = localDeadEndReached;
 			}
@@ -784,7 +823,7 @@ bool AStar::EMSRoute(dfgNode* currNode,
 			*mappingOutFile << "start = (" << start->getT() << "," << start->getY() << "," << start->getX() << ")\n";
 			*mappingOutFile << "goal = (" << goal->getT() << "," << goal->getY() << "," << goal->getX() << ")\n";
 
-			end = AStarSearchEMS(*cgraEdges,start,goal,&cameFrom, &costSoFar);
+			end = AStarSearchEMS(*cgraEdges,start,goal,&cameFrom, &costSoFar,&endPort);
 			if(end != goal){
 				errs() << "EMSRouteReal :: " << "Path is not routed = " << start->getName() << " to " << goal->getName() << "\n";
 				errs() << "EMSRouteReal :: " << "But Routed until : " << (end)->getName() << "\n";
@@ -837,77 +876,92 @@ bool AStar::EMSRoute(dfgNode* currNode,
 
 		while(current!=start){
 			*mappingOutFile << "(" << current->getT() << "," << current->getY() << "," << current->getX() << ")" << " <-- ";
-			assert(cameFrom.find(current) != cameFrom.end());
+
+//			assert(cameFrom.find(current) != cameFrom.end());
+			cameFromSearch = false;
+			for(cameFromIt = cameFrom.begin(); cameFromIt != cameFrom.end(); cameFromIt++){
+				if(cameFromIt->first.first == current){
+					currPort = cameFromIt->first.second;
+					cameFromSearch = true;
+					break;
+				}
+			}
+			assert(cameFromSearch);
+			currNodePortPair = std::make_pair(current,currPort);
 
 			//Adding Routing Locs to form a multicast tree in the future
 //			if(cameFrom[current] != start){
-				(*currNode->getTreeBasedRoutingLocs())[currParent].push_back(cameFrom[current]);
+				//TODO :: add the ports to getTreeBasedRoutingLocs
+				(*currNode->getTreeBasedRoutingLocs())[currParent].push_back(cameFrom[currNodePortPair].first);
 //			}
-				if(cameFrom[current]->equals(4,3,0)){
-					errs() << "%% currNodeIdx=" << currNode->getIdx();
-					errs() << ", currParentIdx=" << currParent->getIdx();
-					errs() << start->getName() << " to " << goal->getName();
-					errs() << "\n";
-				}
 
-				assert(cgraEdges->find(cameFrom[current]) != cgraEdges->end());
-				if(cgraEdges->find(cameFrom[current]) != cgraEdges->end()){
-					std::vector<CGRANode*>::iterator found = std::find((*cgraEdges)[cameFrom[current]].begin(), (*cgraEdges)[cameFrom[current]].end(), current);
+//				assert(cgraEdges->find(cameFrom[current]) != cgraEdges->end());
+				tempCGRAEdges = currDFG->getCGRA()->findCGRAEdges(cameFrom[currNodePortPair].first,cameFrom[currNodePortPair].second,cgraEdges);
+				assert(tempCGRAEdges.size() != 0);
 
-					if(found != (*cgraEdges)[cameFrom[current]].end()){
-						(*cgraEdges)[cameFrom[current]].erase(found);
-						if(cameFrom[current]->equals(4,3,0)){
-							errs() << "%% removing edge" << cameFrom[current]->getName() <<"to " << current->getName();
-							errs() << ", nodeIdx=" << currNode->getIdx();
-							errs() << ", nodeASAPLevel=" << currNode->getASAPnumber();
-							errs() << ", cgraEdgeSize=" << (*cgraEdges)[cameFrom[current]].size();
-							errs() << ", util = " << currDFG->findUtilTreeRoutingLocs(cameFrom[current],currNode);
-							errs() << ", MII =" << currDFG->getCGRA()->getMII();
 
-//							assert((currDFG->findUtilTreeRoutingLocs(cameFrom[current],currNode) +
-//									(*cgraEdges)[cameFrom[current]].size() == cameFrom[current]->originalEdgesSize));
+//					std::vector<CGRANode*>::iterator found = std::find((*cgraEdges)[cameFrom[current]].begin(), (*cgraEdges)[cameFrom[current]].end(), current);
 
-							errs() << "\n";
-						}
+//					if(found != (*cgraEdges)[cameFrom[current]].end()){
+//						(*cgraEdges)[cameFrom[current]].erase(found);
+//					}
+
+				for (int j = 0; j < tempCGRAEdges.size(); ++j) {
+					if(tempCGRAEdges[j].Dst == current){
+						tempCGRAEdges[j].mappedDFGEdge = currDFG->findEdge(currParent,currNode);
+						break;
 					}
 				}
 
 				if(current!=goal){
 					//Remove other edges
-					std::map<CGRANode*, std::vector<CGRANode*> >::iterator cgraEdgeIter;
+					std::map<CGRANode*, std::vector<CGRAEdge> >::iterator cgraEdgeIter;
 					for(cgraEdgeIter = cgraEdges->begin(); cgraEdgeIter != cgraEdges->end(); cgraEdgeIter++){
-						if(cameFrom[current] != cgraEdgeIter->first){
+						if(cameFrom[currNodePortPair].first != cgraEdgeIter->first){
 							if( (cgraEdgeIter->first->getX() == current->getX())&&(cgraEdgeIter->first->getY() == current->getY()) ){
 								continue;
 							}
 
-
-							std::vector<CGRANode*>::iterator found = std::find((*cgraEdges)[cgraEdgeIter->first].begin(), (*cgraEdges)[cgraEdgeIter->first].end(), current);
-							if(found != (*cgraEdges)[cgraEdgeIter->first].end()){
-								*mappingOutFile << "DEBUG :: " << "removing edge=" << cgraEdgeIter->first->getName() << " to " << (*found)->getName();
-								*mappingOutFile << " Number of edges=" << (*cgraEdges)[cgraEdgeIter->first].size() << " reduced to ";
-								(*cgraEdges)[cgraEdgeIter->first].erase(found);
-								*mappingOutFile << (*cgraEdges)[cgraEdgeIter->first].size() << "\n";
+							tempCGRAEdges = currDFG->getCGRA()->findCGRAEdges(cameFrom[currNodePortPair].first,cameFrom[currNodePortPair].second,cgraEdges);
+							assert(tempCGRAEdges.size() != 0);
+							for (int j = 0; j < tempCGRAEdges.size(); ++j) {
+								if(tempCGRAEdges[j].Dst == current){
+									tempCGRAEdges[j].mappedDFGEdge = currDFG->findEdge(currParent,currNode);
+									*mappingOutFile << "DEBUG :: " << "removing edge=" << tempCGRAEdges[j].Src->getName() << " to " << tempCGRAEdges[j].Dst->getName() << std::endl;
+									break;
+								}
 							}
+
+
+
+//							std::vector<CGRANode*>::iterator found = std::find((*cgraEdges)[cgraEdgeIter->first].begin(), (*cgraEdges)[cgraEdgeIter->first].end(), current);
+//							if(found != (*cgraEdges)[cgraEdgeIter->first].end()){
+//								*mappingOutFile << "DEBUG :: " << "removing edge=" << cgraEdgeIter->first->getName() << " to " << (*found)->getName();
+//								*mappingOutFile << " Number of edges=" << (*cgraEdges)[cgraEdgeIter->first].size() << " reduced to ";
+//								(*cgraEdges)[cgraEdgeIter->first].erase(found);
+//								*mappingOutFile << (*cgraEdges)[cgraEdgeIter->first].size() << "\n";
+//							}
+
+
 						}
 					}
 				}
 
 //				}
 
-			if(cameFrom[current] != start){
-				TwoNodesBeforeCurrent = cameFrom[cameFrom[current]];
-				if((TwoNodesBeforeCurrent->getY() == cameFrom[current]->getY())&&
-				   (TwoNodesBeforeCurrent->getX() == cameFrom[current]->getX())&&
-				   (cameFrom[current]->getY() == current->getY())&&
-				   (cameFrom[current]->getX() == current->getX())){
+			if(cameFrom[currNodePortPair].first != start){
+				TwoNodesBeforeCurrent = cameFrom[cameFrom[currNodePortPair]].first;
+				if((TwoNodesBeforeCurrent->getY() == cameFrom[currNodePortPair].first->getY())&&
+				   (TwoNodesBeforeCurrent->getX() == cameFrom[currNodePortPair].first->getX())&&
+				   (cameFrom[currNodePortPair].first->getY() == current->getY())&&
+				   (cameFrom[currNodePortPair].first->getX() == current->getX())){
 
 				}
 				else{
-					cameFrom[current]->setMappedDFGNode(currPath.parent);
+					cameFrom[currNodePortPair].first->setMappedDFGNode(currPath.parent);
 				}
 			}
-			current = cameFrom[current];
+			current = cameFrom[currNodePortPair].first;
 		}
 
 		//Logging
@@ -943,7 +997,7 @@ bool AStar::EMSRoute(dfgNode* currNode,
 			for (int i = 0; i < currPath.tp.sources.size(); ++i) {
 				start = currPath.tp.sources[i];
 				goal = currPath.tp.dest;
-				end = AStarSearch(*cgraEdges,start,goal,&cameFrom, &costSoFar);
+				end = AStarSearchEMS(*cgraEdges,start,goal,&cameFrom, &costSoFar,&endPort);
 				if(end != goal){
 					continue;
 				}
@@ -955,7 +1009,7 @@ bool AStar::EMSRoute(dfgNode* currNode,
 			if(pathsWithCost.size() == 0){
 				errs() << "EMSRouteEst :: " << "Path is not routed = " << start->getName() << " to " << goal->getName() << "\n";
 				errs() << "EMSRouteEst :: " << "But Routed until : " << (end)->getName() << "\n";
-				localDeadEndReached = reportDeadEnd(end,currNode,cgraEdges);
+				localDeadEndReached = reportDeadEnd(end,endPort,currNode,cgraEdges);
 				if(deadEndReached != NULL){
 					*deadEndReached = localDeadEndReached;
 				}
@@ -979,7 +1033,8 @@ CGRANode* AStar::AStarSearchEMS(
 		CGRANode* start,
 		CGRANode* goal,
 		std::map<std::pair<CGRANode*,Port>, std::pair<CGRANode*,Port>>* cameFrom,
-		std::map<CGRANode*, int>* costSoFar) {
+		std::map<CGRANode*, int>* costSoFar,
+		Port* endPort) {
 	//	assert(start->getT() == goal->getT());
 
 		std::priority_queue<CGRANodeWithCost, std::vector<CGRANodeWithCost>, LessThanCGRANodeWithCost> frontier;
@@ -988,7 +1043,7 @@ CGRANode* AStar::AStarSearchEMS(
 		cameFrom->clear();
 		costSoFar->clear();
 
-		(*cameFrom)[std::make_pair(start,TILE)] = NULL;
+//		(*cameFrom)[std::make_pair(start,TILE)] = NULL;
 		(*costSoFar)[start] = 0;
 
 		CGRANode* current;
@@ -1034,11 +1089,26 @@ CGRANode* AStar::AStarSearchEMS(
 				(*costSoFar)[next] = newCost;
 				priority = newCost + heuristic(goal,next);
 				frontier.push(CGRANodeWithCost(next,priority,nextPort));
-				(*cameFrom)[std::make_pair(next,nextPort)] = current;
+				(*cameFrom)[std::make_pair(next,nextPort)] = std::make_pair(current,currentPort);
 			}
 		}
 
+		*endPort = currentPort;
 		return current;
+}
+
+bool AStar::CameFromVerify(std::map<std::pair<CGRANode*,Port>,std::pair<CGRANode*,Port>> *cameFrom) {
+
+	std::map<std::pair<CGRANode*,Port>,std::pair<CGRANode*,Port>>::iterator cameFromIt;
+
+	for(cameFromIt = cameFrom->begin();
+		cameFromIt != cameFrom->end();
+		cameFromIt++){
+		assert(cameFromIt->first.first == currDFG->getCGRA()->getCGRANode(cameFromIt->first.first->getT(),
+																		  cameFromIt->first.first->getY(),
+																		  cameFromIt->first.first->getX()));
+	}
+	return true;
 }
 
 //	for (int i = 0; i < pathsWithCost.size(); ++i) {
@@ -1143,7 +1213,7 @@ bool AStar::reportDeadEnd(CGRANode* end,
 						  std::map<CGRANode*,std::vector<CGRAEdge> >* cgraEdges) {
 
 	int util = currDFG->findUtilTreeRoutingLocs(end,currNode);
-	std::vector<CGRAEdge*> tempCGRAEdges =  currDFG->getCGRA()->findCGRAEdges(end,endPort,cgraEdges);
+	std::vector<CGRAEdge> tempCGRAEdges =  currDFG->getCGRA()->findCGRAEdges(end,endPort,cgraEdges);
 
 	*mappingOutFile << "DeadEndStats :: CGRANode=" << end->getName();
 	*mappingOutFile << ", utilization = " << std::to_string(util) << std::endl;
@@ -1155,7 +1225,7 @@ bool AStar::reportDeadEnd(CGRANode* end,
 
 	errs() << "[";
 	for (int i = 0; i < tempCGRAEdges.size(); ++i) {
-		errs() << tempCGRAEdges[i]->Dst->getName().c_str() << ",";
+		errs() << tempCGRAEdges[i].Dst->getName().c_str() << ",";
 	}
 	errs() << "]";
 	errs() << ", MII =" << currDFG->getCGRA()->getMII();

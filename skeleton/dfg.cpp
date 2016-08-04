@@ -1852,8 +1852,8 @@ void DFG::MapCGRA_SMART(int XDim, int YDim, std::string mapfileName) {
 			}
 
 			//Printing out mapped routes
-			printOutSMARTRoutes();
-			printTurns();
+//			printOutSMARTRoutes();
+//			printTurns();
 
 
 
@@ -2382,7 +2382,7 @@ void DFG::MapCGRA_EMS(int XDim, int YDim, std::string mapfileName) {
 			mappingOutFile << "MapCGRAsa :: Mapping success with MII = " << MII << "\n";
 
 			std::map<CGRANode*, std::vector<CGRAEdge> >* cgraEdgesPtr = currCGRA->getCGRAEdges();
-			std::vector<CGRANode*> connections;
+			std::vector<CGRAEdge> connections;
 			int count = 0;
 
 			mappingOutFile << "Reg Connections Available after use :: \n";
@@ -2392,7 +2392,7 @@ void DFG::MapCGRA_EMS(int XDim, int YDim, std::string mapfileName) {
 					for (int x = 0; x < currCGRA->getXdim(); ++x) {
 						connections = (*cgraEdgesPtr)[currCGRA->getCGRANode(t,y,x)];
 						for (int c = 0; c < connections.size(); ++c) {
-							if( (connections[c]->getY() == y) && (connections[c]->getX() == x) ){
+							if( (connections[c].Dst->getY() == y) && (connections[c].Dst->getX() == x) ){
 								count++;
 							}
 						}
@@ -2418,7 +2418,7 @@ bool DFG::MapCGRA_EMS_ASAPLevel(int MII, int XDim, int YDim) {
 	errs() << "STARTING MAPASAP with MII = " << MII << "with maxASAPLevel = " << maxASAPLevel << "\n";
 	mappingOutFile << "STARTING MAPASAP with MII = " << MII << "with maxASAPLevel = " << maxASAPLevel << "\n";
 
-	std::map<CGRANode*,std::vector<CGRANode*> >::iterator edgeIt;
+	std::map<CGRANode*,std::vector<CGRAEdge> >::iterator edgeIt;
 	for(edgeIt = currCGRA->getCGRAEdges()->begin();
 		edgeIt != currCGRA->getCGRAEdges()->end();
 		edgeIt++){
@@ -2444,8 +2444,11 @@ bool DFG::MapCGRA_EMS_ASAPLevel(int MII, int XDim, int YDim) {
 	dfgNode* parent;
 	CGRANode* parentExt;
 
+	CGRANode* end;
+	Port endPort;
+
 	//----Data Structures for Sorting the destination nodes based on routing --- (1)
-	std::map<CGRANode*,CGRANode*> cameFrom;
+	std::map<std::pair<CGRANode*,Port>,std::pair<CGRANode*,Port> > cameFrom;
 	std::map<CGRANode*,int> costSoFar;
 	CGRANode* cnode;
 	std::pair<CGRANode*, CGRANode*> path;
@@ -2599,7 +2602,7 @@ bool DFG::MapCGRA_EMS_ASAPLevel(int MII, int XDim, int YDim) {
 					path = std::make_pair(parentExt,cnode);
 
 					//Calculate cost for the path
-					astar->AStarSearchEMS(*(currCGRA->getCGRAEdges()),parentExt,cnode,&cameFrom,&costSoFar);
+					end = astar->AStarSearchEMS(*(currCGRA->getCGRAEdges()),parentExt,cnode,&cameFrom,&costSoFar,&endPort);
 					cost += costSoFar[cnode];
 				}
 				nodesWithCost.push_back( nodeWithCost(node,cnode,cost,mappedRealTime));
@@ -3159,16 +3162,22 @@ int DFG::getStaticRoutingCost(dfgNode* node, CGRANode* dest, std::map<CGRANode*,
 	dfgNode* parent;
 	TreePath tp;
 	CGRANode* end;
+	Port endPort;
 
 	CGRANode* cnode;
+	Port currPort;
+	std::pair<CGRANode*,Port> currNodePortPair;
 	int currCost = 0;
 	int bestCost = INT_MAX;
 	CGRANode* bestSource = NULL;
 
 	int cost = 0;
 
-	std::map<CGRANode*,CGRANode*> cameFrom;
+	std::map<std::pair<CGRANode*,Port>,std::pair<CGRANode*,Port> > cameFrom;
+	std::map<std::pair<CGRANode*,Port>,std::pair<CGRANode*,Port> >::iterator cameFromIt;
 	std::map<CGRANode*,int> costSoFar;
+
+	std::vector<CGRAEdge*> tempCGRAEdges;
 
 	for (int i = 0; i < node->getAncestors().size(); ++i) {
 		parent = node->getAncestors()[i];
@@ -3176,17 +3185,27 @@ int DFG::getStaticRoutingCost(dfgNode* node, CGRANode* dest, std::map<CGRANode*,
 
 		bestSource = NULL;
 		for (int j = 0; j < tp.sources.size(); ++j) {
-			end = astar->AStarSearchEMS(Edges,tp.sources[j],dest,&cameFrom,&costSoFar);
+			end = astar->AStarSearchEMS(Edges,tp.sources[j],dest,&cameFrom,&costSoFar,&endPort);
 			if(end != dest){
 				continue;
 			}
 
 			//traverse the path
 			cnode = dest;
+			for(cameFromIt = cameFrom.begin(); cameFromIt != cameFrom.end(); cameFromIt++){
+				if(cameFromIt->first.first == cnode){
+					currPort = cameFromIt->first.second;
+					break;
+				}
+			}
+			currNodePortPair = std::make_pair(cnode,currPort);
+
+
+
 			currCost = 0;
 			while(cnode != tp.sources[j]){
-				if((cnode->getX() == cameFrom[cnode]->getX())&&
-				   (cnode->getY() == cameFrom[cnode]->getY())
+				if((cnode->getX() == cameFrom[currNodePortPair].first->getX())&&
+				   (cnode->getY() == cameFrom[currNodePortPair].first->getY())
 						){
 					currCost++;
 				}
@@ -3200,7 +3219,7 @@ int DFG::getStaticRoutingCost(dfgNode* node, CGRANode* dest, std::map<CGRANode*,
 
 				}
 //				currCost += (currCGRA->getCGRANode(0,1,1)->originalEdgesSize - (*currCGRA->getCGRAEdges())[cnode].size());
-				cnode = cameFrom[cnode];
+				cnode = cameFrom[currNodePortPair].first;
 			}
 
 			if(currCost < bestCost){

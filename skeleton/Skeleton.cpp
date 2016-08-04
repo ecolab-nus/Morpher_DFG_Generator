@@ -553,7 +553,7 @@ namespace {
 				  LoopDFG.MapCGRA_SMART(4,4,F.getName().str() + "_L" + std::to_string(loopCounter) + "_mapping.log");
 //				  LoopDFG.MapCGRA_EMS(4,4,F.getName().str() + "_L" + std::to_string(loopCounter) + "_mapping.log");
 				  printDFGDOT (F.getName().str() + "_L" + std::to_string(loopCounter) + "_loopdfg.dot", &LoopDFG);
-				  LoopDFG.printTurns();
+//				  LoopDFG.printTurns();
 
 
 				  end = clock();
@@ -571,15 +571,15 @@ namespace {
 				  loopCounter++;
 			  } //end loopIterator
 
-			  DFG xmlDFG("asdsa");
-			  assert(xmlDFG.readXML("epimap_benchmarks/tiff2bw/DFG.xml") == 0);
-			  xmlDFG.scheduleASAP();
-			  xmlDFG.scheduleALAP();
-			  xmlDFG.CreateSchList();
-			  xmlDFG.MapCGRA_SMART(4,4,xmlDFG.getName()+ "_mapping.log");
-			  printDFGDOT(xmlDFG.getName() + ".dot",&xmlDFG);
-			  xmlDFG.printREGIMapOuts();
-			  xmlDFG.printTurns();
+//			  DFG xmlDFG("asdsa");
+//			  assert(xmlDFG.readXML("epimap_benchmarks/tiff2bw/DFG.xml") == 0);
+//			  xmlDFG.scheduleASAP();
+//			  xmlDFG.scheduleALAP();
+//			  xmlDFG.CreateSchList();
+//			  xmlDFG.MapCGRA_SMART(4,4,xmlDFG.getName()+ "_mapping.log");
+//			  printDFGDOT(xmlDFG.getName() + ".dot",&xmlDFG);
+//			  xmlDFG.printREGIMapOuts();
+//			  xmlDFG.printTurns();
 
 			  timeFile.close();
 

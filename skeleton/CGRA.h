@@ -22,7 +22,7 @@ struct CGRAEdge{
 
 class CGRA{
 		private :
-			std::vector<std::vector<std::vector<CGRANode> > > CGRANodes;
+			std::vector<std::vector<std::vector<CGRANode*> > > CGRANodes;
 //			std::map<CGRANode*,std::vector<CGRANode*> > CGRAEdges;
 			std::map<CGRANode*,std::vector<CGRAEdge>> CGRAEdges;
 			std::map<Port,std::vector<Port> > InOutPortMap;
@@ -61,7 +61,7 @@ class CGRA{
 			void clearMapping();
 
 			int getRegsPerNode(){return regsPerNode;}
-			std::vector<CGRAEdge*> findCGRAEdges(CGRANode* currCNode, Port inPort, std::map<CGRANode*,std::vector<CGRAEdge>>* cgraEdgesPtr);
+			std::vector<CGRAEdge> findCGRAEdges(CGRANode* currCNode, Port inPort, std::map<CGRANode*,std::vector<CGRAEdge>>* cgraEdgesPtr);
 	};
 
 

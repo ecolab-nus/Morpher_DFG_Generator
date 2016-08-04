@@ -19,25 +19,25 @@ void CGRA::connectNeighbors() {
 
 				//North
 				if(y-1 >= 0){
-					CGRANodes[t][y][x].addConnectedNode(&CGRANodes[(t+1)%MII][y-1][x],1,"north");
+					CGRANodes[t][y][x]->addConnectedNode(CGRANodes[(t+1)%MII][y-1][x],1,"north");
 					phyConMat[getConMatIdx(t,y,x)][getConMatIdx((t+1)%MII,y-1,x)] = 1;
 				}
 
 				//East
 				if(x+1 < XDim){
-					CGRANodes[t][y][x].addConnectedNode(&CGRANodes[(t+1)%MII][y][x+1],1,"east");
+					CGRANodes[t][y][x]->addConnectedNode(CGRANodes[(t+1)%MII][y][x+1],1,"east");
 					phyConMat[getConMatIdx(t,y,x)][getConMatIdx((t+1)%MII,y,x+1)] = 1;
 				}
 
 				//South
 				if(y+1 < YDim){
-					CGRANodes[t][y][x].addConnectedNode(&CGRANodes[(t+1)%MII][y+1][x],1,"south");
+					CGRANodes[t][y][x]->addConnectedNode(CGRANodes[(t+1)%MII][y+1][x],1,"south");
 					phyConMat[getConMatIdx(t,y,x)][getConMatIdx((t+1)%MII,y+1,x)] = 1;
 				}
 
 				//West
 				if(x-1 >= 0){
-					CGRANodes[t][y][x].addConnectedNode(&CGRANodes[(t+1)%MII][y][x-1],1,"west");
+					CGRANodes[t][y][x]->addConnectedNode(CGRANodes[(t+1)%MII][y][x-1],1,"west");
 					phyConMat[getConMatIdx(t,y,x)][getConMatIdx((t+1)%MII,y,x-1)] = 1;
 				}
 
@@ -47,7 +47,7 @@ void CGRA::connectNeighbors() {
 //				}
 
 				for (int i = t+1; i < t+MII; ++i) {
-					CGRANodes[t][y][x].addConnectedNode(&CGRANodes[(i)%MII][y][x],i-(t+1),"REGconnections");
+					CGRANodes[t][y][x]->addConnectedNode(CGRANodes[(i)%MII][y][x],i-(t+1),"REGconnections");
 					phyConMat[getConMatIdx(t,y,x)][getConMatIdx((i)%MII,y,x)] = 1;
 				}
 
@@ -55,7 +55,7 @@ void CGRA::connectNeighbors() {
 				phyConMat[getConMatIdx(t,y,x)][getConMatIdx(t,y,x)] = 1;
 
 
-				CGRANodes[t][y][x].sortConnectedNodes();
+				CGRANodes[t][y][x]->sortConnectedNodes();
 
 			}
 		}
@@ -70,14 +70,15 @@ CGRA::CGRA(int MII, int Xdim, int Ydim, int regs, ArchType aType) {
 	this->YDim = Ydim;
 	this->regsPerNode = regs;
 	this->arch = aType;
+	CGRANode* tempNodePtr;
 
 	for (int t = 0; t < MII; ++t) {
-		std::vector<std::vector<CGRANode> > tempL2;
+		std::vector<std::vector<CGRANode*> > tempL2;
 		for (int y = 0; y < Ydim; ++y) {
-			std::vector<CGRANode> tempL1;
+			std::vector<CGRANode*> tempL1;
 			for (int x = 0; x < Xdim; ++x) {
-				CGRANode tempNode(x,y,t,this);
-				tempL1.push_back(tempNode);
+				tempNodePtr = new CGRANode(x,y,t,this);
+				tempL1.push_back(tempNodePtr);
 			}
 			tempL2.push_back(tempL1);
 		}
@@ -140,7 +141,7 @@ CGRANode* CGRA::getCGRANode(int t, int y, int x) {
 	assert(y < getYdim());
 	assert(x < getXdim());
 
-	return &CGRANodes[t][y][x];
+	return CGRANodes[t][y][x];
 }
 
 CGRANode* CGRA::getCGRANode(int phyLoc) {
@@ -150,7 +151,7 @@ CGRANode* CGRA::getCGRANode(int phyLoc) {
 	int y = (phyLoc % getMII())/(getXdim());
 	int x = ((phyLoc % getMII()) % getYdim());
 
-	return &CGRANodes[t][y][x];
+	return CGRANodes[t][y][x];
 }
 
 void CGRA::connectNeighborsMESH() {
@@ -160,15 +161,15 @@ void CGRA::connectNeighborsMESH() {
 
 				for (int yy = 0; yy < YDim; ++yy) {
 					for (int xx = 0; xx < XDim; ++xx) {
-						CGRANodes[t][y][x].addConnectedNode(&CGRANodes[(t+1)%MII][yy][xx],abs(yy-y) + abs(xx-x) + 1,"mesh");
+						CGRANodes[t][y][x]->addConnectedNode(CGRANodes[(t+1)%MII][yy][xx],abs(yy-y) + abs(xx-x) + 1,"mesh");
 					}
 				}
 
 				for (int i = t+1; i < t+MII; ++i) {
-					CGRANodes[t][y][x].addConnectedNode(&CGRANodes[(i)%MII][y][x],i-(t+1),"REGconnections");
+					CGRANodes[t][y][x]->addConnectedNode(CGRANodes[(i)%MII][y][x],i-(t+1),"REGconnections");
 				}
 
-				CGRANodes[t][y][x].sortConnectedNodes();
+				CGRANodes[t][y][x]->sortConnectedNodes();
 
 			}
 		}
@@ -191,36 +192,36 @@ void CGRA::connectNeighborsSMART() {
 //				}
 
 				assert(regsPerNode == 4);
-				CGRAEdges[&CGRANodes[t][y][x]].push_back(CGRAEdge(&CGRANodes[t][y][x],R0,&CGRANodes[(t+1)%MII][y][x],R0));
-				CGRAEdges[&CGRANodes[t][y][x]].push_back(CGRAEdge(&CGRANodes[t][y][x],R1,&CGRANodes[(t+1)%MII][y][x],R1));
-				CGRAEdges[&CGRANodes[t][y][x]].push_back(CGRAEdge(&CGRANodes[t][y][x],R2,&CGRANodes[(t+1)%MII][y][x],R2));
-				CGRAEdges[&CGRANodes[t][y][x]].push_back(CGRAEdge(&CGRANodes[t][y][x],R3,&CGRANodes[(t+1)%MII][y][x],R3));
-				CGRANodes[t][y][x].originalEdgesSize += 4;
+				CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],R0,CGRANodes[(t+1)%MII][y][x],R0));
+				CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],R1,CGRANodes[(t+1)%MII][y][x],R1));
+				CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],R2,CGRANodes[(t+1)%MII][y][x],R2));
+				CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],R3,CGRANodes[(t+1)%MII][y][x],R3));
+				CGRANodes[t][y][x]->originalEdgesSize += 4;
 //				}
 
 
 						if(x > 0){
 //							CGRAEdges[&CGRANodes[t][y][x]].push_back(&CGRANodes[t][y][x-1]);
-							CGRAEdges[&CGRANodes[t][y][x]].push_back(CGRAEdge(&CGRANodes[t][y][x],EAST,&CGRANodes[t][y][x-1],WEST));
-							CGRANodes[t][y][x].originalEdgesSize++;
+							CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],EAST,CGRANodes[t][y][x-1],WEST));
+							CGRANodes[t][y][x]->originalEdgesSize++;
 						}
 
 						if(x < XDim - 1){
 //							CGRAEdges[&CGRANodes[t][y][x]].push_back(&CGRANodes[t][y][x+1]);
-							CGRAEdges[&CGRANodes[t][y][x]].push_back(CGRAEdge(&CGRANodes[t][y][x],WEST,&CGRANodes[t][y][x+1],EAST));
-							CGRANodes[t][y][x].originalEdgesSize++;
+							CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],WEST,CGRANodes[t][y][x+1],EAST));
+							CGRANodes[t][y][x]->originalEdgesSize++;
 						}
 
 						if(y > 0){
 //							CGRAEdges[&CGRANodes[t][y][x]].push_back(&CGRANodes[t][y-1][x]);
-							CGRAEdges[&CGRANodes[t][y][x]].push_back(CGRAEdge(&CGRANodes[t][y][x],NORTH,&CGRANodes[t][y-1][x],SOUTH));
-							CGRANodes[t][y][x].originalEdgesSize++;
+							CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],NORTH,CGRANodes[t][y-1][x],SOUTH));
+							CGRANodes[t][y][x]->originalEdgesSize++;
 						}
 
 						if(y < YDim - 1){
 //							CGRAEdges[&CGRANodes[t][y][x]].push_back(&CGRANodes[t][y+1][x]);
-							CGRAEdges[&CGRANodes[t][y][x]].push_back(CGRAEdge(&CGRANodes[t][y][x],SOUTH,&CGRANodes[t][y+1][x],NORTH));
-							CGRANodes[t][y][x].originalEdgesSize++;
+							CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],SOUTH,CGRANodes[t][y+1][x],NORTH));
+							CGRANodes[t][y][x]->originalEdgesSize++;
 						}
 			}
 		}
@@ -249,11 +250,11 @@ void CGRA::connectNeighborsGRID() {
 //				}
 
 				assert(regsPerNode == 4);
-				CGRAEdges[&CGRANodes[t][y][x]].push_back(CGRAEdge(&CGRANodes[t][y][x],R0,&CGRANodes[(t+1)%MII][y][x],R0));
-				CGRAEdges[&CGRANodes[t][y][x]].push_back(CGRAEdge(&CGRANodes[t][y][x],R1,&CGRANodes[(t+1)%MII][y][x],R1));
-				CGRAEdges[&CGRANodes[t][y][x]].push_back(CGRAEdge(&CGRANodes[t][y][x],R2,&CGRANodes[(t+1)%MII][y][x],R2));
-				CGRAEdges[&CGRANodes[t][y][x]].push_back(CGRAEdge(&CGRANodes[t][y][x],R3,&CGRANodes[(t+1)%MII][y][x],R3));
-				CGRANodes[t][y][x].originalEdgesSize += 4;
+				CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],R0,CGRANodes[(t+1)%MII][y][x],R0));
+				CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],R1,CGRANodes[(t+1)%MII][y][x],R1));
+				CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],R2,CGRANodes[(t+1)%MII][y][x],R2));
+				CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],R3,CGRANodes[(t+1)%MII][y][x],R3));
+				CGRANodes[t][y][x]->originalEdgesSize += 4;
 
 
 //				for (int yy = 0; yy < YDim; ++yy) {
@@ -261,26 +262,26 @@ void CGRA::connectNeighborsGRID() {
 
 						if(x > 0){
 //							CGRAEdges[&CGRANodes[t][y][x]].push_back(&CGRANodes[(t+1)%MII][y][x-1]);
-							CGRAEdges[&CGRANodes[t][y][x]].push_back(CGRAEdge(&CGRANodes[t][y][x],EAST,&CGRANodes[(t+1)%MII][y][x-1],WEST));
-							CGRANodes[t][y][x].originalEdgesSize++;
+							CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],EAST,CGRANodes[(t+1)%MII][y][x-1],WEST));
+							CGRANodes[t][y][x]->originalEdgesSize++;
 						}
 
 						if(x < XDim - 1){
 //							CGRAEdges[&CGRANodes[t][y][x]].push_back(&CGRANodes[(t+1)%MII][y][x+1]);
-							CGRAEdges[&CGRANodes[t][y][x]].push_back(CGRAEdge(&CGRANodes[t][y][x],WEST,&CGRANodes[(t+1)%MII][y][x+1],EAST));
-							CGRANodes[t][y][x].originalEdgesSize++;
+							CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],WEST,CGRANodes[(t+1)%MII][y][x+1],EAST));
+							CGRANodes[t][y][x]->originalEdgesSize++;
 						}
 
 						if(y > 0){
 //							CGRAEdges[&CGRANodes[t][y][x]].push_back(&CGRANodes[(t+1)%MII][y-1][x]);
-							CGRAEdges[&CGRANodes[t][y][x]].push_back(CGRAEdge(&CGRANodes[t][y][x],NORTH,&CGRANodes[(t+1)%MII][y-1][x],SOUTH));
-							CGRANodes[t][y][x].originalEdgesSize++;
+							CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],NORTH,CGRANodes[(t+1)%MII][y-1][x],SOUTH));
+							CGRANodes[t][y][x]->originalEdgesSize++;
 						}
 
 						if(y < YDim - 1){
 //							CGRAEdges[&CGRANodes[t][y][x]].push_back(&CGRANodes[(t+1)%MII][y+1][x]);
-							CGRAEdges[&CGRANodes[t][y][x]].push_back(CGRAEdge(&CGRANodes[t][y][x],SOUTH,&CGRANodes[(t+1)%MII][y+1][x],NORTH));
-							CGRANodes[t][y][x].originalEdgesSize++;
+							CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],SOUTH,CGRANodes[(t+1)%MII][y+1][x],NORTH));
+							CGRANodes[t][y][x]->originalEdgesSize++;
 						}
 //						CGRANodes[t][y][x].addConnectedNode(&CGRANodes[(t+1)%MII][yy][xx],abs(yy-y) + abs(xx-x) + 1,"mesh");
 //					}
@@ -298,17 +299,56 @@ void CGRA::clearMapping() {
 
 }
 
-std::vector<CGRAEdge*> CGRA::findCGRAEdges(CGRANode* currCNode, Port inPort,std::map<CGRANode*,std::vector<CGRAEdge>>* cgraEdgesPtr) {
-	std::vector<CGRAEdge*> candidateCGRAEdges;
+std::vector<CGRAEdge> CGRA::findCGRAEdges(CGRANode* currCNode, Port inPort,std::map<CGRANode*,std::vector<CGRAEdge>>* cgraEdgesPtr) {
+	std::vector<CGRAEdge> candidateCGRAEdges;
+	std::vector<Port> candPorts;
+	Port currPort;
 
-	for (int i = 0; i < InOutPortMap[inPort].size(); ++i) {
+//		errs() << "findCGRAEdges started.\n";
+
+		if(cgraEdgesPtr->find(currCNode) == cgraEdgesPtr->end()){
+			errs() << "findCGRAEdges:: currCnode is" << currCNode->getName() << ", ptr=" << currCNode << "\n";
+			errs() << "currCnode in the nodelist=" << getCGRANode(currCNode->getT(),currCNode->getY(),currCNode->getX())<< "\n";
+			std::map<CGRANode*,std::vector<CGRAEdge>>::iterator cgraEdgeIt;
+
+
+
+			errs() << "cgraEdge node list ::\n";
+			for(cgraEdgeIt = cgraEdgesPtr->begin();
+				cgraEdgeIt != cgraEdgesPtr->end();
+				cgraEdgeIt++){
+				errs() << cgraEdgeIt->first->getName() << ", ptr=" << cgraEdgeIt->first << "\n";
+			}
+			errs() << "cgraEdge node list end.!\n";
+
+			errs() << "Original cgraEdge node list ::\n";
+			for(cgraEdgeIt = getCGRAEdges()->begin();
+				cgraEdgeIt != getCGRAEdges()->end();
+				cgraEdgeIt++){
+				errs() << cgraEdgeIt->first->getName() << ", ptr=" << cgraEdgeIt->first << "\n";
+			}
+			errs() << "Original cgraEdge node list end.!\n";
+
+		}
+
+		assert(cgraEdgesPtr->find(currCNode) != cgraEdgesPtr->end());
+		assert((*cgraEdgesPtr)[currCNode].size() != 0);
+
+		candPorts = InOutPortMap[inPort];
+
+//		errs() << "findCGRAEdges:: (*cgraEdgesPtr)[currCNode].size() = " << (*cgraEdgesPtr)[currCNode].size() << "\n";
 		for (int j = 0; j < (*cgraEdgesPtr)[currCNode].size(); ++j) {
+//			errs() << "findCGRAEdges:: j=" << j << "\n";
 			if((*cgraEdgesPtr)[currCNode][j].mappedDFGEdge == NULL){
-				if((*cgraEdgesPtr)[currCNode][j].SrcPort == InOutPortMap[inPort][i]){
-					candidateCGRAEdges.push_back(&(*cgraEdgesPtr)[currCNode][j]);
+				currPort = (*cgraEdgesPtr)[currCNode][j].SrcPort;
+				for (int i = 0; i < candPorts.size(); ++i) {
+					if(currPort == candPorts[i]){
+						candidateCGRAEdges.push_back((*cgraEdgesPtr)[currCNode][j]);
+					}
 				}
 			}
 		}
-	}
+
+//		errs() << "findCGRAEdges ended.\n";
 	return candidateCGRAEdges;
 }

@@ -23,7 +23,7 @@ target_compile_features(SkeletonPass PRIVATE cxx_range_for cxx_auto_type)
 
 # LLVM is (typically) built with no C++ RTTI. We need to match that.
 set_target_properties(SkeletonPass PROPERTIES
-    COMPILE_FLAGS "-fno-rtti"
+    COMPILE_FLAGS "-fno-rtti -ggdb"
 )
 
 # Get proper shared-library behavior (where symbols are not necessarily

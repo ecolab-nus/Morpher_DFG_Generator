@@ -50,7 +50,8 @@ public:
 							 CGRANode* start,
 							 CGRANode* goal,
 							 std::map<std::pair<CGRANode*,Port>, std::pair<CGRANode*,Port>>* cameFrom,
-							 std::map<CGRANode*, int>* costSoFar);
+							 std::map<CGRANode*, int>* costSoFar,
+							 Port* endPort);
 
 
 	bool Route(dfgNode* currNode,
@@ -75,6 +76,9 @@ public:
 			   std::map<CGRANode*,std::vector<CGRAEdge> >* cgraEdges,
 			   std::vector<std::pair<CGRANode*,CGRANode*> > *pathsNotRouted,
 			   bool* deadEndReached = NULL);
+
+
+	bool CameFromVerify(std::map<std::pair<CGRANode*,Port>,std::pair<CGRANode*,Port>> *cameFrom);
 
 	//Logging
 	std::map<int,int> SMARTPathHist;
