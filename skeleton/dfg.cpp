@@ -1558,7 +1558,8 @@ bool DFG::MapMultiDestRec(
 
 bool DFG::MapASAPLevel(int MII, int XDim, int YDim) {
 
-	currCGRA = new CGRA(MII,XDim,YDim,REGS_PER_NODE);
+	astar = new AStar(&mappingOutFile,MII,this);
+	currCGRA = new CGRA(MII,XDim,YDim,REGS_PER_NODE,RegXbar);
 
 	errs() << "STARTING MAPASAP with MII = " << MII << "with maxASAPLevel = " << maxASAPLevel << "\n";
 
@@ -1757,6 +1758,7 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim) {
 			//Multiple Desination Nodes
 			deadEndReached = false;
 			if(!MapMultiDestRec(&nodeDestMap,&destNodeMap,nodeDestMap.begin(),*(currCGRA->getCGRAEdges()),0)){
+				delete currCGRA;
 				return false;
 			}
 //			return true;
@@ -1779,7 +1781,6 @@ void DFG::MapCGRA_SMART(int XDim, int YDim, std::string mapfileName) {
 
 	MII = std::max(MII,getMaxRecDist());
 
-	astar = new AStar(&mappingOutFile,MII,this);
 
 
 
@@ -1852,7 +1853,7 @@ void DFG::MapCGRA_SMART(int XDim, int YDim, std::string mapfileName) {
 			}
 
 			//Printing out mapped routes
-//			printOutSMARTRoutes();
+			printOutSMARTRoutes();
 //			printTurns();
 
 
@@ -2942,6 +2943,9 @@ void DFG::printOutSMARTRoutes() {
 							routeStart = 0;
 							std::string strEntry;
 							routingCnode = node->getMappedLoc();
+							errs() << "FinalDest=" << routingCnode->getName() << "\n";
+							errs() << "FinalDestNodeIdx=" << node->getIdx() << "\n";
+							errs() << "FinalParentNodeIdx=" << parent->getIdx() << "\n";
 							do{
 							assert(parent->getMappedLoc() != NULL);
 							assert(node->getMappedLoc() != NULL);
@@ -2981,8 +2985,6 @@ void DFG::printOutSMARTRoutes() {
 								parent = sourcePath.first;
 //								parentExt = currCGRA->getCGRANode((parent->getMappedLoc()->getT()+1)%MII,parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
 
-//								errs() << "sourcePathNodeIdx = " << node->getIdx() << "\n";
-//								errs() << "sourcePathParentIdx = " << parent->getIdx() << "\n";
 
 								if(node != parent){
 									for (k = 0; k < node->getMergeRoutingLocs()[parent].size(); ++k) {
@@ -2995,7 +2997,10 @@ void DFG::printOutSMARTRoutes() {
 									errs() << "routingCnode = " << routingCnode->getName() << "\n";
 									errs() << "sourcePathNodeIdx = " << node->getIdx() << "\n";
 									errs() << "sourcePathParentIdx = " << parent->getIdx() << "\n";
-									errs() << "sourcePathParentLoc = " << parentExt->getName() << "\n";
+									errs() << "sourcePathParentExtLoc = " << parentExt->getName() << "\n";
+									errs() << "sourcePathNodeLoc = " << node->getMappedLoc()->getName() << "\n";
+									errs() << "sourcePathParentLoc = " << parent->getMappedLoc()->getName() << "\n";
+
 									errs() << "node->getMergeRoutingLocs()[parent].size() = " << node->getMergeRoutingLocs()[parent].size() << "\n";
 
 									assert(routeStart == k+1);

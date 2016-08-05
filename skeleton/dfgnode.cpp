@@ -285,9 +285,14 @@ std::map<dfgNode*, std::vector<CGRANode*> > dfgNode::getMergeRoutingLocs() {
 
 		if(treeBasedGoalLocs.find(tempIt->first) != treeBasedGoalLocs.end()){
 			for (int i = 0; i < treeBasedGoalLocs[tempIt->first].size(); ++i) {
-				temp[tempIt->first].insert(temp[tempIt->first].begin(),treeBasedGoalLocs[tempIt->first][i]);
+				if(std::find(temp[tempIt->first].begin(),
+						     temp[tempIt->first].end(),
+							 treeBasedGoalLocs[tempIt->first][i]) == temp[tempIt->first].end()){
+					temp[tempIt->first].insert(temp[tempIt->first].begin(),treeBasedGoalLocs[tempIt->first][i]);
+				}
 			}
 		}
+
 	}
 
 	return temp;

@@ -299,8 +299,8 @@ void CGRA::clearMapping() {
 
 }
 
-std::vector<CGRAEdge> CGRA::findCGRAEdges(CGRANode* currCNode, Port inPort,std::map<CGRANode*,std::vector<CGRAEdge>>* cgraEdgesPtr) {
-	std::vector<CGRAEdge> candidateCGRAEdges;
+std::vector<CGRAEdge*> CGRA::findCGRAEdges(CGRANode* currCNode, Port inPort,std::map<CGRANode*,std::vector<CGRAEdge>>* cgraEdgesPtr) {
+	std::vector<CGRAEdge*> candidateCGRAEdges;
 	std::vector<Port> candPorts;
 	Port currPort;
 
@@ -343,11 +343,16 @@ std::vector<CGRAEdge> CGRA::findCGRAEdges(CGRANode* currCNode, Port inPort,std::
 				currPort = (*cgraEdgesPtr)[currCNode][j].SrcPort;
 				for (int i = 0; i < candPorts.size(); ++i) {
 					if(currPort == candPorts[i]){
-						candidateCGRAEdges.push_back((*cgraEdgesPtr)[currCNode][j]);
+						if((*cgraEdgesPtr)[currCNode][j].Dst->getT() >= MII){
+							errs() << "MII=" << MII << "\n";
+						}
+						assert((*cgraEdgesPtr)[currCNode][j].Dst->getT() < MII);
+						candidateCGRAEdges.push_back(&(*cgraEdgesPtr)[currCNode][j]);
 					}
 				}
 			}
 		}
+
 
 //		errs() << "findCGRAEdges ended.\n";
 	return candidateCGRAEdges;
