@@ -289,6 +289,9 @@ class DFG{
 			//Print out switching statistics for registers
 			int printRegStats();
 
+			//Sort the possible dests in the SMART based mapper
+			int sortPossibleDests(std::vector<std::pair<CGRANode*,int>>* possibleDests);
+
 
 	};
 

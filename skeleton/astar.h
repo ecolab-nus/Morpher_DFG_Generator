@@ -58,9 +58,10 @@ public:
 			   std::vector<dfgNode*> parents,
 //			   std::vector<std::pair<CGRANode*,CGRANode*> > paths,
 //			   std::vector<TreePath> treePaths,
-			   std::vector<CGRANode*> dests,
+			   std::vector<CGRANode*>* dests,
 			   std::map<CGRANode*,std::vector<CGRAEdge> >* cgraEdges,
 			   std::vector<std::pair<CGRANode*,CGRANode*> > *pathsNotRouted,
+			   CGRANode** chosenDest,
 			   bool* deadEndReached = NULL);
 
 //	bool EMSRoute(std::vector<dfgNode*> parents,

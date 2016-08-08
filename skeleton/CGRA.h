@@ -25,7 +25,6 @@ class CGRA{
 			std::vector<std::vector<std::vector<CGRANode*> > > CGRANodes;
 //			std::map<CGRANode*,std::vector<CGRANode*> > CGRAEdges;
 			std::map<CGRANode*,std::vector<CGRAEdge>> CGRAEdges;
-			std::map<Port,std::vector<Port> > InOutPortMap;
 
 			void connectNeighbors();
 			void connectNeighborsMESH();
@@ -44,6 +43,7 @@ class CGRA{
 			CGRA(int MII, int Xdim, int Ydim, int regs, ArchType aType = DoubleXBar);
 			CGRANode* getCGRANode(int t, int y, int x);
 			CGRANode* getCGRANode(int phyLoc);
+			std::map<Port,std::vector<Port> > InOutPortMap;
 
 
 

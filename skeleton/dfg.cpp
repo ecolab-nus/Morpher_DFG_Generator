@@ -1386,6 +1386,7 @@ bool DFG::MapMultiDestRec(
 	dfgNode* otherNode;
 	dfgNode* parent;
 	CGRANode* cnode;
+	CGRANode* chosenCnode = NULL;
 	std::pair<CGRANode*,int> cnodePair;
 	CGRANode* parentExt;
 //	std::vector< std::pair<CGRANode*,int> > possibleDests;
@@ -1403,12 +1404,9 @@ bool DFG::MapMultiDestRec(
 	node = it->first;
 //	possibleDests = it->second;
 
-//	if(node == NULL){
-//		errs() << "Node is NULL...\n";
-//	}else{
-//		errs() << "Node = \n";
-//		node->getNode()->dump();
-//	}
+	bool routeComplete = false;
+
+	std::vector<std::pair<CGRANode*,int>> PossibleDests = it->second;
 
 	errs() << "MapMultiDestRec : Procesing NodeIdx = " << node->getIdx();
 	errs() << ", PossibleDests = " << it->second.size();
@@ -1417,115 +1415,194 @@ bool DFG::MapMultiDestRec(
 	errs() << ", NodeProgress = " << index+1 << "/" << nodeDestMap->size();
 	errs() << "\n";
 
+	for (int j = 0; j < node->getAncestors().size(); ++j) {
+		parent = node->getAncestors()[j];
+		parentExt = currCGRA->getCGRANode((parent->getMappedLoc()->getT() + 1)%(currCGRA->getMII()),parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
+
+		errs() << "Path = "
+			   << "(" << parentExt->getT() << ","
+			   	   	  << parentExt->getY() << ","
+					  << parentExt->getX() << ") to ...\n";
+		parents.push_back(parent);
+	}
+
+
 	for (int i = 0; i < it->second.size(); ++i) {
 		success = false;
-		errs() << "Possible Dest = "
-			   << "(" << it->second[i].first->getT() << ","
-			   	   	  << it->second[i].first->getY() << ","
-					  << it->second[i].first->getX() << ")\n";
-
 		if(it->second[i].first->getmappedDFGNode() == NULL){
-			errs() << "Possible Dest is NULL\n";
+//			errs() << "Possible Dest = "
+//				   << "(" << it->second[i].first->getT() << ","
+//				   	   	  << it->second[i].first->getY() << ","
+//						  << it->second[i].first->getX() << ")\n";
+
 			cnode = it->second[i].first;
-			cnodePair = it->second[i];
-			for (int j = 0; j < node->getAncestors().size(); ++j) {
-				parent = node->getAncestors()[j];
-//				parentExt = currCGRA->getCGRANode(cnode->getT(),parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
-//				parentExt = parent->getMappedLoc();
-				parentExt = currCGRA->getCGRANode((parent->getMappedLoc()->getT() + 1)%(currCGRA->getMII()),parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
-
-				errs() << "Path = "
-					   << "(" << parentExt->getT() << ","
-					   	   	  << parentExt->getY() << ","
-							  << parentExt->getX() << ") to ";
-
-				errs() << "(" << cnode->getT() << ","
-					   	   	  << cnode->getY() << ","
-							  << cnode->getX() << ")\n";
-
-//				paths.push_back(std::make_pair(parentExt,cnode));
-//				treePaths.push_back(createTreePath(parent,cnode));
-				dests.push_back(cnode);
-				parents.push_back(parent);
-			}
-
-			localCGRAEdges = cgraEdges;
-			mappingOutFile << "nodeIdx=" << node->getIdx() << ", placed=(" << cnode->getT() << "," << cnode->getY() << "," << cnode->getX() << ")" << "\n";
-//			astar->Route(node,parents,paths,&localCGRAEdges,&pathsNotRouted);
-			astar->Route(node,parents,dests,&localCGRAEdges,&pathsNotRouted,&deadEndReached);
-			dests.clear();
-//			paths.clear();
-			if(!pathsNotRouted.empty()){
-				mappingOutFile << "routing failed, clearing edges\n";
-				errs() << "all paths are not routed.\n";
-				pathsNotRouted.clear();
-				if(deadEndReached){
-					return false;
-				}
-				continue;
-			}
-			mappingOutFile << "routing success, keeping the current edges\n";
-			pathsNotRouted.clear();
-
-			for (int j = 0; j < localdestNodeMap[cnode].size(); ++j) {
-				otherNode = localdestNodeMap[cnode][j];
-				localNodeDestMap[otherNode].erase(std::remove(localNodeDestMap[otherNode].begin(), localNodeDestMap[otherNode].end(), cnodePair), localNodeDestMap[otherNode].end());
-			}
-
-//			it->second.clear();
-//			it->second.push_back(cnodePair);
-			localdestNodeMap[cnode].clear();
-
-			errs() << "Placed = " << "(" << cnode->getT() << "," << cnode->getY() << "," << cnode->getX() << ")\n";
-			node->setMappedLoc(cnode);
-			cnode->setMappedDFGNode(node);
-			node->setMappedRealTime(cnodePair.second);
-
-			std::map<dfgNode*,std::vector< std::pair<CGRANode*,int> > >::iterator itlocal;
-			itlocal = it;
-			itlocal++;
-//			it++;
-
-			if(index + 1 < nodeDestMap->size()){
-				success = MapMultiDestRec(
-						&localNodeDestMap,
-						&localdestNodeMap,
-						itlocal,
-						localCGRAEdges,
-						index + 1);
-			}
-			else{
-				errs() << "nodeDestMap end reached..\n";
-				*nodeDestMap = localNodeDestMap;
-				*destNodeMap = localdestNodeMap;
-				currCGRA->setCGRAEdges(localCGRAEdges);
-				success = true;
-			}
-
-			if(deadEndReached){
-				success = false;
-				break;
-			}
-
-
-			if(success){
-				it->second.clear();
-				it->second.push_back(cnodePair);
-				break;
-			}
-			else{
-				errs() << "MapMultiDestRec : fails next possible destination\n";
-				node->setMappedLoc(NULL);
-				cnode->setMappedDFGNode(NULL);
-				mappingOutFile << std::to_string(index + 1) << " :: mapping failed, therefore trying mapping again for index=" << std::to_string(index) << "\n";
-			}
+//			cnodePair = it->second[i];
+			dests.push_back(cnode);
 		}
 	}
 
-	if(success){
 
+	std::map<dfgNode*,std::vector< std::pair<CGRANode*,int> > >::iterator itlocal;
+
+	while(!success){
+		localCGRAEdges = cgraEdges;
+		routeComplete = astar->Route(node,parents,&dests,&localCGRAEdges,&pathsNotRouted,&chosenCnode,&deadEndReached);
+
+		errs() << "MapMultiDestRec::routeComplete=" << routeComplete << "\n";
+		errs() << "MapMultiDestRec::deadEndReached=" << deadEndReached << "\n";
+
+		if(deadEndReached || !routeComplete){
+			return false;
+		}
+		assert(chosenCnode != NULL);
+		mappingOutFile << "nodeIdx=" << node->getIdx() << ", placed=(" << chosenCnode->getT() << "," << chosenCnode->getY() << "," << chosenCnode->getX() << ")" << "\n";
+		mappingOutFile << "routing success, keeping the current edges\n";
+
+		errs() << "Placed = " << "(" << chosenCnode->getT() << "," << chosenCnode->getY() << "," << chosenCnode->getX() << ")\n";
+		node->setMappedLoc(chosenCnode);
+		chosenCnode->setMappedDFGNode(node);
+//		node->setMappedRealTime(cnodePair.second);
+
+		itlocal = it;
+		itlocal++;
+
+		if(index + 1 < nodeDestMap->size()){
+			success = MapMultiDestRec(
+					&localNodeDestMap,
+					&localdestNodeMap,
+					itlocal,
+					localCGRAEdges,
+					index + 1);
+		}
+		else{
+			errs() << "nodeDestMap end reached..\n";
+			*nodeDestMap = localNodeDestMap;
+			*destNodeMap = localdestNodeMap;
+			currCGRA->setCGRAEdges(localCGRAEdges);
+			success = true;
+		}
+
+		if(!success){
+			errs() << "MapMultiDestRec : fails next possible destination\n";
+			node->setMappedLoc(NULL);
+			chosenCnode->setMappedDFGNode(NULL);
+			mappingOutFile << std::to_string(index + 1) << " :: mapping failed, therefore trying mapping again for index=" << std::to_string(index) << "\n";
+		}
 	}
-	return success;
+
+	return true;
+
+//	//Old Code From Here
+//
+//	for (int i = 0; i < it->second.size(); ++i) {
+//		success = false;
+//		errs() << "Possible Dest = "
+//			   << "(" << it->second[i].first->getT() << ","
+//			   	   	  << it->second[i].first->getY() << ","
+//					  << it->second[i].first->getX() << ")\n";
+//
+//		if(it->second[i].first->getmappedDFGNode() == NULL){
+//			errs() << "Possible Dest is NULL\n";
+//			cnode = it->second[i].first;
+//			cnodePair = it->second[i];
+//			for (int j = 0; j < node->getAncestors().size(); ++j) {
+//				parent = node->getAncestors()[j];
+////				parentExt = currCGRA->getCGRANode(cnode->getT(),parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
+////				parentExt = parent->getMappedLoc();
+//				parentExt = currCGRA->getCGRANode((parent->getMappedLoc()->getT() + 1)%(currCGRA->getMII()),parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
+//
+//				errs() << "Path = "
+//					   << "(" << parentExt->getT() << ","
+//					   	   	  << parentExt->getY() << ","
+//							  << parentExt->getX() << ") to ";
+//
+//				errs() << "(" << cnode->getT() << ","
+//					   	   	  << cnode->getY() << ","
+//							  << cnode->getX() << ")\n";
+//
+////				paths.push_back(std::make_pair(parentExt,cnode));
+////				treePaths.push_back(createTreePath(parent,cnode));
+//				dests.push_back(cnode);
+//				parents.push_back(parent);
+//			}
+//
+//			localCGRAEdges = cgraEdges;
+//			mappingOutFile << "nodeIdx=" << node->getIdx() << ", placed=(" << cnode->getT() << "," << cnode->getY() << "," << cnode->getX() << ")" << "\n";
+////			astar->Route(node,parents,paths,&localCGRAEdges,&pathsNotRouted);
+//			astar->Route(node,parents,dests,&localCGRAEdges,&pathsNotRouted,&deadEndReached);
+//			dests.clear();
+////			paths.clear();
+//			if(!pathsNotRouted.empty()){
+//				mappingOutFile << "routing failed, clearing edges\n";
+//				errs() << "all paths are not routed.\n";
+//				pathsNotRouted.clear();
+//				if(deadEndReached){
+//					return false;
+//				}
+//				continue;
+//			}
+//			mappingOutFile << "routing success, keeping the current edges\n";
+//			pathsNotRouted.clear();
+//
+//			for (int j = 0; j < localdestNodeMap[cnode].size(); ++j) {
+//				otherNode = localdestNodeMap[cnode][j];
+//				localNodeDestMap[otherNode].erase(std::remove(localNodeDestMap[otherNode].begin(), localNodeDestMap[otherNode].end(), cnodePair), localNodeDestMap[otherNode].end());
+//			}
+//
+////			it->second.clear();
+////			it->second.push_back(cnodePair);
+//			localdestNodeMap[cnode].clear();
+//
+//			errs() << "Placed = " << "(" << cnode->getT() << "," << cnode->getY() << "," << cnode->getX() << ")\n";
+//			node->setMappedLoc(cnode);
+//			cnode->setMappedDFGNode(node);
+//			node->setMappedRealTime(cnodePair.second);
+//
+//			std::map<dfgNode*,std::vector< std::pair<CGRANode*,int> > >::iterator itlocal;
+//			itlocal = it;
+//			itlocal++;
+////			it++;
+//
+//			if(index + 1 < nodeDestMap->size()){
+//				success = MapMultiDestRec(
+//						&localNodeDestMap,
+//						&localdestNodeMap,
+//						itlocal,
+//						localCGRAEdges,
+//						index + 1);
+//			}
+//			else{
+//				errs() << "nodeDestMap end reached..\n";
+//				*nodeDestMap = localNodeDestMap;
+//				*destNodeMap = localdestNodeMap;
+//				currCGRA->setCGRAEdges(localCGRAEdges);
+//				success = true;
+//			}
+//
+//			if(deadEndReached){
+//				success = false;
+//				break;
+//			}
+//
+//
+//			if(success){
+//				it->second.clear();
+//				it->second.push_back(cnodePair);
+//				break;
+//			}
+//			else{
+//				errs() << "MapMultiDestRec : fails next possible destination\n";
+//				node->setMappedLoc(NULL);
+//				cnode->setMappedDFGNode(NULL);
+//				mappingOutFile << std::to_string(index + 1) << " :: mapping failed, therefore trying mapping again for index=" << std::to_string(index) << "\n";
+//			}
+//		}
+//	}
+//
+//	if(success){
+//
+//	}
+//	return success;
 }
 
 
@@ -1780,6 +1857,7 @@ void DFG::MapCGRA_SMART(int XDim, int YDim, std::string mapfileName) {
 
 
 	MII = std::max(MII,getMaxRecDist());
+//	MII = 6;
 
 
 
@@ -3730,4 +3808,12 @@ int DFG::printRegStats() {
 	outFileRegStats.close();
 	outFileRegToggle.close();
 	return 0;
+}
+
+int DFG::sortPossibleDests(
+		std::vector<std::pair<CGRANode*, int> >* possibleDests) {
+
+
+
+
 }

@@ -572,7 +572,7 @@ namespace {
 			  } //end loopIterator
 
 //			  DFG xmlDFG("asdsa");
-//			  assert(xmlDFG.readXML("epimap_benchmarks/tiff2bw/DFG.xml") == 0);
+//			  assert(xmlDFG.readXML("epimap_benchmarks/idctflt/DFG.xml") == 0);
 //			  xmlDFG.scheduleASAP();
 //			  xmlDFG.scheduleALAP();
 //			  xmlDFG.CreateSchList();
