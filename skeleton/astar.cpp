@@ -259,6 +259,7 @@ bool AStar::Route(dfgNode* currNode,
 		for (int i = 0; i < destTreePathMap[dest].size(); ++i) {
 
 			//Sorting TreePath Paths
+			destPathWithCostMap[dest].clear();
 			for (int j = 0; j < destTreePathMap[dest][i].sources.size(); ++j) {
 				start = destTreePathMap[dest][i].sources[j];
 				start = currDFG->getCGRA()->getCGRANode(start->getT(),start->getY(),start->getX());
@@ -274,14 +275,17 @@ bool AStar::Route(dfgNode* currNode,
 
 				end = AStarSearch(*cgraEdges,start,goal,&cameFrom, &costSoFar,&endPort);
 				if(end != goal){
-					errs() << "failed::" << start->getName() << "->" << goal->getName() << ",";
+//					errs() << "failed::" << start->getName() << "->" << goal->getName() << ",";
 					continue;
 				}
-				errs() << "\n";
+
+				assert(destTreePathMap[dest][i].sourcePaths[start].first != NULL);
+				assert(destTreePathMap[dest][i].sourcePaths[start].second != NULL);
+//				errs() << "\n";
 //				pathsWithCost.push_back(pathWithCost(std::make_pair(start,goal),costSoFar[goal],parents[i]));
 				destPathWithCostMap[dest].push_back(pathWithCost(std::make_pair(start,goal),costSoFar[goal],parents[i]));
 			}
-			errs() << "\n";
+//			errs() << "\n";
 
 			std::sort(destPathWithCostMap[dest].begin(),destPathWithCostMap[dest].end(),LessThanPathWithCost());
 
@@ -294,7 +298,7 @@ bool AStar::Route(dfgNode* currNode,
 				}
 				pathsNotRouted->push_back(std::make_pair(start,goal));
 	//			return false;
-				continue;
+				break;
 			}
 			else{
 				destTreePathMap[dest][i].bestSource = destPathWithCostMap[dest][0].path.first;
@@ -321,10 +325,16 @@ bool AStar::Route(dfgNode* currNode,
 			destTreePathWithCostMap[dest].push_back(treePathWithCost(destTreePathMap[dest][i],destTreePathMap[dest][i].bestCost,parents[i]));
 	//		pathsWithCost.push_back(pathWithCost(std::make_pair(treePaths[i].bestSource,treePaths[i].dest),,parents[i]));
 		}
+		if(destPathWithCostMap[dest].size() == 0){
+			continue;
+		}
 		std::sort(destTreePathWithCostMap[dest].begin(),destTreePathWithCostMap[dest].end(),LessThanTreePathWithCost());
 		destCostArray.push_back(DestCost(dest,destCost));
 	}
 
+	if(destCostArray.empty()){
+		return false;
+	}
 
 //	errs() << "treePathsWithCost size=" << treePathsWithCost.size() << "\n";
 
@@ -358,6 +368,11 @@ bool AStar::Route(dfgNode* currNode,
 					*mappingOutFile << "Routing Failed : " << start->getName() << "->" << goal->getName() << ",only routed to " << end->getName() << std::endl;
 					continue;
 				}
+				*mappingOutFile << "Routing Success : " << start->getName() << "->" << goal->getName() <<  std::endl;
+
+				assert(destTreePathWithCostMap[dest][i].tp.sourcePaths[start].first != NULL);
+				assert(destTreePathWithCostMap[dest][i].tp.sourcePaths[start].second != NULL);
+
 //				pathsWithCost.push_back(pathWithCost(std::make_pair(start,goal),costSoFar[goal],parents[i]));
 				destPathWithCostMap[dest].push_back(pathWithCost(std::make_pair(start,goal),costSoFar[goal],parents[i]));
 			}
@@ -371,6 +386,7 @@ bool AStar::Route(dfgNode* currNode,
 			for (int j = 0; j < destPathWithCostMap[dest].size(); ++j) {
 				destTreePathMap[dest][i].sources.push_back(destPathWithCostMap[dest][j].path.first);
 			}
+			destTreePathMap[dest][i].sourcePaths = destTreePathWithCostMap[dest][i].tp.sourcePaths;
 
 			if(destTreePathMap[dest][i].sources.size() == 0){
 				*mappingOutFile << "routing not completed as it only routed until : " << end->getName() << std::endl;
@@ -380,6 +396,7 @@ bool AStar::Route(dfgNode* currNode,
 					*deadEndReached = localDeadEndReached;
 				}
 //				return false;
+				routingComplete = false;
 				break;
 			}
 
@@ -391,7 +408,12 @@ bool AStar::Route(dfgNode* currNode,
 				start = currDFG->getCGRA()->getCGRANode(start->getT(),start->getY(),start->getX());
 				goal = destTreePathMap[dest][i].dest;
 				goal = currDFG->getCGRA()->getCGRANode(goal->getT(),goal->getY(),goal->getX());
-				currParent = parents[i];
+//				currParent = parents[i];
+				currParent = destTreePathWithCostMap[dest][i].parent;
+
+				assert(destTreePathMap[dest][i].sourcePaths[start].first != NULL);
+				assert(destTreePathMap[dest][i].sourcePaths[start].second != NULL);
+
 				currSourcePath = destTreePathMap[dest][i].sourcePaths[start];
 
 				*mappingOutFile << "start = (" << start->getT() << "," << start->getY() << "," << start->getX() << ")\n";
@@ -419,6 +441,8 @@ bool AStar::Route(dfgNode* currNode,
 			if(!routingComplete){
 				*mappingOutFile << "routing not completed as it only routed until : " << end->getName() << std::endl;
 				pathsNotRouted->push_back(std::make_pair(start,goal));
+				(*currNode->getTreeBasedRoutingLocs())[currParent].clear();
+				(*currNode->getTreeBasedGoalLocs())[currParent].clear();
 				break;
 			}
 
@@ -435,6 +459,16 @@ bool AStar::Route(dfgNode* currNode,
 
 			(*currNode->getTreeBasedGoalLocs())[currParent].push_back(goal);
 			(*currNode->getSourceRoutingPath())[currParent] = currSourcePath;
+
+			assert(currSourcePath.first != NULL);
+			assert(currSourcePath.second != NULL);
+			errs() << "Route :: currNode=" << currNode->getIdx() << ",currParent=" << currParent->getIdx();
+			errs() << "SourcePath=(" << currSourcePath.first->getIdx() << "," << currSourcePath.second->getIdx() << ")\n";
+
+			if(currSourcePath.first == currSourcePath.second){
+				errs() << "start=" << start->getName() << "\n";
+				errs() << "currParentLoc=" << currParent->getMappedLoc()->getName() << "\n";
+			}
 
 			if(cameFrom.size() > 0){
 				cameFromSearch = false;
@@ -494,6 +528,7 @@ bool AStar::Route(dfgNode* currNode,
 				for (int j = 0; j < tempCGRAEdges.size(); ++j) {
 					if(tempCGRAEdges[j]->Dst == current){
 						tempCGRAEdges[j]->mappedDFGEdge = currDFG->findEdge(currParent,currNode);
+						*mappingOutFile << "[" << CGRA::getPortName(tempCGRAEdges[j]->SrcPort) << "of" << tempCGRAEdges[j]->Src->getName() << "]";
 						break;
 					}
 				}

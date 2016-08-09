@@ -62,6 +62,7 @@ class CGRA{
 
 			int getRegsPerNode(){return regsPerNode;}
 			std::vector<CGRAEdge*> findCGRAEdges(CGRANode* currCNode, Port inPort, std::map<CGRANode*,std::vector<CGRAEdge>>* cgraEdgesPtr);
+			static std::string getPortName(Port p);
 	};
 
 

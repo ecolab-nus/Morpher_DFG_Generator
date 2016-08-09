@@ -1836,6 +1836,10 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim) {
 			deadEndReached = false;
 			if(!MapMultiDestRec(&nodeDestMap,&destNodeMap,nodeDestMap.begin(),*(currCGRA->getCGRAEdges()),0)){
 				delete currCGRA;
+				for (int var = 0; var < NodeList.size(); ++var) {
+					node = NodeList[var];
+					node->setMappedLoc(NULL);
+				}
 				return false;
 			}
 //			return true;
@@ -2903,12 +2907,22 @@ TreePath DFG::createTreePath(dfgNode* parent, CGRANode* dest) {
 	tp.sources.push_back(ParentExt);
 	tp.sourcePaths[ParentExt] = (std::make_pair(parent,parent));
 
+//	if(parent->getIdx() == 22){
+//		errs() << "createTreePath::Parent=" << parent->getIdx() << "\n";
+//		errs() << "createTreePath::ParentExt=" << ParentExt->getName() << "\n";
+//	}
+
+
+	assert(parent != NULL);
+
 
 	tp.dest = dest;
+	bool foundParentTreeBasedRoutingLocs = false;
 
 	for (int i = 0; i < parent->getChildren().size(); ++i) {
 		child = parent->getChildren()[i];
 		if(child->getMappedLoc() != NULL){
+			foundParentTreeBasedRoutingLocs = false;
 			if((*child->getTreeBasedRoutingLocs()).find(parent) != (*child->getTreeBasedRoutingLocs()).end()){
 				for (int j = 0; j < (*child->getTreeBasedRoutingLocs())[parent].size(); ++j) {
 					cnode = (*child->getTreeBasedRoutingLocs())[parent][j];
@@ -2919,7 +2933,9 @@ TreePath DFG::createTreePath(dfgNode* parent, CGRANode* dest) {
 					else{
 						tp.sourcePaths[cnode] = (std::make_pair(parent,child));
 					}
+					foundParentTreeBasedRoutingLocs = true;
 				}
+
 			}
 
 			if((*child->getTreeBasedGoalLocs()).find(parent) != (*child->getTreeBasedGoalLocs()).end()){
@@ -2932,11 +2948,23 @@ TreePath DFG::createTreePath(dfgNode* parent, CGRANode* dest) {
 					else{
 						tp.sourcePaths[cnode] = (std::make_pair(parent,child));
 					}
+					foundParentTreeBasedRoutingLocs = true;
 				}
 			}
 
+			if(!foundParentTreeBasedRoutingLocs){
+				errs() << "foundParentTreeBasedRoutingLocs is false!\n";
+				errs() << "child=" << child->getIdx() << "\n";
+				errs() << "childLoc=" << child->getMappedLoc()->getName() << "\n";
+				errs() << "parent=" << parent->getIdx() << "\n";
+			}
+
+			assert(tp.sourcePaths[cnode].first != NULL);
+			assert(tp.sourcePaths[cnode].second != NULL);
 		}
 	}
+
+
 	return tp;
 }
 
@@ -3021,6 +3049,7 @@ void DFG::printOutSMARTRoutes() {
 							routeStart = 0;
 							std::string strEntry;
 							routingCnode = node->getMappedLoc();
+							errs() << "ParentExt=" << parentExt->getName() << "\n";
 							errs() << "FinalDest=" << routingCnode->getName() << "\n";
 							errs() << "FinalDestNodeIdx=" << node->getIdx() << "\n";
 							errs() << "FinalParentNodeIdx=" << parent->getIdx() << "\n";
@@ -3029,25 +3058,25 @@ void DFG::printOutSMARTRoutes() {
 							assert(node->getMappedLoc() != NULL);
 //							strEntry = node->getMappedLoc()->getNameWithOutTime();
 //							routingCnode = node->getMappedLoc();
-							noRouting = true;
+//							noRouting = true;
 								for (int j = routeStart; j < node->getMergeRoutingLocs()[parent].size(); ++j) {
 									errs() << "routePath = "<< node->getMergeRoutingLocs()[parent][j]->getName() << "\n";
-									if(routingCnode->getT() != node->getMergeRoutingLocs()[parent][j]->getT()){
-										if(!noRouting){
-											pT = routingCnode->getT();
-											pY = routingCnode->getY();
-											pX = routingCnode->getX();
-
-											logEntries[convertToPhyLoc(pT,pY,pX)].push_back(strEntry);
-										}
+//									if(routingCnode->getT() != node->getMergeRoutingLocs()[parent][j]->getT()){
+//										if(!noRouting){
+//											pT = routingCnode->getT();
+//											pY = routingCnode->getY();
+//											pX = routingCnode->getX();
+//
+//											logEntries[convertToPhyLoc(pT,pY,pX)].push_back(strEntry);
+//										}
+//										routingCnode = node->getMergeRoutingLocs()[parent][j];
+//										noRouting = true;
+//										strEntry =  routingCnode->getNameWithOutTime() + " <-- " ;
+//									}else{
 										routingCnode = node->getMergeRoutingLocs()[parent][j];
-										noRouting = true;
-										strEntry =  routingCnode->getNameWithOutTime() + " <-- " ;
-									}else{
-										routingCnode = node->getMergeRoutingLocs()[parent][j];
-										noRouting = false;
-										strEntry = strEntry + routingCnode->getNameWithOutTime() + " <-- " ;
-									}
+//										noRouting = false;
+										strEntry = strEntry + routingCnode->getName() + " <-- " ;
+//									}
 								}
 
 //								if(!noRouting){
@@ -3086,15 +3115,16 @@ void DFG::printOutSMARTRoutes() {
 
 
 							}while(node != parent);
+							assert(routingCnode == parentExt);
 							errs() << "%% Path Mapping Done ! \n";
 
-							if(!noRouting){
-								pT = routingCnode->getT();
-								pY = routingCnode->getY();
-								pX = routingCnode->getX();
+//							if(!noRouting){
+								pT = cnode->getT();
+								pY = cnode->getY();
+								pX = cnode->getX();
 
 								logEntries[convertToPhyLoc(pT,pY,pX)].push_back(strEntry);
-							}
+//							}
 
 
 							node = cnode->getmappedDFGNode();
@@ -3816,4 +3846,75 @@ int DFG::sortPossibleDests(
 
 
 
+}
+
+int DFG::printMapping() {
+	dfgNode* node;
+	dfgNode* parent;
+	CGRANode* cnode;
+	std::vector<CGRAEdge> cgraEdges;
+	std::map<Port,Edge*> portDfgEdgeMap;
+	std::vector<Port> portOrder = {NORTH,EAST,WEST,SOUTH,R0,R1,R2,R3};
+
+	//Check all nodes are mapped
+	for (int i = 0; i < NodeList.size(); ++i) {
+		node = NodeList[i];
+		assert(node->getMappedLoc() != NULL);
+	}
+
+	std::ofstream mapFile;
+	std::string mapFileName = name + "_mapFile.csv";
+	mapFile.open(mapFileName.c_str());
+
+	//Print Header
+	mapFile << "Time,";
+	for (int j = 0; j < currCGRA->getYdim(); ++j) {
+		for (int k = 0; k < currCGRA->getXdim(); ++k) {
+			mapFile << "Y=" << std::to_string(j) << " X=" << std::to_string(k) << ",";
+			mapFile << "NORTH,EAST,WEST,SOUTH,R0,R1,R2,R3,";
+		}
+	}
+	mapFile << std::endl;
+
+	//Print Data
+	for (int i = 0; i < currCGRA->getMII(); ++i) {
+		mapFile << std::to_string(i) << ",";
+		for (int j = 0; j < currCGRA->getYdim(); ++j) {
+			for (int k = 0; k < currCGRA->getXdim(); ++k) {
+				cnode = currCGRA->getCGRANode(i,j,k);
+				node = cnode->getmappedDFGNode();
+				if(node != NULL){
+					mapFile << std::to_string(node->getIdx()) << "::Parents<";
+					for (int l = 0; l < node->getAncestors().size(); ++l) {
+						parent = node->getAncestors()[l];
+						mapFile << std::to_string(parent->getIdx()) << ":";
+					}
+					mapFile << ">,";
+				}
+				else{
+					mapFile << "NA,";
+				}
+				//CGRAEdges
+				cgraEdges = (*currCGRA->getCGRAEdges())[cnode];
+				for (int l = 0; l < cgraEdges.size(); ++l) {
+					if(cgraEdges[l].mappedDFGEdge != NULL){
+						portDfgEdgeMap[cgraEdges[l].SrcPort] = cgraEdges[l].mappedDFGEdge;
+					}
+				}
+
+				for (int l = 0; l < portOrder.size(); ++l) {
+					if(portDfgEdgeMap.find(portOrder[l]) != portDfgEdgeMap.end()){
+						mapFile << portDfgEdgeMap[portOrder[l]]->getName() << ",";
+					}
+					else{
+						mapFile << "NA,";
+					}
+				}
+				portDfgEdgeMap.clear();
+			}
+		}
+		mapFile << std::endl;
+	}
+
+	mapFile.close();
 }

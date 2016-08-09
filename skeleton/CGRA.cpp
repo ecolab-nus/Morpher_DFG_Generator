@@ -357,3 +357,35 @@ std::vector<CGRAEdge*> CGRA::findCGRAEdges(CGRANode* currCNode, Port inPort,std:
 //		errs() << "findCGRAEdges ended.\n";
 	return candidateCGRAEdges;
 }
+
+std::string CGRA::getPortName(Port p) {
+	switch (p) {
+		case NORTH:
+			return "NORTH";
+			break;
+		case EAST:
+			return "EAST";
+			break;
+		case WEST:
+			return "WEST";
+			break;
+		case SOUTH:
+			return "SOUTH";
+			break;
+		case R0:
+			return "R0";
+			break;
+		case R1:
+			return "R1";
+			break;
+		case R2:
+			return "R2";
+			break;
+		case R3:
+			return "R3";
+			break;
+		default:
+			return "INV";
+			break;
+	}
+}

@@ -292,6 +292,9 @@ class DFG{
 			//Sort the possible dests in the SMART based mapper
 			int sortPossibleDests(std::vector<std::pair<CGRANode*,int>>* possibleDests);
 
+			//PrintMapping
+			int printMapping();
+
 
 	};
 
