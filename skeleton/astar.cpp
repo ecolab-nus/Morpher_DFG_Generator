@@ -155,6 +155,7 @@ bool AStar::Route(dfgNode* currNode,
 	bool routingComplete = false;
 
 	std::vector<CGRAEdge*> tempCGRAEdges;
+	std::map<CGRANode*,std::vector<CGRAEdge> > originalCGRAEdges = *cgraEdges;
 
 	struct pathWithCost{
 		std::pair<CGRANode*, CGRANode*> path;
@@ -396,6 +397,7 @@ bool AStar::Route(dfgNode* currNode,
 					*deadEndReached = localDeadEndReached;
 				}
 //				return false;
+				*cgraEdges = originalCGRAEdges;
 				routingComplete = false;
 				break;
 			}
