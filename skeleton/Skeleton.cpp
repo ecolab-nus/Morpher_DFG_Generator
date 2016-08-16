@@ -539,22 +539,23 @@ namespace {
 					 }
 //					 printDFGDOT (F.getName().str() + "_" + B->getName().str() + "_dfg.dot", &currBBDFG);
 				  }
-//				  LoopDFG.connectBB();
-////				  LoopDFG.addMemDepEdges(MD);
-////				  LoopDFG.removeAlloc();
-////				  LoopDFG.addMemRecDepEdges(DA);
-////				  LoopDFG.addMemRecDepEdgesNew(DA);
-//				  LoopDFG.scheduleASAP();
-//				  LoopDFG.scheduleALAP();
-//				  LoopDFG.CreateSchList();
-////				  LoopDFG.MapCGRA(4,4);
-//				  LoopDFG.printXML();
-//				  LoopDFG.printREGIMapOuts();
-//				  LoopDFG.MapCGRA_SMART(4,4,F.getName().str() + "_L" + std::to_string(loopCounter) + "_mapping.log");
-////				  LoopDFG.MapCGRA_EMS(4,4,F.getName().str() + "_L" + std::to_string(loopCounter) + "_mapping.log");
-//				  printDFGDOT (F.getName().str() + "_L" + std::to_string(loopCounter) + "_loopdfg.dot", &LoopDFG);
-////				  LoopDFG.printTurns();
-//				  LoopDFG.printMapping();
+				  LoopDFG.connectBB();
+//				  LoopDFG.addMemDepEdges(MD);
+//				  LoopDFG.removeAlloc();
+//				  LoopDFG.addMemRecDepEdges(DA);
+//				  LoopDFG.addMemRecDepEdgesNew(DA);
+				  LoopDFG.scheduleASAP();
+				  LoopDFG.scheduleALAP();
+				  LoopDFG.CreateSchList();
+//				  LoopDFG.MapCGRA(4,4);
+				  LoopDFG.printXML();
+				  LoopDFG.printREGIMapOuts();
+				  LoopDFG.MapCGRA_SMART(4,4,F.getName().str() + "_L" + std::to_string(loopCounter) + "_mapping.log");
+//				  LoopDFG.MapCGRA_EMS(4,4,F.getName().str() + "_L" + std::to_string(loopCounter) + "_mapping.log");
+				  printDFGDOT (F.getName().str() + "_L" + std::to_string(loopCounter) + "_loopdfg.dot", &LoopDFG);
+//				  LoopDFG.printTurns();
+				  LoopDFG.printMapping();
+				  LoopDFG.printCongestionInfo();
 
 
 				  end = clock();
@@ -572,20 +573,21 @@ namespace {
 				  loopCounter++;
 			  } //end loopIterator
 
-			  if(!xmlRun){
-				  DFG xmlDFG("asdsa");
-				  assert(xmlDFG.readXML("epimap_benchmarks/fdctfst/DFG.xml") == 0);
-				  xmlDFG.scheduleASAP();
-				  xmlDFG.scheduleALAP();
-				  xmlDFG.CreateSchList();
-				  xmlDFG.MapCGRA_SMART(4,4,xmlDFG.getName()+ "_mapping.log");
-				  printDFGDOT(xmlDFG.getName() + ".dot",&xmlDFG);
-				  xmlDFG.printREGIMapOuts();
-				  xmlDFG.printTurns();
-				  xmlDFG.printMapping();
-			  }
-			  //Assure a single run instead of multiple runs
-			  xmlRun = true;
+//			  if(!xmlRun){
+//				  DFG xmlDFG("asdsa");
+//				  assert(xmlDFG.readXML("epimap_benchmarks/fft/DFG.xml") == 0);
+//				  xmlDFG.scheduleASAP();
+//				  xmlDFG.scheduleALAP();
+//				  xmlDFG.CreateSchList();
+//				  xmlDFG.MapCGRA_SMART(4,4,xmlDFG.getName()+ "_mapping.log");
+//				  printDFGDOT(xmlDFG.getName() + ".dot",&xmlDFG);
+//				  xmlDFG.printREGIMapOuts();
+//				  xmlDFG.printTurns();
+//				  xmlDFG.printMapping();
+//				  xmlDFG.printCongestionInfo();
+//			  }
+//			  //Assure a single run instead of multiple runs
+//			  xmlRun = true;
 
 
 			  timeFile.close();

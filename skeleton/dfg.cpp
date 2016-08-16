@@ -1664,6 +1664,7 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim) {
 
 			if(node->getASAPnumber() == level){
 				currLevelNodes.push_back(node);
+				astar->ASAPLevelNodeMap[level].push_back(node);
 			}
 		}
 
@@ -1708,6 +1709,7 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim) {
 					parent = node->getRecAncestors()[j];
 
 					errs() << " (Id=" << parent->getIdx() <<
+
 							  ",rt=" << parent->getmappedRealTime() <<
 							  ",t=" << parent->getMappedLoc()->getT() << "),";
 
@@ -1852,6 +1854,7 @@ void DFG::MapCGRA_SMART(int XDim, int YDim, std::string mapfileName) {
 	clock_t begin = clock();
 	int MII = ceil((float)NodeList.size()/((float)XDim*(float)YDim));
 	findMaxRecDist();
+	conMatArr.push_back(getConMat());
 
 	errs() << "MapCGRAsa:: Resource Constrained MII = " << MII << "\n";
 	errs() << "MapCGRAsa:: Recurrence Constrained MII = " << getMaxRecDist() << "\n";
@@ -3917,4 +3920,151 @@ int DFG::printMapping() {
 	}
 
 	mapFile.close();
+}
+
+int DFG::printCongestionInfo() {
+	std::map<int,std::vector<dfgNode*>> nodeMapASAPLevels;
+	std::map<int,double> regEdgeCountASAPLevels;
+	dfgNode* node;
+	dfgNode* child;
+	int childASAPLevel;
+	bool sanity = false;
+
+	for (int i = 0; i < maxASAPLevel; ++i) {
+		regEdgeCountASAPLevels[i]=0;
+	}
+
+	for (int i = 0; i < NodeList.size(); ++i) {
+		node = NodeList[i];
+		nodeMapASAPLevels[node->getASAPnumber()].push_back(node);
+
+		for (int j = 0; j < node->getChildren().size(); ++j) {
+			child = node->getChildren()[j];
+			childASAPLevel = child->getASAPnumber();
+			for (int k = node->getASAPnumber()+1; k < childASAPLevel; ++k) {
+				regEdgeCountASAPLevels[k]++;
+			}
+		}
+	}
+
+	int MII = (int)ceil((double)NodeList.size() / ((double)currCGRA->getXdim()*(double)currCGRA->getYdim()));
+	std::map<int,std::map<int,int>> nodeMapEst;
+	std::map<int,int> totalNodeCountMapEst;
+
+	std::map<int,std::map<int,double>> edgeMapEst;
+	std::map<int,double> totalEdgeCountMapEst;
+
+	int cgraNodePerLevel = currCGRA->getXdim()*currCGRA->getYdim();
+
+	int II = MII;
+	int t;
+	int T;
+
+	for (int i = 0; i < II; ++i) {
+		totalNodeCountMapEst[i]=0;
+		nodeMapEst[i][-1] = -1;
+	}
+
+	int mapLevel=0;
+	int nodeNumberToBePlaced=0;
+	for (int i = 0; i < maxASAPLevel; ++i) {
+		errs() << "printCongestionInfo :: ASAPLevel=" << i << "\n";
+		t = mapLevel%II;
+		T = mapLevel/II;
+
+		if(totalNodeCountMapEst[t] + nodeMapASAPLevels[i].size() <= cgraNodePerLevel){
+			totalNodeCountMapEst[t] += nodeMapASAPLevels[i].size();
+			assert(nodeMapEst[t].find(T) == nodeMapEst[t].end());
+			nodeMapEst[t][T]=nodeMapASAPLevels[i].size();
+			edgeMapEst[t][T]=regEdgeCountASAPLevels[i];
+			mapLevel++;
+			nodeNumberToBePlaced=0;
+		}
+		else{
+			nodeNumberToBePlaced = totalNodeCountMapEst[t] + nodeMapASAPLevels[i].size() - cgraNodePerLevel;
+			errs() << "first nodeNumberToBePlaced=" << nodeNumberToBePlaced << "\n";
+			totalNodeCountMapEst[t] = cgraNodePerLevel;
+			assert(nodeMapEst[t].find(T) == nodeMapEst[t].end());
+			nodeMapEst[t][T] = cgraNodePerLevel - totalNodeCountMapEst[t];
+			edgeMapEst[t][T] = (regEdgeCountASAPLevels[i]*(double)nodeMapEst[t][T])/(double)nodeMapASAPLevels[i].size();
+			assert(nodeNumberToBePlaced > 0);
+
+			while(nodeNumberToBePlaced!=0){
+				errs() << "while nodeNumberToBePlaced=" << nodeNumberToBePlaced << "\n";
+				mapLevel++;
+				t = mapLevel%II;
+				T = mapLevel/II;
+				if(totalNodeCountMapEst[t]+nodeNumberToBePlaced <= cgraNodePerLevel){
+					totalNodeCountMapEst[t]+=nodeNumberToBePlaced;
+					assert(nodeMapEst[t].find(T) == nodeMapEst[t].end());
+					nodeMapEst[t][T]=nodeNumberToBePlaced;
+					edgeMapEst[t][T] = (regEdgeCountASAPLevels[i]*(double)nodeMapEst[t][T])/(double)nodeMapASAPLevels[i].size();
+					mapLevel++;
+					nodeNumberToBePlaced=0;
+				}
+				else{
+					nodeNumberToBePlaced = totalNodeCountMapEst[t]+nodeNumberToBePlaced-cgraNodePerLevel;
+					errs() << "while else nodeNumberToBePlaced=" << nodeNumberToBePlaced << "\n";
+					totalNodeCountMapEst[t] = cgraNodePerLevel;
+					assert(nodeMapEst[t].find(T) == nodeMapEst[t].end());
+					nodeMapEst[t][T] = cgraNodePerLevel - totalNodeCountMapEst[t];
+					edgeMapEst[t][T] = (regEdgeCountASAPLevels[i]*(double)nodeMapEst[t][T])/(double)nodeMapASAPLevels[i].size();
+				}
+
+				//sanitycheck
+				sanity = false;
+				for (int i = 0; i < II; ++i) {
+					assert(totalNodeCountMapEst[i] <= cgraNodePerLevel);
+					if(totalNodeCountMapEst[i]<cgraNodePerLevel){
+						sanity = true;
+					}
+				}
+				if(!sanity){
+					errs() << "printCongestionInfo is crazy!\n";
+					exit(-1);
+				}
+			}
+		}
+	}
+	errs() << "printCongestionInfo :: ASAPLevels done.\n";
+
+	std::ofstream outFile;
+	std::string outFileName = name + "_congestinfo.txt";
+	outFile.open(outFileName.c_str());
+	std::map<int,int>::iterator it;
+
+	for (int i = 0; i < II; ++i) {
+		errs() << "t=" << std::to_string(i);
+		outFile << "t=" << std::to_string(i);
+
+		for (int j = 0; j < nodeMapEst[i].size()-1; ++j) {
+			assert(nodeMapEst[i].find(j) != nodeMapEst[i].end());
+			errs() << "," << std::to_string(nodeMapEst[i][j]);
+			outFile << "," << std::to_string(nodeMapEst[i][j]);
+		}
+		errs() << "\n";
+		outFile << std::endl;
+	}
+
+	errs() << "Edges\n";
+	outFile << "Edges" << std::endl;
+
+	for (int i = 0; i < II; ++i) {
+		errs() << "t=" << std::to_string(i);
+		outFile << "t=" << std::to_string(i);
+
+		for (int j = 0; j < edgeMapEst[i].size()-1; ++j) {
+			assert(edgeMapEst[i].find(j) != edgeMapEst[i].end());
+			errs() << "," << std::to_string(edgeMapEst[i][j]);
+			outFile << "," << std::to_string(edgeMapEst[i][j]);
+		}
+		errs() << "\n";
+		outFile << std::endl;
+	}
+
+
+	outFile.close();
+
+	errs() << "printCongestionInfo done\n";
+	return 0;
 }

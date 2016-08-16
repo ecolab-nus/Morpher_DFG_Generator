@@ -295,6 +295,9 @@ class DFG{
 			//PrintMapping
 			int printMapping();
 
+			//Print Possible Congestion Info
+			int printCongestionInfo();
+
 
 	};
 

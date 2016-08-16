@@ -143,6 +143,7 @@ bool AStar::Route(dfgNode* currNode,
 	Port endPort;
 
 	dfgNode* currParent;
+	dfgNode* currAffNode;
 //	std::vector<TreePath> treePaths;
 	std::map<CGRANode*,std::vector<TreePath>> destTreePathMap;
 	std::map<CGRANode*,std::vector<TreePath>>::iterator destTreePathMapIt;
@@ -196,8 +197,13 @@ bool AStar::Route(dfgNode* currNode,
 	struct DestCost{
 		CGRANode* dest;
 		int cost;
-		DestCost(CGRANode* dest) : dest(dest), cost(0){}
-		DestCost(CGRANode* dest, int cost) : dest(dest), cost(cost){}
+		double normCost;
+		int affCost;
+		double normAffCost;
+		double normFinalCost;
+		DestCost(CGRANode* dest) : dest(dest), cost(0), affCost(0){}
+		DestCost(CGRANode* dest, int cost) : dest(dest), cost(cost), affCost(0){}
+		DestCost(CGRANode* dest, int cost, int affCost) : dest(dest), cost(cost), affCost(affCost){}
 	};
 
 	struct LessThanDestCost{
@@ -207,11 +213,20 @@ bool AStar::Route(dfgNode* currNode,
 	    }
 	};
 
+	struct LessThanDestNormTotalCost{
+	    bool operator()(DestCost const & p1, DestCost const & p2) {
+	        // return "true" if "p1" is ordered before "p2", for example:
+	        return p1.normFinalCost < p2.normFinalCost;
+	    }
+	};
+
 	std::vector<DestCost> destCostArray;
 
 	bool localDeadEndReached = false;
 	CGRANode* dest;
 	int destCost;
+	int affCost;
+
 
 
 	pathsNotRouted->clear();
@@ -230,6 +245,7 @@ bool AStar::Route(dfgNode* currNode,
 		for (int i = 0; i < dests->size(); ++i) {
 			dest = (*dests)[i];
 			destCost = 9 - currDFG->getCGRA()->findCGRAEdges(dest,TILE,cgraEdges).size();
+			destCost = destCost + 1000*dest->getT();
 			destCostArray.push_back(DestCost(dest,destCost));
 		}
 		std::sort(destCostArray.begin(),destCostArray.end(),LessThanDestCost());
@@ -294,6 +310,11 @@ bool AStar::Route(dfgNode* currNode,
 				errs() << "SMARTRouteEst :: " << "Path is not routed = " << start->getName() << " to " << goal->getName() << "\n";
 				errs() << "SMARTRouteEst :: " << "But Routed until : " << (end)->getName() << "\n";
 				localDeadEndReached = reportDeadEnd(end,endPort,currNode,cgraEdges);
+				//it was not able to route from the starting point which happen to be due to previously placed
+				if(start == end){
+					localDeadEndReached = true;
+				}
+
 				if(deadEndReached != NULL){
 					*deadEndReached = localDeadEndReached;
 				}
@@ -330,7 +351,17 @@ bool AStar::Route(dfgNode* currNode,
 			continue;
 		}
 		std::sort(destTreePathWithCostMap[dest].begin(),destTreePathWithCostMap[dest].end(),LessThanTreePathWithCost());
-		destCostArray.push_back(DestCost(dest,destCost));
+
+		//Calculating AffCost associated with this particular dest
+		affCost = 0;
+		for (int i = 0; i < ASAPLevelNodeMap[currNode->getASAPnumber()].size(); ++i) {
+			currAffNode = ASAPLevelNodeMap[currNode->getASAPnumber()][i];
+			if(currAffNode->getMappedLoc() != NULL){
+				affCost+=currDFG->getAffinityCost(currNode,currAffNode)*currDFG->getDistCGRANodes(dest,currAffNode->getMappedLoc());
+			}
+		}
+
+		destCostArray.push_back(DestCost(dest,destCost,affCost));
 	}
 
 	if(destCostArray.empty()){
@@ -341,7 +372,57 @@ bool AStar::Route(dfgNode* currNode,
 
 	cameFrom.clear();
 	costSoFar.clear();
-	std::sort(destCostArray.begin(),destCostArray.end(),LessThanDestCost());
+
+	//Calculate Norm Costs of destCostArray
+	int destCostMax = 0;
+	int destCostMin = INT_MAX;
+	int destAffCostMax = 0;
+	int destAffCostMin = INT_MAX;
+	for (int i = 0; i < destCostArray.size(); ++i) {
+		if(destCostArray[i].cost < destCostMin){
+			destCostMin = destCostArray[i].cost;
+		}
+
+		if(destCostArray[i].cost > destCostMax){
+			destCostMax = destCostArray[i].cost;
+		}
+
+		if(destCostArray[i].affCost < destAffCostMin){
+			destAffCostMin = destCostArray[i].affCost;
+		}
+
+		if(destCostArray[i].affCost > destAffCostMax){
+			destAffCostMax = destCostArray[i].affCost;
+		}
+	}
+
+	assert(destCostMin != INT_MAX);
+	assert(destAffCostMin != INT_MAX);
+
+	double temp1;
+	double costVar = (double)(destCostMax - destCostMin);
+	double affCostVar = (double)(destAffCostMax - destAffCostMin);
+
+	for (int i = 0; i < destCostArray.size(); ++i) {
+		if(destCostMax > destCostMin){
+			temp1 = (double)(destCostArray[i].cost - destCostMin);
+			destCostArray[i].normCost = temp1/costVar;
+		}
+		else{
+			destCostArray[i].normCost = 1;
+		}
+
+		if(destAffCostMax > destAffCostMin){
+			temp1 = (double)(destCostArray[i].affCost - destAffCostMin);
+			destCostArray[i].normAffCost = temp1/affCostVar;
+		}
+		else{
+			destCostArray[i].normAffCost = 1;
+		}
+
+		destCostArray[i].normFinalCost = (destCostArray[i].normCost + destCostArray[i].normAffCost)/2;
+	}
+	std::sort(destCostArray.begin(),destCostArray.end(),LessThanDestNormTotalCost());
 
 	//Real Routing happens here
 
