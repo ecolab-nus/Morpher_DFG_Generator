@@ -1394,6 +1394,7 @@ bool DFG::MapMultiDestRec(
 
 //	std::vector<std::pair<CGRANode*, CGRANode*> > paths;
 	std::vector<CGRANode*> dests;
+	std::map<CGRANode*,int> destllMap;
 
 	std::vector<std::pair<CGRANode*, CGRANode*> > pathsNotRouted;
 	bool success = false;
@@ -1438,6 +1439,7 @@ bool DFG::MapMultiDestRec(
 			cnode = it->second[i].first;
 //			cnodePair = it->second[i];
 			dests.push_back(cnode);
+			destllMap[cnode]=it->second[i].second;
 		}
 	}
 
@@ -1461,7 +1463,7 @@ bool DFG::MapMultiDestRec(
 		errs() << "Placed = " << "(" << chosenCnode->getT() << "," << chosenCnode->getY() << "," << chosenCnode->getX() << ")\n";
 		node->setMappedLoc(chosenCnode);
 		chosenCnode->setMappedDFGNode(node);
-//		node->setMappedRealTime(cnodePair.second);
+		node->setMappedRealTime(destllMap[chosenCnode]);
 
 		itlocal = it;
 		itlocal++;
@@ -1636,7 +1638,7 @@ bool DFG::MapMultiDestRec(
 bool DFG::MapASAPLevel(int MII, int XDim, int YDim) {
 
 	astar = new AStar(&mappingOutFile,MII,this);
-	currCGRA = new CGRA(MII,XDim,YDim,REGS_PER_NODE,RegXbar);
+	currCGRA = new CGRA(MII,XDim,YDim,REGS_PER_NODE,RegXbarTREG);
 
 	errs() << "STARTING MAPASAP with MII = " << MII << "with maxASAPLevel = " << maxASAPLevel << "\n";
 
@@ -3005,6 +3007,9 @@ int DFG::findUtilTreeRoutingLocs(CGRANode* cnode, dfgNode* currNode) {
 void DFG::printOutSMARTRoutes() {
 	dfgNode* node;
 	dfgNode* parent;
+	dfgNode* origNode;
+	dfgNode* origParent;
+
 	std::vector<std::ofstream> outFiles(currCGRA->getYdim()*currCGRA->getXdim());
 	std::ofstream *currOutFile;
 	CGRANode* cnode;
@@ -3014,6 +3019,8 @@ void DFG::printOutSMARTRoutes() {
 	bool noRouting = true;
 	int MII = currCGRA->getMII();
 	std::pair<dfgNode*,dfgNode*> sourcePath;
+
+	std::map<dfgNode*,std::map<dfgNode*,std::vector<CGRANode*>>> nodeRouteMap;
 
 	int pT = -1;
 	int pY = -1;
@@ -3045,9 +3052,11 @@ void DFG::printOutSMARTRoutes() {
 				cnode = currCGRA->getCGRANode(t,y,x);
 				if(cnode->getmappedDFGNode() != NULL){
 					node = cnode->getmappedDFGNode();
+					origNode = node;
 					if(node->getMappedLoc() == cnode){ // node is not just a routing location
 						for (int i = 0; i < node->getAncestors().size(); ++i) {
 							parent = node->getAncestors()[i];
+							origParent = parent;
 							parentExt = currCGRA->getCGRANode((parent->getMappedLoc()->getT()+1)%MII,parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
 							routeStart = 0;
 							std::string strEntry;
@@ -3079,6 +3088,7 @@ void DFG::printOutSMARTRoutes() {
 										routingCnode = node->getMergeRoutingLocs()[parent][j];
 //										noRouting = false;
 										strEntry = strEntry + routingCnode->getName() + " <-- " ;
+										nodeRouteMap[origNode][origParent].push_back(routingCnode);
 //									}
 								}
 
@@ -3159,6 +3169,43 @@ void DFG::printOutSMARTRoutes() {
 	for (int i = 0; i < outFiles.size(); ++i) {
 		outFiles[i].close();
 	}
+
+	std::ofstream pathLengthFile;
+	std::string pathLengthFileName = name + "_routelengthstats.csv";
+	pathLengthFile.open(pathLengthFileName.c_str());
+
+	//Print Header
+	pathLengthFile << "Node,Parent,Route,RouteLength,RouteLength/MII" << std::endl;
+
+	std::map<dfgNode*,std::map<dfgNode*,std::vector<CGRANode*>>>::iterator nodeIt;
+	std::map<dfgNode*,std::vector<CGRANode*>>::iterator ParentIt;
+
+	for(nodeIt = nodeRouteMap.begin();
+		nodeIt != nodeRouteMap.end();
+		nodeIt++){
+
+		node = nodeIt->first;
+		for(ParentIt = nodeRouteMap[node].begin();
+			ParentIt != nodeRouteMap[node].end();
+			ParentIt++){
+
+			parent = ParentIt->first;
+
+			pathLengthFile << std::to_string(node->getIdx()) << ",";
+			pathLengthFile << std::to_string(parent->getIdx()) << ",";
+
+			for (int i = 0; i < nodeRouteMap[node][parent].size(); ++i) {
+				pathLengthFile << nodeRouteMap[node][parent][i]->getNameSp() << "<--";
+			}
+			pathLengthFile << ",";
+
+			pathLengthFile << nodeRouteMap[node][parent].size() << ",";
+			pathLengthFile << nodeRouteMap[node][parent].size()/currCGRA->getMII() << std::endl;
+		}
+		pathLengthFile << std::endl;
+	}
+	pathLengthFile.close();
+
 }
 
 int DFG::convertToPhyLoc(int t, int y, int x) {

@@ -114,6 +114,15 @@ CGRA::CGRA(int MII, int Xdim, int Ydim, int regs, ArchType aType) {
 			InOutPortMap[R3] = {SOUTH};
 			InOutPortMap[TILE] = {NORTH,EAST,WEST,SOUTH};
 			break;
+
+		case RegXbarTREG:
+			InOutPortMap[R0] = {R0,NORTH};
+			InOutPortMap[R1] = {R1,EAST};
+			InOutPortMap[R2] = {R2,WEST};
+			InOutPortMap[R3] = {R3,SOUTH};
+			InOutPortMap[TILE] = {NORTH,EAST,WEST,SOUTH,TREG};
+			InOutPortMap[TREG] = {NORTH,EAST,WEST,SOUTH,TREG};
+			break;
 	}
 
 //	connectNeighbors();
@@ -196,7 +205,10 @@ void CGRA::connectNeighborsSMART() {
 				CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],R1,CGRANodes[(t+1)%MII][y][x],R1));
 				CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],R2,CGRANodes[(t+1)%MII][y][x],R2));
 				CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],R3,CGRANodes[(t+1)%MII][y][x],R3));
-				CGRANodes[t][y][x]->originalEdgesSize += 4;
+				if(arch == RegXbarTREG){
+					CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],TREG,CGRANodes[(t+1)%MII][y][x],TREG));
+				}
+				CGRANodes[t][y][x]->originalEdgesSize += 5;
 //				}
 
 
@@ -254,7 +266,11 @@ void CGRA::connectNeighborsGRID() {
 				CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],R1,CGRANodes[(t+1)%MII][y][x],R1));
 				CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],R2,CGRANodes[(t+1)%MII][y][x],R2));
 				CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],R3,CGRANodes[(t+1)%MII][y][x],R3));
-				CGRANodes[t][y][x]->originalEdgesSize += 4;
+				if(arch == RegXbarTREG){
+					CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],TREG,CGRANodes[(t+1)%MII][y][x],TREG));
+				}
+
+				CGRANodes[t][y][x]->originalEdgesSize += 5;
 
 
 //				for (int yy = 0; yy < YDim; ++yy) {
@@ -383,6 +399,9 @@ std::string CGRA::getPortName(Port p) {
 			break;
 		case R3:
 			return "R3";
+			break;
+		case TREG:
+			return "TREG";
 			break;
 		default:
 			return "INV";

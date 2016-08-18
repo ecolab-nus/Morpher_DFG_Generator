@@ -8,8 +8,8 @@
 
 using namespace llvm;
 
-enum Port{NORTH,SOUTH,EAST,WEST,R0,R1,R2,R3,TILE};
-enum ArchType{DoubleXBar,RegXbar,LatchXbar};
+enum Port{NORTH,SOUTH,EAST,WEST,R0,R1,R2,R3,TILE,TREG};
+enum ArchType{DoubleXBar,RegXbar,LatchXbar,RegXbarTREG};
 
 struct CGRAEdge{
 	CGRANode* Src;

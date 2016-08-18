@@ -61,6 +61,10 @@ std::string CGRANode::getName() {
 	return "(" + std::to_string(t) + "," + std::to_string(y) + "," + std::to_string(x) + ")";
 }
 
+std::string CGRANode::getNameSp() {
+	return "(" + std::to_string(t) + "/" + std::to_string(y) + "/" + std::to_string(x) + ")";
+}
+
 bool CGRANode::equals(int tt, int yy, int xx) {
 	if((tt == this->t) && (yy == this->y) && (xx == this->x)){
 		return true;
