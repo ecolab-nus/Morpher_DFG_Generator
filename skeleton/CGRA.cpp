@@ -86,40 +86,81 @@ CGRA::CGRA(int MII, int Xdim, int Ydim, int regs, ArchType aType) {
 	}
 
 
-	InOutPortMap[NORTH] = {R0,R1,R2,R3,NORTH,EAST,WEST,SOUTH};
-	InOutPortMap[EAST] = {R0,R1,R2,R3,NORTH,EAST,WEST,SOUTH};
-	InOutPortMap[WEST] = {R0,R1,R2,R3,NORTH,EAST,WEST,SOUTH};
-	InOutPortMap[SOUTH] = {R0,R1,R2,R3,NORTH,EAST,WEST,SOUTH};
+//	InOutPortMap[NORTH] = {R0,R1,R2,R3,NORTH,EAST,WEST,SOUTH};
+//	InOutPortMap[EAST] = {R0,R1,R2,R3,NORTH,EAST,WEST,SOUTH};
+//	InOutPortMap[WEST] = {R0,R1,R2,R3,NORTH,EAST,WEST,SOUTH};
+//	InOutPortMap[SOUTH] = {R0,R1,R2,R3,NORTH,EAST,WEST,SOUTH};
+
+//	InOutPortMap[R0] = {R0,NORTH,EAST,WEST,SOUTH};
+//	InOutPortMap[R1] = {R1,NORTH,EAST,WEST,SOUTH};
+//	InOutPortMap[R2] = {R2,NORTH,EAST,WEST,SOUTH};
+//	InOutPortMap[R3] = {R3,NORTH,EAST,WEST,SOUTH};
 	switch (arch) {
 		case DoubleXBar:
+//			InOutPortMap[R0] = {R0,NORTH,EAST,WEST,SOUTH};
+//			InOutPortMap[R1] = {R1,NORTH,EAST,WEST,SOUTH};
+//			InOutPortMap[R2] = {R2,NORTH,EAST,WEST,SOUTH};
+//			InOutPortMap[R3] = {R3,NORTH,EAST,WEST,SOUTH};
 			InOutPortMap[R0] = {R0,NORTH,EAST,WEST,SOUTH};
 			InOutPortMap[R1] = {R1,NORTH,EAST,WEST,SOUTH};
 			InOutPortMap[R2] = {R2,NORTH,EAST,WEST,SOUTH};
 			InOutPortMap[R3] = {R3,NORTH,EAST,WEST,SOUTH};
+
+			InOutPortMap[NORTH] = {R0,R1,R2,R3,NORTH,EAST,WEST,SOUTH};
+			InOutPortMap[EAST] = {R0,R1,R2,R3,NORTH,EAST,WEST,SOUTH};
+			InOutPortMap[WEST] = {R0,R1,R2,R3,NORTH,EAST,WEST,SOUTH};
+			InOutPortMap[SOUTH] = {R0,R1,R2,R3,NORTH,EAST,WEST,SOUTH};
+
 			InOutPortMap[TILE] = {R0,R1,R2,R3,NORTH,EAST,WEST,SOUTH};
 
 			break;
 		case RegXbar:
-			InOutPortMap[R0] = {R0,NORTH};
-			InOutPortMap[R1] = {R1,EAST};
-			InOutPortMap[R2] = {R2,WEST};
-			InOutPortMap[R3] = {R3,SOUTH};
+//			InOutPortMap[R0] = {R0,NORTH};
+//			InOutPortMap[R1] = {R1,EAST};
+//			InOutPortMap[R2] = {R2,WEST};
+//			InOutPortMap[R3] = {R3,SOUTH};
+			InOutPortMap[R0] = {R0,NORTH,EAST,WEST,SOUTH};
+			InOutPortMap[R1] = {R1,NORTH,EAST,WEST,SOUTH};
+			InOutPortMap[R2] = {R2,NORTH,EAST,WEST,SOUTH};
+			InOutPortMap[R3] = {R3,NORTH,EAST,WEST,SOUTH};
+
+			InOutPortMap[NORTH] = {R0,NORTH,EAST,WEST,SOUTH};
+			InOutPortMap[EAST] = {R1,NORTH,EAST,WEST,SOUTH};
+			InOutPortMap[WEST] = {R2,NORTH,EAST,WEST,SOUTH};
+			InOutPortMap[SOUTH] = {R3,NORTH,EAST,WEST,SOUTH};
+
 			InOutPortMap[TILE] = {NORTH,EAST,WEST,SOUTH};
 			break;
 
 		case LatchXbar:
-			InOutPortMap[R0] = {NORTH};
-			InOutPortMap[R1] = {EAST};
-			InOutPortMap[R2] = {WEST};
-			InOutPortMap[R3] = {SOUTH};
+//			InOutPortMap[R0] = {NORTH};
+//			InOutPortMap[R1] = {EAST};
+//			InOutPortMap[R2] = {WEST};
+//			InOutPortMap[R3] = {SOUTH};
+			InOutPortMap[R0] = {NORTH,EAST,WEST,SOUTH};
+			InOutPortMap[R1] = {NORTH,EAST,WEST,SOUTH};
+			InOutPortMap[R2] = {NORTH,EAST,WEST,SOUTH};
+			InOutPortMap[R3] = {NORTH,EAST,WEST,SOUTH};
+
+			InOutPortMap[NORTH] = {R0,NORTH,EAST,WEST,SOUTH};
+			InOutPortMap[EAST] = {R1,NORTH,EAST,WEST,SOUTH};
+			InOutPortMap[WEST] = {R2,NORTH,EAST,WEST,SOUTH};
+			InOutPortMap[SOUTH] = {R3,NORTH,EAST,WEST,SOUTH};
+
 			InOutPortMap[TILE] = {NORTH,EAST,WEST,SOUTH};
 			break;
 
 		case RegXbarTREG:
-			InOutPortMap[R0] = {R0,NORTH};
-			InOutPortMap[R1] = {R1,EAST};
-			InOutPortMap[R2] = {R2,WEST};
-			InOutPortMap[R3] = {R3,SOUTH};
+			InOutPortMap[R0] = {R0,NORTH,EAST,WEST,SOUTH};
+			InOutPortMap[R1] = {R1,NORTH,EAST,WEST,SOUTH};
+			InOutPortMap[R2] = {R2,NORTH,EAST,WEST,SOUTH};
+			InOutPortMap[R3] = {R3,NORTH,EAST,WEST,SOUTH};
+
+			InOutPortMap[NORTH] = {R0,NORTH,EAST,WEST,SOUTH};
+			InOutPortMap[EAST] = {R1,NORTH,EAST,WEST,SOUTH};
+			InOutPortMap[WEST] = {R2,NORTH,EAST,WEST,SOUTH};
+			InOutPortMap[SOUTH] = {R3,NORTH,EAST,WEST,SOUTH};
+
 			InOutPortMap[TILE] = {NORTH,EAST,WEST,SOUTH,TREG};
 			InOutPortMap[TREG] = {NORTH,EAST,WEST,SOUTH,TREG};
 			break;
