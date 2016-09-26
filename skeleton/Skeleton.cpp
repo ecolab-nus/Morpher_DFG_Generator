@@ -392,8 +392,8 @@ namespace {
 
 			  //errs() << "In a function calledd " << F.getName() << "!\n";
 
-//			  //TODO : please remove this after dtw test
-//			  if (F.getName() != "fft_float"){
+			  //TODO : please remove this after dtw test
+//			  if (F.getName() != "encfile"){
 //				  return false;
 //			  }
 
@@ -550,7 +550,7 @@ namespace {
 //				  LoopDFG.MapCGRA(4,4);
 				  LoopDFG.printXML();
 				  LoopDFG.printREGIMapOuts();
-				  LoopDFG.MapCGRA_SMART(4,4,F.getName().str() + "_L" + std::to_string(loopCounter) + "_mapping.log");
+				  LoopDFG.MapCGRA_SMART(7,7,F.getName().str() + "_L" + std::to_string(loopCounter) + "_mapping.log", RegXbarTREG);
 //				  LoopDFG.MapCGRA_EMS(4,4,F.getName().str() + "_L" + std::to_string(loopCounter) + "_mapping.log");
 				  printDFGDOT (F.getName().str() + "_L" + std::to_string(loopCounter) + "_loopdfg.dot", &LoopDFG);
 //				  LoopDFG.printTurns();
@@ -575,11 +575,11 @@ namespace {
 
 //			  if(!xmlRun){
 //				  DFG xmlDFG("asdsa");
-//				  assert(xmlDFG.readXML("epimap_benchmarks/fft/DFG.xml") == 0);
+//				  assert(xmlDFG.readXML("epimap_benchmarks/tiff2bw/DFG.xml") == 0);
 //				  xmlDFG.scheduleASAP();
 //				  xmlDFG.scheduleALAP();
 //				  xmlDFG.CreateSchList();
-//				  xmlDFG.MapCGRA_SMART(4,4,xmlDFG.getName()+ "_mapping.log");
+//				  xmlDFG.MapCGRA_SMART(8,8,xmlDFG.getName()+ "_mapping.log");
 //				  printDFGDOT(xmlDFG.getName() + ".dot",&xmlDFG);
 //				  xmlDFG.printREGIMapOuts();
 //				  xmlDFG.printTurns();

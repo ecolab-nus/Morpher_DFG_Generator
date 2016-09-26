@@ -71,19 +71,7 @@ CGRA::CGRA(int MII, int Xdim, int Ydim, int regs, ArchType aType) {
 	this->regsPerNode = regs;
 	this->arch = aType;
 	CGRANode* tempNodePtr;
-
-	for (int t = 0; t < MII; ++t) {
-		std::vector<std::vector<CGRANode*> > tempL2;
-		for (int y = 0; y < Ydim; ++y) {
-			std::vector<CGRANode*> tempL1;
-			for (int x = 0; x < Xdim; ++x) {
-				tempNodePtr = new CGRANode(x,y,t,this);
-				tempL1.push_back(tempNodePtr);
-			}
-			tempL2.push_back(tempL1);
-		}
-		CGRANodes.push_back(tempL2);
-	}
+	std::map<Port,std::vector<Port> > InOutPortMap;
 
 
 //	InOutPortMap[NORTH] = {R0,R1,R2,R3,NORTH,EAST,WEST,SOUTH};
@@ -165,6 +153,24 @@ CGRA::CGRA(int MII, int Xdim, int Ydim, int regs, ArchType aType) {
 			InOutPortMap[TREG] = {NORTH,EAST,WEST,SOUTH,TREG};
 			break;
 	}
+
+	OrigInOutPortMap = InOutPortMap;
+
+	for (int t = 0; t < MII; ++t) {
+		std::vector<std::vector<CGRANode*> > tempL2;
+		for (int y = 0; y < Ydim; ++y) {
+			std::vector<CGRANode*> tempL1;
+			for (int x = 0; x < Xdim; ++x) {
+				tempNodePtr = new CGRANode(x,y,t,this);
+				tempNodePtr->InOutPortMap = InOutPortMap;
+				tempL1.push_back(tempNodePtr);
+			}
+			tempL2.push_back(tempL1);
+		}
+		CGRANodes.push_back(tempL2);
+	}
+
+
 
 //	connectNeighbors();
 //	connectNeighborsMESH();
@@ -391,7 +397,7 @@ std::vector<CGRAEdge*> CGRA::findCGRAEdges(CGRANode* currCNode, Port inPort,std:
 		assert(cgraEdgesPtr->find(currCNode) != cgraEdgesPtr->end());
 		assert((*cgraEdgesPtr)[currCNode].size() != 0);
 
-		candPorts = InOutPortMap[inPort];
+		candPorts = currCNode->InOutPortMap[inPort];
 
 //		errs() << "findCGRAEdges:: (*cgraEdgesPtr)[currCNode].size() = " << (*cgraEdgesPtr)[currCNode].size() << "\n";
 		for (int j = 0; j < (*cgraEdgesPtr)[currCNode].size(); ++j) {

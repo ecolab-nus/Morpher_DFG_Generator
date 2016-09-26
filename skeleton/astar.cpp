@@ -2,6 +2,7 @@
 #include "edge.h"
 #include "astar.h"
 #include "dfg.h"
+#include "CGRA.h"
 #include <queue>
 
 
@@ -66,6 +67,9 @@ CGRANode* AStar::AStarSearch(std::map<CGRANode*,std::vector<CGRAEdge> > graph,
 
 			nextCost = 9 - currDFG->getCGRA()->findCGRAEdges(next,nextPort,&graph).size();
 			assert(nextCost >= 0);
+
+			//disble UE cost heuristic
+//			nextCost = 1;
 
 			if(current->getT() == next->getT()){
 				newCost = (*costSoFar)[current] + nextCost; //always graph.cost(current, next) = 1
@@ -141,6 +145,7 @@ bool AStar::Route(dfgNode* currNode,
 
 	CGRANode* end;
 	Port endPort;
+	std::vector<Port>::iterator PortIter;
 
 	dfgNode* currParent;
 	dfgNode* currAffNode;
@@ -611,6 +616,65 @@ bool AStar::Route(dfgNode* currNode,
 				for (int j = 0; j < tempCGRAEdges.size(); ++j) {
 					if(tempCGRAEdges[j]->Dst == current){
 						tempCGRAEdges[j]->mappedDFGEdge = currDFG->findEdge(currParent,currNode);
+
+						if(currDFG->getCGRA()->getArch() != DoubleXBar){
+							switch(cameFrom[currNodePortPair].second){
+								case R0:
+									if(tempCGRAEdges[j]->DstPort != R0){
+										cameFrom[currNodePortPair].first->InOutPortMap[NORTH] = {R0};
+									}
+								break;
+								case R1:
+									if(tempCGRAEdges[j]->DstPort != R1){
+										cameFrom[currNodePortPair].first->InOutPortMap[EAST] = {R1};
+									}
+								break;
+								case R2:
+									if(tempCGRAEdges[j]->DstPort != R2){
+										cameFrom[currNodePortPair].first->InOutPortMap[WEST] = {R2};
+									}
+								break;
+								case R3:
+									if(tempCGRAEdges[j]->DstPort != R3){
+										cameFrom[currNodePortPair].first->InOutPortMap[SOUTH] = {R3};
+									}
+								break;
+//								case TREG:
+//									if(tempCGRAEdges[j]->DstPort != TREG){
+//										cameFrom[currNodePortPair].first->InOutPortMap[TILE] = {TREG};
+//									}
+//								break;
+
+								case NORTH:
+									if(tempCGRAEdges[j]->DstPort != R0){
+										cameFrom[currNodePortPair].first->InOutPortMap[R0] = {R0};
+									}
+								break;
+								case EAST:
+									if(tempCGRAEdges[j]->DstPort != R1){
+										cameFrom[currNodePortPair].first->InOutPortMap[R1] = {R1};
+									}
+								break;
+								case WEST:
+									if(tempCGRAEdges[j]->DstPort != R2){
+										cameFrom[currNodePortPair].first->InOutPortMap[R2] = {R2};
+									}
+								break;
+								case SOUTH:
+									if(tempCGRAEdges[j]->DstPort != R3){
+										cameFrom[currNodePortPair].first->InOutPortMap[R3] = {R3};
+									}
+								break;
+//								case TILE:
+//									if(tempCGRAEdges[j]->DstPort != TREG){
+//										cameFrom[currNodePortPair].first->InOutPortMap[TREG] = {TREG};
+//									}
+//								break;
+
+							}
+						}
+
+
 						*mappingOutFile << "[" << CGRA::getPortName(tempCGRAEdges[j]->SrcPort) << "of" << tempCGRAEdges[j]->Src->getName() << "]";
 						break;
 					}
@@ -1476,7 +1540,7 @@ bool AStar::reportDeadEnd(CGRANode* end,
 
 	assert(cgraEdges->find(end) != cgraEdges->end());
 	assert((*cgraEdges)[end].size() != 0);
-	std::vector<Port> candPorts = currDFG->getCGRA()->InOutPortMap[endPort];
+	std::vector<Port> candPorts = end->InOutPortMap[endPort];
 	Port currPort;
 	std::vector<CGRAEdge*> tempCGRAEdges;
 
@@ -1495,7 +1559,7 @@ bool AStar::reportDeadEnd(CGRANode* end,
 				for (int j = 0; j < candPorts.size(); ++j) {
 					if(currPort == candPorts[j]){
 						errs() << "OccupiedBy=" << (*cgraEdges)[end][i].mappedDFGEdge->getDest()->getIdx();
-						errs() << ",CGRANode=" << (*cgraEdges)[end][i].mappedDFGEdge->getDest()->getMappedLoc()->getName() << "\n";
+//						errs() << ",CGRANode=" << (*cgraEdges)[end][i].mappedDFGEdge->getDest()->getMappedLoc()->getName() << "\n";
 						tempCGRAEdges.push_back(&(*cgraEdges)[end][i]);
 					}
 		 		}
@@ -1520,9 +1584,9 @@ bool AStar::reportDeadEnd(CGRANode* end,
 	errs() << ", util = " << util << "\n";
 	errs() << ", oriEdgesSize = " << end->originalEdgesSize << "\n";
 
-	if(tempCGRAEdges.size() == 0){
-		return true;
-	}
+//	if(tempCGRAEdges.size() == 0){
+//		return true;
+//	}
 	return false;
 //	if(util >= end->originalEdgesSize){
 //		return true;

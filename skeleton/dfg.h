@@ -227,10 +227,10 @@ class DFG{
 
 			std::vector<ConnectedCGRANode> FindCandidateCGRANodes(dfgNode* node);
 
-			void MapCGRA_SMART(int XDim, int YDim, std::string mapfileName = "Mapping.log");
+			void MapCGRA_SMART(int XDim, int YDim, std::string mapfileName = "Mapping.log", ArchType arch = RegXbarTREG);
 			void MapCGRA_SA(int XDim, int YDim, std::string mapfileName = "Mapping.log");
 			bool MapMultiDest(std::map<dfgNode*,std::vector< std::pair<CGRANode*,int> > > *nodeDestMap, std::map<CGRANode*,std::vector<dfgNode*> > *destNodeMap);
-			bool MapASAPLevel(int MII, int XDim, int YDim);
+			bool MapASAPLevel(int MII, int XDim, int YDim, ArchType arch);
 			int getAffinityCost(dfgNode* a, dfgNode* b);
 
 			std::vector<std::vector<unsigned char> > getConMat();
@@ -297,6 +297,9 @@ class DFG{
 
 			//Print Possible Congestion Info
 			int printCongestionInfo();
+
+			//Treat high-fan in PHI Nodes
+			int handlePHINodeFanIn();
 
 
 	};

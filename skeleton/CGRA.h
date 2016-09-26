@@ -8,7 +8,6 @@
 
 using namespace llvm;
 
-enum Port{NORTH,SOUTH,EAST,WEST,R0,R1,R2,R3,TILE,TREG};
 enum ArchType{DoubleXBar,RegXbar,LatchXbar,RegXbarTREG};
 
 struct CGRAEdge{
@@ -43,7 +42,7 @@ class CGRA{
 			CGRA(int MII, int Xdim, int Ydim, int regs, ArchType aType = DoubleXBar);
 			CGRANode* getCGRANode(int t, int y, int x);
 			CGRANode* getCGRANode(int phyLoc);
-			std::map<Port,std::vector<Port> > InOutPortMap;
+			std::map<Port,std::vector<Port> > OrigInOutPortMap;
 
 
 
@@ -63,6 +62,8 @@ class CGRA{
 			int getRegsPerNode(){return regsPerNode;}
 			std::vector<CGRAEdge*> findCGRAEdges(CGRANode* currCNode, Port inPort, std::map<CGRANode*,std::vector<CGRAEdge>>* cgraEdgesPtr);
 			static std::string getPortName(Port p);
+
+			ArchType getArch(){return arch;}
 	};
 
 

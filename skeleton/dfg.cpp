@@ -234,6 +234,46 @@ void DFG::connectBB(){
 
 }
 
+//WIP
+int DFG::handlePHINodeFanIn() {
+	dfgNode* node;
+	std::vector<dfgNode*> phiNodes;
+	std::vector<dfgNode*> workingSet;
+
+	for (int i = 0; i < NodeList.size(); ++i) {
+		node = NodeList[i];
+		if(node->getNode()->getOpcode() == Instruction::PHI){
+			phiNodes.push_back(node);
+		}
+	}
+
+	if(phiNodes.empty()){
+		return 0;
+	}
+
+	//Remove the current connection
+	for (int i = 0; i < phiNodes.size(); ++i) {
+		node = phiNodes[i];
+
+		if(node->getAncestors().size() <= 2){
+			continue;
+		}
+
+		for (int j = 0; j < node->getAncestors().size(); ++j) {
+			workingSet.push_back(node->getAncestors()[j]);
+
+		}
+
+
+
+
+
+
+	}
+
+
+}
+
 void DFG::printXML(){
 	std::string fileName = name + "_dfg.xml";
 	xmlFile.open(fileName.c_str());
@@ -1412,7 +1452,7 @@ bool DFG::MapMultiDestRec(
 	errs() << "MapMultiDestRec : Procesing NodeIdx = " << node->getIdx();
 	errs() << ", PossibleDests = " << it->second.size();
 	errs() << ", MII = " << currCGRA->getMII();
-	errs() << ", currASAPLevel = " << node->getASAPnumber();
+	errs() << ", currASAPLevel = " << node->getASAPnumber() << "/" << maxASAPLevel;
 	errs() << ", NodeProgress = " << index+1 << "/" << nodeDestMap->size();
 	errs() << "\n";
 
@@ -1635,10 +1675,10 @@ bool DFG::MapMultiDestRec(
 
 
 
-bool DFG::MapASAPLevel(int MII, int XDim, int YDim) {
+bool DFG::MapASAPLevel(int MII, int XDim, int YDim, ArchType arch) {
 
 	astar = new AStar(&mappingOutFile,MII,this);
-	currCGRA = new CGRA(MII,XDim,YDim,REGS_PER_NODE,RegXbarTREG);
+	currCGRA = new CGRA(MII,XDim,YDim,REGS_PER_NODE,arch/*RegXbarTREG*/);
 
 	errs() << "STARTING MAPASAP with MII = " << MII << "with maxASAPLevel = " << maxASAPLevel << "\n";
 
@@ -1851,7 +1891,7 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim) {
 	return true;
 }
 
-void DFG::MapCGRA_SMART(int XDim, int YDim, std::string mapfileName) {
+void DFG::MapCGRA_SMART(int XDim, int YDim, std::string mapfileName, ArchType arch) {
 	mappingOutFile.open(mapfileName.c_str());
 	clock_t begin = clock();
 	int MII = ceil((float)NodeList.size()/((float)XDim*(float)YDim));
@@ -1885,7 +1925,7 @@ void DFG::MapCGRA_SMART(int XDim, int YDim, std::string mapfileName) {
 	int latency = 0;
 
 	while(1){
-		if(MapASAPLevel(MII,XDim,YDim)){
+		if(MapASAPLevel(MII,XDim,YDim,arch)){
 			clock_t end = clock();
 			double elapsed_time = double(end - begin)/CLOCKS_PER_SEC;
 			errs() << "MapCGRAsa :: Mapping success with MII = " << MII << "\n";
@@ -4115,3 +4155,4 @@ int DFG::printCongestionInfo() {
 	errs() << "printCongestionInfo done\n";
 	return 0;
 }
+

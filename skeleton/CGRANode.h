@@ -19,6 +19,7 @@ struct less_than_cost{
 		return (node1.cost < node2.cost);
 	}
 };
+enum Port{NORTH,SOUTH,EAST,WEST,R0,R1,R2,R3,TILE,TREG};
 
 class CGRA;
 
@@ -69,6 +70,8 @@ class CGRANode{
 
 			//RegAllocation - this will initially consists of edges allocation
 			std::map<CGRANode*,std::vector<Edge*> > regAllocation;
+
+			std::map<Port,std::vector<Port> > InOutPortMap;
 
 
 	};
