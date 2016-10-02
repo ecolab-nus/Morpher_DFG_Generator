@@ -301,6 +301,11 @@ class DFG{
 			//Treat high-fan in PHI Nodes
 			int handlePHINodeFanIn();
 
+			//Special Treatment to MEM Nodes in order to map them specialized PEs
+			int handleMEMops();
+
+			int getMEMOpsToBePlaced();
+
 
 	};
 

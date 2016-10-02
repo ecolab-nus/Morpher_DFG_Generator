@@ -163,6 +163,11 @@ CGRA::CGRA(int MII, int Xdim, int Ydim, int regs, ArchType aType) {
 			for (int x = 0; x < Xdim; ++x) {
 				tempNodePtr = new CGRANode(x,y,t,this);
 				tempNodePtr->InOutPortMap = InOutPortMap;
+
+				if(x == 0){
+					tempNodePtr->setPEType(MEM);
+				}
+
 				tempL1.push_back(tempNodePtr);
 			}
 			tempL2.push_back(tempL1);
@@ -454,4 +459,22 @@ std::string CGRA::getPortName(Port p) {
 			return "INV";
 			break;
 	}
+}
+
+int CGRA::getTotalUnUsedMemPEs() {
+	int unusedMEMPEs = 0;
+
+	for (int t = 0; t < MII; ++t) {
+		for (int y = 0; y < YDim; ++y) {
+			for (int x = 0; x < XDim; ++x) {
+				if(CGRANodes[t][y][x]->getmappedDFGNode() == NULL){
+					if(CGRANodes[t][y][x]->getPEType() == MEM){
+						unusedMEMPEs++;
+					}
+				}
+			}
+		}
+	}
+
+	return unusedMEMPEs;
 }

@@ -20,6 +20,7 @@ struct less_than_cost{
 	}
 };
 enum Port{NORTH,SOUTH,EAST,WEST,R0,R1,R2,R3,TILE,TREG};
+enum PEType{MEM,ALU};
 
 class CGRA;
 
@@ -36,6 +37,7 @@ class CGRANode{
 			int probCost = 0;
 			dfgNode* routingDFGNode = NULL;
 			CGRA* Parent;
+			PEType peType = ALU;
 
 
 		public :
@@ -72,6 +74,9 @@ class CGRANode{
 			std::map<CGRANode*,std::vector<Edge*> > regAllocation;
 
 			std::map<Port,std::vector<Port> > InOutPortMap;
+
+			PEType getPEType(){return peType;}
+			void setPEType(PEType pt){peType = pt;}
 
 
 	};

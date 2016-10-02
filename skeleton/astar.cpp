@@ -232,6 +232,18 @@ bool AStar::Route(dfgNode* currNode,
 	int destCost;
 	int affCost;
 
+	int currCGRAMEMPEs = currDFG->getCGRA()->getTotalUnUsedMemPEs();
+	int memOpOptCost = 0;
+	int MemOpsToBePlaced = currDFG->getMEMOpsToBePlaced();
+
+	assert(MemOpsToBePlaced <= currCGRAMEMPEs);
+	if(currCGRAMEMPEs != 0){
+		memOpOptCost = (int)(10000.0*((float)MemOpsToBePlaced/(float)currCGRAMEMPEs));
+	}
+	else{
+		memOpOptCost = 0;
+	}
+
 
 
 	pathsNotRouted->clear();
@@ -251,6 +263,9 @@ bool AStar::Route(dfgNode* currNode,
 			dest = (*dests)[i];
 			destCost = 9 - currDFG->getCGRA()->findCGRAEdges(dest,TILE,cgraEdges).size();
 			destCost = destCost + 1000*dest->getT();
+			if(dest->getPEType() == MEM){
+				destCost += memOpOptCost;
+			}
 			destCostArray.push_back(DestCost(dest,destCost));
 		}
 		std::sort(destCostArray.begin(),destCostArray.end(),LessThanDestCost());
@@ -366,6 +381,9 @@ bool AStar::Route(dfgNode* currNode,
 			}
 		}
 
+		if(dest->getPEType() == MEM){
+			destCost += memOpOptCost;
+		}
 		destCostArray.push_back(DestCost(dest,destCost,affCost));
 	}
 
@@ -1584,9 +1602,9 @@ bool AStar::reportDeadEnd(CGRANode* end,
 	errs() << ", util = " << util << "\n";
 	errs() << ", oriEdgesSize = " << end->originalEdgesSize << "\n";
 
-//	if(tempCGRAEdges.size() == 0){
-//		return true;
-//	}
+	if(tempCGRAEdges.size() == 0){
+		return true;
+	}
 	return false;
 //	if(util >= end->originalEdgesSize){
 //		return true;

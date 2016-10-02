@@ -229,6 +229,14 @@ void DFG::connectBB(){
 
 	//Sanity Check
 	for (int i = 0; i < NodeList.size(); ++i) {
+		node = NodeList[i];
+		if(node->getAncestors().size() > 3){
+			errs() << "More than 3 ancestors, NodeIdx="<< node->getIdx();
+			if(node->getNode() != NULL){
+				node->getNode()->dump();
+			}
+			errs() << "\n";
+		}
 		assert(NodeList[i]->getAncestors().size() <= 3);
 	}
 
@@ -1456,6 +1464,7 @@ bool DFG::MapMultiDestRec(
 	errs() << ", NodeProgress = " << index+1 << "/" << nodeDestMap->size();
 	errs() << "\n";
 
+
 	for (int j = 0; j < node->getAncestors().size(); ++j) {
 		parent = node->getAncestors()[j];
 		parentExt = currCGRA->getCGRANode((parent->getMappedLoc()->getT() + 1)%(currCGRA->getMII()),parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
@@ -1789,8 +1798,10 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim, ArchType arch) {
 							int x = phiChild->getMappedLoc()->getX();
 
 							if(currCGRA->getCGRANode((ll+1)%MII,y,x)->getmappedDFGNode() == NULL){
-								nodeDestMap[node].push_back(std::make_pair(currCGRA->getCGRANode((ll+1)%MII,y,x),(ll+1)));
-								destNodeMap[currCGRA->getCGRANode((ll+1)%MII,y,x)].push_back(node);
+								if(node->getIsMemOp() == (currCGRA->getCGRANode((ll+1)%MII,y,x)->getPEType() == MEM)){
+									nodeDestMap[node].push_back(std::make_pair(currCGRA->getCGRANode((ll+1)%MII,y,x),(ll+1)));
+									destNodeMap[currCGRA->getCGRANode((ll+1)%MII,y,x)].push_back(node);
+								}
 							}
 
 						}
@@ -1799,8 +1810,10 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim, ArchType arch) {
 							for (int y = 0; y < YDim; ++y) {
 								for (int x = 0; x < XDim; ++x) {
 									if(currCGRA->getCGRANode((ll+1)%MII,y,x)->getmappedDFGNode() == NULL){
-										nodeDestMap[node].push_back(std::make_pair(currCGRA->getCGRANode((ll+1)%MII,y,x),(ll+1)));
-										destNodeMap[currCGRA->getCGRANode((ll+1)%MII,y,x)].push_back(node);
+										if(node->getIsMemOp() == (currCGRA->getCGRANode((ll+1)%MII,y,x)->getPEType() == MEM)){
+											nodeDestMap[node].push_back(std::make_pair(currCGRA->getCGRANode((ll+1)%MII,y,x),(ll+1)));
+											destNodeMap[currCGRA->getCGRANode((ll+1)%MII,y,x)].push_back(node);
+										}
 									}
 								}
 							}
@@ -1895,17 +1908,23 @@ void DFG::MapCGRA_SMART(int XDim, int YDim, std::string mapfileName, ArchType ar
 	mappingOutFile.open(mapfileName.c_str());
 	clock_t begin = clock();
 	int MII = ceil((float)NodeList.size()/((float)XDim*(float)YDim));
+	int memMII =  ceil((float)getMEMOpsToBePlaced()/((float)YDim));
 	findMaxRecDist();
 	conMatArr.push_back(getConMat());
 
 	errs() << "MapCGRAsa:: Resource Constrained MII = " << MII << "\n";
 	errs() << "MapCGRAsa:: Recurrence Constrained MII = " << getMaxRecDist() << "\n";
+
+	errs() << "MapCGRAsa:: MEMNodes/TotalNodes = " << getMEMOpsToBePlaced() << "/" << NodeList.size() << "\n";
+	errs() << "MapCGRAsa:: MEM Constrained MII = " << memMII << "\n";
 	mappingOutFile << "MapCGRAsa:: Number of nodes = " << NodeList.size() << "\n";
 	mappingOutFile << "MapCGRAsa:: Resource Constrained MII = " << MII << "\n";
+	mappingOutFile << "MapCGRAsa:: MEMNodes/TotalNodes = " << getMEMOpsToBePlaced() << "/" << NodeList.size() << "\n";
+	mappingOutFile << "MapCGRAsa:: MEM Constrained MII = " << memMII << "\n";
 	mappingOutFile << "MapCGRAsa:: Recurrence Constrained MII = " << getMaxRecDist() << "\n";
 
 
-	MII = std::max(MII,getMaxRecDist());
+	MII = std::max(std::max(MII,getMaxRecDist()),memMII);
 //	MII = 6;
 
 
@@ -4156,3 +4175,35 @@ int DFG::printCongestionInfo() {
 	return 0;
 }
 
+int DFG::handleMEMops() {
+	dfgNode* node;
+	for (int i = 0; i < NodeList.size(); ++i) {
+		node = NodeList[i];
+		if(node->getNode() != NULL){
+			if(node->getNode()->mayReadOrWriteMemory()){
+				node->setIsMemOp(true);
+			}
+		}
+		else{
+			if((node->getNameType().compare("LOAD") == 0)||
+			   (node->getNameType().compare("STORE") == 0)){
+				node->setIsMemOp(true);
+			}
+		}
+	}
+	return 0;
+}
+
+int DFG::getMEMOpsToBePlaced() {
+	int memOpsToBePlaced = 0;
+	dfgNode* node;
+	for (int i = 0; i < NodeList.size(); ++i) {
+		node = NodeList[i];
+		if(node->getMappedLoc() == NULL){
+			if(node->getIsMemOp()){
+				memOpsToBePlaced++;
+			}
+		}
+	}
+	return memOpsToBePlaced;
+}

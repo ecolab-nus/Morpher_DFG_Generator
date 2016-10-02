@@ -46,6 +46,7 @@ class dfgNode{
 
 			int routingPossibilities = 0;
 			int mappedRealTime = 0;
+			bool isMEMOp = false;
 
 		public :
 
@@ -135,6 +136,9 @@ class dfgNode{
 
 			void setNameType(std::string name){nameType = name;}
 			std::string getNameType(){return nameType;}
+
+			void setIsMemOp(bool b){isMEMOp = b;}
+			bool getIsMemOp(){return isMEMOp;}
 
 
 

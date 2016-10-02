@@ -64,6 +64,7 @@ class CGRA{
 			static std::string getPortName(Port p);
 
 			ArchType getArch(){return arch;}
+			int getTotalUnUsedMemPEs();
 	};
 
 

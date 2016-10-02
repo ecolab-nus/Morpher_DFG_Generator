@@ -109,7 +109,10 @@ STATISTIC(LoopsAnalyzed, "Number of loops analyzed for vectorization");
 
 						 std::pair <const BasicBlock*,const BasicBlock*> bbCouple(I->getParent(),Inst->getParent());
 						 if(std::find(BackEdgesBB.begin(),BackEdgesBB.end(),bbCouple)!=BackEdgesBB.end()){
-							 continue;
+							 if(I->getParent() != Inst->getParent()){
+								 errs() << "line 112, #####TRAVDEFTREE :: backedge found!\n";
+								 continue;
+							 }
 						 }
 
 						 if(std::find(BBSuccBasicBlocks[I->getParent()].begin(),BBSuccBasicBlocks[I->getParent()].end(),Inst->getParent())==BBSuccBasicBlocks[I->getParent()].end()){
@@ -122,7 +125,7 @@ STATISTIC(LoopsAnalyzed, "Number of loops analyzed for vectorization");
 //								 currBBDFG->findNode(I)->addPHIchild(Inst);
 //								 currBBDFG->findNode(Inst)->addPHIancestor(I);
 							 }
-							 errs() << "#####TRAVDEFTREE :: backedge found!\n";
+							 errs() << "line 126, #####TRAVDEFTREE :: backedge found!\n";
 							 continue;
 						 }
 
@@ -368,6 +371,21 @@ STATISTIC(LoopsAnalyzed, "Number of loops analyzed for vectorization");
 				  basicblockmapfile.close();
 	    	}
 
+	    	void getInnerMostLoops(std::vector<Loop*>* innerMostLoops, std::vector<Loop*> loops){
+				for (int i = 0; i < loops.size(); ++i) {
+					if(loops[i]->getSubLoops().size() == 0){
+
+
+
+
+						innerMostLoops->push_back(loops[i]);
+					}
+					else{
+						getInnerMostLoops(innerMostLoops, loops[i]->getSubLoops());
+					}
+				}
+	    	}
+
 
 namespace {
 
@@ -390,12 +408,29 @@ namespace {
 				clock_t end;
 				std::string loopCFGFileName;
 
+				  std::string Filename = ("cfg." + F.getName() + ".dot").str();
+				  //errs() << "Writing '" << Filename << "'...";
+
+
+				  raw_fd_ostream File(Filename, EC, sys::fs::F_Text);
+
+				  if (!EC){
+					  WriteGraph(File, (const Function*)&F);
+				  }
+				  else{
+					  errs() << "  error opening file for writing!";
+				  errs() << "\n";
+				  }
+
 			  //errs() << "In a function calledd " << F.getName() << "!\n";
 
 			  //TODO : please remove this after dtw test
-//			  if (F.getName() != "encfile"){
+//			  if (F.getName() != "synth_full"){
+//				  errs() << "Function Name : " << F.getName() << "\n";
 //				  return false;
 //			  }
+
+			  errs() << "Processing : " << F.getName() << "\n";
 
 			  LoopInfo &LI = getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
 //			  MemoryDependenceAnalysis *MD = &getAnalysis<MemoryDependenceAnalysis>();
@@ -467,24 +502,33 @@ namespace {
 
 //			  funcDFG.printXML(F.getName().str() + "_func.xml");
 
-
+			  std::vector<Loop*> innerMostLoops;
+			  std::vector<Loop*> loops;
 			  for (LoopInfo::iterator i = LI.begin(); i != LI.end() ; ++i){
 				  Loop *L = *i;
-				  //errs() << "*********Loop***********" << "\n";
-//				  L->dump();
-				  //errs() << "\n\n";
+				  loops.push_back(L);
+			  }
+
+			  getInnerMostLoops(&innerMostLoops,loops);
+
+			  for (int i = 0; i < innerMostLoops.size(); ++i) {
+				  Loop *L = innerMostLoops[i];
+				  errs() << "*********Loop***********" << "\n";
+				  L->dump();
+				  errs() << "\n\n";
 
 
 				  //Only the innermost Loop
-
-				  if(L->getSubLoops().size() != 0){
-					  continue;
-				  }
+				  assert(L->getSubLoops().size() == 0);
+//				  if(L->getSubLoops().size() != 0){
+//					  errs() << "Sub loop Size = " << L->getSubLoops().size() << "\n";
+//					  continue;
+//				  }
 
 //				 //---------------------------------------------------------------
 //				 //**************TODO :: PLease remove this after testing on dct
 //				 //---------------------------------------------------------------
-//				 if(loopCounter == 0){
+//				 if(loopCounter <= 2){
 //					 loopCounter++;
 //					 continue;
 //				 }
@@ -550,10 +594,11 @@ namespace {
 //				  LoopDFG.MapCGRA(4,4);
 				  LoopDFG.printXML();
 				  LoopDFG.printREGIMapOuts();
-				  LoopDFG.MapCGRA_SMART(7,7,F.getName().str() + "_L" + std::to_string(loopCounter) + "_mapping.log", RegXbarTREG);
+				  LoopDFG.handleMEMops();
+				  LoopDFG.MapCGRA_SMART(4,4,F.getName().str() + "_L" + std::to_string(loopCounter) + "_mapping.log", RegXbarTREG);
 //				  LoopDFG.MapCGRA_EMS(4,4,F.getName().str() + "_L" + std::to_string(loopCounter) + "_mapping.log");
 				  printDFGDOT (F.getName().str() + "_L" + std::to_string(loopCounter) + "_loopdfg.dot", &LoopDFG);
-//				  LoopDFG.printTurns();
+				  LoopDFG.printTurns();
 				  LoopDFG.printMapping();
 				  LoopDFG.printCongestionInfo();
 
@@ -575,11 +620,12 @@ namespace {
 
 //			  if(!xmlRun){
 //				  DFG xmlDFG("asdsa");
-//				  assert(xmlDFG.readXML("epimap_benchmarks/tiff2bw/DFG.xml") == 0);
+//				  assert(xmlDFG.readXML("epimap_benchmarks/fdctfst/DFG.xml") == 0);
 //				  xmlDFG.scheduleASAP();
 //				  xmlDFG.scheduleALAP();
 //				  xmlDFG.CreateSchList();
-//				  xmlDFG.MapCGRA_SMART(8,8,xmlDFG.getName()+ "_mapping.log");
+//				  xmlDFG.handleMEMops();
+//				  xmlDFG.MapCGRA_SMART(4,4,xmlDFG.getName()+ "_mapping.log");
 //				  printDFGDOT(xmlDFG.getName() + ".dot",&xmlDFG);
 //				  xmlDFG.printREGIMapOuts();
 //				  xmlDFG.printTurns();
@@ -588,23 +634,11 @@ namespace {
 //			  }
 //			  //Assure a single run instead of multiple runs
 //			  xmlRun = true;
-
-
-			  timeFile.close();
+//
+//
+//			  timeFile.close();
 
 			  //errs() << "Function body:\n";
-
-			  std::string Filename = ("cfg." + F.getName() + ".dot").str();
-			  //errs() << "Writing '" << Filename << "'...";
-
-
-			  raw_fd_ostream File(Filename, EC, sys::fs::F_Text);
-
-			  if (!EC)
-				  WriteGraph(File, (const Function*)&F);
-			  else
-				  //errs() << "  error opening file for writing!";
-			  //errs() << "\n";
 
 
 
