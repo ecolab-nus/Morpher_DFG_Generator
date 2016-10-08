@@ -275,10 +275,10 @@ void dfgNode::addPHIancestor(Instruction* anc, int type) {
 	Parent->InsertEdge(temp);
 }
 
-std::map<dfgNode*, std::vector<CGRANode*> > dfgNode::getMergeRoutingLocs() {
-	std::map<dfgNode*, std::vector<CGRANode*> > temp = treeBasedRoutingLocs;
+std::map<dfgNode*,std::vector<std::pair<CGRANode*,Port> >> dfgNode::getMergeRoutingLocs() {
+	std::map<dfgNode*,std::vector<std::pair<CGRANode*,Port> >> temp = treeBasedRoutingLocs;
 
-	std::map<dfgNode*, std::vector<CGRANode*> >::iterator tempIt;
+	std::map<dfgNode*,std::vector<std::pair<CGRANode*,Port> >>::iterator tempIt;
 	for(tempIt = temp.begin();
 		tempIt != temp.end();
 		tempIt++){

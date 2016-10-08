@@ -2978,6 +2978,7 @@ TreePath DFG::createTreePath(dfgNode* parent, CGRANode* dest) {
 	assert(parent->getMappedLoc() != NULL);
 	ParentExt = currCGRA->getCGRANode((parent->getMappedLoc()->getT()+1)%MII,parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
 	tp.sources.push_back(ParentExt);
+	tp.sourcePorts[ParentExt]=TILE;
 	tp.sourcePaths[ParentExt] = (std::make_pair(parent,parent));
 
 //	if(parent->getIdx() == 22){
@@ -2998,8 +2999,9 @@ TreePath DFG::createTreePath(dfgNode* parent, CGRANode* dest) {
 			foundParentTreeBasedRoutingLocs = false;
 			if((*child->getTreeBasedRoutingLocs()).find(parent) != (*child->getTreeBasedRoutingLocs()).end()){
 				for (int j = 0; j < (*child->getTreeBasedRoutingLocs())[parent].size(); ++j) {
-					cnode = (*child->getTreeBasedRoutingLocs())[parent][j];
+					cnode = (*child->getTreeBasedRoutingLocs())[parent][j].first;
 					tp.sources.push_back(cnode);
+					tp.sourcePorts[cnode]=(*child->getTreeBasedRoutingLocs())[parent][j].second;
 					if(cnode == ParentExt){
 						tp.sourcePaths[cnode] = (std::make_pair(parent,parent));
 					}
@@ -3013,8 +3015,9 @@ TreePath DFG::createTreePath(dfgNode* parent, CGRANode* dest) {
 
 			if((*child->getTreeBasedGoalLocs()).find(parent) != (*child->getTreeBasedGoalLocs()).end()){
 				for (int j = 0; j < (*child->getTreeBasedGoalLocs())[parent].size(); ++j) {
-					cnode = (*child->getTreeBasedGoalLocs())[parent][j];
+					cnode = (*child->getTreeBasedGoalLocs())[parent][j].first;
 					tp.sources.push_back(cnode);
+					tp.sourcePorts[cnode]=(*child->getTreeBasedGoalLocs())[parent][j].second;
 					if(cnode == ParentExt){
 						tp.sourcePaths[cnode] = (std::make_pair(parent,parent));
 					}
@@ -3041,36 +3044,36 @@ TreePath DFG::createTreePath(dfgNode* parent, CGRANode* dest) {
 	return tp;
 }
 
-int DFG::findUtilTreeRoutingLocs(CGRANode* cnode, dfgNode* currNode) {
-	dfgNode* node;
-	std::map<dfgNode*,std::vector<CGRANode*>>::iterator treeRoutingLocsIt;
-	std::vector<CGRANode*> cnodes;
-	int util = 0;
-
-	for (int i = 0; i < NodeList.size(); ++i) {
-		node = NodeList[i];
-
-		if( (node->getMappedLoc() != NULL) || (node == currNode)/*&&(node->getASAPnumber() <= currNode->getASAPnumber())*/){
-
-			if(node->getMappedLoc() == cnode){
-				continue;
-			}
-
-			for(treeRoutingLocsIt = node->getTreeBasedRoutingLocs()->begin();
-				treeRoutingLocsIt != node->getTreeBasedRoutingLocs()->end();
-				treeRoutingLocsIt++){
-
-				cnodes = treeRoutingLocsIt->second;
-				if(std::find(cnodes.begin(),cnodes.end(),cnode) != cnodes.end()){
-					util++;
-				}
-
-
-			}
-		}
-	}
-	return util;
-}
+//int DFG::findUtilTreeRoutingLocs(CGRANode* cnode, dfgNode* currNode) {
+//	dfgNode* node;
+//	std::map<dfgNode*,std::vector<std::pair<CGRANode*,Port> >>::iterator treeRoutingLocsIt;
+//	std::vector<std::pair<CGRANode*,Port> > cnodes;
+//	int util = 0;
+//
+//	for (int i = 0; i < NodeList.size(); ++i) {
+//		node = NodeList[i];
+//
+//		if( (node->getMappedLoc() != NULL) || (node == currNode)/*&&(node->getASAPnumber() <= currNode->getASAPnumber())*/){
+//
+//			if(node->getMappedLoc() == cnode){
+//				continue;
+//			}
+//
+//			for(treeRoutingLocsIt = node->getTreeBasedRoutingLocs()->begin();
+//				treeRoutingLocsIt != node->getTreeBasedRoutingLocs()->end();
+//				treeRoutingLocsIt++){
+//
+//				cnodes = treeRoutingLocsIt->second;
+//				if(std::find(cnodes.begin(),cnodes.end(),cnode) != cnodes.end()){
+//					util++;
+//				}
+//
+//
+//			}
+//		}
+//	}
+//	return util;
+//}
 
 void DFG::printOutSMARTRoutes() {
 	dfgNode* node;
@@ -3140,7 +3143,7 @@ void DFG::printOutSMARTRoutes() {
 //							routingCnode = node->getMappedLoc();
 //							noRouting = true;
 								for (int j = routeStart; j < node->getMergeRoutingLocs()[parent].size(); ++j) {
-									errs() << "routePath = "<< node->getMergeRoutingLocs()[parent][j]->getName() << "\n";
+									errs() << "routePath = "<< node->getMergeRoutingLocs()[parent][j].first->getName() << "\n";
 //									if(routingCnode->getT() != node->getMergeRoutingLocs()[parent][j]->getT()){
 //										if(!noRouting){
 //											pT = routingCnode->getT();
@@ -3153,7 +3156,7 @@ void DFG::printOutSMARTRoutes() {
 //										noRouting = true;
 //										strEntry =  routingCnode->getNameWithOutTime() + " <-- " ;
 //									}else{
-										routingCnode = node->getMergeRoutingLocs()[parent][j];
+										routingCnode = node->getMergeRoutingLocs()[parent][j].first;
 //										noRouting = false;
 										strEntry = strEntry + routingCnode->getName() + " <-- " ;
 										nodeRouteMap[origNode][origParent].push_back(routingCnode);
@@ -3176,8 +3179,8 @@ void DFG::printOutSMARTRoutes() {
 
 								if(node != parent){
 									for (k = 0; k < node->getMergeRoutingLocs()[parent].size(); ++k) {
-										errs() << "pathNode =" << node->getMergeRoutingLocs()[parent][k]->getName() << "\n";
-										if(node->getMergeRoutingLocs()[parent][k] == routingCnode){
+										errs() << "pathNode =" << node->getMergeRoutingLocs()[parent][k].first->getName() << "\n";
+										if(node->getMergeRoutingLocs()[parent][k].first == routingCnode){
 											routeStart = k+1;
 											break;
 										}
@@ -3736,8 +3739,8 @@ int DFG::printTurns() {
 	int xdiff;
 	int ydiff;
 
-	std::map<dfgNode*,std::vector<CGRANode*> > parentRouteMap;
-	std::map<dfgNode*,std::vector<CGRANode*> >::iterator parentRouteMapIt;
+	std::map<dfgNode*,std::vector<std::pair<CGRANode*,Port> >> parentRouteMap;
+	std::map<dfgNode*,std::vector<std::pair<CGRANode*,Port> >>::iterator parentRouteMapIt;
 
 	enum TurnDirs {NORTH,EAST,WEST,SOUTH,TILE};
 	std::map<CGRANode*,std::map<TurnDirs,int> > CGRANodeTurnStatsMap;
@@ -3765,15 +3768,15 @@ int DFG::printTurns() {
 			parent = parentRouteMapIt->first;
 
 			if(parentRouteMap[parent].size() > 0){
-				CGRANodeTurnStatsMap[parentRouteMap[parent][0]][TILE]++;
+				CGRANodeTurnStatsMap[parentRouteMap[parent][0].first][TILE]++;
 			}
 			else{
 				continue;
 			}
 
 			for (int j = 1; j < parentRouteMap[parent].size(); ++j) {
-				cnode = parentRouteMap[parent][j];
-				nextCnode = parentRouteMap[parent][j-1];
+				cnode = parentRouteMap[parent][j].first;
+				nextCnode = parentRouteMap[parent][j-1].first;
 
 				if(cnode->getT() == nextCnode->getT()){ //SMART Routes
 					xdiff = nextCnode->getX() - cnode->getX();
@@ -4003,7 +4006,7 @@ int DFG::printMapping() {
 	//Print Header
 	mapFile << "Time,";
 	insFile << "Time,";
-	binFile << "Time,";
+//	binFile << "Time,";
 	for (int j = 0; j < currCGRA->getYdim(); ++j) {
 		for (int k = 0; k < currCGRA->getXdim(); ++k) {
 			mapFile << "Y=" << std::to_string(j) << " X=" << std::to_string(k) << ",";
@@ -4024,7 +4027,7 @@ int DFG::printMapping() {
 	for (int i = 0; i < currCGRA->getMII(); ++i) {
 		mapFile << std::to_string(i) << ",";
 		insFile << std::to_string(i) << ",";
-		binFile << std::to_string(i) << ",";
+		binFile << std::to_string(i) << std::endl;
 		for (int j = 0; j < currCGRA->getYdim(); ++j) {
 			for (int k = 0; k < currCGRA->getXdim(); ++k) {
 				cnode = currCGRA->getCGRANode(i,j,k);
@@ -4181,19 +4184,20 @@ int DFG::printMapping() {
 				}
 
 				//Print Binary
-				binFile << std::bitset<3>(currBinOp.outMap[PRED]) << ",";
-				binFile << std::bitset<3>(currBinOp.outMap[OP1]) << ",";
-				binFile << std::bitset<3>(currBinOp.outMap[OP2]) << ",";
-				binFile << std::bitset<3>(currBinOp.outMap[NORTH]) << ",";
-				binFile << std::bitset<3>(currBinOp.outMap[EAST]) << ",";
-				binFile << std::bitset<3>(currBinOp.outMap[WEST]) << ",";
-				binFile << std::bitset<3>(currBinOp.outMap[SOUTH]) << ",";
+				binFile << std::setfill('0');
+				binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[PRED]) << ",";
+				binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[OP1]) << ",";
+				binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[OP2]) << ",";
+				binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[NORTH]) << ",";
+				binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[EAST]) << ",";
+				binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[WEST]) << ",";
+				binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[SOUTH]) << ",";
 
-				binFile << std::bitset<4>(currBinOp.regwen) << ",";
-				binFile << std::bitset<4>(currBinOp.regbypass) << ",";
+				binFile << std::setw(4) << std::bitset<4>(currBinOp.regwen) << ",";
+				binFile << std::setw(4) << std::bitset<4>(currBinOp.regbypass) << ",";
 				binFile << std::bitset<1>(currBinOp.tregwen) << ",";
-				binFile << std::bitset<5>(currBinOp.opcode) << ",";
-				binFile << std::bitset<16>(currBinOp.constant) << ",";
+				binFile << std::setw(5) << std::bitset<5>(currBinOp.opcode) << ",";
+				binFile << std::setw(29) << std::bitset<29>(currBinOp.constant) << std::endl;
 
 			}
 		}

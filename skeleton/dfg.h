@@ -105,6 +105,7 @@ struct LessThanNodeWithCost{
 
 struct TreePath{
 	std::vector<CGRANode*> sources;
+	std::map<CGRANode*,Port> sourcePorts;
 	std::map<CGRANode*,std::pair<dfgNode*,dfgNode*> > sourcePaths;
 	CGRANode* bestSource;
 	int bestCost;
@@ -280,7 +281,7 @@ class DFG{
 
 			CGRA* getCGRA(){return currCGRA;}
 
-			int findUtilTreeRoutingLocs(CGRANode* cnode, dfgNode* currNode);
+//			int findUtilTreeRoutingLocs(CGRANode* cnode, dfgNode* currNode);
 			void printOutSMARTRoutes();
 			int convertToPhyLoc(int t, int y, int x);
 			int convertToPhyLoc(int y, int x);

@@ -41,6 +41,7 @@ public:
 	int heuristic(CGRANode* a, CGRANode* b);
 	CGRANode* AStarSearch(	std::map<CGRANode*,std::vector<CGRAEdge> > graph,
 							CGRANode* start,
+							Port startPort,
 							CGRANode* goal,
 							std::map<std::pair<CGRANode*,Port>,std::pair<CGRANode*,Port>> *cameFrom,
 							std::map<CGRANode*,int> *costSoFar,

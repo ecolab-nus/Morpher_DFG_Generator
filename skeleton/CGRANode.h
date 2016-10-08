@@ -19,7 +19,6 @@ struct less_than_cost{
 		return (node1.cost < node2.cost);
 	}
 };
-enum Port{NORTH,SOUTH,EAST,WEST,R0,R1,R2,R3,R4,R5,R6,R7,TILE,TREG,OP1,OP2,PRED};
 enum PEType{MEM,ALU};
 
 class CGRA;

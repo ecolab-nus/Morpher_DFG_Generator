@@ -6,7 +6,7 @@
 class CGRANode;
 class DFG;
 
-
+enum Port{NORTH,SOUTH,EAST,WEST,R0,R1,R2,R3,R4,R5,R6,R7,TILE,TREG,OP1,OP2,PRED};
 enum HyCUBEIns{ADD,SUB,MUL,MULC,DIV,DIVC,LS,RS,ARS,AND,OR,XOR,Hy_LOAD,Hy_STORE,SELECT,BR,CMP,NOP};
 
 using namespace llvm;
@@ -44,8 +44,8 @@ class dfgNode{
 			CGRANode* mappedLoc = NULL;
 			std::vector<CGRANode*> routingLocs;
 			std::map<dfgNode*,std::pair<dfgNode*,dfgNode*>> sourceRoutingPath;
-			std::map<dfgNode*,std::vector<CGRANode*>> treeBasedRoutingLocs;
-			std::map<dfgNode*,std::vector<CGRANode*>> treeBasedGoalLocs;
+			std::map<dfgNode*,std::vector<std::pair<CGRANode*,Port>>> treeBasedRoutingLocs;
+			std::map<dfgNode*,std::vector<std::pair<CGRANode*,Port>>> treeBasedGoalLocs;
 
 
 			int routingPossibilities = 0;
@@ -127,8 +127,8 @@ class dfgNode{
 
 			std::vector<CGRANode*>* getRoutingLocs();
 			std::map<dfgNode*,std::pair<dfgNode*,dfgNode*>>* getSourceRoutingPath(){return &sourceRoutingPath;}
-			std::map<dfgNode*,std::vector<CGRANode*>>* getTreeBasedRoutingLocs(){return &treeBasedRoutingLocs;}
-			std::map<dfgNode*,std::vector<CGRANode*>>* getTreeBasedGoalLocs(){return &treeBasedGoalLocs;}
+			std::map<dfgNode*,std::vector<std::pair<CGRANode*,Port> >>* getTreeBasedRoutingLocs(){return &treeBasedRoutingLocs;}
+			std::map<dfgNode*,std::vector<std::pair<CGRANode*,Port> >>* getTreeBasedGoalLocs(){return &treeBasedGoalLocs;}
 
 			void setRoutingPossibilities(int n){routingPossibilities = n;}
 			int getRoutingPossibilities(){return routingPossibilities;}
@@ -136,7 +136,7 @@ class dfgNode{
 			void setMappedRealTime(int t){mappedRealTime = t;}
 			int getmappedRealTime(){return mappedRealTime;}
 
-			std::map<dfgNode*,std::vector<CGRANode*>> getMergeRoutingLocs();
+			std::map<dfgNode*,std::vector<std::pair<CGRANode*,Port> >> getMergeRoutingLocs();
 
 			void setNameType(std::string name){nameType = name;}
 			std::string getNameType(){return nameType;}

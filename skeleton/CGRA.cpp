@@ -453,13 +453,13 @@ void CGRA::connectNeighborsSMART() {
 
 						if(x > 0){
 //							CGRAEdges[&CGRANodes[t][y][x]].push_back(&CGRANodes[t][y][x-1]);
-							CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],EAST,CGRANodes[t][y][x-1],WEST));
+							CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],WEST,CGRANodes[t][y][x-1],EAST));
 							CGRANodes[t][y][x]->originalEdgesSize++;
 						}
 
 						if(x < XDim - 1){
 //							CGRAEdges[&CGRANodes[t][y][x]].push_back(&CGRANodes[t][y][x+1]);
-							CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],WEST,CGRANodes[t][y][x+1],EAST));
+							CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],EAST,CGRANodes[t][y][x+1],WEST));
 							CGRANodes[t][y][x]->originalEdgesSize++;
 						}
 
