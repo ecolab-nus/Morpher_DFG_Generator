@@ -89,68 +89,244 @@ CGRA::CGRA(int MII, int Xdim, int Ydim, int regs, ArchType aType) {
 //			InOutPortMap[R1] = {R1,NORTH,EAST,WEST,SOUTH};
 //			InOutPortMap[R2] = {R2,NORTH,EAST,WEST,SOUTH};
 //			InOutPortMap[R3] = {R3,NORTH,EAST,WEST,SOUTH};
-			InOutPortMap[R0] = {R0,NORTH,EAST,WEST,SOUTH};
-			InOutPortMap[R1] = {R1,NORTH,EAST,WEST,SOUTH};
-			InOutPortMap[R2] = {R2,NORTH,EAST,WEST,SOUTH};
-			InOutPortMap[R3] = {R3,NORTH,EAST,WEST,SOUTH};
 
-			InOutPortMap[NORTH] = {R0,R1,R2,R3,NORTH,EAST,WEST,SOUTH};
-			InOutPortMap[EAST] = {R0,R1,R2,R3,NORTH,EAST,WEST,SOUTH};
-			InOutPortMap[WEST] = {R0,R1,R2,R3,NORTH,EAST,WEST,SOUTH};
-			InOutPortMap[SOUTH] = {R0,R1,R2,R3,NORTH,EAST,WEST,SOUTH};
+			switch(regsPerNode){
+				case 2 :
+					InOutPortMap[R0] = {R0,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[R1] = {R1,NORTH,EAST,WEST,SOUTH};
 
-			InOutPortMap[TILE] = {R0,R1,R2,R3,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[NORTH] = {R0,R1,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[EAST] = {R0,R1,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[WEST] = {R0,R1,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[SOUTH] = {R0,R1,NORTH,EAST,WEST,SOUTH};
 
+					InOutPortMap[TILE] = {R0,R1,NORTH,EAST,WEST,SOUTH};
+					break;
+				case 4 :
+					InOutPortMap[R0] = {R0,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[R1] = {R1,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[R2] = {R2,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[R3] = {R3,NORTH,EAST,WEST,SOUTH};
+
+					InOutPortMap[NORTH] = {R0,R1,R2,R3,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[EAST] = {R0,R1,R2,R3,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[WEST] = {R0,R1,R2,R3,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[SOUTH] = {R0,R1,R2,R3,NORTH,EAST,WEST,SOUTH};
+
+					InOutPortMap[TILE] = {R0,R1,R2,R3,NORTH,EAST,WEST,SOUTH};
+					break;
+				case 8 :
+					InOutPortMap[R0] = {R0,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[R1] = {R1,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[R2] = {R2,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[R3] = {R3,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[R4] = {R4,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[R5] = {R5,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[R6] = {R6,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[R7] = {R7,NORTH,EAST,WEST,SOUTH};
+
+					InOutPortMap[NORTH] = {R0,R1,R2,R3,R4,R5,R6,R7,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[EAST] = {R0,R1,R2,R3,R4,R5,R6,R7,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[WEST] = {R0,R1,R2,R3,R4,R5,R6,R7,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[SOUTH] = {R0,R1,R2,R3,R4,R5,R6,R7,NORTH,EAST,WEST,SOUTH};
+
+					InOutPortMap[TILE] = {R0,R1,R2,R3,R4,R5,R6,R7,NORTH,EAST,WEST,SOUTH};
+					break;
+				default :
+					errs() << "Regs Per Node can only be 2,4,8\n";
+					assert(false);
+			}
 			break;
 		case RegXbar:
+			switch(regsPerNode){
+				case 2 :
+					InOutPortMap[R0] = {R0,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[R1] = {R1,NORTH,EAST,WEST,SOUTH};
+
+					InOutPortMap[NORTH] = {R0,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[EAST] = {R0,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[WEST] = {R1,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[SOUTH] = {R1,NORTH,EAST,WEST,SOUTH};
+
+					InOutPortMap[TILE] = {NORTH,EAST,WEST,SOUTH};
+
+					break;
+				case 4 :
+					InOutPortMap[R0] = {R0,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[R1] = {R1,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[R2] = {R2,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[R3] = {R3,NORTH,EAST,WEST,SOUTH};
+
+					InOutPortMap[NORTH] = {R0,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[EAST] = {R1,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[WEST] = {R2,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[SOUTH] = {R3,NORTH,EAST,WEST,SOUTH};
+
+					InOutPortMap[TILE] = {NORTH,EAST,WEST,SOUTH};
+					break;
+				case 8 :
+					InOutPortMap[R0] = {R0,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[R1] = {R1,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[R2] = {R2,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[R3] = {R3,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[R4] = {R4,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[R5] = {R5,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[R6] = {R6,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[R7] = {R7,NORTH,EAST,WEST,SOUTH};
+
+					InOutPortMap[NORTH] = {R0,R4,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[EAST] = {R1,R5,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[WEST] = {R2,R6,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[SOUTH] = {R3,R7,NORTH,EAST,WEST,SOUTH};
+
+					InOutPortMap[TILE] = {NORTH,EAST,WEST,SOUTH};
+					break;
+				default :
+					errs() << "Regs Per Node can only be 2,4,8\n";
+					assert(false);
+			}
+
+
 //			InOutPortMap[R0] = {R0,NORTH};
 //			InOutPortMap[R1] = {R1,EAST};
 //			InOutPortMap[R2] = {R2,WEST};
 //			InOutPortMap[R3] = {R3,SOUTH};
-			InOutPortMap[R0] = {R0,NORTH,EAST,WEST,SOUTH};
-			InOutPortMap[R1] = {R1,NORTH,EAST,WEST,SOUTH};
-			InOutPortMap[R2] = {R2,NORTH,EAST,WEST,SOUTH};
-			InOutPortMap[R3] = {R3,NORTH,EAST,WEST,SOUTH};
 
-			InOutPortMap[NORTH] = {R0,NORTH,EAST,WEST,SOUTH};
-			InOutPortMap[EAST] = {R1,NORTH,EAST,WEST,SOUTH};
-			InOutPortMap[WEST] = {R2,NORTH,EAST,WEST,SOUTH};
-			InOutPortMap[SOUTH] = {R3,NORTH,EAST,WEST,SOUTH};
-
-			InOutPortMap[TILE] = {NORTH,EAST,WEST,SOUTH};
 			break;
 
 		case LatchXbar:
+			switch(regsPerNode){
+				case 2 :
+					InOutPortMap[R0] = {NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[R1] = {NORTH,EAST,WEST,SOUTH};
+
+					InOutPortMap[NORTH] = {R0,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[EAST] = {R0,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[WEST] = {R1,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[SOUTH] = {R1,NORTH,EAST,WEST,SOUTH};
+
+					InOutPortMap[TILE] = {NORTH,EAST,WEST,SOUTH};
+					break;
+				case 4 :
+					InOutPortMap[R0] = {NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[R1] = {NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[R2] = {NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[R3] = {NORTH,EAST,WEST,SOUTH};
+
+					InOutPortMap[NORTH] = {R0,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[EAST] = {R1,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[WEST] = {R2,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[SOUTH] = {R3,NORTH,EAST,WEST,SOUTH};
+
+					InOutPortMap[TILE] = {NORTH,EAST,WEST,SOUTH};
+					break;
+				case 8 :
+					InOutPortMap[R0] = {NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[R1] = {NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[R2] = {NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[R3] = {NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[R4] = {NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[R5] = {NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[R6] = {NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[R7] = {NORTH,EAST,WEST,SOUTH};
+
+					InOutPortMap[NORTH] = {R0,R4,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[EAST] = {R1,R5,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[WEST] = {R2,R6,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[SOUTH] = {R3,R7,NORTH,EAST,WEST,SOUTH};
+
+					InOutPortMap[TILE] = {NORTH,EAST,WEST,SOUTH};
+
+					break;
+				default :
+					errs() << "Regs Per Node can only be 2,4,8\n";
+					assert(false);
+			}
+
 //			InOutPortMap[R0] = {NORTH};
 //			InOutPortMap[R1] = {EAST};
 //			InOutPortMap[R2] = {WEST};
 //			InOutPortMap[R3] = {SOUTH};
-			InOutPortMap[R0] = {NORTH,EAST,WEST,SOUTH};
-			InOutPortMap[R1] = {NORTH,EAST,WEST,SOUTH};
-			InOutPortMap[R2] = {NORTH,EAST,WEST,SOUTH};
-			InOutPortMap[R3] = {NORTH,EAST,WEST,SOUTH};
-
-			InOutPortMap[NORTH] = {R0,NORTH,EAST,WEST,SOUTH};
-			InOutPortMap[EAST] = {R1,NORTH,EAST,WEST,SOUTH};
-			InOutPortMap[WEST] = {R2,NORTH,EAST,WEST,SOUTH};
-			InOutPortMap[SOUTH] = {R3,NORTH,EAST,WEST,SOUTH};
-
-			InOutPortMap[TILE] = {NORTH,EAST,WEST,SOUTH};
 			break;
 
+			case StdNOC:
+				switch(regsPerNode){
+					case 4 :
+						InOutPortMap[R0] = {NORTH,EAST,WEST,SOUTH};
+						InOutPortMap[R1] = {NORTH,EAST,WEST,SOUTH};
+						InOutPortMap[R2] = {NORTH,EAST,WEST,SOUTH};
+						InOutPortMap[R3] = {NORTH,EAST,WEST,SOUTH};
+
+						InOutPortMap[NORTH] = {R0};
+						InOutPortMap[EAST] = {R1};
+						InOutPortMap[WEST] = {R2};
+						InOutPortMap[SOUTH] = {R3};
+
+						InOutPortMap[TILE] = {NORTH,EAST,WEST,SOUTH};
+						break;
+					default :
+						errs() << "Regs Per Node can only be 4 for StdNOC\n";
+						assert(false);
+				}
+
+	//			InOutPortMap[R0] = {NORTH};
+	//			InOutPortMap[R1] = {EAST};
+	//			InOutPortMap[R2] = {WEST};
+	//			InOutPortMap[R3] = {SOUTH};
+				break;
+
+
 		case RegXbarTREG:
-			InOutPortMap[R0] = {R0,NORTH,EAST,WEST,SOUTH};
-			InOutPortMap[R1] = {R1,NORTH,EAST,WEST,SOUTH};
-			InOutPortMap[R2] = {R2,NORTH,EAST,WEST,SOUTH};
-			InOutPortMap[R3] = {R3,NORTH,EAST,WEST,SOUTH};
+			switch(regsPerNode){
+				case 2 :
+					InOutPortMap[R0] = {R0,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[R1] = {R1,NORTH,EAST,WEST,SOUTH};
 
-			InOutPortMap[NORTH] = {R0,NORTH,EAST,WEST,SOUTH};
-			InOutPortMap[EAST] = {R1,NORTH,EAST,WEST,SOUTH};
-			InOutPortMap[WEST] = {R2,NORTH,EAST,WEST,SOUTH};
-			InOutPortMap[SOUTH] = {R3,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[NORTH] = {R0,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[EAST] = {R0,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[WEST] = {R1,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[SOUTH] = {R1,NORTH,EAST,WEST,SOUTH};
 
-			InOutPortMap[TILE] = {NORTH,EAST,WEST,SOUTH,TREG};
-			InOutPortMap[TREG] = {NORTH,EAST,WEST,SOUTH,TREG};
+					InOutPortMap[TILE] = {NORTH,EAST,WEST,SOUTH,TREG};
+					InOutPortMap[TREG] = {NORTH,EAST,WEST,SOUTH,TREG};
+
+					break;
+				case 4 :
+					InOutPortMap[R0] = {R0,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[R1] = {R1,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[R2] = {R2,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[R3] = {R3,NORTH,EAST,WEST,SOUTH};
+
+					InOutPortMap[NORTH] = {R0,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[EAST] = {R1,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[WEST] = {R2,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[SOUTH] = {R3,NORTH,EAST,WEST,SOUTH};
+
+					InOutPortMap[TILE] = {NORTH,EAST,WEST,SOUTH,TREG};
+					InOutPortMap[TREG] = {NORTH,EAST,WEST,SOUTH,TREG};
+					break;
+				case 8 :
+					InOutPortMap[R0] = {R0,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[R1] = {R1,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[R2] = {R2,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[R3] = {R3,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[R4] = {R4,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[R5] = {R5,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[R6] = {R6,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[R7] = {R7,NORTH,EAST,WEST,SOUTH};
+
+					InOutPortMap[NORTH] = {R0,R4,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[EAST] = {R1,R5,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[WEST] = {R2,R6,NORTH,EAST,WEST,SOUTH};
+					InOutPortMap[SOUTH] = {R3,R7,NORTH,EAST,WEST,SOUTH};
+
+					InOutPortMap[TILE] = {NORTH,EAST,WEST,SOUTH,TREG};
+					InOutPortMap[TREG] = {NORTH,EAST,WEST,SOUTH,TREG};
+					break;
+				default :
+					errs() << "Regs Per Node can only be 2,4,8\n";
+					assert(false);
+			}
 			break;
 	}
 
@@ -252,15 +428,26 @@ void CGRA::connectNeighborsSMART() {
 //					CGRANodes[t][y][x].originalEdgesSize++;
 //				}
 
-				assert(regsPerNode == 4);
+				assert((regsPerNode == 4) || (regsPerNode == 2) || (regsPerNode == 8));
 				CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],R0,CGRANodes[(t+1)%MII][y][x],R0));
 				CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],R1,CGRANodes[(t+1)%MII][y][x],R1));
-				CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],R2,CGRANodes[(t+1)%MII][y][x],R2));
-				CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],R3,CGRANodes[(t+1)%MII][y][x],R3));
+				CGRANodes[t][y][x]->originalEdgesSize += 2;
+				if(regsPerNode > 2){
+					CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],R2,CGRANodes[(t+1)%MII][y][x],R2));
+					CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],R3,CGRANodes[(t+1)%MII][y][x],R3));
+					CGRANodes[t][y][x]->originalEdgesSize += 2;
+					if(regsPerNode > 4){
+						CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],R4,CGRANodes[(t+1)%MII][y][x],R4));
+						CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],R5,CGRANodes[(t+1)%MII][y][x],R5));
+						CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],R6,CGRANodes[(t+1)%MII][y][x],R6));
+						CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],R7,CGRANodes[(t+1)%MII][y][x],R7));
+						CGRANodes[t][y][x]->originalEdgesSize += 4;
+					}
+				}
 				if(arch == RegXbarTREG){
 					CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],TREG,CGRANodes[(t+1)%MII][y][x],TREG));
+					CGRANodes[t][y][x]->originalEdgesSize += 1;
 				}
-				CGRANodes[t][y][x]->originalEdgesSize += 5;
 //				}
 
 
@@ -304,6 +491,10 @@ int CGRA::getConMatIdx(int t, int y, int x) {
 }
 
 void CGRA::connectNeighborsGRID() {
+
+	//Not changed for port register mapping
+	assert(false);
+
 	for (int t = 0; t < MII; ++t) {
 		for (int y = 0; y < YDim; ++y) {
 			for (int x = 0; x < XDim; ++x) {
@@ -455,6 +646,18 @@ std::string CGRA::getPortName(Port p) {
 		case TREG:
 			return "TREG";
 			break;
+		case OP1:
+			return "OP1";
+			break;
+		case OP2:
+			return "OP2";
+			break;
+		case PRED:
+			return "PRED";
+			break;
+		case TILE:
+			return "TILE";
+			break;
 		default:
 			return "INV";
 			break;
@@ -477,4 +680,28 @@ int CGRA::getTotalUnUsedMemPEs() {
 	}
 
 	return unusedMEMPEs;
+}
+
+std::vector<CGRAEdge> CGRA::getCGRAEdgesWithDest(CGRANode* Cdst) {
+	std::map<CGRANode*,std::vector<CGRAEdge> >::iterator totalCGRAEdgeMapIt;
+
+	std::vector<CGRAEdge> tempCGRAEdges;
+	std::vector<CGRAEdge> retCGRAEdges;
+
+	for (totalCGRAEdgeMapIt = getCGRAEdges()->begin();
+	     totalCGRAEdgeMapIt != getCGRAEdges()->end();
+	      ++totalCGRAEdgeMapIt) {
+
+		tempCGRAEdges = totalCGRAEdgeMapIt->second;
+
+		for (int i = 0; i < tempCGRAEdges.size(); ++i) {
+			if(tempCGRAEdges[i].mappedDFGEdge != NULL){
+				if(tempCGRAEdges[i].Dst == Cdst){
+					retCGRAEdges.push_back(tempCGRAEdges[i]);
+				}
+			}
+		}
+	}
+
+	return retCGRAEdges;
 }

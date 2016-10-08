@@ -112,6 +112,15 @@ struct TreePath{
 	TreePath() : bestSource(NULL), dest(NULL), bestCost(-1){}
 };
 
+typedef struct{
+	std::map<Port,uint16_t> outMap;
+	uint16_t regwen;
+	uint16_t regbypass;
+	uint16_t tregwen;
+	uint16_t opcode;
+	uint16_t constant;
+} binOp;
+
 enum MemOp {LOAD,STORE,INVALID};
 
 class DFG{
@@ -158,7 +167,9 @@ class DFG{
 			std::ofstream mappingOutFile;
 			AStar* astar;
 
-			DFG(std::string name) : name(name){}
+			DFG(std::string name);
+
+
 			void setName(std::string str){name = str;}
 			std::string getName(){return name;}
 
@@ -305,6 +316,12 @@ class DFG{
 			int handleMEMops();
 
 			int getMEMOpsToBePlaced();
+
+			int nameNodes();
+			std::map<HyCUBEIns,std::string> HyCUBEInsStrings;
+			std::map<HyCUBEIns,uint64_t> HyCUBEInsBinary;
+
+			int updateBinOp(binOp* binOpIns, Port outPort, Port inPort);
 
 
 	};

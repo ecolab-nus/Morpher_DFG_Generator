@@ -8,7 +8,7 @@
 
 using namespace llvm;
 
-enum ArchType{DoubleXBar,RegXbar,LatchXbar,RegXbarTREG};
+enum ArchType{DoubleXBar,RegXbar,LatchXbar,RegXbarTREG,StdNOC};
 
 struct CGRAEdge{
 	CGRANode* Src;
@@ -65,6 +65,9 @@ class CGRA{
 
 			ArchType getArch(){return arch;}
 			int getTotalUnUsedMemPEs();
+
+
+			std::vector<CGRAEdge> getCGRAEdgesWithDest(CGRANode* Cdst);
 	};
 
 

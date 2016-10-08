@@ -298,4 +298,15 @@ std::map<dfgNode*, std::vector<CGRANode*> > dfgNode::getMergeRoutingLocs() {
 	return temp;
 }
 
+bool dfgNode::isConditional() {
+	if(this->getNode() != NULL){
+		if(this->getNode()->getOpcode() == Instruction::Br){
+			return true;
+		}
+	}
+	else if(this->getNameType().compare("CTRLBrOR") == 0){
+		return true;
+	}
+	return false;
+}
 

@@ -7,6 +7,7 @@
 #include <ctime>
 #include "tinyxml2.h"
 #include <functional>
+#include <bitset>
 
 
 dfgNode* DFG::getEntryNode(){
@@ -1808,7 +1809,15 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim, ArchType arch) {
 						else{
 
 							for (int y = 0; y < YDim; ++y) {
+								//Remove this after running mad benchmark
+								if(nodeDestMap[node].size() >= 100){
+									break;
+								}
 								for (int x = 0; x < XDim; ++x) {
+									//Remove this after running mad benchmark
+									if(nodeDestMap[node].size() >= 100){
+										break;
+									}
 									if(currCGRA->getCGRANode((ll+1)%MII,y,x)->getmappedDFGNode() == NULL){
 										if(node->getIsMemOp() == (currCGRA->getCGRANode((ll+1)%MII,y,x)->getPEType() == MEM)){
 											nodeDestMap[node].push_back(std::make_pair(currCGRA->getCGRANode((ll+1)%MII,y,x),(ll+1)));
@@ -1925,7 +1934,7 @@ void DFG::MapCGRA_SMART(int XDim, int YDim, std::string mapfileName, ArchType ar
 
 
 	MII = std::max(std::max(MII,getMaxRecDist()),memMII);
-//	MII = 6;
+//	MII = 15;
 
 
 
@@ -3961,9 +3970,14 @@ int DFG::printMapping() {
 	dfgNode* node;
 	dfgNode* parent;
 	CGRANode* cnode;
+	CGRANode* PrevCnode;
 	std::vector<CGRAEdge> cgraEdges;
+	std::vector<CGRAEdge> cgraEdges_t;
 	std::map<Port,Edge*> portDfgEdgeMap;
+
 	std::vector<Port> portOrder = {NORTH,EAST,WEST,SOUTH,R0,R1,R2,R3};
+	std::vector<Port> insPortOrder = {TREG,R0,R1,R2,R3,PRED,OP1,OP2,NORTH,EAST,WEST,SOUTH};
+	std::map<CGRANode*,std::map<Port,Port>> XBarMap;
 
 	//Check all nodes are mapped
 	for (int i = 0; i < NodeList.size(); ++i) {
@@ -3975,19 +3989,42 @@ int DFG::printMapping() {
 	std::string mapFileName = name + "_mapFile.csv";
 	mapFile.open(mapFileName.c_str());
 
+	std::ofstream insFile;
+	std::string insFileName = name + "_insFile.csv";
+	insFile.open(insFileName.c_str());
+
+
+
+
+	std::ofstream binFile;
+	std::string binFileName = name + "_binFile.csv";
+	binFile.open(binFileName.c_str());
+
 	//Print Header
 	mapFile << "Time,";
+	insFile << "Time,";
+	binFile << "Time,";
 	for (int j = 0; j < currCGRA->getYdim(); ++j) {
 		for (int k = 0; k < currCGRA->getXdim(); ++k) {
 			mapFile << "Y=" << std::to_string(j) << " X=" << std::to_string(k) << ",";
 			mapFile << "NORTH,EAST,WEST,SOUTH,R0,R1,R2,R3,";
+
+			insFile << "Y=" << std::to_string(j) << " X=" << std::to_string(k) << ",";
+			insFile << "TREG,R0,R1,R2,R3,PRED,OP1,OP2,NORTH,EAST,WEST,SOUTH,";
+
+			binFile << "Y=" << std::to_string(j) << " X=" << std::to_string(k) << ",";
+			binFile << "PRED,OP1,OP2,NORTH,EAST,WEST,SOUTH,REGWEN,REGBYPASS,TREGWEN,OPCODE,CONSTANT,";
 		}
 	}
+	insFile << std::endl;
 	mapFile << std::endl;
+	binFile << std::endl;
 
 	//Print Data
 	for (int i = 0; i < currCGRA->getMII(); ++i) {
 		mapFile << std::to_string(i) << ",";
+		insFile << std::to_string(i) << ",";
+		binFile << std::to_string(i) << ",";
 		for (int j = 0; j < currCGRA->getYdim(); ++j) {
 			for (int k = 0; k < currCGRA->getXdim(); ++k) {
 				cnode = currCGRA->getCGRANode(i,j,k);
@@ -3999,17 +4036,110 @@ int DFG::printMapping() {
 						mapFile << std::to_string(parent->getIdx()) << ":";
 					}
 					mapFile << ">,";
+					insFile << HyCUBEInsStrings[node->getFinalIns()] << ",";
 				}
 				else{
+					insFile << "NA,";
 					mapFile << "NA,";
 				}
+				binFile << "Y=" << std::to_string(j) << " X=" << std::to_string(k) << ",";
 				//CGRAEdges
+				PrevCnode = cnode;
+				cnode = currCGRA->getCGRANode((i+1)%currCGRA->getMII(),j,k);
 				cgraEdges = (*currCGRA->getCGRAEdges())[cnode];
+				cgraEdges_t = currCGRA->getCGRAEdgesWithDest(cnode);
 				for (int l = 0; l < cgraEdges.size(); ++l) {
 					if(cgraEdges[l].mappedDFGEdge != NULL){
 						portDfgEdgeMap[cgraEdges[l].SrcPort] = cgraEdges[l].mappedDFGEdge;
+
+						if(cgraEdges[l].mappedDFGEdge->getSrc() == PrevCnode->getmappedDFGNode()){
+							XBarMap[PrevCnode][cgraEdges[l].SrcPort] = TILE;
+						}
+						else{
+							for (int m = 0; m < cgraEdges_t.size(); ++m) {
+								if(cgraEdges_t[m].mappedDFGEdge->getSrc() == cgraEdges[l].mappedDFGEdge->getSrc()){
+									XBarMap[PrevCnode][cgraEdges[l].SrcPort] = cgraEdges_t[m].DstPort;
+								}
+							}
+						}
 					}
 				}
+
+				if(cnode->getmappedDFGNode() != NULL){
+					if(PrevCnode->getmappedDFGNode() != NULL){
+						for (int l = 0; l < cnode->getmappedDFGNode()->getAncestors().size(); ++l) {
+							if(PrevCnode->getmappedDFGNode() == cnode->getmappedDFGNode()->getAncestors()[l]){
+								if(PrevCnode->getmappedDFGNode()->getFinalIns() == NOP){
+									if(XBarMap[PrevCnode].find(PRED) == XBarMap[PrevCnode].end()){
+										XBarMap[PrevCnode][PRED] = TILE;
+									}
+									else if(XBarMap[PrevCnode].find(OP1) == XBarMap[PrevCnode].end()){
+										XBarMap[PrevCnode][OP1] = TILE;
+									}
+									else if(XBarMap[PrevCnode].find(OP2) == XBarMap[PrevCnode].end()){
+										XBarMap[PrevCnode][OP2] = TILE;
+									}
+									else{
+										assert(false);
+									}
+								}
+								else{
+									if((PrevCnode->getmappedDFGNode()->getFinalIns() == CMP) ||
+									   (PrevCnode->getmappedDFGNode()->getFinalIns() == BR)	){
+										XBarMap[PrevCnode][PRED] = TILE;
+									}
+									else if(XBarMap[PrevCnode].find(OP1) == XBarMap[PrevCnode].end()){
+										XBarMap[PrevCnode][OP1] = TILE;
+									}
+									else if(XBarMap[PrevCnode].find(OP2) == XBarMap[PrevCnode].end()){
+										XBarMap[PrevCnode][OP2] = TILE;
+									}
+									else{
+										assert(false);
+									}
+
+								}
+							}
+						}
+					}
+				}
+
+				for (int m = 0; m < cgraEdges_t.size(); ++m) {
+					if(cgraEdges_t[m].mappedDFGEdge->getDest() == cnode->getmappedDFGNode()){
+						if(cgraEdges_t[m].mappedDFGEdge->getSrc()->getFinalIns() == NOP){
+							if(XBarMap[PrevCnode].find(PRED) == XBarMap[PrevCnode].end()){
+								XBarMap[PrevCnode][PRED] = cgraEdges_t[m].DstPort;
+							}
+							else if(XBarMap[PrevCnode].find(OP1) == XBarMap[PrevCnode].end()){
+								XBarMap[PrevCnode][OP1] = cgraEdges_t[m].DstPort;
+							}
+							else if(XBarMap[PrevCnode].find(OP2) == XBarMap[PrevCnode].end()){
+								XBarMap[PrevCnode][OP2] = cgraEdges_t[m].DstPort;
+							}
+							else{
+								assert(false);
+							}
+						}
+						else{
+							// mapped for hyCUBE instructions
+							if((cgraEdges_t[m].mappedDFGEdge->getSrc()->getFinalIns() == CMP) ||
+							   (cgraEdges_t[m].mappedDFGEdge->getSrc()->getFinalIns() == BR)	){
+								XBarMap[PrevCnode][PRED] = cgraEdges_t[m].DstPort;
+							}
+							else if(XBarMap[PrevCnode].find(OP1) == XBarMap[PrevCnode].end()){
+								XBarMap[PrevCnode][OP1] = cgraEdges_t[m].DstPort;
+							}
+							else if(XBarMap[PrevCnode].find(OP2) == XBarMap[PrevCnode].end()){
+								XBarMap[PrevCnode][OP2] = cgraEdges_t[m].DstPort;
+							}
+							else{
+								assert(false);
+							}
+						}
+					}
+				}
+
+				//File Printing
 
 				for (int l = 0; l < portOrder.size(); ++l) {
 					if(portDfgEdgeMap.find(portOrder[l]) != portDfgEdgeMap.end()){
@@ -4020,12 +4150,134 @@ int DFG::printMapping() {
 					}
 				}
 				portDfgEdgeMap.clear();
+
+				binOp currBinOp;
+				if(node!=NULL){
+					currBinOp.opcode = HyCUBEInsBinary[node->getFinalIns()];
+				}
+				else{
+					currBinOp.opcode = 0;
+				}
+				currBinOp.outMap[PRED] = 0;
+				currBinOp.outMap[OP1] = 0;
+				currBinOp.outMap[OP2] = 0;
+				currBinOp.outMap[NORTH] = 0;
+				currBinOp.outMap[EAST] = 0;
+				currBinOp.outMap[SOUTH] = 0;
+				currBinOp.outMap[WEST] = 0;
+				currBinOp.regwen = 0;
+				currBinOp.regbypass = 0;
+				currBinOp.tregwen = 0;
+				currBinOp.constant = 0;
+
+				for (int l = 0; l < insPortOrder.size(); ++l) {
+					if(XBarMap[PrevCnode].find(insPortOrder[l]) != XBarMap[PrevCnode].end()){
+						insFile << currCGRA->getPortName(XBarMap[PrevCnode][insPortOrder[l]]) << ",";
+						updateBinOp(&currBinOp,insPortOrder[l],XBarMap[PrevCnode][insPortOrder[l]]);
+					}
+					else{
+						insFile << "NA,";
+					}
+				}
+
+				//Print Binary
+				binFile << std::bitset<3>(currBinOp.outMap[PRED]) << ",";
+				binFile << std::bitset<3>(currBinOp.outMap[OP1]) << ",";
+				binFile << std::bitset<3>(currBinOp.outMap[OP2]) << ",";
+				binFile << std::bitset<3>(currBinOp.outMap[NORTH]) << ",";
+				binFile << std::bitset<3>(currBinOp.outMap[EAST]) << ",";
+				binFile << std::bitset<3>(currBinOp.outMap[WEST]) << ",";
+				binFile << std::bitset<3>(currBinOp.outMap[SOUTH]) << ",";
+
+				binFile << std::bitset<4>(currBinOp.regwen) << ",";
+				binFile << std::bitset<4>(currBinOp.regbypass) << ",";
+				binFile << std::bitset<1>(currBinOp.tregwen) << ",";
+				binFile << std::bitset<5>(currBinOp.opcode) << ",";
+				binFile << std::bitset<16>(currBinOp.constant) << ",";
+
 			}
 		}
 		mapFile << std::endl;
+		insFile << std::endl;
+		binFile << std::endl;
 	}
 
 	mapFile.close();
+	insFile.close();
+	binFile.close();
+}
+
+int DFG::updateBinOp(binOp* binOpIns, Port outPort, Port inPort) {
+
+	switch (outPort) {
+		case R0:
+			if(inPort != R0){
+				binOpIns->regwen = binOpIns->regwen | 0b1000;
+			}
+			break;
+		case R1:
+			if(inPort != R1){
+				binOpIns->regwen = binOpIns->regwen | 0b0100;
+			}
+			break;
+		case R2:
+			if(inPort != R2){
+				binOpIns->regwen = binOpIns->regwen | 0b0010;
+			}
+			break;
+		case R3:
+			if(inPort != R3){
+				binOpIns->regwen = binOpIns->regwen | 0b0001;
+			}
+			break;
+		case NORTH:
+		case EAST:
+		case WEST:
+		case SOUTH:
+		case OP1:
+		case OP2:
+		case PRED:
+			switch (inPort) {
+				case R0:
+					binOpIns->regbypass =binOpIns->regbypass | 0b1000;
+				case NORTH:
+					binOpIns->outMap[outPort]= 0b011;
+					break;
+				case R1:
+					binOpIns->regbypass =binOpIns->regbypass | 0b0100;
+				case EAST:
+					binOpIns->outMap[outPort]= 0b100;
+					break;
+				case R2:
+					binOpIns->regbypass =binOpIns->regbypass | 0b0010;
+				case WEST:
+					binOpIns->outMap[outPort]= 0b101;
+					break;
+				case R3:
+					binOpIns->regbypass =binOpIns->regbypass | 0b0001;
+				case SOUTH:
+					binOpIns->outMap[outPort]= 0b110;
+					break;
+				case TILE:
+					binOpIns->outMap[outPort]= 0b001;
+					break;
+				case TREG:
+					binOpIns->outMap[outPort]= 0b010;
+					break;
+				default:
+					assert(false);
+					break;
+			}
+			break;
+		case TREG:
+			if(inPort != TREG){
+				binOpIns->tregwen = 0b1;
+			}
+			break;
+		default:
+			assert(false);
+			break;
+	}
 }
 
 int DFG::printCongestionInfo() {
@@ -4207,3 +4459,202 @@ int DFG::getMEMOpsToBePlaced() {
 	}
 	return memOpsToBePlaced;
 }
+
+DFG::DFG(std::string name) {
+	this->name = name;
+
+	HyCUBEInsStrings[NOP] = "NOP";
+	HyCUBEInsBinary[NOP] = 0 | (0b00000);
+
+	HyCUBEInsStrings[ADD] = "ADD";
+	HyCUBEInsBinary[ADD] = 0 | (0b00001);
+
+	HyCUBEInsStrings[SUB] = "SUB";
+	HyCUBEInsBinary[SUB] = 0 | (0b00010);
+
+	HyCUBEInsStrings[MUL] = "MUL";
+	HyCUBEInsBinary[MUL] = 0 | (0b00011);
+
+	HyCUBEInsStrings[MULC] = "MULC";
+	HyCUBEInsBinary[MULC] = 0 | (0b00100);
+
+	HyCUBEInsStrings[DIV] = "DIV";
+	HyCUBEInsBinary[DIV] = 0 | (0b00101);
+
+	HyCUBEInsStrings[DIVC] = "DIVC";
+	HyCUBEInsBinary[DIVC] = 0 | (0b00110);
+
+	HyCUBEInsStrings[LS] = "LS";
+	HyCUBEInsBinary[LS] = 0 | (0b01000);
+
+	HyCUBEInsStrings[LS] = "RS";
+	HyCUBEInsBinary[LS] = 0 | (0b01001);
+
+	HyCUBEInsStrings[ARS] = "ARS";
+	HyCUBEInsBinary[ARS] = 0 | (0b01010);
+
+	HyCUBEInsStrings[AND] = "AND";
+	HyCUBEInsBinary[AND] = 0 | (0b01011);
+
+	HyCUBEInsStrings[OR] = "OR";
+	HyCUBEInsBinary[OR] = 0 | (0b01011);
+
+	HyCUBEInsStrings[XOR] = "XOR";
+	HyCUBEInsBinary[XOR] = 0 | (0b01101);
+
+	HyCUBEInsStrings[SELECT] = "SELECT";
+	HyCUBEInsBinary[SELECT] = 0 | (0b10000);
+
+	HyCUBEInsStrings[CMP] = "CMP";
+	HyCUBEInsBinary[CMP] = 0 | (0b10010);
+
+	HyCUBEInsStrings[BR] = "BR";
+	HyCUBEInsBinary[BR] = 0 | (0b10100);
+
+	HyCUBEInsStrings[Hy_LOAD] = "LOAD";
+	HyCUBEInsBinary[Hy_LOAD] = 0 | (0b11000);
+
+	HyCUBEInsStrings[Hy_STORE] = "STORE";
+	HyCUBEInsBinary[Hy_STORE] = 0 | (0b11010);
+}
+
+int DFG::nameNodes() {
+	dfgNode* node;
+
+	for (int i = 0; i < NodeList.size(); ++i) {
+		node = NodeList[i];
+
+		if(node->getNode() != NULL){
+			switch(node->getNode()->getOpcode()){
+				case Instruction::Add:
+				case Instruction::FAdd:
+					node->setFinalIns(ADD);
+					break;
+				case Instruction::Sub:
+				case Instruction::FSub:
+					node->setFinalIns(SUB);
+					break;
+				case Instruction::Mul:
+				case Instruction::FMul:
+					node->setFinalIns(MUL);
+					break;
+				case Instruction::UDiv:
+				case Instruction::SDiv:
+				case Instruction::FDiv:
+					node->setFinalIns(DIV);
+					break;
+				case Instruction::URem:
+				case Instruction::SRem:
+				case Instruction::FRem:
+					errs() << "REM operations are not implemented\n";
+					assert(false);
+					break;
+				case Instruction::Shl:
+					node->setFinalIns(LS);
+					break;
+				case Instruction::LShr:
+					node->setFinalIns(RS);
+					break;
+				case Instruction::AShr:
+					node->setFinalIns(ARS);
+					break;
+				case Instruction::And:
+					node->setFinalIns(AND);
+					break;
+				case Instruction::Or:
+					node->setFinalIns(OR);
+					break;
+				case Instruction::Xor:
+					node->setFinalIns(XOR);
+					break;
+				case Instruction::Load:
+					node->setFinalIns(Hy_LOAD);
+					break;
+				case Instruction::Store:
+					node->setFinalIns(Hy_STORE);
+					break;
+				case Instruction::GetElementPtr:
+					node->setFinalIns(ADD);
+					break;
+				case Instruction::Trunc:
+				case Instruction::ZExt:
+				case Instruction::SExt:
+				case Instruction::FPTrunc:
+				case Instruction::FPExt:
+				case Instruction::FPToUI:
+				case Instruction::FPToSI:
+				case Instruction::UIToFP:
+				case Instruction::SIToFP:
+					node->setFinalIns(OR);
+					break;
+				case Instruction::PHI:
+				case Instruction::Select:
+					node->setFinalIns(SELECT);
+					break;
+				case Instruction::Br:
+					node->setFinalIns(BR);
+					break;
+				case Instruction::ICmp:
+				case Instruction::FCmp:
+					node->setFinalIns(CMP);
+					break;
+				default :
+					errs() << "The Op :" << node->getNode()->getOpcodeName() << " that I thought would not be in the compiled code\n";
+					assert(false);
+					break;
+			}
+		}
+		else{
+			if(node->getNameType().compare("LOAD") == 0){
+				node->setFinalIns(Hy_LOAD);
+			}
+			else if(node->getNameType().compare("STORE") == 0){
+				node->setFinalIns(Hy_STORE);
+			}
+			else if(node->getNameType().compare("NORMAL") == 0){
+				node->setFinalIns(ADD);
+			}
+			else if(node->getNameType().compare("CTRLBrOR") == 0){
+				node->setFinalIns(BR);
+			}
+			else {
+				errs() << "Unknown custom node \n";
+				assert(false);
+			}
+		}
+	}
+
+	int nonBRAncSize = 0;
+
+	for (int i = 0; i < NodeList.size(); ++i) {
+		node = NodeList[i];
+		nonBRAncSize = 0;
+		switch(node->getFinalIns()){
+			case DIV:
+				for (int i = 0; i < node->getAncestors().size(); ++i) {
+					if((node->getFinalIns() != BR)&&((node->getFinalIns() != CMP))){
+						nonBRAncSize++;
+					}
+				}
+				if(nonBRAncSize < 2){
+					node->setFinalIns(DIVC);
+				}
+				break;
+			case MUL:
+				for (int i = 0; i < node->getAncestors().size(); ++i) {
+					if((node->getFinalIns() != BR)&&((node->getFinalIns() != CMP))){
+						nonBRAncSize++;
+					}
+				}
+				if(nonBRAncSize < 2){
+					node->setFinalIns(MULC);
+				}
+				break;
+			default:
+				break;
+		}
+	}
+
+}
+
+

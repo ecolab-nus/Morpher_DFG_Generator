@@ -425,7 +425,7 @@ namespace {
 			  //errs() << "In a function calledd " << F.getName() << "!\n";
 
 			  //TODO : please remove this after dtw test
-//			  if (F.getName() != "synth_full"){
+//			  if (F.getName() != "CalculateNNLayer"){
 //				  errs() << "Function Name : " << F.getName() << "\n";
 //				  return false;
 //			  }
@@ -595,6 +595,8 @@ namespace {
 				  LoopDFG.printXML();
 				  LoopDFG.printREGIMapOuts();
 				  LoopDFG.handleMEMops();
+				  LoopDFG.nameNodes();
+
 				  LoopDFG.MapCGRA_SMART(4,4,F.getName().str() + "_L" + std::to_string(loopCounter) + "_mapping.log", RegXbarTREG);
 //				  LoopDFG.MapCGRA_EMS(4,4,F.getName().str() + "_L" + std::to_string(loopCounter) + "_mapping.log");
 				  printDFGDOT (F.getName().str() + "_L" + std::to_string(loopCounter) + "_loopdfg.dot", &LoopDFG);

@@ -7,7 +7,10 @@ class CGRANode;
 class DFG;
 
 
+enum HyCUBEIns{ADD,SUB,MUL,MULC,DIV,DIVC,LS,RS,ARS,AND,OR,XOR,Hy_LOAD,Hy_STORE,SELECT,BR,CMP,NOP};
+
 using namespace llvm;
+
 
 
 class dfgNode{
@@ -29,6 +32,7 @@ class dfgNode{
 			std::vector<dfgNode*> PHIchildNodes;
 			std::vector<dfgNode*> PHIAncestorNodes;
 			std::string nameType;
+			HyCUBEIns finalIns = NOP;
 
 			DFG* Parent;
 
@@ -139,6 +143,11 @@ class dfgNode{
 
 			void setIsMemOp(bool b){isMEMOp = b;}
 			bool getIsMemOp(){return isMEMOp;}
+
+			bool isConditional();
+
+			void setFinalIns(HyCUBEIns ins){finalIns = ins;}
+			HyCUBEIns getFinalIns(){return finalIns;}
 
 
 
