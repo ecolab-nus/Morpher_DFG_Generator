@@ -2976,7 +2976,13 @@ TreePath DFG::createTreePath(dfgNode* parent, CGRANode* dest) {
 
 	//Initial node, AKA the source
 	assert(parent->getMappedLoc() != NULL);
-	ParentExt = currCGRA->getCGRANode((parent->getMappedLoc()->getT()+1)%MII,parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
+
+	if(parent->getMappedLoc()->getPEType() == MEM){
+		ParentExt = currCGRA->getCGRANode((parent->getMappedLoc()->getT()+2)%MII,parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
+	}
+	else{
+		ParentExt = currCGRA->getCGRANode((parent->getMappedLoc()->getT()+1)%MII,parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
+	}
 	tp.sources.push_back(ParentExt);
 	tp.sourcePorts[ParentExt]=TILE;
 	tp.sourcePaths[ParentExt] = (std::make_pair(parent,parent));
@@ -3128,7 +3134,14 @@ void DFG::printOutSMARTRoutes() {
 						for (int i = 0; i < node->getAncestors().size(); ++i) {
 							parent = node->getAncestors()[i];
 							origParent = parent;
-							parentExt = currCGRA->getCGRANode((parent->getMappedLoc()->getT()+1)%MII,parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
+
+							if(parent->getMappedLoc()->getPEType() == MEM){
+								parentExt = currCGRA->getCGRANode((parent->getMappedLoc()->getT()+2)%MII,parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
+							}
+							else{
+								parentExt = currCGRA->getCGRANode((parent->getMappedLoc()->getT()+1)%MII,parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
+							}
+
 							routeStart = 0;
 							std::string strEntry;
 							routingCnode = node->getMappedLoc();
