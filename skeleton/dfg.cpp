@@ -227,32 +227,23 @@ void DFG::connectBB(){
 		node->addAncestorNode(workingSet[0]);
 		BBPredicate[node->getNode()->getParent()] = workingSet[0];
 	}
-
-	//Sanity Check
-	for (int i = 0; i < NodeList.size(); ++i) {
-		node = NodeList[i];
-		if(node->getAncestors().size() > 3){
-			errs() << "More than 3 ancestors, NodeIdx="<< node->getIdx();
-			if(node->getNode() != NULL){
-				node->getNode()->dump();
-			}
-			errs() << "\n";
-		}
-		assert(NodeList[i]->getAncestors().size() <= 3);
-	}
-
 }
 
 //WIP
 int DFG::handlePHINodeFanIn() {
 	dfgNode* node;
+	dfgNode* ancestor;
+	dfgNode* temp;
 	std::vector<dfgNode*> phiNodes;
 	std::vector<dfgNode*> workingSet;
+	std::vector<dfgNode*> nextWorkingSet;
 
 	for (int i = 0; i < NodeList.size(); ++i) {
 		node = NodeList[i];
-		if(node->getNode()->getOpcode() == Instruction::PHI){
-			phiNodes.push_back(node);
+		if(node->getNode() != NULL){
+			if(node->getNode()->getOpcode() == Instruction::PHI){
+				phiNodes.push_back(node);
+			}
 		}
 	}
 
@@ -269,17 +260,42 @@ int DFG::handlePHINodeFanIn() {
 		}
 
 		for (int j = 0; j < node->getAncestors().size(); ++j) {
+			ancestor = node->getAncestors()[j];
 			workingSet.push_back(node->getAncestors()[j]);
 
+			ancestor->removeChild(node);
+			node->removeAncestor(ancestor);
+			removeEdge(findEdge(ancestor,node));
 		}
 
+		while(workingSet.size() > 1){
+			errs() << "handlePHINodeFanIn :: " << "workingSet.size() = " << workingSet.size() << "\n";
+			for (int i = 0; i < workingSet.size()-1; i=i+2) {
+				temp = new dfgNode(this);
+				temp->setIdx(NodeList.size());
+				NodeList.push_back(temp);
+				temp->setNameType("SELECTPHI");
+				workingSet[i]->addChildNode(temp);
+				errs() << "handlePHINodeFanIn :: " << "workingSet[i+1] = " << workingSet[i+1]->getIdx() << "\n";
+				workingSet[i+1]->addChildNode(temp);
+				temp->addAncestorNode(workingSet[i]);
+				temp->addAncestorNode(workingSet[i+1]);
+				nextWorkingSet.push_back(temp);
+			}
+			if(workingSet.size()%2==1){
+				nextWorkingSet.push_back(workingSet[workingSet.size()-1]);
+			}
 
-
-
-
-
+			workingSet.clear();
+			for (int i = 0; i < nextWorkingSet.size(); ++i) {
+				workingSet.push_back(nextWorkingSet[i]);
+			}
+			nextWorkingSet.clear();
+		}
+		assert(workingSet.size()==1);
+		workingSet[0]->addChildNode(node);
+		node->addAncestorNode(workingSet[0]);
 	}
-
 
 }
 
@@ -1913,7 +1929,10 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim, ArchType arch) {
 	return true;
 }
 
-void DFG::MapCGRA_SMART(int XDim, int YDim, std::string mapfileName, ArchType arch) {
+void DFG::MapCGRA_SMART(int XDim, int YDim, ArchType arch) {
+
+	this->setName(this->getName() + "_" + getArchName(arch));
+	std::string mapfileName = this->getName() + "_mapping.log";
 	mappingOutFile.open(mapfileName.c_str());
 	clock_t begin = clock();
 	int MII = ceil((float)NodeList.size()/((float)XDim*(float)YDim));
@@ -1926,7 +1945,7 @@ void DFG::MapCGRA_SMART(int XDim, int YDim, std::string mapfileName, ArchType ar
 
 	errs() << "MapCGRAsa:: MEMNodes/TotalNodes = " << getMEMOpsToBePlaced() << "/" << NodeList.size() << "\n";
 	errs() << "MapCGRAsa:: MEM Constrained MII = " << memMII << "\n";
-	mappingOutFile << "MapCGRAsa:: Number of nodes = " << NodeList.size() << "\n";
+	mappingOutFile << "MapCGRAsa:: Number of nodes = " << NodeList.size() << ", Edges = " << edgeList.size() << "\n";
 	mappingOutFile << "MapCGRAsa:: Resource Constrained MII = " << MII << "\n";
 	mappingOutFile << "MapCGRAsa:: MEMNodes/TotalNodes = " << getMEMOpsToBePlaced() << "/" << NodeList.size() << "\n";
 	mappingOutFile << "MapCGRAsa:: MEM Constrained MII = " << memMII << "\n";
@@ -1934,7 +1953,7 @@ void DFG::MapCGRA_SMART(int XDim, int YDim, std::string mapfileName, ArchType ar
 
 
 	MII = std::max(std::max(MII,getMaxRecDist()),memMII);
-//	MII = 15;
+//	MII = 32;
 
 
 
@@ -4602,6 +4621,10 @@ int DFG::nameNodes() {
 				case Instruction::FPToSI:
 				case Instruction::UIToFP:
 				case Instruction::SIToFP:
+				case Instruction::PtrToInt:
+				case Instruction::IntToPtr:
+				case Instruction::BitCast:
+				case Instruction::AddrSpaceCast:
 					node->setFinalIns(OR);
 					break;
 				case Instruction::PHI:
@@ -4617,6 +4640,7 @@ int DFG::nameNodes() {
 					break;
 				default :
 					errs() << "The Op :" << node->getNode()->getOpcodeName() << " that I thought would not be in the compiled code\n";
+					node->getNode()->dump();
 					assert(false);
 					break;
 			}
@@ -4633,6 +4657,9 @@ int DFG::nameNodes() {
 			}
 			else if(node->getNameType().compare("CTRLBrOR") == 0){
 				node->setFinalIns(BR);
+			}
+			else if(node->getNameType().compare("SELECTPHI") == 0){
+				node->setFinalIns(SELECT);
 			}
 			else {
 				errs() << "Unknown custom node \n";
@@ -4674,4 +4701,41 @@ int DFG::nameNodes() {
 
 }
 
+int DFG::checkSanity() {
+	dfgNode* node;
+	//Sanity Check
+	for (int i = 0; i < NodeList.size(); ++i) {
+		node = NodeList[i];
+		if(node->getAncestors().size() > 3){
+			errs() << "More than 3 ancestors, NodeIdx="<< node->getIdx();
+			if(node->getNode() != NULL){
+				node->getNode()->dump();
+			}
+			errs() << "\n";
+		}
+		assert(NodeList[i]->getAncestors().size() <= 3);
+	}
+}
 
+std::string DFG::getArchName(ArchType arch) {
+	switch (arch) {
+		case RegXbar:
+			return "RegXBar";
+			break;
+		case RegXbarTREG:
+			return "RegXbarTREG";
+			break;
+		case DoubleXBar:
+			return "DoubleXBar";
+			break;
+		case LatchXbar:
+			return "LatchXbar";
+			break;
+		case StdNOC:
+			return "StdNOC";
+			break;
+		default:
+			return "UnNamed Arch";
+			break;
+	}
+}

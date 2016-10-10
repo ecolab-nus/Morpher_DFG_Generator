@@ -30,6 +30,8 @@ void dfgNode::addChild(Instruction *child, int type){
 }
 
 void dfgNode::addAncestor(Instruction *anc, int type){
+	assert(anc != NULL);
+	errs() << "Ancestor Size = " << this->Ancestors.empty() << "\n";
 	for (int i = 0; i < Ancestors.size(); ++i) {
 		if(anc == Ancestors[i]){
 			return;
@@ -93,6 +95,12 @@ int dfgNode::removeChild(Instruction* child) {
 	return 1;
 }
 
+int dfgNode::removeChild(dfgNode* child) {
+	assert(child != NULL);
+	ChildNodes.erase(std::remove(ChildNodes.begin(),ChildNodes.end(),child),ChildNodes.end());
+	return 1;
+}
+
 int dfgNode::removeAncestor(Instruction* anc) {
 	Instruction* ancRem = NULL;
 	for (int i = 0; i < getAncestors().size(); ++i) {
@@ -106,6 +114,12 @@ int dfgNode::removeAncestor(Instruction* anc) {
 	}
 
 	Ancestors.erase(std::remove(Ancestors.begin(),Ancestors.end(),ancRem),Ancestors.end());
+	return 1;
+}
+
+int dfgNode::removeAncestor(dfgNode* anc) {
+	assert(anc != NULL);
+	AncestorNodes.erase(std::remove(AncestorNodes.begin(),AncestorNodes.end(),anc),AncestorNodes.end());
 	return 1;
 }
 

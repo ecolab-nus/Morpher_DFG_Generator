@@ -239,7 +239,7 @@ class DFG{
 
 			std::vector<ConnectedCGRANode> FindCandidateCGRANodes(dfgNode* node);
 
-			void MapCGRA_SMART(int XDim, int YDim, std::string mapfileName = "Mapping.log", ArchType arch = RegXbarTREG);
+			void MapCGRA_SMART(int XDim, int YDim, ArchType arch = RegXbarTREG);
 			void MapCGRA_SA(int XDim, int YDim, std::string mapfileName = "Mapping.log");
 			bool MapMultiDest(std::map<dfgNode*,std::vector< std::pair<CGRANode*,int> > > *nodeDestMap, std::map<CGRANode*,std::vector<dfgNode*> > *destNodeMap);
 			bool MapASAPLevel(int MII, int XDim, int YDim, ArchType arch);
@@ -313,6 +313,8 @@ class DFG{
 			//Treat high-fan in PHI Nodes
 			int handlePHINodeFanIn();
 
+			int checkSanity();
+
 			//Special Treatment to MEM Nodes in order to map them specialized PEs
 			int handleMEMops();
 
@@ -323,6 +325,7 @@ class DFG{
 			std::map<HyCUBEIns,uint64_t> HyCUBEInsBinary;
 
 			int updateBinOp(binOp* binOpIns, Port outPort, Port inPort);
+			std::string getArchName(ArchType arch);
 
 
 	};

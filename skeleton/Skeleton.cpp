@@ -425,7 +425,7 @@ namespace {
 			  //errs() << "In a function calledd " << F.getName() << "!\n";
 
 			  //TODO : please remove this after dtw test
-//			  if (F.getName() != "CalculateNNLayer"){
+//			  if (F.getName() != "encrypt"){
 //				  errs() << "Function Name : " << F.getName() << "\n";
 //				  return false;
 //			  }
@@ -584,6 +584,8 @@ namespace {
 //					 printDFGDOT (F.getName().str() + "_" + B->getName().str() + "_dfg.dot", &currBBDFG);
 				  }
 				  LoopDFG.connectBB();
+				  LoopDFG.handlePHINodeFanIn();
+				  LoopDFG.checkSanity();
 //				  LoopDFG.addMemDepEdges(MD);
 //				  LoopDFG.removeAlloc();
 //				  LoopDFG.addMemRecDepEdges(DA);
@@ -597,10 +599,10 @@ namespace {
 				  LoopDFG.handleMEMops();
 				  LoopDFG.nameNodes();
 
-				  LoopDFG.MapCGRA_SMART(4,4,F.getName().str() + "_L" + std::to_string(loopCounter) + "_mapping.log", RegXbarTREG);
+				  LoopDFG.MapCGRA_SMART(4,4, RegXbarTREG);
 //				  LoopDFG.MapCGRA_EMS(4,4,F.getName().str() + "_L" + std::to_string(loopCounter) + "_mapping.log");
 				  printDFGDOT (F.getName().str() + "_L" + std::to_string(loopCounter) + "_loopdfg.dot", &LoopDFG);
-				  LoopDFG.printTurns();
+//				  LoopDFG.printTurns();
 				  LoopDFG.printMapping();
 				  LoopDFG.printCongestionInfo();
 

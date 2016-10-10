@@ -109,7 +109,9 @@ class dfgNode{
 			void addPHIancestor(Instruction *anc, int type=EDGE_TYPE_PHI);
 
 			int removeChild(Instruction *child);
+			int removeChild(dfgNode *child);
 			int removeAncestor(Instruction *anc);
+			int removeAncestor(dfgNode *anc);
 			int removeRecChild(Instruction *child);
 			int removeRecAncestor(Instruction *anc);
 
