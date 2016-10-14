@@ -8,7 +8,7 @@
 
 using namespace llvm;
 
-enum ArchType{DoubleXBar,RegXbar,LatchXbar,RegXbarTREG,StdNOC};
+enum ArchType{DoubleXBar,RegXbar,LatchXbar,RegXbarTREG,StdNOC,NoNOC};
 
 struct CGRAEdge{
 	CGRANode* Src;
@@ -68,6 +68,7 @@ class CGRA{
 
 
 			std::vector<CGRAEdge> getCGRAEdgesWithDest(CGRANode* Cdst);
+			std::vector<CGRAEdge*> getCGRAEdgesWithDest(CGRANode* Cdst, std::map<CGRANode*,std::vector<CGRAEdge>>* cgraEdgesPtr);
 	};
 
 

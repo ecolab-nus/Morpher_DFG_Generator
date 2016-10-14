@@ -35,6 +35,7 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
 #include "llvm/CodeGen/MachineModuleInfo.h"
+#include "llvm/Support/CommandLine.h"
 
 #include "llvm/ADT/GraphTraits.h"
 
@@ -76,6 +77,10 @@ namespace llvm {
 using namespace llvm;
 #define LV_NAME "sfp"
 #define DEBUG_TYPE LV_NAME
+
+static cl::opt<unsigned> loopNumber("ln", cl::init(0), cl::desc("The loop number to map"));
+static cl::opt<std::string> fName("fn", cl::init("na"), cl::desc("the function name"));
+static cl::opt<bool> noName("nn", cl::desc("map all functions and loops"));
 
 STATISTIC(LoopsAnalyzed, "Number of loops analyzed for vectorization");
 
@@ -425,10 +430,14 @@ namespace {
 			  //errs() << "In a function calledd " << F.getName() << "!\n";
 
 			  //TODO : please remove this after dtw test
-//			  if (F.getName() != "encrypt"){
-//				  errs() << "Function Name : " << F.getName() << "\n";
-//				  return false;
-//			  }
+			  if(noName == false){
+				  if(fName != "na"){
+					  if (F.getName() != fName){
+						  errs() << "Function Name : " << F.getName() << "\n";
+						  return false;
+					  }
+				  }
+			  }
 
 			  errs() << "Processing : " << F.getName() << "\n";
 
@@ -528,10 +537,12 @@ namespace {
 //				 //---------------------------------------------------------------
 //				 //**************TODO :: PLease remove this after testing on dct
 //				 //---------------------------------------------------------------
-//				 if(loopCounter <= 2){
-//					 loopCounter++;
-//					 continue;
-//				 }
+				 if(noName == false){
+					 if(loopCounter != loopNumber){
+						 loopCounter++;
+						 continue;
+					 }
+				 }
 //				 //---------------------------------------------------------------
 
 
@@ -584,7 +595,7 @@ namespace {
 //					 printDFGDOT (F.getName().str() + "_" + B->getName().str() + "_dfg.dot", &currBBDFG);
 				  }
 				  LoopDFG.connectBB();
-				  LoopDFG.handlePHINodeFanIn();
+//				  LoopDFG.handlePHINodeFanIn();
 				  LoopDFG.checkSanity();
 //				  LoopDFG.addMemDepEdges(MD);
 //				  LoopDFG.removeAlloc();
@@ -599,12 +610,16 @@ namespace {
 				  LoopDFG.handleMEMops();
 				  LoopDFG.nameNodes();
 
-				  LoopDFG.MapCGRA_SMART(4,4, RegXbarTREG);
+				  ArchType arch = RegXbarTREG;
+				  LoopDFG.MapCGRA_SMART(4,4, arch);
 //				  LoopDFG.MapCGRA_EMS(4,4,F.getName().str() + "_L" + std::to_string(loopCounter) + "_mapping.log");
 				  printDFGDOT (F.getName().str() + "_L" + std::to_string(loopCounter) + "_loopdfg.dot", &LoopDFG);
 //				  LoopDFG.printTurns();
-				  LoopDFG.printMapping();
-				  LoopDFG.printCongestionInfo();
+				  if(arch != NoNOC){
+					  LoopDFG.printMapping();
+				  }
+
+//				  LoopDFG.printCongestionInfo();
 
 
 				  end = clock();

@@ -15,6 +15,7 @@ void Edge::setName (std::string Name){
 
 std::string Edge::getName(){
 	return name;
+//	std::string ret = std::to_string(src->getIdx()) + "to" + std::to_string(dest->getIdx());
 }
 
 void Edge::setSrc(dfgNode* Src){

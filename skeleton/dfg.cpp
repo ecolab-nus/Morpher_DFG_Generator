@@ -1931,7 +1931,7 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim, ArchType arch) {
 
 void DFG::MapCGRA_SMART(int XDim, int YDim, ArchType arch) {
 
-	this->setName(this->getName() + "_" + getArchName(arch));
+	this->setName(this->getName() + "_" + getArchName(arch) + "_" + std::to_string(XDim) + "_" + std::to_string(YDim)) ;
 	std::string mapfileName = this->getName() + "_mapping.log";
 	mappingOutFile.open(mapfileName.c_str());
 	clock_t begin = clock();
@@ -1953,7 +1953,7 @@ void DFG::MapCGRA_SMART(int XDim, int YDim, ArchType arch) {
 
 
 	MII = std::max(std::max(MII,getMaxRecDist()),memMII);
-//	MII = 32;
+//	MII = 30;
 
 
 
@@ -4032,7 +4032,7 @@ int DFG::printMapping() {
 
 
 	std::ofstream binFile;
-	std::string binFileName = name + "_binFile.csv";
+	std::string binFileName = name + "_binFile.trc";
 	binFile.open(binFileName.c_str());
 
 	//Print Header
@@ -4217,20 +4217,18 @@ int DFG::printMapping() {
 
 				//Print Binary
 				binFile << std::setfill('0');
+				binFile << std::setw(29) << std::bitset<29>(currBinOp.constant) << ",";
+				binFile << std::setw(5) << std::bitset<5>(currBinOp.opcode) << "," ;
+				binFile << std::setw(4) << std::bitset<4>(currBinOp.regwen) << ",";
+				binFile << std::bitset<1>(currBinOp.tregwen) << ",";
+				binFile << std::setw(4) << std::bitset<4>(currBinOp.regbypass) << ",";
 				binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[PRED]) << ",";
-				binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[OP1]) << ",";
 				binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[OP2]) << ",";
+				binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[OP1]) << ",";
 				binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[NORTH]) << ",";
-				binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[EAST]) << ",";
 				binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[WEST]) << ",";
 				binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[SOUTH]) << ",";
-
-				binFile << std::setw(4) << std::bitset<4>(currBinOp.regwen) << ",";
-				binFile << std::setw(4) << std::bitset<4>(currBinOp.regbypass) << ",";
-				binFile << std::bitset<1>(currBinOp.tregwen) << ",";
-				binFile << std::setw(5) << std::bitset<5>(currBinOp.opcode) << ",";
-				binFile << std::setw(29) << std::bitset<29>(currBinOp.constant) << std::endl;
-
+				binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[EAST]) << std::endl;
 			}
 		}
 		mapFile << std::endl;
@@ -4253,17 +4251,17 @@ int DFG::updateBinOp(binOp* binOpIns, Port outPort, Port inPort) {
 			break;
 		case R1:
 			if(inPort != R1){
-				binOpIns->regwen = binOpIns->regwen | 0b0100;
+				binOpIns->regwen = binOpIns->regwen | 0b0001;
 			}
 			break;
 		case R2:
 			if(inPort != R2){
-				binOpIns->regwen = binOpIns->regwen | 0b0010;
+				binOpIns->regwen = binOpIns->regwen | 0b0100;
 			}
 			break;
 		case R3:
 			if(inPort != R3){
-				binOpIns->regwen = binOpIns->regwen | 0b0001;
+				binOpIns->regwen = binOpIns->regwen | 0b0010;
 			}
 			break;
 		case NORTH:
@@ -4275,12 +4273,12 @@ int DFG::updateBinOp(binOp* binOpIns, Port outPort, Port inPort) {
 		case PRED:
 			switch (inPort) {
 				case R0:
-					binOpIns->regbypass =binOpIns->regbypass | 0b1000;
+					binOpIns->regbypass =binOpIns->regbypass | 0b0100;
 				case NORTH:
 					binOpIns->outMap[outPort]= 0b011;
 					break;
 				case R1:
-					binOpIns->regbypass =binOpIns->regbypass | 0b0100;
+					binOpIns->regbypass =binOpIns->regbypass | 0b0001;
 				case EAST:
 					binOpIns->outMap[outPort]= 0b100;
 					break;
@@ -4290,7 +4288,7 @@ int DFG::updateBinOp(binOp* binOpIns, Port outPort, Port inPort) {
 					binOpIns->outMap[outPort]= 0b101;
 					break;
 				case R3:
-					binOpIns->regbypass =binOpIns->regbypass | 0b0001;
+					binOpIns->regbypass =binOpIns->regbypass | 0b1000;
 				case SOUTH:
 					binOpIns->outMap[outPort]= 0b110;
 					break;
@@ -4733,6 +4731,9 @@ std::string DFG::getArchName(ArchType arch) {
 			break;
 		case StdNOC:
 			return "StdNOC";
+			break;
+		case NoNOC:
+			return "NoNOC";
 			break;
 		default:
 			return "UnNamed Arch";
