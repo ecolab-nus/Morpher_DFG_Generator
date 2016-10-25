@@ -239,7 +239,7 @@ class DFG{
 
 			std::vector<ConnectedCGRANode> FindCandidateCGRANodes(dfgNode* node);
 
-			void MapCGRA_SMART(int XDim, int YDim, ArchType arch = RegXbarTREG);
+			void MapCGRA_SMART(int XDim, int YDim, ArchType arch = RegXbarTREG, int bTrack = 100);
 			void MapCGRA_SA(int XDim, int YDim, std::string mapfileName = "Mapping.log");
 			bool MapMultiDest(std::map<dfgNode*,std::vector< std::pair<CGRANode*,int> > > *nodeDestMap, std::map<CGRANode*,std::vector<dfgNode*> > *destNodeMap);
 			bool MapASAPLevel(int MII, int XDim, int YDim, ArchType arch);
@@ -326,6 +326,11 @@ class DFG{
 
 			int updateBinOp(binOp* binOpIns, Port outPort, Port inPort);
 			std::string getArchName(ArchType arch);
+
+
+			//Backtrack counter
+			int initBtrack;
+			int backtrackCounter = 100;
 
 
 	};

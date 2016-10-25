@@ -47,6 +47,7 @@
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
 #include "llvm/Analysis/DependenceAnalysis.h"
 #include "llvm/Analysis/CFG.h"
+#include "llvm/Analysis/LoopAccessAnalysis.h"
 
 //#include "/home/manupa/manycore/llvm-latest/llvm/lib/Transforms/Scalar/GVN.cpp"
 
@@ -445,6 +446,7 @@ namespace {
 //			  MemoryDependenceAnalysis *MD = &getAnalysis<MemoryDependenceAnalysis>();
 			  ScalarEvolution* SE = &getAnalysis<ScalarEvolutionWrapperPass>().getSE();
 			  DependenceAnalysis* DA = &getAnalysis<DependenceAnalysis>();
+			  auto *LAA = &getAnalysis<LoopAccessAnalysis>();
 
 			  MemDepResult mRes;
 
@@ -611,7 +613,7 @@ namespace {
 				  LoopDFG.nameNodes();
 
 				  ArchType arch = RegXbarTREG;
-				  LoopDFG.MapCGRA_SMART(4,4, arch);
+				  LoopDFG.MapCGRA_SMART(4,4, arch, 0);
 //				  LoopDFG.MapCGRA_EMS(4,4,F.getName().str() + "_L" + std::to_string(loopCounter) + "_mapping.log");
 				  printDFGDOT (F.getName().str() + "_L" + std::to_string(loopCounter) + "_loopdfg.dot", &LoopDFG);
 //				  LoopDFG.printTurns();
@@ -766,6 +768,7 @@ namespace {
 		    AU.addRequired<DependenceAnalysis>();
 		    AU.addRequiredID(LoopSimplifyID);
 		    AU.addRequiredID(LCSSAID);
+		    AU.addRequired<LoopAccessAnalysis>();
 		}
 
 	};

@@ -1555,9 +1555,14 @@ bool DFG::MapMultiDestRec(
 			node->setMappedLoc(NULL);
 			chosenCnode->setMappedDFGNode(NULL);
 			mappingOutFile << std::to_string(index + 1) << " :: mapping failed, therefore trying mapping again for index=" << std::to_string(index) << "\n";
+			if(backtrackCounter == 0){
+				return false;
+			}
+			backtrackCounter--;
 		}
 	}
 
+	backtrackCounter = std::min(initBtrack,backtrackCounter+1);
 	return true;
 
 //	//Old Code From Here
@@ -1929,9 +1934,11 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim, ArchType arch) {
 	return true;
 }
 
-void DFG::MapCGRA_SMART(int XDim, int YDim, ArchType arch) {
+void DFG::MapCGRA_SMART(int XDim, int YDim, ArchType arch, int bTrack) {
 
-	this->setName(this->getName() + "_" + getArchName(arch) + "_" + std::to_string(XDim) + "_" + std::to_string(YDim)) ;
+	this->initBtrack = bTrack;
+	this->backtrackCounter = bTrack;
+	this->setName(this->getName() + "_" + getArchName(arch) + "_" + std::to_string(XDim) + "_" + std::to_string(YDim) + "_BT" + std::to_string(initBtrack)) ;
 	std::string mapfileName = this->getName() + "_mapping.log";
 	mappingOutFile.open(mapfileName.c_str());
 	clock_t begin = clock();
