@@ -243,6 +243,7 @@ class DFG{
 			void MapCGRA_SA(int XDim, int YDim, std::string mapfileName = "Mapping.log");
 			bool MapMultiDest(std::map<dfgNode*,std::vector< std::pair<CGRANode*,int> > > *nodeDestMap, std::map<CGRANode*,std::vector<dfgNode*> > *destNodeMap);
 			bool MapASAPLevel(int MII, int XDim, int YDim, ArchType arch);
+			bool MapASAPLevelUnWrapped(int MII, int XDim, int YDim, ArchType arch);
 			int getAffinityCost(dfgNode* a, dfgNode* b);
 
 			std::vector<std::vector<unsigned char> > getConMat();

@@ -1811,7 +1811,7 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim, ArchType arch) {
 							break;
 						}
 
-						if(!node->getPHIchildren().empty()){
+						if(/*!node->getPHIchildren().empty()*/false){
 
 							assert(node->getPHIchildren().size() == 1);
 							phiChild = node->getPHIchildren()[0];
@@ -1857,67 +1857,6 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim, ArchType arch) {
 			}
 
 			errs() << "MapASAPLevel:: Finding dests are done!\n";
-
-			bool changed = false;
-			std::vector<std::pair<CGRANode*, CGRANode*> > paths;
-			std::vector<dfgNode*> parents;
-			CGRANode* nodeBeingMapped;
-			std::pair<CGRANode*,int> nodeBeingMappedpair;
-			dfgNode* otherNode;
-			std::vector<dfgNode*> singleDests;
-
-//			//Handle single destination nodes
-//			do{
-//				changed = false;
-//				for (int i = 0; i < currLevelNodes.size(); ++i) {
-//					node = currLevelNodes[i];
-//					if(nodeDestMap.find(node) == nodeDestMap.end()){
-//						errs() << "No dests mapping fails\n";
-//						return false; //mapping fails if no placement found
-//					}
-//					if(nodeDestMap[node].size() == 1){
-//						nodeBeingMapped = nodeDestMap[node][0].first;
-//						nodeBeingMappedpair = nodeDestMap[node][0];
-//
-//						if(destNodeMap[nodeBeingMapped].empty()){
-//							break; //already handled
-//						}
-//
-//						singleDests.push_back(node);
-//
-//						for (int j = 0; j < node->getAncestors().size(); ++j) {
-//							parent = findNode(node->getAncestors()[j]);
-////							parentExt = currCGRA->getCGRANode(nodeBeingMapped->getT(),parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
-//							parentExt = currCGRA->getCGRANode((parent->getMappedLoc()->getT() + 1)%MII,parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
-//							paths.push_back(std::make_pair(parentExt,nodeBeingMapped));
-//							parents.push_back(parent);
-//						}
-//
-//						for (int j = 0; j < destNodeMap[nodeBeingMapped].size(); ++j) {
-//							otherNode = destNodeMap[nodeBeingMapped][j];
-//							nodeDestMap[otherNode].erase(std::remove(nodeDestMap[otherNode].begin(), nodeDestMap[otherNode].end(), nodeBeingMappedpair), nodeDestMap[otherNode].end());
-//						}
-//
-//						destNodeMap[nodeBeingMapped].clear();
-//		//				destNodeMap[nodeBeingMapped].push_back(node);
-//
-//						changed = true;
-//					}
-//				}
-//			}while(changed);
-//
-//			std::vector<std::pair<CGRANode*, CGRANode*> > pathsNotRouted;
-//			astar->Route(node,parents,paths,currCGRA->getCGRAEdges(),&pathsNotRouted);
-//
-//			if(!pathsNotRouted.empty()){
-//				errs() << "mapping fails :: single destinations could not be routed\n";
-//				return false; //mapping fails if single destinations could not be routed
-//			}
-//
-//			for (int i = 0; i < singleDests.size(); ++i) {
-//				singleDests[i]->setMappedLoc(nodeDestMap[singleDests[i]][0].first);
-//				nodeDestMap[singleDests[i]][0].first->setMappedDFGNode(singleDests[i]);
-//			}
 
 			//Multiple Desination Nodes
 			deadEndReached = false;
@@ -3010,7 +2949,7 @@ TreePath DFG::createTreePath(dfgNode* parent, CGRANode* dest) {
 		ParentExt = currCGRA->getCGRANode((parent->getMappedLoc()->getT()+1)%MII,parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
 	}
 	tp.sources.push_back(ParentExt);
-	tp.sourcePorts[ParentExt]=TILE;
+	tp.sourcePorts[ParentExt] = TILE;
 	tp.sourcePaths[ParentExt] = (std::make_pair(parent,parent));
 
 //	if(parent->getIdx() == 22){
@@ -3285,10 +3224,11 @@ void DFG::printOutSMARTRoutes() {
 	pathLengthFile.open(pathLengthFileName.c_str());
 
 	//Print Header
-	pathLengthFile << "Node,Parent,Route,RouteLength,RouteLength/MII" << std::endl;
+	pathLengthFile << "Node,Parent,Route,RouteLength,dT(RouteLength)/MII" << std::endl;
 
 	std::map<dfgNode*,std::map<dfgNode*,std::vector<CGRANode*>>>::iterator nodeIt;
 	std::map<dfgNode*,std::vector<CGRANode*>>::iterator ParentIt;
+
 
 	for(nodeIt = nodeRouteMap.begin();
 		nodeIt != nodeRouteMap.end();
@@ -3304,13 +3244,26 @@ void DFG::printOutSMARTRoutes() {
 			pathLengthFile << std::to_string(node->getIdx()) << ",";
 			pathLengthFile << std::to_string(parent->getIdx()) << ",";
 
+			assert(!nodeRouteMap[node][parent].empty());
+			int endTime = nodeRouteMap[node][parent][0]->getT();
+			int revisits = 0;
+
 			for (int i = 0; i < nodeRouteMap[node][parent].size(); ++i) {
 				pathLengthFile << nodeRouteMap[node][parent][i]->getNameSp() << "<--";
+
+				if(i!=0){
+					if(nodeRouteMap[node][parent][i]->getT() == endTime){
+						if(nodeRouteMap[node][parent][i-1]->getT() != nodeRouteMap[node][parent][i]->getT()){
+							revisits++;
+						}
+					}
+				}
 			}
 			pathLengthFile << ",";
 
 			pathLengthFile << nodeRouteMap[node][parent].size() << ",";
-			pathLengthFile << nodeRouteMap[node][parent].size()/currCGRA->getMII() << std::endl;
+			pathLengthFile << revisits << std::endl;
+//			pathLengthFile << nodeRouteMap[node][parent].size()/currCGRA->getMII() << std::endl;
 		}
 		pathLengthFile << std::endl;
 	}
@@ -4013,6 +3966,7 @@ int DFG::printMapping() {
 	dfgNode* parent;
 	CGRANode* cnode;
 	CGRANode* PrevCnode;
+	CGRANode* PrevPrevCnode;
 	std::vector<CGRAEdge> cgraEdges;
 	std::vector<CGRAEdge> cgraEdges_t;
 	std::map<Port,Edge*> portDfgEdgeMap;
@@ -4087,6 +4041,7 @@ int DFG::printMapping() {
 				binFile << "Y=" << std::to_string(j) << " X=" << std::to_string(k) << ",";
 				//CGRAEdges
 				PrevCnode = cnode;
+				PrevPrevCnode = currCGRA->getCGRANode((i - 1 + 3*currCGRA->getMII())%currCGRA->getMII(),j,k);
 				cnode = currCGRA->getCGRANode((i+1)%currCGRA->getMII(),j,k);
 				cgraEdges = (*currCGRA->getCGRAEdges())[cnode];
 				cgraEdges_t = currCGRA->getCGRAEdgesWithDest(cnode);
@@ -4094,16 +4049,31 @@ int DFG::printMapping() {
 					if(cgraEdges[l].mappedDFGEdge != NULL){
 						portDfgEdgeMap[cgraEdges[l].SrcPort] = cgraEdges[l].mappedDFGEdge;
 
-						if(cgraEdges[l].mappedDFGEdge->getSrc() == PrevCnode->getmappedDFGNode()){
-							XBarMap[PrevCnode][cgraEdges[l].SrcPort] = TILE;
-						}
-						else{
-							for (int m = 0; m < cgraEdges_t.size(); ++m) {
-								if(cgraEdges_t[m].mappedDFGEdge->getSrc() == cgraEdges[l].mappedDFGEdge->getSrc()){
-									XBarMap[PrevCnode][cgraEdges[l].SrcPort] = cgraEdges_t[m].DstPort;
+						if(PrevPrevCnode->getPEType() == MEM){
+							if(cgraEdges[l].mappedDFGEdge->getSrc() == PrevPrevCnode->getmappedDFGNode()){
+								XBarMap[PrevCnode][cgraEdges[l].SrcPort] = TILE;
+							}
+							else{
+								for (int m = 0; m < cgraEdges_t.size(); ++m) {
+									if(cgraEdges_t[m].mappedDFGEdge->getSrc() == cgraEdges[l].mappedDFGEdge->getSrc()){
+										XBarMap[PrevCnode][cgraEdges[l].SrcPort] = cgraEdges_t[m].DstPort;
+									}
 								}
 							}
 						}
+						else{
+							if(cgraEdges[l].mappedDFGEdge->getSrc() == PrevCnode->getmappedDFGNode()){
+								XBarMap[PrevCnode][cgraEdges[l].SrcPort] = TILE;
+							}
+							else{
+								for (int m = 0; m < cgraEdges_t.size(); ++m) {
+									if(cgraEdges_t[m].mappedDFGEdge->getSrc() == cgraEdges[l].mappedDFGEdge->getSrc()){
+										XBarMap[PrevCnode][cgraEdges[l].SrcPort] = cgraEdges_t[m].DstPort;
+									}
+								}
+							}
+						}
+
 					}
 				}
 
@@ -4200,13 +4170,14 @@ int DFG::printMapping() {
 				else{
 					currBinOp.opcode = 0;
 				}
-				currBinOp.outMap[PRED] = 0;
-				currBinOp.outMap[OP1] = 0;
-				currBinOp.outMap[OP2] = 0;
-				currBinOp.outMap[NORTH] = 0;
-				currBinOp.outMap[EAST] = 0;
-				currBinOp.outMap[SOUTH] = 0;
-				currBinOp.outMap[WEST] = 0;
+				//0b111 is used to cut of the output -- maybe switch of the asynchrnous repeater
+				currBinOp.outMap[PRED] = 0b111;
+				currBinOp.outMap[OP1] = 0b111;
+				currBinOp.outMap[OP2] = 0b111;
+				currBinOp.outMap[NORTH] = 0b111;
+				currBinOp.outMap[EAST] = 0b111;
+				currBinOp.outMap[SOUTH] = 0b111;
+				currBinOp.outMap[WEST] = 0b111;
 				currBinOp.regwen = 0;
 				currBinOp.regbypass = 0;
 				currBinOp.tregwen = 0;
@@ -4224,17 +4195,17 @@ int DFG::printMapping() {
 
 				//Print Binary
 				binFile << std::setfill('0');
-				binFile << std::setw(29) << std::bitset<29>(currBinOp.constant) << ",";
-				binFile << std::setw(5) << std::bitset<5>(currBinOp.opcode) << "," ;
-				binFile << std::setw(4) << std::bitset<4>(currBinOp.regwen) << ",";
-				binFile << std::bitset<1>(currBinOp.tregwen) << ",";
-				binFile << std::setw(4) << std::bitset<4>(currBinOp.regbypass) << ",";
-				binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[PRED]) << ",";
-				binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[OP2]) << ",";
-				binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[OP1]) << ",";
-				binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[NORTH]) << ",";
-				binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[WEST]) << ",";
-				binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[SOUTH]) << ",";
+				binFile << std::setw(29) << std::bitset<29>(currBinOp.constant) ;//<< ",";
+				binFile << std::setw(5) << std::bitset<5>(currBinOp.opcode) ;//<< "," ;
+				binFile << std::setw(4) << std::bitset<4>(currBinOp.regwen) ;//<< ",";
+				binFile << std::bitset<1>(currBinOp.tregwen) ;//<< ",";
+				binFile << std::setw(4) << std::bitset<4>(currBinOp.regbypass) ;//<< ",";
+				binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[PRED]) ;//<< ",";
+				binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[OP2]) ;//<< ",";
+				binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[OP1]) ;//<< ",";
+				binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[NORTH]) ;//<< ",";
+				binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[WEST]) ;//<< ",";
+				binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[SOUTH]) ;//<< ",";
 				binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[EAST]) << std::endl;
 			}
 		}
@@ -4287,23 +4258,23 @@ int DFG::updateBinOp(binOp* binOpIns, Port outPort, Port inPort) {
 				case R1:
 					binOpIns->regbypass =binOpIns->regbypass | 0b0001;
 				case EAST:
-					binOpIns->outMap[outPort]= 0b100;
+					binOpIns->outMap[outPort]= 0b000;
 					break;
 				case R2:
 					binOpIns->regbypass =binOpIns->regbypass | 0b0010;
 				case WEST:
-					binOpIns->outMap[outPort]= 0b101;
+					binOpIns->outMap[outPort]= 0b010;
 					break;
 				case R3:
 					binOpIns->regbypass =binOpIns->regbypass | 0b1000;
 				case SOUTH:
-					binOpIns->outMap[outPort]= 0b110;
-					break;
-				case TILE:
 					binOpIns->outMap[outPort]= 0b001;
 					break;
+				case TILE:
+					binOpIns->outMap[outPort]= 0b100;
+					break;
 				case TREG:
-					binOpIns->outMap[outPort]= 0b010;
+					binOpIns->outMap[outPort]= 0b101;
 					break;
 				default:
 					assert(false);
@@ -4722,6 +4693,7 @@ int DFG::checkSanity() {
 	}
 }
 
+
 std::string DFG::getArchName(ArchType arch) {
 	switch (arch) {
 		case RegXbar:
@@ -4746,4 +4718,9 @@ std::string DFG::getArchName(ArchType arch) {
 			return "UnNamed Arch";
 			break;
 	}
+}
+
+bool DFG::MapASAPLevelUnWrapped(int MII, int XDim, int YDim, ArchType arch) {
+
+	return true;
 }

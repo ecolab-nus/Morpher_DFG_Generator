@@ -19,11 +19,27 @@ struct CGRAEdge{
 	CGRAEdge(CGRANode* Src, Port SrcPort, CGRANode* Dst, Port DstPort) : Src(Src), SrcPort(SrcPort), Dst(Dst), DstPort(DstPort), mappedDFGEdge(NULL){}
 };
 
+struct CGRANodeNew{
+	CGRANode* oldCnode;
+	int unwrappedTime;
+	CGRANodeNew(CGRANode* oldCnode, int unwrappedTime) : oldCnode(oldCnode), unwrappedTime(unwrappedTime){}
+};
+
+struct CGRAEdgeNew{
+	CGRAEdge CEdge;
+	CGRANodeNew* Src;
+	CGRANodeNew* Dest;
+	CGRAEdgeNew(CGRAEdge CEdge, CGRANodeNew* Src, CGRANodeNew* Dest);
+	CGRAEdgeNew();
+};
+
 class CGRA{
 		private :
 			std::vector<std::vector<std::vector<CGRANode*> > > CGRANodes;
-//			std::map<CGRANode*,std::vector<CGRANode*> > CGRAEdges;
 			std::map<CGRANode*,std::vector<CGRAEdge>> CGRAEdges;
+
+			std::vector<std::vector<std::vector<CGRANodeNew*> > > CGRANodesNew;
+			std::map<CGRANodeNew*,std::vector<CGRAEdgeNew>> CGRAEdgesNew;
 
 			void connectNeighbors();
 			void connectNeighborsMESH();
@@ -36,6 +52,9 @@ class CGRA{
 			int regsPerNode;
 			ArchType arch;
 			std::vector<std::vector<int> > phyConMat;
+
+			//Creating unwrapped substrate
+
 
 		public :
 			CGRA(){};
@@ -66,9 +85,11 @@ class CGRA{
 			ArchType getArch(){return arch;}
 			int getTotalUnUsedMemPEs();
 
-
 			std::vector<CGRAEdge> getCGRAEdgesWithDest(CGRANode* Cdst);
 			std::vector<CGRAEdge*> getCGRAEdgesWithDest(CGRANode* Cdst, std::map<CGRANode*,std::vector<CGRAEdge>>* cgraEdgesPtr);
+
+			//Creating unwrapped substrate
+			void addIINewNodes();
 	};
 
 

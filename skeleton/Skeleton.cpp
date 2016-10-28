@@ -446,7 +446,7 @@ namespace {
 //			  MemoryDependenceAnalysis *MD = &getAnalysis<MemoryDependenceAnalysis>();
 			  ScalarEvolution* SE = &getAnalysis<ScalarEvolutionWrapperPass>().getSE();
 			  DependenceAnalysis* DA = &getAnalysis<DependenceAnalysis>();
-			  auto *LAA = &getAnalysis<LoopAccessAnalysis>();
+//			  auto *LAA = &getAnalysis<LoopAccessAnalysis>();
 
 			  MemDepResult mRes;
 
@@ -618,6 +618,7 @@ namespace {
 				  printDFGDOT (F.getName().str() + "_L" + std::to_string(loopCounter) + "_loopdfg.dot", &LoopDFG);
 //				  LoopDFG.printTurns();
 				  if(arch != NoNOC){
+					  LoopDFG.printOutSMARTRoutes();
 					  LoopDFG.printMapping();
 				  }
 
@@ -768,7 +769,7 @@ namespace {
 		    AU.addRequired<DependenceAnalysis>();
 		    AU.addRequiredID(LoopSimplifyID);
 		    AU.addRequiredID(LCSSAID);
-		    AU.addRequired<LoopAccessAnalysis>();
+//		    AU.addRequired<LoopAccessAnalysis>();
 		}
 
 	};

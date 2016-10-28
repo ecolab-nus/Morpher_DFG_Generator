@@ -742,3 +742,101 @@ std::vector<CGRAEdge*> CGRA::getCGRAEdgesWithDest(CGRANode* Cdst,
 
 	return retCGRAEdges;
 }
+
+void CGRA::addIINewNodes() {
+	CGRANodeNew* tempNewNode;
+//	std::vector<std::vector<std::vector<CGRANodeNew*> > > tempNewIINodes;
+
+	int currEndTime = CGRANodesNew.size();
+	assert(currEndTime%MII == 0); //Should be a multiple of MII
+
+	for (int t = 0; t < MII; ++t) {
+		std::vector<std::vector<CGRANodeNew*> > tempL2;
+		for (int y = 0; y < YDim; ++y) {
+			std::vector<CGRANodeNew*> tempL1;
+			for (int x = 0; x < XDim; ++x) {
+				tempNewNode = new CGRANodeNew(CGRANodes[t][y][x],currEndTime+t);
+				tempL1.push_back(tempNewNode);
+			}
+			tempL2.push_back(tempL1);
+		}
+		CGRANodesNew.push_back(tempL2);
+	}
+
+	CGRANode* cnode;
+	CGRAEdgeNew CENew;
+
+	for (int t = currEndTime; t < currEndTime+MII; ++t) {
+		for (int y = 0; y < YDim; ++y) {
+			for (int x = 0; x < XDim; ++x) {
+				cnode = CGRANodesNew[t][y][x]->oldCnode;
+				for (int i = 0; i < CGRAEdges[cnode].size(); ++i) {
+					assert(CGRAEdges[cnode][i].Src == cnode);
+
+					//Check for edges connecting in time dimension
+					if((CGRAEdges[cnode][i].DstPort != NORTH) &&
+					   (CGRAEdges[cnode][i].DstPort != EAST) &&
+					   (CGRAEdges[cnode][i].DstPort != WEST) &&
+					   (CGRAEdges[cnode][i].DstPort != SOUTH)){
+
+						//Check for wrap around edges
+						if(CGRAEdges[cnode][i].Dst->getT() <= cnode->getT()){
+							assert(t%MII == MII-1);
+						}
+						else{ //Non wrap around edges
+							CENew  = CGRAEdgeNew(CGRAEdges[cnode][i],
+												 CGRANodesNew[CGRAEdges[cnode][i].Src->getT()]
+															 [CGRAEdges[cnode][i].Src->getY()]
+															 [CGRAEdges[cnode][i].Src->getX()],
+									             CGRANodesNew[CGRAEdges[cnode][i].Dst->getT()]
+															 [CGRAEdges[cnode][i].Dst->getY()]
+															 [CGRAEdges[cnode][i].Dst->getX()]
+												 );
+						}
+					}
+					else{ // These edges connecting to NEWS
+						CENew  = CGRAEdgeNew(CGRAEdges[cnode][i],
+											 CGRANodesNew[CGRAEdges[cnode][i].Src->getT()]
+														 [CGRAEdges[cnode][i].Src->getY()]
+														 [CGRAEdges[cnode][i].Src->getX()],
+								             CGRANodesNew[CGRAEdges[cnode][i].Dst->getT()]
+														 [CGRAEdges[cnode][i].Dst->getY()]
+														 [CGRAEdges[cnode][i].Dst->getX()]
+											 );
+					}
+
+					CGRAEdgesNew[CGRANodesNew[t][y][x]].push_back(CENew);
+				}
+			}
+		}
+	}
+
+	//Connect the last time to new II nodes
+	for (int y = 0; y < YDim; ++y) {
+		for (int x = 0; x < XDim; ++x) {
+			cnode = CGRANodesNew[currEndTime-1][y][x]->oldCnode;
+			for (int i = 0; i < CGRAEdges[cnode].size(); ++i) {
+				if((CGRAEdges[cnode][i].DstPort != NORTH) &&
+				   (CGRAEdges[cnode][i].DstPort != EAST) &&
+				   (CGRAEdges[cnode][i].DstPort != WEST) &&
+				   (CGRAEdges[cnode][i].DstPort != SOUTH)){
+
+					//Check for wrap around edges
+					if(CGRAEdges[cnode][i].Dst->getT() <= cnode->getT()){
+						CENew  = CGRAEdgeNew(CGRAEdges[cnode][i],
+											 CGRANodesNew[currEndTime-1]
+														 [CGRAEdges[cnode][i].Src->getY()]
+														 [CGRAEdges[cnode][i].Src->getX()],
+								             CGRANodesNew[currEndTime]
+														 [CGRAEdges[cnode][i].Dst->getY()]
+														 [CGRAEdges[cnode][i].Dst->getX()]
+											 );
+					}
+				}
+			}
+		}
+	}
+
+
+
+}
