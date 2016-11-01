@@ -8,7 +8,7 @@
 
 using namespace llvm;
 
-enum ArchType{DoubleXBar,RegXbar,LatchXbar,RegXbarTREG,StdNOC,NoNOC};
+enum ArchType{DoubleXBar,RegXbar,LatchXbar,RegXbarTREG,StdNOC,NoNOC,ALL2ALL};
 
 struct CGRAEdge{
 	CGRANode* Src;
@@ -45,6 +45,7 @@ class CGRA{
 			void connectNeighborsMESH();
 			void connectNeighborsSMART();
 			void connectNeighborsGRID();
+			void connectNeighborsALL();
 
 			int MII;
 			int XDim;

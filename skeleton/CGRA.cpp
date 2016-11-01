@@ -84,6 +84,42 @@ CGRA::CGRA(int MII, int Xdim, int Ydim, int regs, ArchType aType) {
 //	InOutPortMap[R2] = {R2,NORTH,EAST,WEST,SOUTH};
 //	InOutPortMap[R3] = {R3,NORTH,EAST,WEST,SOUTH};
 	switch (arch) {
+		case ALL2ALL:
+			switch(regsPerNode){
+				case 2 :
+					InOutPortMap[R0] = {R0,TILEOUT};
+					InOutPortMap[R1] = {R1,TILEOUT};
+
+					InOutPortMap[TILEIN] = {R0,R1,TILEOUT};
+					InOutPortMap[TILE] = {R0,R1,TILEOUT};
+					break;
+				case 4 :
+					InOutPortMap[R0] = {R0,TILEOUT};
+					InOutPortMap[R1] = {R1,TILEOUT};
+					InOutPortMap[R2] = {R2,TILEOUT};
+					InOutPortMap[R3] = {R3,TILEOUT};
+
+					InOutPortMap[TILEIN] = {R0,R1,R2,R3,TILEOUT};
+					InOutPortMap[TILE] = {R0,R1,R2,R3,TILEOUT};
+					break;
+				case 8 :
+					InOutPortMap[R0] = {R0,TILEOUT};
+					InOutPortMap[R1] = {R1,TILEOUT};
+					InOutPortMap[R2] = {R2,TILEOUT};
+					InOutPortMap[R3] = {R3,TILEOUT};
+					InOutPortMap[R4] = {R4,TILEOUT};
+					InOutPortMap[R5] = {R5,TILEOUT};
+					InOutPortMap[R6] = {R6,TILEOUT};
+					InOutPortMap[R7] = {R7,TILEOUT};
+
+					InOutPortMap[TILEIN] = {R0,R1,R2,R3,R4,R5,R6,R7,TILEOUT};
+					InOutPortMap[TILE] = {R0,R1,R2,R3,R4,R5,R6,R7,TILEOUT};
+					break;
+				default :
+					errs() << "Regs Per Node can only be 2,4,8\n";
+					assert(false);
+			}
+			break;
 		case DoubleXBar:
 //			InOutPortMap[R0] = {R0,NORTH,EAST,WEST,SOUTH};
 //			InOutPortMap[R1] = {R1,NORTH,EAST,WEST,SOUTH};
@@ -368,11 +404,17 @@ CGRA::CGRA(int MII, int Xdim, int Ydim, int regs, ArchType aType) {
 
 //	connectNeighbors();
 //	connectNeighborsMESH();
-	if(arch!=NoNOC){
-		connectNeighborsSMART();
-	}
-	else{
-		connectNeighborsGRID();
+
+	switch (arch) {
+		case NoNOC:
+			connectNeighborsGRID();
+			break;
+		case ALL2ALL:
+			connectNeighborsALL();
+			break;
+		default:
+			connectNeighborsSMART();
+			break;
 	}
 //	connectNeighborsGRID();
 
@@ -664,7 +706,7 @@ std::string CGRA::getPortName(Port p) {
 			return "TILEIN";
 			break;
 		case TILEOUT:
-			return "TILEIN";
+			return "TILEOUT";
 			break;
 		default:
 			return "INV";
@@ -741,6 +783,42 @@ std::vector<CGRAEdge*> CGRA::getCGRAEdgesWithDest(CGRANode* Cdst,
 	}
 
 	return retCGRAEdges;
+}
+
+void CGRA::connectNeighborsALL() {
+
+	for (int t = 0; t < MII; ++t) {
+			for (int y = 0; y < YDim; ++y) {
+				for (int x = 0; x < XDim; ++x) {
+
+					assert((regsPerNode == 4) || (regsPerNode == 2) || (regsPerNode == 8));
+					CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],R0,CGRANodes[(t+1)%MII][y][x],R0));
+					CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],R1,CGRANodes[(t+1)%MII][y][x],R1));
+					CGRANodes[t][y][x]->originalEdgesSize += 2;
+					if(regsPerNode > 2){
+						CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],R2,CGRANodes[(t+1)%MII][y][x],R2));
+						CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],R3,CGRANodes[(t+1)%MII][y][x],R3));
+						CGRANodes[t][y][x]->originalEdgesSize += 2;
+						if(regsPerNode > 4){
+							CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],R4,CGRANodes[(t+1)%MII][y][x],R4));
+							CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],R5,CGRANodes[(t+1)%MII][y][x],R5));
+							CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],R6,CGRANodes[(t+1)%MII][y][x],R6));
+							CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],R7,CGRANodes[(t+1)%MII][y][x],R7));
+							CGRANodes[t][y][x]->originalEdgesSize += 4;
+						}
+					}
+
+					for (int yy = 0; yy < YDim; ++yy) {
+						for (int xx = 0; xx < XDim; ++xx) {
+							CGRAEdges[CGRANodes[t][y][x]].push_back(CGRAEdge(CGRANodes[t][y][x],TILEOUT,CGRANodes[t][yy][xx],TILEIN));
+							CGRANodes[t][y][x]->originalEdgesSize++;
+						}
+					}
+
+
+				}
+			}
+		}
 }
 
 void CGRA::addIINewNodes() {

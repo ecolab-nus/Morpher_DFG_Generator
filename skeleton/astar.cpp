@@ -48,6 +48,16 @@ CGRANode* AStar::AStarSearch(std::map<CGRANode*,std::vector<CGRAEdge> > graph,
 
 	int newCost = 0;
 	int priority = 0;
+	int maxEdgeCount = 0;
+	switch (currDFG->getCGRA()->getArch()) {
+		case ALL2ALL:
+			maxEdgeCount = currDFG->getCGRA()->getXdim()*currDFG->getCGRA()->getYdim() + 1
+						 + currDFG->getCGRA()->getRegsPerNode();
+			break;
+		default:
+			maxEdgeCount = 5 + currDFG->getCGRA()->getRegsPerNode();
+			break;
+	}
 
 	while(!frontier.empty()){
 		current = frontier.top().Cnode;
@@ -67,7 +77,7 @@ CGRANode* AStar::AStarSearch(std::map<CGRANode*,std::vector<CGRAEdge> > graph,
 			assert(next->getT() < MII);
 
 			nextCost = next->originalEdgesSize + 1 - currDFG->getCGRA()->findCGRAEdges(next,nextPort,&graph).size();
-			nextCost = 9 - currDFG->getCGRA()->findCGRAEdges(next,nextPort,&graph).size();
+			nextCost = maxEdgeCount - currDFG->getCGRA()->findCGRAEdges(next,nextPort,&graph).size();
 			assert(nextCost >= 0);
 
 			//disble UE cost heuristic
@@ -644,7 +654,7 @@ bool AStar::Route(dfgNode* currNode,
 					if(tempCGRAEdges[j]->Dst == current){
 						tempCGRAEdges[j]->mappedDFGEdge = currDFG->findEdge(currParent,currNode);
 
-						if(currDFG->getCGRA()->getArch() != DoubleXBar){
+						if((currDFG->getCGRA()->getArch() != DoubleXBar)&&(currDFG->getCGRA()->getArch() != ALL2ALL)){
 							if(currDFG->getCGRA()->getArch() != NoNOC){
 								switch(cameFrom[currNodePortPair].second){
 									case R0:

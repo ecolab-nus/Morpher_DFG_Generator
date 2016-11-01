@@ -652,6 +652,10 @@ void DFG::addMemRecDepEdgesNew(DependenceAnalysis* DA) {
 		//Create a list of memory instructions
 		for (int i = 0; i < NodeList.size(); ++i) {
 			nodePtr = NodeList[i];
+
+			if(nodePtr->getNode() == NULL){
+				continue;
+			}
 			Ins = dyn_cast<Instruction>(nodePtr->getNode());
 			if (!Ins)
 			return;
@@ -4713,6 +4717,9 @@ std::string DFG::getArchName(ArchType arch) {
 			break;
 		case NoNOC:
 			return "NoNOC";
+			break;
+		case ALL2ALL:
+			return "ALL2ALL";
 			break;
 		default:
 			return "UnNamed Arch";

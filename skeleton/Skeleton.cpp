@@ -608,16 +608,16 @@ namespace {
 				  LoopDFG.CreateSchList();
 //				  LoopDFG.MapCGRA(4,4);
 				  LoopDFG.printXML();
-				  LoopDFG.printREGIMapOuts();
+//				  LoopDFG.printREGIMapOuts();
 				  LoopDFG.handleMEMops();
 				  LoopDFG.nameNodes();
 
-				  ArchType arch = RegXbarTREG;
-				  LoopDFG.MapCGRA_SMART(4,4, arch, 0);
+				  ArchType arch = ALL2ALL;
+				  LoopDFG.MapCGRA_SMART(4,4, arch, 20);
 //				  LoopDFG.MapCGRA_EMS(4,4,F.getName().str() + "_L" + std::to_string(loopCounter) + "_mapping.log");
 				  printDFGDOT (F.getName().str() + "_L" + std::to_string(loopCounter) + "_loopdfg.dot", &LoopDFG);
 //				  LoopDFG.printTurns();
-				  if(arch != NoNOC){
+				  if((arch != NoNOC)&&(arch != ALL2ALL)){
 					  LoopDFG.printOutSMARTRoutes();
 					  LoopDFG.printMapping();
 				  }
