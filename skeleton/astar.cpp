@@ -405,6 +405,7 @@ bool AStar::Route(dfgNode* currNode,
 	}
 
 	if(destCostArray.empty()){
+		errs() << "Route:: destCostArray is empty!!\n";
 		return false;
 	}
 

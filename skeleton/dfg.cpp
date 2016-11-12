@@ -1844,7 +1844,13 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim, ArchType arch) {
 										break;
 									}
 									if(currCGRA->getCGRANode((ll+1)%MII,y,x)->getmappedDFGNode() == NULL){
-										if(node->getIsMemOp() == (currCGRA->getCGRANode((ll+1)%MII,y,x)->getPEType() == MEM)){
+										if(node->getIsMemOp()){ //if current operation is a memory operation
+											if(currCGRA->getCGRANode((ll+1)%MII,y,x)->getPEType() == MEM){ // only allocate PEs capable of doing memory operations
+												nodeDestMap[node].push_back(std::make_pair(currCGRA->getCGRANode((ll+1)%MII,y,x),(ll+1)));
+												destNodeMap[currCGRA->getCGRANode((ll+1)%MII,y,x)].push_back(node);
+											}
+										}
+										else{ // for any other operations can allocate any PE.
 											nodeDestMap[node].push_back(std::make_pair(currCGRA->getCGRANode((ll+1)%MII,y,x),(ll+1)));
 											destNodeMap[currCGRA->getCGRANode((ll+1)%MII,y,x)].push_back(node);
 										}
@@ -1903,7 +1909,7 @@ void DFG::MapCGRA_SMART(int XDim, int YDim, ArchType arch, int bTrack) {
 
 
 	MII = std::max(std::max(MII,getMaxRecDist()),memMII);
-//	MII = 30;
+//	MII = 19;
 
 
 
@@ -4000,6 +4006,10 @@ int DFG::printMapping() {
 	std::string binFileName = name + "_binFile.trc";
 	binFile.open(binFileName.c_str());
 
+	std::ofstream binOpNameFile;
+	std::string binOpNameFileFileName = name + "_binOpNameFile.trc";
+	binOpNameFile.open(binOpNameFileFileName.c_str());
+
 	//Print Header
 	mapFile << "Time,";
 	insFile << "Time,";
@@ -4025,6 +4035,7 @@ int DFG::printMapping() {
 		mapFile << std::to_string(i) << ",";
 		insFile << std::to_string(i) << ",";
 		binFile << std::to_string(i) << std::endl;
+		binOpNameFile << std::to_string(i) << std::endl;
 		for (int j = 0; j < currCGRA->getYdim(); ++j) {
 			for (int k = 0; k < currCGRA->getXdim(); ++k) {
 				cnode = currCGRA->getCGRANode(i,j,k);
@@ -4043,6 +4054,7 @@ int DFG::printMapping() {
 					mapFile << "NA,";
 				}
 				binFile << "Y=" << std::to_string(j) << " X=" << std::to_string(k) << ",";
+				binOpNameFile << "Y=" << std::to_string(j) << " X=" << std::to_string(k) << ",";
 				//CGRAEdges
 				PrevCnode = cnode;
 				PrevPrevCnode = currCGRA->getCGRANode((i - 1 + 3*currCGRA->getMII())%currCGRA->getMII(),j,k);
@@ -4211,6 +4223,29 @@ int DFG::printMapping() {
 				binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[WEST]) ;//<< ",";
 				binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[SOUTH]) ;//<< ",";
 				binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[EAST]) << std::endl;
+
+				//Print Binary with OpName
+				binOpNameFile << std::setfill('0');
+				binOpNameFile << std::setw(29) << std::bitset<29>(currBinOp.constant) ;//<< ",";
+				binOpNameFile << std::setw(5) << std::bitset<5>(currBinOp.opcode) ;//<< "," ;
+				binOpNameFile << std::setw(4) << std::bitset<4>(currBinOp.regwen) ;//<< ",";
+				binOpNameFile << std::bitset<1>(currBinOp.tregwen) ;//<< ",";
+				binOpNameFile << std::setw(4) << std::bitset<4>(currBinOp.regbypass) ;//<< ",";
+				binOpNameFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[PRED]) ;//<< ",";
+				binOpNameFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[OP2]) ;//<< ",";
+				binOpNameFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[OP1]) ;//<< ",";
+				binOpNameFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[NORTH]) ;//<< ",";
+				binOpNameFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[WEST]) ;//<< ",";
+				binOpNameFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[SOUTH]) ;//<< ",";
+				binOpNameFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[EAST]) << ",";
+				if(node!=NULL){
+					binOpNameFile << HyCUBEInsStrings[node->getFinalIns()] << std::endl;
+				}
+				else{
+					binOpNameFile << "NULL" << std::endl;
+				}
+
+
 			}
 		}
 		mapFile << std::endl;
@@ -4221,6 +4256,7 @@ int DFG::printMapping() {
 	mapFile.close();
 	insFile.close();
 	binFile.close();
+	binOpNameFile.close();
 }
 
 int DFG::updateBinOp(binOp* binOpIns, Port outPort, Port inPort) {
