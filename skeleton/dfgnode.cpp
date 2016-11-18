@@ -289,21 +289,41 @@ void dfgNode::addPHIancestor(Instruction* anc, int type) {
 	Parent->InsertEdge(temp);
 }
 
-std::map<dfgNode*,std::vector<std::pair<CGRANode*,Port> >> dfgNode::getMergeRoutingLocs() {
-	std::map<dfgNode*,std::vector<std::pair<CGRANode*,Port> >> temp = treeBasedRoutingLocs;
+bool pathPredictCompare(pathData* p1, pathData* p2){
+	return (p1->cnode == p2->cnode);
+}
 
-	std::map<dfgNode*,std::vector<std::pair<CGRANode*,Port> >>::iterator tempIt;
+std::map<dfgNode*,std::vector<pathData*>> dfgNode::getMergeRoutingLocs() {
+	std::map<dfgNode*,std::vector<pathData* >> temp = treeBasedRoutingLocs;
+
+	std::vector<pathData*> searchList;
+
+	std::map<dfgNode*,std::vector<pathData* >>::iterator tempIt;
 	for(tempIt = temp.begin();
 		tempIt != temp.end();
 		tempIt++){
 
+
 		if(treeBasedGoalLocs.find(tempIt->first) != treeBasedGoalLocs.end()){
 			for (int i = 0; i < treeBasedGoalLocs[tempIt->first].size(); ++i) {
-				if(std::find(temp[tempIt->first].begin(),
-						     temp[tempIt->first].end(),
-							 treeBasedGoalLocs[tempIt->first][i]) == temp[tempIt->first].end()){
+				searchList.clear();
+				searchList.push_back(treeBasedGoalLocs[tempIt->first][i]);
+
+				if(std::search(temp[tempIt->first].begin(),
+							   temp[tempIt->first].end(),
+							   searchList.begin(),
+							   searchList.end(),
+							   pathPredictCompare) == temp[tempIt->first].end()){
+
 					temp[tempIt->first].insert(temp[tempIt->first].begin(),treeBasedGoalLocs[tempIt->first][i]);
+
 				}
+
+//				if(std::find(temp[tempIt->first].begin(),
+//						     temp[tempIt->first].end(),
+//							 treeBasedGoalLocs[tempIt->first][i]) == temp[tempIt->first].end()){
+//					temp[tempIt->first].insert(temp[tempIt->first].begin(),treeBasedGoalLocs[tempIt->first][i]);
+//				}
 			}
 		}
 

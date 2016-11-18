@@ -12,7 +12,9 @@ struct CGRANodeWithCost{
 	CGRANode* Cnode;
 	int cost;
 	Port port;
+	int SCpathLength;
 	CGRANodeWithCost(CGRANode* Cnode, int cost, Port port) : Cnode(Cnode),  cost(cost), port(port){}
+	CGRANodeWithCost(CGRANode* Cnode, int cost, Port port, int SCpathLength) : Cnode(Cnode),  cost(cost), port(port), SCpathLength(SCpathLength){}
 };
 
 struct LessThanCGRANodeWithCost {
@@ -43,9 +45,11 @@ public:
 							CGRANode* start,
 							Port startPort,
 							CGRANode* goal,
-							std::map<std::pair<CGRANode*,Port>,std::pair<CGRANode*,Port>> *cameFrom,
+							std::map<pathData,pathData,pathDataComparer> *cameFrom,
 							std::map<CGRANode*,int> *costSoFar,
-							Port* endPort);
+							Port* endPort,
+							int SCpathLength,
+							int* endPathLength);
 
 	CGRANode* AStarSearchEMS(std::map<CGRANode*, std::vector<CGRAEdge> > graph,
 							 CGRANode* start,
@@ -92,6 +96,8 @@ public:
 	int maxPathLength;
 	int maxSMARTPathLength;
 	std::map<int,std::vector<dfgNode*>> ASAPLevelNodeMap;
+
+	int MaxSCpathLength = 4;
 
 	bool reportDeadEnd(CGRANode* end, Port endPort, dfgNode* currNode, std::map<CGRANode*,std::vector<CGRAEdge> >* cgraEdges);
 

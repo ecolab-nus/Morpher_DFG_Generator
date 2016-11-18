@@ -1909,7 +1909,7 @@ void DFG::MapCGRA_SMART(int XDim, int YDim, ArchType arch, int bTrack) {
 
 
 	MII = std::max(std::max(MII,getMaxRecDist()),memMII);
-//	MII = 19;
+//	MII = 17;
 
 
 
@@ -2961,6 +2961,7 @@ TreePath DFG::createTreePath(dfgNode* parent, CGRANode* dest) {
 	tp.sources.push_back(ParentExt);
 	tp.sourcePorts[ParentExt] = TILE;
 	tp.sourcePaths[ParentExt] = (std::make_pair(parent,parent));
+	tp.sourceSCpathLengths[ParentExt] = 0;
 
 //	if(parent->getIdx() == 22){
 //		errs() << "createTreePath::Parent=" << parent->getIdx() << "\n";
@@ -2980,9 +2981,20 @@ TreePath DFG::createTreePath(dfgNode* parent, CGRANode* dest) {
 			foundParentTreeBasedRoutingLocs = false;
 			if((*child->getTreeBasedRoutingLocs()).find(parent) != (*child->getTreeBasedRoutingLocs()).end()){
 				for (int j = 0; j < (*child->getTreeBasedRoutingLocs())[parent].size(); ++j) {
-					cnode = (*child->getTreeBasedRoutingLocs())[parent][j].first;
+					cnode = (*child->getTreeBasedRoutingLocs())[parent][j]->cnode;
 					tp.sources.push_back(cnode);
-					tp.sourcePorts[cnode]=(*child->getTreeBasedRoutingLocs())[parent][j].second;
+					tp.sourcePorts[cnode]=(*child->getTreeBasedRoutingLocs())[parent][j]->lastPort;
+
+//					errs() << "getTreeBasedRoutingLocs read :: ";
+//					errs() << ", currNode=" << child->getIdx();
+//					errs() << ", currParent=" << parent->getIdx();
+//					errs() << ", cnode=" << cnode->getName();
+//					errs() << ", port=" << getCGRA()->getPortName(tp.sourcePorts[cnode]) << "\n";
+//					errs() << ", pathLength=" << (*child->getTreeBasedRoutingLocs())[parent][j]->SCpathLength << "\n";
+					assert(std::string("INV").compare(getCGRA()->getPortName(tp.sourcePorts[cnode])) != 0);
+
+
+					tp.sourceSCpathLengths[cnode]=(*child->getTreeBasedRoutingLocs())[parent][j]->SCpathLength;
 					if(cnode == ParentExt){
 						tp.sourcePaths[cnode] = (std::make_pair(parent,parent));
 					}
@@ -2996,9 +3008,11 @@ TreePath DFG::createTreePath(dfgNode* parent, CGRANode* dest) {
 
 			if((*child->getTreeBasedGoalLocs()).find(parent) != (*child->getTreeBasedGoalLocs()).end()){
 				for (int j = 0; j < (*child->getTreeBasedGoalLocs())[parent].size(); ++j) {
-					cnode = (*child->getTreeBasedGoalLocs())[parent][j].first;
+					cnode = (*child->getTreeBasedGoalLocs())[parent][j]->cnode;
 					tp.sources.push_back(cnode);
-					tp.sourcePorts[cnode]=(*child->getTreeBasedGoalLocs())[parent][j].second;
+					tp.sourcePorts[cnode]=(*child->getTreeBasedGoalLocs())[parent][j]->lastPort;
+					assert(std::string("INV").compare(getCGRA()->getPortName(tp.sourcePorts[cnode])) != 0);
+					tp.sourceSCpathLengths[cnode]=(*child->getTreeBasedGoalLocs())[parent][j]->SCpathLength;
 					if(cnode == ParentExt){
 						tp.sourcePaths[cnode] = (std::make_pair(parent,parent));
 					}
@@ -3131,7 +3145,7 @@ void DFG::printOutSMARTRoutes() {
 //							routingCnode = node->getMappedLoc();
 //							noRouting = true;
 								for (int j = routeStart; j < node->getMergeRoutingLocs()[parent].size(); ++j) {
-									errs() << "routePath = "<< node->getMergeRoutingLocs()[parent][j].first->getName() << "\n";
+									errs() << "routePath = "<< node->getMergeRoutingLocs()[parent][j]->cnode->getName() << "\n";
 //									if(routingCnode->getT() != node->getMergeRoutingLocs()[parent][j]->getT()){
 //										if(!noRouting){
 //											pT = routingCnode->getT();
@@ -3144,7 +3158,7 @@ void DFG::printOutSMARTRoutes() {
 //										noRouting = true;
 //										strEntry =  routingCnode->getNameWithOutTime() + " <-- " ;
 //									}else{
-										routingCnode = node->getMergeRoutingLocs()[parent][j].first;
+										routingCnode = node->getMergeRoutingLocs()[parent][j]->cnode;
 //										noRouting = false;
 										strEntry = strEntry + routingCnode->getName() + " <-- " ;
 										nodeRouteMap[origNode][origParent].push_back(routingCnode);
@@ -3167,8 +3181,8 @@ void DFG::printOutSMARTRoutes() {
 
 								if(node != parent){
 									for (k = 0; k < node->getMergeRoutingLocs()[parent].size(); ++k) {
-										errs() << "pathNode =" << node->getMergeRoutingLocs()[parent][k].first->getName() << "\n";
-										if(node->getMergeRoutingLocs()[parent][k].first == routingCnode){
+										errs() << "pathNode =" << node->getMergeRoutingLocs()[parent][k]->cnode->getName() << "\n";
+										if(node->getMergeRoutingLocs()[parent][k]->cnode == routingCnode){
 											routeStart = k+1;
 											break;
 										}
@@ -3741,8 +3755,8 @@ int DFG::printTurns() {
 	int xdiff;
 	int ydiff;
 
-	std::map<dfgNode*,std::vector<std::pair<CGRANode*,Port> >> parentRouteMap;
-	std::map<dfgNode*,std::vector<std::pair<CGRANode*,Port> >>::iterator parentRouteMapIt;
+	std::map<dfgNode*,std::vector<pathData* >> parentRouteMap;
+	std::map<dfgNode*,std::vector<pathData* >>::iterator parentRouteMapIt;
 
 	enum TurnDirs {NORTH,EAST,WEST,SOUTH,TILE};
 	std::map<CGRANode*,std::map<TurnDirs,int> > CGRANodeTurnStatsMap;
@@ -3770,15 +3784,15 @@ int DFG::printTurns() {
 			parent = parentRouteMapIt->first;
 
 			if(parentRouteMap[parent].size() > 0){
-				CGRANodeTurnStatsMap[parentRouteMap[parent][0].first][TILE]++;
+				CGRANodeTurnStatsMap[parentRouteMap[parent][0]->cnode][TILE]++;
 			}
 			else{
 				continue;
 			}
 
 			for (int j = 1; j < parentRouteMap[parent].size(); ++j) {
-				cnode = parentRouteMap[parent][j].first;
-				nextCnode = parentRouteMap[parent][j-1].first;
+				cnode = parentRouteMap[parent][j]->cnode;
+				nextCnode = parentRouteMap[parent][j-1]->cnode;
 
 				if(cnode->getT() == nextCnode->getT()){ //SMART Routes
 					xdiff = nextCnode->getX() - cnode->getX();

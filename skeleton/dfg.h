@@ -106,6 +106,7 @@ struct LessThanNodeWithCost{
 struct TreePath{
 	std::vector<CGRANode*> sources;
 	std::map<CGRANode*,Port> sourcePorts;
+	std::map<CGRANode*,int> sourceSCpathLengths;
 	std::map<CGRANode*,std::pair<dfgNode*,dfgNode*> > sourcePaths;
 	CGRANode* bestSource;
 	int bestCost;

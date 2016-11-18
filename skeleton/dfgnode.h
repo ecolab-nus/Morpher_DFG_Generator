@@ -9,6 +9,22 @@ class DFG;
 enum Port{NORTH,SOUTH,EAST,WEST,R0,R1,R2,R3,R4,R5,R6,R7,TILE,TREG,OP1,OP2,PRED,TILEIN,TILEOUT};
 enum HyCUBEIns{ADD,SUB,MUL,MULC,DIV,DIVC,LS,RS,ARS,AND,OR,XOR,Hy_LOAD,Hy_STORE,SELECT,BR,CMP,NOP};
 
+struct pathData{
+	CGRANode* cnode;
+	Port lastPort;
+	int SCpathLength;
+	pathData(CGRANode* cnode, Port port, int SCpathLength) : cnode(cnode), lastPort(port), SCpathLength(SCpathLength){}
+	pathData(){}
+};
+
+struct pathDataComparer
+{
+    bool operator()(const pathData & Left, const pathData & Right) const
+    {
+        return Left.cnode < Right.cnode;
+    }
+};
+
 using namespace llvm;
 
 
@@ -44,8 +60,8 @@ class dfgNode{
 			CGRANode* mappedLoc = NULL;
 			std::vector<CGRANode*> routingLocs;
 			std::map<dfgNode*,std::pair<dfgNode*,dfgNode*>> sourceRoutingPath;
-			std::map<dfgNode*,std::vector<std::pair<CGRANode*,Port>>> treeBasedRoutingLocs;
-			std::map<dfgNode*,std::vector<std::pair<CGRANode*,Port>>> treeBasedGoalLocs;
+			std::map<dfgNode*,std::vector<pathData*>> treeBasedRoutingLocs;
+			std::map<dfgNode*,std::vector<pathData*>> treeBasedGoalLocs;
 
 
 			int routingPossibilities = 0;
@@ -129,8 +145,8 @@ class dfgNode{
 
 			std::vector<CGRANode*>* getRoutingLocs();
 			std::map<dfgNode*,std::pair<dfgNode*,dfgNode*>>* getSourceRoutingPath(){return &sourceRoutingPath;}
-			std::map<dfgNode*,std::vector<std::pair<CGRANode*,Port> >>* getTreeBasedRoutingLocs(){return &treeBasedRoutingLocs;}
-			std::map<dfgNode*,std::vector<std::pair<CGRANode*,Port> >>* getTreeBasedGoalLocs(){return &treeBasedGoalLocs;}
+			std::map<dfgNode*,std::vector<pathData*>>* getTreeBasedRoutingLocs(){return &treeBasedRoutingLocs;}
+			std::map<dfgNode*,std::vector<pathData*>>* getTreeBasedGoalLocs(){return &treeBasedGoalLocs;}
 
 			void setRoutingPossibilities(int n){routingPossibilities = n;}
 			int getRoutingPossibilities(){return routingPossibilities;}
@@ -138,7 +154,7 @@ class dfgNode{
 			void setMappedRealTime(int t){mappedRealTime = t;}
 			int getmappedRealTime(){return mappedRealTime;}
 
-			std::map<dfgNode*,std::vector<std::pair<CGRANode*,Port> >> getMergeRoutingLocs();
+			std::map<dfgNode*,std::vector<pathData* >> getMergeRoutingLocs();
 
 			void setNameType(std::string name){nameType = name;}
 			std::string getNameType(){return nameType;}
