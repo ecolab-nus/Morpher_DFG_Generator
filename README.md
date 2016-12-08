@@ -3,6 +3,7 @@
 A completely useless LLVM pass.
 
 Build:
+
     $ export ROOT\_DIR=[full path to the cgra\_dfg directory]
     $ cd $ROOT\_DIR
     $ mkdir build
