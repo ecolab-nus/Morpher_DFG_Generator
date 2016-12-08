@@ -16,5 +16,5 @@ Run:
 
     $ clang -c -emit-llvm -S [source].c -o [source].bc
     $ opt -always-inline -gvn -loop-simplify -simplifycfg [source].bc -o [source]_gvn.bc
-    $ opt -load $ROOT_DIR/build/skeleton/libSkeletonPass.so -skeleton -fn [function name] -ln [loop number] [source].bc
+    $ opt -load $ROOT_DIR/build/skeleton/libSkeletonPass.so -skeleton -fn [function name] -ln [loop number] [source]_gvn.bc
 
