@@ -1909,7 +1909,7 @@ void DFG::MapCGRA_SMART(int XDim, int YDim, ArchType arch, int bTrack) {
 
 
 	MII = std::max(std::max(MII,getMaxRecDist()),memMII);
-//	MII = 17;
+//	MII = 19;
 
 
 

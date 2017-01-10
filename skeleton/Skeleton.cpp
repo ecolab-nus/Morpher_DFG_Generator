@@ -612,8 +612,8 @@ namespace {
 				  LoopDFG.handleMEMops();
 				  LoopDFG.nameNodes();
 
-				  ArchType arch = RegXbarTREG;
-				  LoopDFG.MapCGRA_SMART(4,4, arch, 200);
+				  ArchType arch = NoNOC;
+				  LoopDFG.MapCGRA_SMART(5,4, arch, 20);
 //				  LoopDFG.MapCGRA_EMS(4,4,F.getName().str() + "_L" + std::to_string(loopCounter) + "_mapping.log");
 				  printDFGDOT (F.getName().str() + "_L" + std::to_string(loopCounter) + "_loopdfg.dot", &LoopDFG);
 //				  LoopDFG.printTurns();

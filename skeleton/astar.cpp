@@ -92,6 +92,14 @@ CGRANode* AStar::AStarSearch(std::map<CGRANode*,std::vector<CGRAEdge> > graph,
 			nextCost = maxEdgeCount - currDFG->getCGRA()->findCGRAEdges(next,nextPort,&graph).size();
 			assert(nextCost >= 0);
 
+#ifdef TREG_MUTEX
+			//Use TREG as a last resource, since the mux change will block TILE output
+			// Rendering the processing element useless when TREG comes out to the crossbar
+			if(tempCGRAEdges[i]->SrcPort == TREG){
+				nextCost = nextCost*100000;
+			}
+#endif
+
 			//disble UE cost heuristic
 //			nextCost = 1;
 
@@ -730,12 +738,13 @@ bool AStar::Route(dfgNode* currNode,
 											cameFrom[currPathData].cnode->InOutPortMap[SOUTH] = {R3};
 										}
 									break;
-//									case TREG:
-//										if(tempCGRAEdges[j]->DstPort != TREG){
-//											cameFrom[currPathData].cnode->InOutPortMap[TILE] = {};
-//										}
-//									break;
-
+#ifdef TREG_MUTEX
+									case TREG:
+										if(tempCGRAEdges[j]->DstPort != TREG){
+											cameFrom[currPathData].cnode->InOutPortMap[TILE] = {};
+										}
+									break;
+#endif
 									case NORTH:
 										if(tempCGRAEdges[j]->DstPort != R0){
 											cameFrom[currPathData].cnode->InOutPortMap[R0] = {R0};
@@ -756,12 +765,13 @@ bool AStar::Route(dfgNode* currNode,
 											cameFrom[currPathData].cnode->InOutPortMap[R3] = {R3};
 										}
 									break;
-//									case TILE:
-//										if(tempCGRAEdges[j]->DstPort != TREG){
-//											cameFrom[currPathData].cnode->InOutPortMap[TREG] = {TREG};
-//										}
-//									break;
-
+#ifdef TREG_MUTEX
+									case TILE:
+										if(tempCGRAEdges[j]->DstPort != TREG){
+											cameFrom[currPathData].cnode->InOutPortMap[TREG] = {TREG};
+										}
+									break;
+#endif
 								}
 							}
 							else if(current != goal){ //NoNOC
