@@ -57,6 +57,7 @@
 #include <sstream>
 #include <iomanip>
 #include <algorithm>
+#include <set>
 
 
 //My Classes
@@ -85,12 +86,13 @@ static cl::opt<bool> noName("nn", cl::desc("map all functions and loops"));
 
 STATISTIC(LoopsAnalyzed, "Number of loops analyzed for vectorization");
 
-
+static std::set<const BasicBlock*> LoopBB;
 
 	void traverseDefTree(Instruction *I,
 				 	 	 int depth,
 						 DFG* currBBDFG, std::map<Instruction*,int>* insMapIn,
 						 std::map<const BasicBlock*,std::vector<const BasicBlock*>> BBSuccBasicBlocks,
+						 std::set<const BasicBlock*> validBB,
 						 MemoryDependenceAnalysis *MD = NULL){
 
 
@@ -101,6 +103,7 @@ STATISTIC(LoopsAnalyzed, "Number of loops analyzed for vectorization");
 //					 return;
 //				 }
 
+
 		 		SmallVector<std::pair<const BasicBlock *, const BasicBlock *>,1 > BackEdgesBB;
 		 		FindFunctionBackedges(*(I->getFunction()),BackEdgesBB);
 
@@ -109,9 +112,44 @@ STATISTIC(LoopsAnalyzed, "Number of loops analyzed for vectorization");
 	    		 dfgNode curr(I,currBBDFG);
 				 currBBDFG->InsertNode(I);
 				 dfgNode* currPtr = currBBDFG->findNode(I);
+
+				 for (Use &V : I->operands()) {
+					 if (Instruction *ParIns = dyn_cast<Instruction>(V)) {
+						 if(validBB.find(ParIns->getParent()) == validBB.end()){
+							 currBBDFG->findNode(I)->addLoadParent(ParIns);
+						 }
+					 }
+				 }
+
 				  for (User *U : I->users()) {
 
 					if (Instruction *Inst = dyn_cast<Instruction>(U)) {
+
+						errs() << "I :";
+						I->dump();
+						errs() << "Inst : ";
+						Inst->dump();
+
+						//Searching inside basicblocks of the loop
+						if(validBB.find(Inst->getParent()) == validBB.end()){
+							currBBDFG->findNode(I)->addStoreChild(Inst);
+							continue;
+						}
+
+
+						 if(std::find(BBSuccBasicBlocks[I->getParent()].begin(),BBSuccBasicBlocks[I->getParent()].end(),Inst->getParent())==BBSuccBasicBlocks[I->getParent()].end()){
+							 if(Inst->getOpcode() == Instruction::PHI){
+								 errs() << "#####TRAVDEFTREE :: PHI Child found1!\n";
+
+								 //TODO :: Please uncomment in order to have phi relationships.
+								 // This was done because of EPIMap
+
+								 currBBDFG->findNode(I)->addPHIchild(Inst);
+//								 currBBDFG->findNode(Inst)->addPHIancestor(I);
+							 }
+							 errs() << "line 126, #####TRAVDEFTREE :: backedge found!\n";
+							 continue;
+						 }
 
 						 std::pair <const BasicBlock*,const BasicBlock*> bbCouple(I->getParent(),Inst->getParent());
 						 if(std::find(BackEdgesBB.begin(),BackEdgesBB.end(),bbCouple)!=BackEdgesBB.end()){
@@ -121,31 +159,17 @@ STATISTIC(LoopsAnalyzed, "Number of loops analyzed for vectorization");
 							 }
 						 }
 
-						 if(std::find(BBSuccBasicBlocks[I->getParent()].begin(),BBSuccBasicBlocks[I->getParent()].end(),Inst->getParent())==BBSuccBasicBlocks[I->getParent()].end()){
-							 if(Inst->getOpcode() == Instruction::PHI){
-								 errs() << "#####TRAVDEFTREE :: PHI Child found!\n";
-
-								 //TODO :: Please uncomment in order to have phi relationships.
-								 // This was done because of EPIMap
-
-//								 currBBDFG->findNode(I)->addPHIchild(Inst);
-//								 currBBDFG->findNode(Inst)->addPHIancestor(I);
-							 }
-							 errs() << "line 126, #####TRAVDEFTREE :: backedge found!\n";
-							 continue;
-						 }
-
 						 //TODO :: Handle nicely PHI that use values defined in the same basicblock
 						 if(Inst->getOpcode() == Instruction::PHI){
 							 if(I->getParent() == Inst->getParent()){
 								 //errs() << "Assertion is going to fail\n";
 								 //errs() << "Parent : ";
-								 errs() << "#####TRAVDEFTREE :: PHI Child found!\n";
+								 errs() << "#####TRAVDEFTREE :: PHI Child found2!\n";
 
 								 //TODO :: Please uncomment in order to have phi relationships
 								 // This was done because of EPIMap
 
-//								 currBBDFG->findNode(I)->addPHIchild(Inst);
+								 currBBDFG->findNode(I)->addPHIchild(Inst);
 //								 currBBDFG->findNode(Inst)->addPHIancestor(I);
 								 I->dump();
 								 //errs() << "Child : ";
@@ -159,7 +183,7 @@ STATISTIC(LoopsAnalyzed, "Number of loops analyzed for vectorization");
 					    //errs() << "\t" <<*Inst << "\n";
 
 					  if(insMapIn->find(Inst) == insMapIn->end()){
-						traverseDefTree(Inst, depth + 1, currBBDFG, insMapIn,BBSuccBasicBlocks);
+						traverseDefTree(Inst, depth + 1, currBBDFG, insMapIn,BBSuccBasicBlocks,validBB);
 					  }
 					  else{
 						  //errs() << Inst << " Already found on the map\n";
@@ -404,6 +428,7 @@ namespace {
     	virtual bool runOnFunction(Function &F) {
 				std::map<Instruction*,int> insMap;
 				std::map<Instruction*,int> insMap2;
+				static std::set<const BasicBlock*> funcBB;
 				std::error_code EC;
 
 
@@ -471,6 +496,7 @@ namespace {
 				  currBBIdx++;
 				  //errs() << "Currently proessing = " << currBBIdx << "\n";
 				  BasicBlock* BB = dyn_cast<BasicBlock>(&B);
+				  funcBB.insert(BB);
 				  BBSuccBasicBlocks[BB].push_back(BB);
 				  dfsBB(BackEdgesBB,&BBSuccBasicBlocks,BB,BB);
 			  }
@@ -481,37 +507,18 @@ namespace {
 
 			  //errs() << "Succesive basic block search completed.\n";
 
-//			  DFG funcDFG;
-//			  funcDFG.setBBSuccBasicBlocks(BBSuccBasicBlocks);
-//
-//			  for (auto &B : F) {
-//					 int Icount = 0;
-//					 for (auto &I : B) {
-//						 if(insMap2.find(&I) != insMap2.end()){
-//							 continue;
-//						 }
-//						  int depth = 0;
-//						  traverseDefTree((Instruction*)&I, depth, &funcDFG, &insMap2,BBSuccBasicBlocks);
-//						  //errs() << "Ins Count : " << Icount++ << "\n";
-//					 }
-//
-//			  }
-//			  funcDFG.connectBB();
-////			  funcDFG.addMemDepEdges(MD);
-//			  funcDFG.removeAlloc();
-//			  funcDFG.scheduleASAP();
-//			  funcDFG.scheduleALAP();
-//			  funcDFG.CreateSchList();
-////			  funcDFG.addMemRecDepEdges(DA);
-//			  funcDFG.MapCGRAsa(4,4);
-//			  printDFGDOT (F.getName().str() + "_funcdfg.dot", &funcDFG);
-//			  return true;
+			  //Create a large dfg for the whole function
+			  insMap.clear();
+			  DFG funcDFG;
+			  std::vector<DFG> dfgVector;
+			  for (auto &B : F) {
+				  BasicBlock* BB = dyn_cast<BasicBlock>(&B);
+				  for (auto &I : BB) {
+					  Instruction* ins = *I;
+					  traverseDefTree(ins,0,&funcDFG,&insMap,BBSuccBasicBlocks,funcBB);
+				  }
+			  }
 
-
-//			  funcDFG.MapCGRA(4,4);
-//			  printDFGDOT (F.getName().str() + "_funcdfg.dot", &funcDFG);
-
-//			  funcDFG.printXML(F.getName().str() + "_func.xml");
 
 			  std::vector<Loop*> innerMostLoops;
 			  std::vector<Loop*> loops;
@@ -521,34 +528,33 @@ namespace {
 			  }
 
 			  getInnerMostLoops(&innerMostLoops,loops);
+			  errs() << "Number of innermost loops : " << innerMostLoops.size() << "\n";
 
 			  for (int i = 0; i < innerMostLoops.size(); ++i) {
 				  Loop *L = innerMostLoops[i];
 				  errs() << "*********Loop***********" << "\n";
-				  L->dump();
 				  errs() << "\n\n";
 
 
 				  //Only the innermost Loop
 				  assert(L->getSubLoops().size() == 0);
-//				  if(L->getSubLoops().size() != 0){
-//					  errs() << "Sub loop Size = " << L->getSubLoops().size() << "\n";
-//					  continue;
-//				  }
 
-//				 //---------------------------------------------------------------
-//				 //**************TODO :: PLease remove this after testing on dct
-//				 //---------------------------------------------------------------
 				 if(noName == false){
 					 if(loopCounter != loopNumber){
 						 loopCounter++;
 						 continue;
 					 }
 				 }
-//				 //---------------------------------------------------------------
 
 
-
+				 errs() << "The Loop we are dealing with : \n";
+				 L->dump();
+				 LoopBB.clear();
+				  for (Loop::block_iterator bb = L->block_begin(); bb!= L->block_end(); ++bb){
+					  (*bb)->dump();
+					  LoopBB.insert(*bb);
+				  }
+				 errs() << "end of the dealing loop....\n";
 
 
 				  begin = clock();
@@ -556,14 +562,9 @@ namespace {
 				  DFG LoopDFG(F.getName().str() + "_L" + std::to_string(loopCounter));
 				  LoopDFG.setBBSuccBasicBlocks(BBSuccBasicBlocks);
 
+				  insMap.clear();
 				  for (Loop::block_iterator bb = L->block_begin(); bb!= L->block_end(); ++bb){
 					 BasicBlock *B = *bb;
-
-					 //errs() << "\n*********BasicBlock : " << B->getName() << "\n\n";
-
-//					 DFG currBBDFG;
-
-
 					 int Icount = 0;
 					 for (auto &I : *B) {
 
@@ -571,38 +572,21 @@ namespace {
 							 continue;
 						 }
 
-
-						  //errs() << "Instruction: ";
-//						  I.dump();
-
-
-//						  if(I.mayReadOrWriteMemory()){
-//							  checkMemDepedency(&I,MD);
-//						  }
-
 						  int depth = 0;
-//						  traverseDefTree(&I, depth, &currBBDFG, &insMap);
-						  traverseDefTree(&I, depth, &LoopDFG, &insMap,BBSuccBasicBlocks);
-
-
-//						  for (User *U : I.users()) {
-//							if (Instruction *Inst = dyn_cast<Instruction>(U)) {
-//							  //errs() << "\tI is used in instruction:\n";
-//							  //errs() << "\t" <<*Inst << "\n";
-//							}
-//						  }
-
-						//errs() << "Ins Count : " << Icount++ << "\n";
+						  traverseDefTree(&I, depth, &LoopDFG, &insMap,BBSuccBasicBlocks,LoopBB);
 					 }
-//					 printDFGDOT (F.getName().str() + "_" + B->getName().str() + "_dfg.dot", &currBBDFG);
 				  }
+				  LoopDFG.addPHIChildEdges();
 				  LoopDFG.connectBB();
+				  LoopDFG.handlePHINodes();
 //				  LoopDFG.handlePHINodeFanIn();
 				  LoopDFG.checkSanity();
 //				  LoopDFG.addMemDepEdges(MD);
 //				  LoopDFG.removeAlloc();
 //				  LoopDFG.addMemRecDepEdges(DA);
 //				  LoopDFG.addMemRecDepEdgesNew(DA);
+				  printDFGDOT (F.getName().str() + "_L" + std::to_string(loopCounter) + "_loopdfg.dot", &LoopDFG);
+
 				  LoopDFG.scheduleASAP();
 				  LoopDFG.scheduleALAP();
 				  LoopDFG.CreateSchList();
@@ -612,11 +596,13 @@ namespace {
 				  LoopDFG.handleMEMops();
 				  LoopDFG.nameNodes();
 
-				  ArchType arch = NoNOC;
-				  LoopDFG.MapCGRA_SMART(5,4, arch, 20);
+				  ArchType arch = RegXbarTREG;
+				  LoopDFG.MapCGRA_SMART(4,4, arch, 20);
+				  LoopDFG.addPHIParents();
 //				  LoopDFG.MapCGRA_EMS(4,4,F.getName().str() + "_L" + std::to_string(loopCounter) + "_mapping.log");
 				  printDFGDOT (F.getName().str() + "_L" + std::to_string(loopCounter) + "_loopdfg.dot", &LoopDFG);
 //				  LoopDFG.printTurns();
+
 				  if((arch != NoNOC)&&(arch != ALL2ALL)){
 					  LoopDFG.printOutSMARTRoutes();
 					  LoopDFG.printMapping();
@@ -627,14 +613,6 @@ namespace {
 
 				  end = clock();
 				  timeFile << F.getName().str() << "_L" << std::to_string(loopCounter) << " time = " << double(end-begin)/CLOCKS_PER_SEC << "\n";
-
-//				  loopCFGFileName = "cfg" + LoopDFG.getName() + ".dot";
-//				  raw_fd_ostream File(loopCFGFileName, EC, sys::fs::F_Text);
-//				  if (!EC){
-//					  WriteGraph(File, (const Function*)L);
-//				  }
-
-
 
 
 				  loopCounter++;

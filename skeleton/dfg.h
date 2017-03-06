@@ -111,7 +111,8 @@ struct TreePath{
 	CGRANode* bestSource;
 	int bestCost;
 	CGRANode* dest;
-	TreePath() : bestSource(NULL), dest(NULL), bestCost(-1){}
+	CGRANode* PHIDest;
+	TreePath() : bestSource(NULL), dest(NULL), bestCost(-1), PHIDest(NULL){}
 };
 
 typedef struct{
@@ -123,7 +124,8 @@ typedef struct{
 	uint16_t constant;
 } binOp;
 
-enum MemOp {LOAD,STORE,INVALID};
+enum MemOp   {LOAD,STORE,INVALID};
+enum DFGType {NOLOOP,OUTLOOP,INLOOP};
 
 class DFG{
 		private :
@@ -168,6 +170,7 @@ class DFG{
 		public :
 			std::ofstream mappingOutFile;
 			AStar* astar;
+			std::map<Instruction*,dfgNode*> OutLoopNodeMap;
 
 			DFG(std::string name);
 
@@ -195,7 +198,7 @@ class DFG{
 
 			std::vector<dfgNode*> getRoots();
 
-			std::vector<dfgNode*> getLeafs(BasicBlock* BB);
+			std::vector<dfgNode*> getLeafs(BasicBlock* BB, bool withinSameBB = false);
 			std::vector<dfgNode*> getLeafs();
 
 			void connectBB();
@@ -312,6 +315,9 @@ class DFG{
 			//Print Possible Congestion Info
 			int printCongestionInfo();
 
+			//Treat PHI Nodes
+			int handlePHINodes();
+
 			//Treat high-fan in PHI Nodes
 			int handlePHINodeFanIn();
 
@@ -333,6 +339,16 @@ class DFG{
 			//Backtrack counter
 			int initBtrack;
 			int backtrackCounter = 100;
+
+			//Handling PHIChildren
+			TreePath createTreePathPHIDest(dfgNode* node, CGRANode* dest, CGRANode* phiChildDest);
+			void addPHIChildEdges();
+			void addPHIParents();
+			dfgNode* findNodeMappedLoc(CGRANode* cnode);
+
+			//type
+			DFGType type;
+			static void partitionFuncDFG(DFG* funcDFG, std::vector<DFG*> dfgVectorPtr);
 
 
 	};

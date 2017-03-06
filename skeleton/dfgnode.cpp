@@ -3,6 +3,7 @@
 
 dfgNode::dfgNode(Instruction *ins, DFG* parent){
 	this->Node = ins;
+	this->BB = ins->getParent();
 	this->Parent = parent;
 }
 
@@ -74,6 +75,24 @@ void dfgNode::addAncestorNode(dfgNode* node, int type) {
 
 	Parent->InsertEdge(temp);
 }
+
+void dfgNode::addPHIAncestorNode(dfgNode* node) {
+	assert(node != NULL);
+	PHIAncestorNodes.push_back(node);
+
+	Edge temp;
+	temp.setID(Parent->getEdges().size());
+
+	std::ostringstream ss;
+	ss << std::dec << node->getIdx() << "_to_" << this->getIdx();
+	temp.setName(ss.str());
+	temp.setType(EDGE_TYPE_PHI);
+	temp.setSrc(node);
+	temp.setDest(this);
+
+	Parent->InsertEdge(temp);
+}
+
 
 void dfgNode::setIdx(int Idx) {
 	idx = Idx;
@@ -254,22 +273,23 @@ void dfgNode::addPHIchild(Instruction* child, int type) {
 //	temp.setID(Parent->getEdges().size());
 //
 //	std::ostringstream ss;
-//	ss << std::hex << static_cast<void*>(Node) << "_to_" << static_cast<void*>(child);
+//	ss << std::dec << this->getIdx() << "_to_" << Parent->findNode(child)->getIdx();
 //	temp.setName(ss.str());
 //	temp.setType(type);
-//	temp.setSrc(Node);
-//	temp.setDest(child);
+//	temp.setSrc(this);
+//	temp.setDest(Parent->findNode(child));
 //
 //	Parent->InsertEdge(temp);
 }
 
 void dfgNode::addPHIancestor(Instruction* anc, int type) {
+	errs() << "test\n";
 	for (int i = 0; i < PHIAncestors.size(); ++i) {
 		if(anc == PHIAncestors[i]){
 			return;
 		}
 	}
-
+	errs() << "test\n";
 	PHIAncestors.push_back(anc);
 
 	dfgNode* phiAncNode = Parent->findNode(anc);
@@ -332,6 +352,7 @@ std::map<dfgNode*,std::vector<pathData*>> dfgNode::getMergeRoutingLocs() {
 	return temp;
 }
 
+
 bool dfgNode::isConditional() {
 	if(this->getNode() != NULL){
 		if(this->getNode()->getOpcode() == Instruction::Br){
@@ -344,3 +365,42 @@ bool dfgNode::isConditional() {
 	return false;
 }
 
+void dfgNode::addStoreChild(Instruction * ins) {
+	dfgNode* temp;
+
+	if(Parent->OutLoopNodeMap.find(ins) == Parent->OutLoopNodeMap.end()){
+		temp = new dfgNode(Parent);
+		temp->setNameType("OutLoopSTORE");
+		temp->setIdx(Parent->getNodesPtr()->size());
+		Parent->getNodesPtr()->push_back(temp);
+		Parent->OutLoopNodeMap[ins] = temp;
+	}
+	else{
+		temp = Parent->OutLoopNodeMap[ins];
+	}
+
+	temp->addAncestorNode(this);
+	this->addChildNode(temp);
+
+	temp->BB = this->getNode()->getParent();
+}
+
+void dfgNode::addLoadParent(Instruction * ins) {
+	dfgNode* temp;
+
+	if(Parent->OutLoopNodeMap.find(ins) == Parent->OutLoopNodeMap.end()){
+		temp = new dfgNode(Parent);
+		temp->setNameType("OutLoopLOAD");
+		temp->setIdx(Parent->getNodesPtr()->size());
+		Parent->getNodesPtr()->push_back(temp);
+		Parent->OutLoopNodeMap[ins] = temp;
+	}
+	else{
+		temp = Parent->OutLoopNodeMap[ins];
+	}
+
+	this->addAncestorNode(temp);
+	temp->addChildNode(this);
+
+	temp->BB = this->getNode()->getParent();
+}

@@ -200,6 +200,9 @@ bool AStar::Route(dfgNode* currNode,
 	std::map<CGRANode*,std::vector<TreePath>> destTreePathMap;
 	std::map<CGRANode*,std::vector<TreePath>>::iterator destTreePathMapIt;
 
+	//PHINode Treatment
+	std::map<CGRANode*,std::vector<TreePath>> destTreePathMapPHI;
+
 	std::map<pathData,pathData,pathDataComparer> cameFrom;
 	std::map<pathData,pathData,pathDataComparer>::iterator cameFromIt;
 	bool cameFromSearch = false;
@@ -307,6 +310,7 @@ bool AStar::Route(dfgNode* currNode,
 	errs() << "Astar::Route:: dests.size = " << dests->size() << "\n";
 	errs() << "Astar::Route:: parents.size = " << parents.size() << "\n";
 
+
 	if(parents.empty()){
 		for (int i = 0; i < dests->size(); ++i) {
 			dest = (*dests)[i];
@@ -335,7 +339,25 @@ bool AStar::Route(dfgNode* currNode,
 	//Creating TreePaths Data Structure
 	for (int i = 0; i < dests->size(); ++i) {
 		for (int j = 0; j < parents.size(); ++j) {
+			if(parents[j] == currNode){
+				continue;
+			}
 			destTreePathMap[(*dests)[i]].push_back(currDFG->createTreePath(parents[j],(*dests)[i]));
+		}
+
+		//IF PHI Children are there
+		for (int j = 0; j < currNode->PHIchildren.size(); ++j) {
+			dfgNode* phiChildNode = currDFG->findNode(currNode->PHIchildren[j]);
+			assert(phiChildNode != NULL);
+
+			if(phiChildNode->getMappedLoc() != NULL){
+				destTreePathMap[(*dests)[i]].push_back(currDFG->createTreePathPHIDest(currNode,(*dests)[i],phiChildNode->getMappedLoc()));
+				parents.push_back(currNode);
+			}
+			else{
+				phiChildNode->addAncestorNode(currNode);
+				currNode->addChildNode(phiChildNode);
+			}
 		}
 	}
 
@@ -379,6 +401,12 @@ bool AStar::Route(dfgNode* currNode,
 				assert(destTreePathMap[dest][i].sourcePaths[start].second != NULL);
 //				errs() << "\n";
 //				pathsWithCost.push_back(pathWithCost(std::make_pair(start,goal),costSoFar[goal],parents[i]));
+				if(parents[i] == currNode){
+					assert(dest != goal);
+				}
+				else{
+					assert(dest == goal);
+				}
 				destPathWithCostMap[dest].push_back(pathWithCost(std::make_pair(start,goal),costSoFar[goal],parents[i]));
 			}
 //			errs() << "\n";
@@ -546,7 +574,14 @@ bool AStar::Route(dfgNode* currNode,
 				assert(destTreePathWithCostMap[dest][i].tp.sourcePaths[start].second != NULL);
 
 //				pathsWithCost.push_back(pathWithCost(std::make_pair(start,goal),costSoFar[goal],parents[i]));
-				destPathWithCostMap[dest].push_back(pathWithCost(std::make_pair(start,goal),costSoFar[goal],parents[i]));
+				if(destTreePathWithCostMap[dest][i].parent == currNode){
+					assert(dest != goal);
+				}
+				else{
+					if(dest != goal) errs() << "goal = " << goal->getName() << ",dest = " << dest->getName() << "\n";
+					assert(dest == goal);
+				}
+				destPathWithCostMap[dest].push_back(pathWithCost(std::make_pair(start,goal),costSoFar[goal],destTreePathWithCostMap[dest][i].parent));
 			}
 
 //			std::sort(pathsWithCost.begin(),pathsWithCost.end(),LessThanPathWithCost());
@@ -560,6 +595,7 @@ bool AStar::Route(dfgNode* currNode,
 			}
 			destTreePathMap[dest][i].sourcePorts = destTreePathWithCostMap[dest][i].tp.sourcePorts;
 			destTreePathMap[dest][i].sourcePaths = destTreePathWithCostMap[dest][i].tp.sourcePaths;
+			destTreePathMap[dest][i].dest = destTreePathWithCostMap[dest][i].tp.dest;
 
 			if(destTreePathMap[dest][i].sources.size() == 0){
 				*mappingOutFile << "routing not completed as it only routed until : " << end->getName() << std::endl;
@@ -644,7 +680,15 @@ bool AStar::Route(dfgNode* currNode,
 
 			if(currSourcePath.first == currSourcePath.second){
 				errs() << "start=" << start->getName() << "\n";
-				errs() << "currParentLoc=" << currParent->getMappedLoc()->getName() << "\n";
+
+				if(currParent == currNode){
+					errs() << "PHIChildMapping : CurrNodeLoc =" << goal->getName() << "\n";
+				}
+				else{
+					errs() << "currParentLoc=" << currParent->getMappedLoc()->getName() << "\n";
+				}
+
+
 			}
 
 			if(cameFrom.size() > 0){
@@ -699,7 +743,15 @@ bool AStar::Route(dfgNode* currNode,
 					errs() << ", cnode=" << current->getName();
 					errs() << ", sclength=" << currPathLength;
 					errs() << ", port=" << currDFG->getCGRA()->getPortName(currPort) << "\n";
-					(*currNode->getTreeBasedRoutingLocs())[currParent].push_back(new pathData(current,currPort,currPathLength));
+
+					if(currParent == currNode){
+						errs() << "PHI Child : " << currDFG->findNodeMappedLoc(goal)->getIdx() << "\n";
+						(*currDFG->findNodeMappedLoc(goal)->getTreeBasedRoutingLocs())[currParent].push_back(new pathData(current,currPort,currPathLength));
+					}
+					else{
+						(*currNode->getTreeBasedRoutingLocs())[currParent].push_back(new pathData(current,currPort,currPathLength));
+					}
+
 
 	//			}
 
@@ -890,7 +942,17 @@ bool AStar::Route(dfgNode* currNode,
 			errs() << ", cnode=" << start->getName();
 			errs() << ", sclength=" << startPathLength;
 			errs() << ", port=" << currDFG->getCGRA()->getPortName(startPort) << "\n";
-			(*currNode->getTreeBasedRoutingLocs())[currParent].push_back(new pathData(start,startPort,startPathLength));
+
+			if(currParent == currNode){
+				errs() << "PHI Child : " << currDFG->findNodeMappedLoc(goal)->getIdx() << "\n";
+				(*currDFG->findNodeMappedLoc(goal)->getTreeBasedRoutingLocs())[currParent].push_back(new pathData(start,startPort,startPathLength));
+			}
+			else{
+				(*currNode->getTreeBasedRoutingLocs())[currParent].push_back(new pathData(start,startPort,startPathLength));
+			}
+
+
+//			(*currNode->getTreeBasedRoutingLocs())[currParent].push_back(new pathData(start,startPort,startPathLength));
 
 			if(currDFG->getCGRA()->getArch() == NoNOC){
 				tempDestCGRAEdges = currDFG->getCGRA()->getCGRAEdgesWithDest(start,cgraEdges);

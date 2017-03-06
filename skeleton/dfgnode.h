@@ -38,7 +38,7 @@ class dfgNode{
 			std::vector<Instruction*> Ancestors;
 			std::vector<Instruction*> RecChildren;
 			std::vector<Instruction*> RecAncestors;
-			std::vector<Instruction*> PHIchildren;
+//			std::vector<Instruction*> PHIchildren;
 			std::vector<Instruction*> PHIAncestors;
 
 			std::vector<dfgNode*> ChildNodes;
@@ -76,6 +76,9 @@ class dfgNode{
 			std::vector<int> InEdgesIdx;
 			std::vector<int> OutEdgesIdx;
 
+			std::vector<Instruction*> PHIchildren;
+			const BasicBlock* BB;
+
 
 			dfgNode(Instruction *ins, DFG* parent);
 //			dfgNode(){}
@@ -111,7 +114,8 @@ class dfgNode{
 			void addRecChildNode(dfgNode* node){RecChildNodes.push_back(node);}
 			void addRecAncestorNode(dfgNode* node){RecAncestorNodes.push_back(node);}
 			void addPHIChildNode(dfgNode* node){PHIchildNodes.push_back(node);}
-			void addPHIAncestorNode(dfgNode* node){PHIAncestorNodes.push_back(node);}
+//			void addPHIAncestorNode(dfgNode* node){PHIAncestorNodes.push_back(node);}
+			void addPHIAncestorNode(dfgNode* node);
 
 			Instruction* getNode();
 
@@ -166,6 +170,10 @@ class dfgNode{
 
 			void setFinalIns(HyCUBEIns ins){finalIns = ins;}
 			HyCUBEIns getFinalIns(){return finalIns;}
+
+			//Out of loop instructions
+			void addStoreChild(Instruction * ins);
+			void addLoadParent(Instruction * ins);
 
 
 

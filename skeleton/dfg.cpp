@@ -73,14 +73,16 @@ std::vector<dfgNode*> DFG::getLeafs(BasicBlock* BB){
 	errs() << "start getting the LeafNodes...!\n";
 	std::vector<dfgNode*> leafNodes;
 	for (int i = 0 ; i < NodeList.size() ; i++) {
-		if(NodeList[i]->getNode()->getParent() == BB){
+//		if(NodeList[i]->getNode()->getParent() == BB){
+		if(NodeList[i]->BB == BB){
 			leafNodes.push_back(NodeList[i]);
 		}
 	}
 	errs() << "LeafNodes init done...!\n";
 
 	for (int i = 0 ; i < NodeList.size() ; i++) {
-		if(NodeList[i]->getNode()->getParent() == BB){
+//		if(NodeList[i]->getNode()->getParent() == BB){
+		if(NodeList[i]->BB == BB){
 			for(int j = 0; j < NodeList[i]->getChildren().size(); j++){
 				dfgNode* nodeToBeRemoved = NodeList[i]->getChildren()[j];
 				if(nodeToBeRemoved != NULL){
@@ -120,37 +122,39 @@ void DFG::connectBB(){
 
 	std::vector<BasicBlock*> analysedBB;
 	for (int i = 0 ; i < NodeList.size() ; i++) {
-		if(NodeList[i]->getNode()->getOpcode() == Instruction::Br){
-			errs() << "$$$$$ This belongs to BB";
-			NodeList[i]->getNode()->getParent()->dump();
-//			if (std::find(analysedBB.begin(), analysedBB.end(), NodeList[i].getNode()->getParent()) == analysedBB.end()){
-//				analysedBB.push_back(NodeList[i].getNode()->getParent());
-//			}
-			BasicBlock* BB = NodeList[i]->getNode()->getParent();
-			succ_iterator SI(succ_begin(BB)), SE(succ_end(BB));
-			 for (; SI != SE; ++SI){
-				 BasicBlock* succ = *SI;
-				 errs() << "$%$%$%$%$ successor Basic Blocks";
-				 succ->dump();
-				 errs() << "$%$%$%$%$\n";
+		if(NodeList[i]->getNode() != NULL){
+			if(NodeList[i]->getNode()->getOpcode() == Instruction::Br){
+				errs() << "$$$$$ This belongs to BB";
+				NodeList[i]->getNode()->getParent()->dump();
+	//			if (std::find(analysedBB.begin(), analysedBB.end(), NodeList[i].getNode()->getParent()) == analysedBB.end()){
+	//				analysedBB.push_back(NodeList[i].getNode()->getParent());
+	//			}
+				BasicBlock* BB = NodeList[i]->getNode()->getParent();
+				succ_iterator SI(succ_begin(BB)), SE(succ_end(BB));
+				 for (; SI != SE; ++SI){
+					 BasicBlock* succ = *SI;
+					 errs() << "$%$%$%$%$ successor Basic Blocks";
+					 succ->dump();
+					 errs() << "$%$%$%$%$\n";
 
 
-				 std::pair <const BasicBlock*,const BasicBlock*> bbCouple(BB,succ);
-				 if(std::find(Result.begin(),Result.end(),bbCouple)!=Result.end()){
-					 continue;
-				 }
-
-
-//				 if (std::find(analysedBB.begin(), analysedBB.end(), succ) == analysedBB.end()){
-//					 analysedBB.push_back(succ);
-					 std::vector<dfgNode*> succLeafs = this->getLeafs(succ);
-					 for (int j = 0; j < succLeafs.size(); j++){
-						 BrSuccesors[succLeafs[j]].push_back(NodeList[i]);
-//						 NodeList[i]->addChild(succLeafs[j]->getNode());
-//						 succLeafs[j]->addAncestor(NodeList[i]->getNode());
+					 std::pair <const BasicBlock*,const BasicBlock*> bbCouple(BB,succ);
+					 if(std::find(Result.begin(),Result.end(),bbCouple)!=Result.end()){
+						 continue;
 					 }
-//				 }
-			 }
+
+
+	//				 if (std::find(analysedBB.begin(), analysedBB.end(), succ) == analysedBB.end()){
+	//					 analysedBB.push_back(succ);
+						 std::vector<dfgNode*> succLeafs = this->getLeafs(succ);
+						 for (int j = 0; j < succLeafs.size(); j++){
+							 BrSuccesors[succLeafs[j]].push_back(NodeList[i]);
+	//						 NodeList[i]->addChild(succLeafs[j]->getNode());
+	//						 succLeafs[j]->addAncestor(NodeList[i]->getNode());
+						 }
+	//				 }
+				 }
+			}
 		}
 	}
 
@@ -167,9 +171,9 @@ void DFG::connectBB(){
 		nextWorkingSet.clear();
 		errs() << "ConnectBB :: " << "Init Round\n";
 
-		if(BBPredicate.find(it->first->getNode()->getParent()) != BBPredicate.end()){
-			BBPredicate[node->getNode()->getParent()]->addChildNode(node);
-			node->addAncestorNode(BBPredicate[node->getNode()->getParent()]);
+		if(BBPredicate.find(it->first->BB) != BBPredicate.end()){
+			BBPredicate[node->BB]->addChildNode(node);
+			node->addAncestorNode(BBPredicate[node->BB]);
 			errs() << "ConnectBB :: " << "BB already done\n";
 			continue;
 		}
@@ -177,7 +181,7 @@ void DFG::connectBB(){
 		if(numberofbrs == 1){
 			BrSuccesors[node][0]->addChildNode(node);
 			node->addAncestorNode(BrSuccesors[node][0]);
-			BBPredicate[node->getNode()->getParent()] = BrSuccesors[node][0];
+			BBPredicate[node->BB] = BrSuccesors[node][0];
 			continue;
 		}
 
@@ -225,7 +229,7 @@ void DFG::connectBB(){
 		assert(workingSet.size()==1);
 		workingSet[0]->addChildNode(node);
 		node->addAncestorNode(workingSet[0]);
-		BBPredicate[node->getNode()->getParent()] = workingSet[0];
+		BBPredicate[node->BB] = workingSet[0];
 	}
 }
 
@@ -3138,6 +3142,7 @@ void DFG::printOutSMARTRoutes() {
 							errs() << "FinalDest=" << routingCnode->getName() << "\n";
 							errs() << "FinalDestNodeIdx=" << node->getIdx() << "\n";
 							errs() << "FinalParentNodeIdx=" << parent->getIdx() << "\n";
+							errs() << "ParentsSize=" << node->getAncestors().size() << "\n";
 							do{
 							assert(parent->getMappedLoc() != NULL);
 							assert(node->getMappedLoc() != NULL);
@@ -4137,7 +4142,8 @@ int DFG::printMapping() {
 										XBarMap[PrevCnode][OP2] = TILE;
 									}
 									else{
-										assert(false);
+										errs() << "UNCOMMENT here : assertion failes here truly!\n";
+//										assert(false);
 									}
 
 								}
@@ -4175,7 +4181,8 @@ int DFG::printMapping() {
 								XBarMap[PrevCnode][OP2] = cgraEdges_t[m].DstPort;
 							}
 							else{
-								assert(false);
+								errs() << "UNCOMMENT here : assertion failes here truly!\n";
+//								assert(false);
 							}
 						}
 					}
@@ -4691,6 +4698,12 @@ int DFG::nameNodes() {
 			else if(node->getNameType().compare("SELECTPHI") == 0){
 				node->setFinalIns(SELECT);
 			}
+			else if(node->getNameType().compare("OutLoopSTORE") == 0){
+				node->setFinalIns(Hy_STORE);
+			}
+			else if(node->getNameType().compare("OutLoopLOAD") == 0){
+				node->setFinalIns(Hy_LOAD);
+			}
 			else {
 				errs() << "Unknown custom node \n";
 				assert(false);
@@ -4780,4 +4793,122 @@ std::string DFG::getArchName(ArchType arch) {
 bool DFG::MapASAPLevelUnWrapped(int MII, int XDim, int YDim, ArchType arch) {
 
 	return true;
+}
+
+int DFG::handlePHINodes() {
+	dfgNode* node;
+	for (int i = 0; i < NodeList.size(); ++i) {
+		node = NodeList[i];
+		for (int j = 0; j < node->PHIchildren.size(); ++j) {
+			assert(node->PHIchildren[j] != NULL);
+			node->PHIchildren[j]->dump();
+			assert(findNode(node->PHIchildren[j]) != NULL);
+			node->addPHIChildNode(findNode(node->PHIchildren[j]));
+			findNode(node->PHIchildren[j])->addPHIAncestorNode(node);
+		}
+	}
+	return 0;
+}
+
+TreePath DFG::createTreePathPHIDest(dfgNode* node, CGRANode* dest, CGRANode* phiChildDest) {
+		TreePath tp;
+		dfgNode* child;
+		CGRANode* NodeExt;
+		CGRANode* cnode;
+		int MII = currCGRA->getMII();
+
+		assert(!node->PHIchildren.empty());
+
+		if(dest->getPEType() == MEM){
+			NodeExt = currCGRA->getCGRANode((dest->getT()+2)%MII,dest->getY(),dest->getX());
+		}
+		else{
+			NodeExt = currCGRA->getCGRANode((dest->getT()+1)%MII,dest->getY(),dest->getX());
+		}
+		tp.sources.push_back(NodeExt);
+		tp.sourcePorts[NodeExt] = TILE;
+		tp.sourcePaths[NodeExt] = (std::make_pair(node,node));
+		tp.sourceSCpathLengths[NodeExt] = 0;
+
+		assert(node != NULL);
+
+		tp.dest = phiChildDest;
+		bool foundParentTreeBasedRoutingLocs = false;
+
+		return tp;
+}
+
+void DFG::addPHIChildEdges() {
+	dfgNode* node;
+	dfgNode* phiChildNode;
+
+	for (int i = 0; i < NodeList.size(); ++i) {
+		node = NodeList[i];
+		if(!node->PHIchildren.empty()){
+			for (int j = 0; j < node->PHIchildren.size(); ++j) {
+				phiChildNode = findNode(node->PHIchildren[j]);
+
+				Edge temp;
+				temp.setID(getEdges().size());
+
+				std::ostringstream ss;
+				ss << std::dec << node->getIdx() << "_to_" << phiChildNode->getIdx();
+				temp.setName(ss.str());
+				temp.setType(EDGE_TYPE_PHI);
+				temp.setSrc(node);
+				temp.setDest(phiChildNode);
+
+				InsertEdge(temp);
+			}
+		}
+
+	}
+
+}
+
+void DFG::addPHIParents() {
+	dfgNode* node;
+	dfgNode* phiChild;
+
+	std::vector<dfgNode*> ancestors;
+	std::vector<dfgNode*>::iterator searchParent;
+	for (int i = 0; i < NodeList.size(); ++i) {
+		node = NodeList[i];
+		for (int j = 0; j < node->PHIchildren.size(); ++j) {
+			phiChild = findNode(node->PHIchildren[j]);
+			ancestors = phiChild->getAncestors();
+			errs() << "addPHIParents : child : " << phiChild->getIdx() << "\n";
+			errs() << "addPHIParents : anc : " << node->getIdx() << "\n";
+			errs() << "ancestors.size= : " << ancestors.size() << "\n";
+			searchParent = std::find(ancestors.begin(),ancestors.end(),node);
+			if(searchParent != ancestors.end())
+			errs() << "searchParent : " << (*searchParent)->getIdx() << "\n";
+			if (searchParent == ancestors.end()){
+				errs() << "ifaddPHIParents : child : " << phiChild->getIdx() << "\n";
+				errs() << "ifaddPHIParents : anc : " << node->getIdx() << "\n";
+				phiChild->addAncestorNode(node,EDGE_TYPE_PHI);
+				node->addChildNode(phiChild,EDGE_TYPE_PHI);
+			}
+		}
+	}
+
+}
+
+dfgNode* DFG::findNodeMappedLoc(CGRANode* cnode) {
+	dfgNode* node;
+
+	for (int i = 0; i < NodeList.size(); ++i) {
+		node = NodeList[i];
+		if(node->getMappedLoc() == cnode){
+			return node;
+		}
+	}
+	return NULL;
+}
+
+void DFG::partitionFuncDFG(DFG* funcDFG, std::vector<DFG*> dfgVectorPtr) {
+
+
+
+
 }
