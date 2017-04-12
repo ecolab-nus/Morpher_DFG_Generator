@@ -49,6 +49,9 @@
 #include "llvm/Analysis/CFG.h"
 #include "llvm/Analysis/LoopAccessAnalysis.h"
 
+#include "llvm/Analysis/TargetLibraryInfo.h"
+#include "llvm/Analysis/TargetTransformInfo.h"
+
 //#include "/home/manupa/manycore/llvm-latest/llvm/lib/Transforms/Scalar/GVN.cpp"
 
 #include <iostream>
@@ -84,15 +87,17 @@ static cl::opt<unsigned> loopNumber("ln", cl::init(0), cl::desc("The loop number
 static cl::opt<std::string> fName("fn", cl::init("na"), cl::desc("the function name"));
 static cl::opt<bool> noName("nn", cl::desc("map all functions and loops"));
 
+static std::map<std::string,int> sizeArrMap;
+
 STATISTIC(LoopsAnalyzed, "Number of loops analyzed for vectorization");
 
-static std::set<const BasicBlock*> LoopBB;
+static std::set<BasicBlock*> LoopBB;
 
 	void traverseDefTree(Instruction *I,
 				 	 	 int depth,
 						 DFG* currBBDFG, std::map<Instruction*,int>* insMapIn,
 						 std::map<const BasicBlock*,std::vector<const BasicBlock*>> BBSuccBasicBlocks,
-						 std::set<const BasicBlock*> validBB,
+						 std::set<BasicBlock*> validBB,
 						 MemoryDependenceAnalysis *MD = NULL){
 
 
@@ -113,10 +118,12 @@ static std::set<const BasicBlock*> LoopBB;
 				 currBBDFG->InsertNode(I);
 				 dfgNode* currPtr = currBBDFG->findNode(I);
 
-				 for (Use &V : I->operands()) {
-					 if (Instruction *ParIns = dyn_cast<Instruction>(V)) {
-						 if(validBB.find(ParIns->getParent()) == validBB.end()){
-							 currBBDFG->findNode(I)->addLoadParent(ParIns);
+				 if(!dyn_cast<PHINode>(I)){
+					 for (Use &V : I->operands()) {
+						 if (Instruction *ParIns = dyn_cast<Instruction>(V)) {
+							 if(validBB.find(ParIns->getParent()) == validBB.end()){
+								 currBBDFG->findNode(I)->addLoadParent(ParIns);
+							 }
 						 }
 					 }
 				 }
@@ -253,10 +260,31 @@ static std::set<const BasicBlock*> LoopBB;
 	    			ofs << "\"Op_" << node->getIdx()  << "\" [ fontname = \"Helvetica\" shape = box, label = \" ";
 
 	    			if(node->getNode() != NULL){
-		    			ofs << node->getNode()->getOpcodeName() << " BB" << node->getNode()->getParent()->getName().str();
+		    			ofs << node->getNode()->getOpcodeName() ;
+
+		    			if(node->hasConstantVal()){
+		    				ofs << " C=" << "0x" << std::hex << node->getConstantVal() << std::dec;
+		    			}
+
+		    			if(node->isGEP()){
+		    				ofs << " C=" << "0x" << std::hex << node->getGEPbaseAddr() << std::dec;
+		    			}
+
+		    			ofs << " BB" << node->getNode()->getParent()->getName().str();
 	    			}
 	    			else{
 	    				ofs << node->getNameType();
+		    			if(node->isOutLoop()){
+		    				ofs << " C=" << "0x" << node->getoutloopAddr() << std::dec;
+		    			}
+
+		    			if(node->hasConstantVal()){
+		    				ofs << " C=" << "0x" << node->getConstantVal() << std::dec;
+		    			}
+	    			}
+
+	    			if(node->getFinalIns() != NOP){
+	    				ofs << " HyIns=" << currBBDFG->HyCUBEInsStrings[node->getFinalIns()];
 	    			}
 //	    			for (int j = 0; j < ins->getNumOperands(); ++j) {
 //	    				ofs << ins->getOperand(j)->getName().str() << ",";
@@ -368,6 +396,7 @@ static std::set<const BasicBlock*> LoopBB;
 					   BasicBlock* currBB,
 					   const BasicBlock* startBB
 	    			  ){
+	    			errs() << "currBB : " << currBB->getName() << "\n";
 
 				succ_iterator SI(succ_begin(currBB)), SE(succ_end(currBB));
 				 for (; SI != SE; ++SI){
@@ -375,7 +404,11 @@ static std::set<const BasicBlock*> LoopBB;
 
 					 std::pair <const BasicBlock*,const BasicBlock*> bbCouple(currBB,succ);
 					 if(std::find(BackEdgesBB.begin(),BackEdgesBB.end(),bbCouple)!=BackEdgesBB.end()){
-						 return;
+						 continue;
+					 }
+
+					 if(std::find((*BBSuccBasicBlocksPtr)[startBB].begin(),(*BBSuccBasicBlocksPtr)[startBB].end(),succ) != (*BBSuccBasicBlocksPtr)[startBB].end()){
+						 continue;
 					 }
 
 					 (*BBSuccBasicBlocksPtr)[startBB].push_back(succ);
@@ -414,6 +447,41 @@ static std::set<const BasicBlock*> LoopBB;
 						getInnerMostLoops(innerMostLoops, loops[i]->getSubLoops());
 					}
 				}
+	    	}
+
+	    	void ParseSizeAttr(Function &F, std::map<std::string,int>* sizeArrMap){
+				  auto global_annos = F.getParent()->getNamedGlobal("llvm.global.annotations");
+				  if (global_annos) {
+				    auto a = cast<ConstantArray>(global_annos->getOperand(0));
+				    for (int i=0; i<a->getNumOperands(); i++) {
+				      auto e = cast<ConstantStruct>(a->getOperand(i));
+
+				      if (auto fn = dyn_cast<Function>(e->getOperand(0)->getOperand(0))) {
+				        auto anno = cast<ConstantDataArray>(cast<GlobalVariable>(e->getOperand(1)->getOperand(0))->getOperand(0))->getAsCString();
+				        fn->addFnAttr("size",anno); // <-- add function annotation here
+				      }
+				    }
+				  }
+
+				  if(F.hasFnAttribute("size")){
+					  Attribute attr = F.getFnAttribute("size");
+					  outs() << "Size attribute : " << attr.getValueAsString() << "\n";
+					  StringRef sizeAttrStr = attr.getValueAsString();
+					  SmallVector<StringRef,8> sizeArr;
+					  sizeAttrStr.split(sizeArr,',');
+
+					  for (int i = 0; i < sizeArr.size(); ++i) {
+						  std::pair<StringRef,StringRef> splitDuple = sizeArr[i].split(':');
+						  uint32_t size;
+						  splitDuple.second.getAsInteger(10,size);
+						  outs() << "ParseAttr:: name:" << splitDuple.first << ",size:" << size << "\n";
+ 						  (*sizeArrMap)[splitDuple.first.str()]=size;
+					  }
+				  }
+
+					if (F.hasFnAttribute("size")) {
+						outs() << F.getName() << " has my attribute!\n";
+					}
 	    	}
 
 
@@ -471,6 +539,10 @@ namespace {
 //			  MemoryDependenceAnalysis *MD = &getAnalysis<MemoryDependenceAnalysis>();
 			  ScalarEvolution* SE = &getAnalysis<ScalarEvolutionWrapperPass>().getSE();
 			  DependenceAnalysis* DA = &getAnalysis<DependenceAnalysis>();
+
+			  ParseSizeAttr(F,&sizeArrMap);
+
+			  const DataLayout &DL = F.getParent()->getDataLayout();
 //			  auto *LAA = &getAnalysis<LoopAccessAnalysis>();
 
 			  MemDepResult mRes;
@@ -494,7 +566,7 @@ namespace {
 			  int currBBIdx = 0;
 			  for (auto &B : F) {
 				  currBBIdx++;
-				  //errs() << "Currently proessing = " << currBBIdx << "\n";
+				  errs() << "Currently proessing = " << currBBIdx << "\n";
 				  BasicBlock* BB = dyn_cast<BasicBlock>(&B);
 				  funcBB.insert(BB);
 				  BBSuccBasicBlocks[BB].push_back(BB);
@@ -509,15 +581,15 @@ namespace {
 
 			  //Create a large dfg for the whole function
 			  insMap.clear();
-			  DFG funcDFG;
-			  std::vector<DFG> dfgVector;
-			  for (auto &B : F) {
-				  BasicBlock* BB = dyn_cast<BasicBlock>(&B);
-				  for (auto &I : BB) {
-					  Instruction* ins = *I;
-					  traverseDefTree(ins,0,&funcDFG,&insMap,BBSuccBasicBlocks,funcBB);
-				  }
-			  }
+//			  DFG funcDFG("funcDFG");
+//			  std::vector<DFG> dfgVector;
+//			  for (auto &B : F) {
+//				  BasicBlock* BB = dyn_cast<BasicBlock>(&B);
+//				  for (auto &I : *BB) {
+//					  Instruction* ins = I;
+//					  traverseDefTree(ins,0,&funcDFG,&insMap,BBSuccBasicBlocks,funcBB);
+//				  }
+//			  }
 
 
 			  std::vector<Loop*> innerMostLoops;
@@ -554,6 +626,14 @@ namespace {
 					  (*bb)->dump();
 					  LoopBB.insert(*bb);
 				  }
+				SmallVector<BasicBlock*,8> loopExitBlocks;
+				L->getExitBlocks(loopExitBlocks);
+				for (int i = 0; i < loopExitBlocks.size(); ++i) {
+					loopExitBlocks[0]->dump();
+					LoopBB.insert(loopExitBlocks[0]);
+				}
+//				LoopBB.insert(L->getLoopPreheader());
+//				L->getLoopPreheader()->dump();
 				 errs() << "end of the dealing loop....\n";
 
 
@@ -563,7 +643,8 @@ namespace {
 				  LoopDFG.setBBSuccBasicBlocks(BBSuccBasicBlocks);
 
 				  insMap.clear();
-				  for (Loop::block_iterator bb = L->block_begin(); bb!= L->block_end(); ++bb){
+//				  for (Loop::block_iterator bb = L->block_begin(); bb!= L->block_end(); ++bb){
+				  for (std::set<BasicBlock*>::iterator bb = LoopBB.begin(); bb!=LoopBB.end();++bb){
 					 BasicBlock *B = *bb;
 					 int Icount = 0;
 					 for (auto &I : *B) {
@@ -578,7 +659,7 @@ namespace {
 				  }
 				  LoopDFG.addPHIChildEdges();
 				  LoopDFG.connectBB();
-				  LoopDFG.handlePHINodes();
+				  LoopDFG.handlePHINodes(LoopBB);
 //				  LoopDFG.handlePHINodeFanIn();
 				  LoopDFG.checkSanity();
 //				  LoopDFG.addMemDepEdges(MD);
@@ -595,6 +676,12 @@ namespace {
 //				  LoopDFG.printREGIMapOuts();
 				  LoopDFG.handleMEMops();
 				  LoopDFG.nameNodes();
+
+
+				  //Checking Instrumentation Code
+				  LoopDFG.AssignOutLoopAddr();
+				  LoopDFG.GEPInvestigate(F,L,&sizeArrMap);
+//				  return true;
 
 				  ArchType arch = RegXbarTREG;
 				  LoopDFG.MapCGRA_SMART(4,4, arch, 20);
@@ -643,7 +730,7 @@ namespace {
 
 
 
-			  return false;
+			  return true;
 			} //END OF runOnFunction
 
 

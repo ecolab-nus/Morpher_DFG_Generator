@@ -8,6 +8,7 @@
 #include "tinyxml2.h"
 #include <functional>
 #include <bitset>
+#include <set>
 
 
 dfgNode* DFG::getEntryNode(){
@@ -75,7 +76,20 @@ std::vector<dfgNode*> DFG::getLeafs(BasicBlock* BB){
 	for (int i = 0 ; i < NodeList.size() ; i++) {
 //		if(NodeList[i]->getNode()->getParent() == BB){
 		if(NodeList[i]->BB == BB){
-			leafNodes.push_back(NodeList[i]);
+
+			if(NodeList[i]->getNode()!=NULL){
+				if(dyn_cast<PHINode>(NodeList[i]->getNode())){
+					continue;
+				}
+			}
+
+			if(NodeList[i]->getNameType().compare("OutLoopLOAD")==0){
+
+			}
+			else{
+				leafNodes.push_back(NodeList[i]);
+			}
+
 		}
 	}
 	errs() << "LeafNodes init done...!\n";
@@ -83,11 +97,23 @@ std::vector<dfgNode*> DFG::getLeafs(BasicBlock* BB){
 	for (int i = 0 ; i < NodeList.size() ; i++) {
 //		if(NodeList[i]->getNode()->getParent() == BB){
 		if(NodeList[i]->BB == BB){
+
+			if(NodeList[i]->getNameType().compare("OutLoopLOAD")==0){
+				continue;
+			}
+
 			for(int j = 0; j < NodeList[i]->getChildren().size(); j++){
 				dfgNode* nodeToBeRemoved = NodeList[i]->getChildren()[j];
 				if(nodeToBeRemoved != NULL){
 					errs() << "LeafNodes : nodeToBeRemoved found...! : ";
-					nodeToBeRemoved->getNode()->dump();
+					if(nodeToBeRemoved->getNode() == NULL){
+						errs() << "NodeIdx:" << nodeToBeRemoved->getIdx() << "," << nodeToBeRemoved->getNameType() << "\n";
+					}
+					else{
+						errs() << "NodeIdx:" << nodeToBeRemoved->getIdx() << ",";
+						nodeToBeRemoved->getNode()->dump();
+					}
+
 					if (std::find(leafNodes.begin(), leafNodes.end(), nodeToBeRemoved) != leafNodes.end()){
 						leafNodes.erase(std::remove(leafNodes.begin(),leafNodes.end(), nodeToBeRemoved));
 					}
@@ -231,6 +257,7 @@ void DFG::connectBB(){
 		node->addAncestorNode(workingSet[0]);
 		BBPredicate[node->BB] = workingSet[0];
 	}
+	errs() << "ConnectBB DONE! \n";
 }
 
 //WIP
@@ -943,7 +970,9 @@ void DFG::traverseDFS(dfgNode* startNode, int dfsCount) {
 
 void DFG::traverseBFS(dfgNode* node, int ASAPlevel) {
 
-
+	if(node->getNode()){
+		node->getNode()->dump();
+	}
 
 	dfgNode* child;
 	for (int i = 0; i < node->getChildren().size(); ++i) {
@@ -1004,6 +1033,7 @@ void DFG::scheduleASAP() {
 		leafs[i]->setASAPnumber(0);
 		traverseBFS(leafs[i],1);
 	}
+	errs() << "scheduleASAP DONE!\n";
 }
 
 void DFG::scheduleALAP() {
@@ -1037,7 +1067,7 @@ void DFG::scheduleALAP() {
 	}
 
 
-
+	errs() << "scheduleALAP DONE!\n";
 }
 
 std::vector<dfgNode*> DFG::getLeafs() {
@@ -4049,6 +4079,8 @@ int DFG::printMapping() {
 	mapFile << std::endl;
 	binFile << std::endl;
 
+	std::map<int,std::map<int,uint64_t> > constantValidMaskMap;
+
 	//Print Data
 	for (int i = 0; i < currCGRA->getMII(); ++i) {
 		mapFile << std::to_string(i) << ",";
@@ -4219,6 +4251,17 @@ int DFG::printMapping() {
 				currBinOp.regbypass = 0;
 				currBinOp.tregwen = 0;
 				currBinOp.constant = 0;
+				currBinOp.constantValid = 0;
+
+				if(node!=NULL){
+					if(node->hasConstantVal()){
+						currBinOp.constant=node->getConstantVal();
+						currBinOp.outMap[OP2] = node->getConstantVal() >> 29;
+						currBinOp.constantValid = 1;
+						constantValidMaskMap[j][k]=(constantValidMaskMap[j][k]&(~1)|1) << 1;
+					}
+				}
+
 
 				for (int l = 0; l < insPortOrder.size(); ++l) {
 					if(XBarMap[PrevCnode].find(insPortOrder[l]) != XBarMap[PrevCnode].end()){
@@ -4272,6 +4315,16 @@ int DFG::printMapping() {
 		mapFile << std::endl;
 		insFile << std::endl;
 		binFile << std::endl;
+	}
+
+	binFile << std::endl;
+	binOpNameFile << std::endl;
+
+	for (int j = 0; j < currCGRA->getYdim(); ++j) {
+		for (int k = 0; k < currCGRA->getXdim(); ++k) {
+			binFile << "Y=" << j << ",X=" << k << "ContantValidMask=" << std::setw(32) << std::bitset<32>(constantValidMaskMap[j][k]) << std::endl;
+			binOpNameFile << "Y=" << j << ",X=" << k << "ContantValidMask=" << std::setw(32) << std::bitset<32>(constantValidMaskMap[j][k]) << std::endl;
+		}
 	}
 
 	mapFile.close();
@@ -4560,8 +4613,8 @@ DFG::DFG(std::string name) {
 	HyCUBEInsStrings[LS] = "LS";
 	HyCUBEInsBinary[LS] = 0 | (0b01000);
 
-	HyCUBEInsStrings[LS] = "RS";
-	HyCUBEInsBinary[LS] = 0 | (0b01001);
+	HyCUBEInsStrings[RS] = "RS";
+	HyCUBEInsBinary[RS] = 0 | (0b01001);
 
 	HyCUBEInsStrings[ARS] = "ARS";
 	HyCUBEInsBinary[ARS] = 0 | (0b01010);
@@ -4587,8 +4640,26 @@ DFG::DFG(std::string name) {
 	HyCUBEInsStrings[Hy_LOAD] = "LOAD";
 	HyCUBEInsBinary[Hy_LOAD] = 0 | (0b11000);
 
+	HyCUBEInsStrings[Hy_LOADH] = "LOADH";
+	HyCUBEInsBinary[Hy_LOADH] = 0 | (0b11001);
+
+	HyCUBEInsStrings[Hy_LOADB] = "LOADB";
+	HyCUBEInsBinary[Hy_LOADB] = 0 | (0b11010);
+
 	HyCUBEInsStrings[Hy_STORE] = "STORE";
-	HyCUBEInsBinary[Hy_STORE] = 0 | (0b11010);
+	HyCUBEInsBinary[Hy_STORE] = 0 | (0b11011);
+
+	HyCUBEInsStrings[Hy_STOREH] = "STOREH";
+	HyCUBEInsBinary[Hy_STOREH] = 0 | (0b11100);
+
+	HyCUBEInsStrings[Hy_STOREB] = "STOREB";
+	HyCUBEInsBinary[Hy_STOREB] = 0 | (0b11101);
+
+	HyCUBEInsStrings[SEXT] = "SEXT";
+	HyCUBEInsBinary[SEXT] = 0 | (0b00100);
+
+	HyCUBEInsStrings[CMERGE] = "CMERGE";
+	HyCUBEInsBinary[CMERGE] = 0 | (0b10001);
 }
 
 int DFG::nameNodes() {
@@ -4641,17 +4712,56 @@ int DFG::nameNodes() {
 					node->setFinalIns(XOR);
 					break;
 				case Instruction::Load:
-					node->setFinalIns(Hy_LOAD);
+					if(node->getTypeSizeBytes()==4){
+						node->setFinalIns(Hy_LOAD);
+					}
+					else if(node->getTypeSizeBytes()==2){
+						node->setFinalIns(Hy_LOADH);
+					}
+					else if(node->getTypeSizeBytes()==1){
+						node->setFinalIns(Hy_LOADB);
+					}
+					else{
+						assert(0);
+					}
 					break;
 				case Instruction::Store:
-					node->setFinalIns(Hy_STORE);
+					if(node->getTypeSizeBytes()==4){
+						node->setFinalIns(Hy_STORE);
+					}
+					else if(node->getTypeSizeBytes()==2){
+						node->setFinalIns(Hy_STOREH);
+					}
+					else if(node->getTypeSizeBytes()==1){
+						node->setFinalIns(Hy_STOREB);
+					}
+					else{
+						node->getNode()->dump();
+						outs() << "TypeSize : " << node->getTypeSizeBytes() << "\n";
+						assert(0);
+					}
 					break;
 				case Instruction::GetElementPtr:
 					node->setFinalIns(ADD);
 					break;
 				case Instruction::Trunc:
-				case Instruction::ZExt:
+					{TruncInst* TI = cast<TruncInst>(node->getNode());
+//					node->setConstantVal(TI->getDestTy()->getIntegerBitWidth()/8);
+					double destBitWidthDbl = (double)(TI->getDestTy()->getIntegerBitWidth());
+					double bitMaskDbl = pow(2,destBitWidthDbl)-1;
+					uint32_t bitMask= ((uint32_t)bitMaskDbl);
+					node->setConstantVal(bitMask);
+					node->setFinalIns(AND);}
+					break;
 				case Instruction::SExt:
+					{SExtInst* SI = cast<SExtInst>(node->getNode());
+					uint32_t srcByteWidth = SI->getSrcTy()->getIntegerBitWidth()/8;
+					uint32_t destByteWidth = SI->getDestTy()->getIntegerBitWidth()/8;
+					uint32_t constOperand = (srcByteWidth << 16) | destByteWidth;
+					node->setConstantVal(constOperand);
+					node->setFinalIns(SEXT);}
+					break;
+				case Instruction::ZExt:
 				case Instruction::FPTrunc:
 				case Instruction::FPExt:
 				case Instruction::FPToUI:
@@ -4662,6 +4772,7 @@ int DFG::nameNodes() {
 				case Instruction::IntToPtr:
 				case Instruction::BitCast:
 				case Instruction::AddrSpaceCast:
+					assert(0);
 					node->setFinalIns(OR);
 					break;
 				case Instruction::PHI:
@@ -4684,10 +4795,32 @@ int DFG::nameNodes() {
 		}
 		else{
 			if(node->getNameType().compare("LOAD") == 0){
-				node->setFinalIns(Hy_LOAD);
+				if(node->getTypeSizeBytes()==4){
+					node->setFinalIns(Hy_LOAD);
+				}
+				else if(node->getTypeSizeBytes()==2){
+					node->setFinalIns(Hy_LOADH);
+				}
+				else if(node->getTypeSizeBytes()==1){
+					node->setFinalIns(Hy_LOADB);
+				}
+				else{
+					assert(0);
+				}
 			}
 			else if(node->getNameType().compare("STORE") == 0){
-				node->setFinalIns(Hy_STORE);
+				if(node->getTypeSizeBytes()==4){
+					node->setFinalIns(Hy_STORE);
+				}
+				else if(node->getTypeSizeBytes()==2){
+					node->setFinalIns(Hy_STOREH);
+				}
+				else if(node->getTypeSizeBytes()==1){
+					node->setFinalIns(Hy_STOREB);
+				}
+				else{
+					assert(0);
+				}
 			}
 			else if(node->getNameType().compare("NORMAL") == 0){
 				node->setFinalIns(ADD);
@@ -4699,10 +4832,38 @@ int DFG::nameNodes() {
 				node->setFinalIns(SELECT);
 			}
 			else if(node->getNameType().compare("OutLoopSTORE") == 0){
-				node->setFinalIns(Hy_STORE);
+				if(node->getTypeSizeBytes()==4){
+					node->setFinalIns(Hy_STORE);
+				}
+				else if(node->getTypeSizeBytes()==2){
+					node->setFinalIns(Hy_STOREH);
+				}
+				else if(node->getTypeSizeBytes()==1){
+					node->setFinalIns(Hy_STOREB);
+				}
+				else{
+					assert(0);
+				}
 			}
 			else if(node->getNameType().compare("OutLoopLOAD") == 0){
-				node->setFinalIns(Hy_LOAD);
+				if(node->getTypeSizeBytes()==4){
+					node->setFinalIns(Hy_LOAD);
+				}
+				else if(node->getTypeSizeBytes()==2){
+					node->setFinalIns(Hy_LOADH);
+				}
+				else if(node->getTypeSizeBytes()==1){
+					node->setFinalIns(Hy_LOADB);
+				}
+				else{
+					assert(0);
+				}
+			}
+			else if(node->getNameType().compare("CMERGE") == 0){
+				node->setFinalIns(CMERGE);
+			}
+			else if(node->getNameType().compare("LOOPSTART") == 0){
+				node->setFinalIns(BR);
 			}
 			else {
 				errs() << "Unknown custom node \n";
@@ -4795,18 +4956,116 @@ bool DFG::MapASAPLevelUnWrapped(int MII, int XDim, int YDim, ArchType arch) {
 	return true;
 }
 
-int DFG::handlePHINodes() {
+int DFG::handlePHINodes(std::set<BasicBlock*> LoopBB) {
+	errs() << "handlePHINodes started!\n";
 	dfgNode* node;
+	std::map<dfgNode*,std::vector<const BasicBlock*> > processedPhiNodes;
+
 	for (int i = 0; i < NodeList.size(); ++i) {
 		node = NodeList[i];
 		for (int j = 0; j < node->PHIchildren.size(); ++j) {
 			assert(node->PHIchildren[j] != NULL);
 			node->PHIchildren[j]->dump();
 			assert(findNode(node->PHIchildren[j]) != NULL);
-			node->addPHIChildNode(findNode(node->PHIchildren[j]));
-			findNode(node->PHIchildren[j])->addPHIAncestorNode(node);
+
+
+			node->PHIchildren[j]->dump();
+
+			if(PHINode* phiIns = dyn_cast<PHINode>(node->PHIchildren[j])){
+				for (int k = 0; k < phiIns->getNumIncomingValues(); ++k) {
+					BasicBlock* bb = phiIns->getIncomingBlock(k);
+					if(bb!=node->BB){
+						continue;
+					}
+					outs() << "handlePHINodes adding nodes...\n";
+					BasicBlock::iterator instIter = --bb->end();
+					Instruction* brIns = &*instIter;
+					assert(brIns->getOpcode() == Instruction::Br);
+
+					dfgNode* brNode = findNode(brIns);
+					findNode(node->PHIchildren[j])->addCMergeParent(node,brNode);
+					processedPhiNodes[findNode(node->PHIchildren[j])].push_back(node->BB);
+				}
+
+			}
+			else{
+				assert(0);
+			}
+
+//			node->addPHIChildNode(findNode(node->PHIchildren[j]));
+//			findNode(node->PHIchildren[j])->addPHIAncestorNode(node);
 		}
 	}
+
+	outs() << "second loop\n";
+
+	for (int i = 0; i < NodeList.size(); ++i) {
+		node=NodeList[i];
+		if(node->getNode()==NULL) continue;
+		if(PHINode* phiIns = dyn_cast<PHINode>(node->getNode())){
+			phiIns->dump();
+			outs() << "incomingblocks:" << phiIns->getNumIncomingValues() << "\n";
+
+			for (int k = 0; k < phiIns->getNumIncomingValues(); ++k) {
+				BasicBlock* bb = phiIns->getIncomingBlock(k);
+
+				if(processedPhiNodes.find(node)!=processedPhiNodes.end()){
+					if(std::find(processedPhiNodes[node].begin(),
+							     processedPhiNodes[node].end(),
+								 bb)!=processedPhiNodes[node].end()
+								 ){
+						continue;
+					}
+				}
+
+				outs() << "handlePHINodes adding nodes in second loop...\n";
+
+				BasicBlock::iterator instIter = --bb->end();
+				Instruction* brIns = &*instIter;
+				assert(brIns->getOpcode() == Instruction::Br);
+				dfgNode* brNode = findNode(brIns);
+
+				if(ConstantInt *CI = dyn_cast<ConstantInt>(phiIns->getIncomingValueForBlock(bb))){
+					assert(CI->getBitWidth() <= 32);
+
+					if(LoopBB.find(brIns->getParent())==LoopBB.end()){
+						node->addCMergeParent(brIns,CI->getSExtValue());
+					}
+					else{
+						assert(brNode!=NULL);
+						node->addCMergeParent(brNode,NULL,CI->getSExtValue());
+					}
+
+				}
+				else if(Instruction* phiData= dyn_cast<Instruction>(phiIns->getIncomingValueForBlock(bb))){
+					if(LoopBB.find(phiData->getParent())==LoopBB.end()){
+//						node->addLoadParent(phiData);
+//						assert(OutLoopNodeMap[phiData]!=NULL);
+//						dfgNode* phiDataNode=OutLoopNodeMap[phiData];
+//						node->addCMergeParent(brNode,phiDataNode);
+
+						if(LoopBB.find(brIns->getParent())==LoopBB.end()){
+							node->addCMergeParent(brIns,phiData);
+						}
+						else{
+							node->addCMergeParent(brNode,phiData);
+						}
+
+					}
+					else{
+						assert(findNode(phiData)!=NULL);
+						dfgNode* phiDataNode=findNode(phiData);
+						node->addCMergeParent(brNode,phiDataNode);
+					}
+				}
+				else{
+					assert(0);
+				}
+			}
+		}
+	}
+
+	errs() << "handlePHINodes DONE!\n";
 	return 0;
 }
 
@@ -4912,3 +5171,438 @@ void DFG::partitionFuncDFG(DFG* funcDFG, std::vector<DFG*> dfgVectorPtr) {
 
 
 }
+
+
+void DFG::GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeArrMap) {
+
+	LLVMContext& Ctx = F.getContext();
+	std::set<Value*> handledGEPs;
+
+	//LoopPreHeader Printf marker insertion
+	BasicBlock* loopPH = L->getLoopPreheader();
+	BasicBlock::iterator instIterPH = loopPH->begin();
+	Instruction* loopPHStartIns = &*instIterPH;
+
+	IRBuilder<> builder(loopPHStartIns);
+//	builder.SetInsertPoint(loopPH,++builder.GetInsertPoint());
+
+	Value* printfSTARTstr = builder.CreateGlobalStringPtr("------------LOOP START--------------\n");
+	Value* printfENDstr = builder.CreateGlobalStringPtr("------------LOOP END----------------\n");
+
+//	Constant* printfMARKER = F.getParent()->getOrInsertFunction(
+//					  "printf",
+//					  FunctionType::getVoidTy(Ctx),
+//					  Type::getInt8PtrTy(Ctx),
+//					  NULL);
+
+	Constant* loopStartFn = F.getParent()->getOrInsertFunction(
+							"loopStart",
+							FunctionType::getVoidTy(Ctx),
+							NULL);
+
+	builder.CreateCall(loopStartFn);
+
+
+	//the entry location for instrumentation code
+	BasicBlock* loopHeader = L->getHeader();
+	BasicBlock::iterator instIter = loopHeader->begin();
+	Instruction* loopStartIns = &*instIter;
+
+	SmallVector<BasicBlock*,8> loopExitBlocks;
+    L->getExitBlocks(loopExitBlocks);
+    std::vector<Instruction*> loopExitInsVec;
+	for (int i = 0; i < loopExitBlocks.size(); ++i) {
+		BasicBlock* LoopExitBB = loopExitBlocks[i];
+		BasicBlock::iterator instIter = --LoopExitBB->end();
+
+		if(std::find(loopExitInsVec.begin(),loopExitInsVec.end(),&*instIter)==loopExitInsVec.end()){
+			loopExitInsVec.push_back(&*instIter);
+		}
+	}
+
+//	IRBuilder<> builder(loopStartIns);
+	builder.SetInsertPoint(loopStartIns);
+	Constant* clearPrintedArrs = F.getParent()->getOrInsertFunction(
+	  "clearPrintedArrs", FunctionType::getVoidTy(Ctx), NULL);
+
+	for (int i = 0; i < loopExitInsVec.size(); ++i) {
+		builder.SetInsertPoint(loopExitInsVec[i]);
+		builder.CreateCall(clearPrintedArrs);
+	}
+
+	dfgNode* node;
+	for (int i = 0; i < NodeList.size(); ++i) {
+		node = NodeList[i];
+
+
+		if(node->getNameType().compare("OutLoopLOAD")==0){
+			errs() << "OutLoopLoad found!!\n";
+			Value* printfstr = builder.CreateGlobalStringPtr("OutLoopLoadNode:%d,val=%d,addr=%d\n");
+			assert(OutLoopNodeMapReverse[node]!=NULL);
+			OutLoopNodeMapReverse[node]->dump();
+			Value* loadVal = OutLoopNodeMapReverse[node];
+			Value* nodeIdx = ConstantInt::get(Type::getInt32Ty(Ctx),node->getIdx());
+			Value* addrVal = ConstantInt::get(Type::getInt32Ty(Ctx),node->getoutloopAddr());
+//			Value* args[] = {printfstr,nodeIdx,loadVal,addrVal};
+
+//			Constant* printf = F.getParent()->getOrInsertFunction(
+//							  "printf",
+//							  FunctionType::getVoidTy(Ctx),
+//							  Type::getInt8PtrTy(Ctx),
+//							  Type::getInt32Ty(Ctx),
+//							  loadVal->getType(),
+//							  Type::getInt32Ty(Ctx),
+//							  NULL);
+
+			Constant* outloopReportFn = F.getParent()->getOrInsertFunction(
+									  "outloopValueReport",
+									  FunctionType::getVoidTy(Ctx),
+									  Type::getInt32Ty(Ctx), //nodeIdx
+									  loadVal->getType(), //value
+									  Type::getInt32Ty(Ctx), //addr
+									  Type::getInt8Ty(Ctx),  //isLoad
+									  NULL);
+
+			Value* isLoad = ConstantInt::get(Type::getInt8Ty(Ctx),1);
+			Value* args[] = {nodeIdx,loadVal,addrVal,isLoad};
+			for (int i = 0; i < loopExitInsVec.size(); ++i) {
+				builder.SetInsertPoint(loopExitInsVec[i]);
+//				builder.CreateCall(printf,args);
+				builder.CreateCall(outloopReportFn,args);
+
+			}
+		}
+
+		if(node->getNameType().compare("OutLoopSTORE")==0){
+			Value* printfstr = builder.CreateGlobalStringPtr("OutLoopStoreNode:%d,val=%d,addr=%d\n");
+			assert(node->getAncestors().size()==1);
+			Value* StoreVal = (node->getAncestors())[0]->getNode();
+			Value* nodeIdx = ConstantInt::get(Type::getInt32Ty(Ctx),node->getIdx());
+			Value* addrVal = ConstantInt::get(Type::getInt32Ty(Ctx),node->getoutloopAddr());
+//			Value* args[] = {printfstr,nodeIdx,StoreVal,addrVal};
+
+//			Constant* printf = F.getParent()->getOrInsertFunction(
+//							  "printf",
+//							  FunctionType::getVoidTy(Ctx),
+//							  Type::getInt8PtrTy(Ctx),
+//							  Type::getInt32Ty(Ctx),
+//							  StoreVal->getType(),
+//							  Type::getInt32Ty(Ctx),
+//							  NULL);
+
+			Constant* outloopReportFn = F.getParent()->getOrInsertFunction(
+									  "outloopValueReport",
+									  FunctionType::getVoidTy(Ctx),
+									  Type::getInt32Ty(Ctx), //nodeIdx
+									  StoreVal->getType(), //value
+									  Type::getInt32Ty(Ctx), //addr
+									  Type::getInt8Ty(Ctx),  //isLoad
+									  NULL);
+
+			Value* isLoad = ConstantInt::get(Type::getInt8Ty(Ctx),0);
+			Value* args[] = {nodeIdx,StoreVal,addrVal,isLoad};
+			for (int i = 0; i < loopExitInsVec.size(); ++i) {
+				builder.SetInsertPoint(loopExitInsVec[i]);
+//				builder.CreateCall(printf,args);
+				builder.CreateCall(outloopReportFn,args);
+			}
+		}
+
+		if(node->getNode()==NULL){
+			continue;
+		}
+		Instruction* ins = node->getNode();
+
+//		for (auto &B : F){
+//			BasicBlock* BB = dyn_cast<BasicBlock>(&B);
+//			for(auto &I : *BB){
+//
+//			Instruction* ins = &I;
+
+
+//			errs() << "GEPInvestigate node found\n";
+
+		if(GetElementPtrInst *GEP = dyn_cast<GetElementPtrInst>(ins)){
+			const DataLayout DL = ins->getParent()->getParent()->getParent()->getDataLayout();
+
+			//number of elements
+			errs() << "Pointer operand = " << GEP->getPointerOperand()->getName() << "\n";
+			GEP->dump();
+			Type *T = GEP->getSourceElementType();
+
+			errs() << "S/A/I/P=" << T->isStructTy()<< "/";
+			errs() << T->isArrayTy()<< "/";
+			errs() << T->isIntegerTy()<< "/";
+			errs() << T->isPointerTy()<< "\n";
+
+
+			if(dyn_cast<StructType>(T)){
+
+				if(handledGEPs.find(GEP->getPointerOperand())!=handledGEPs.end()){
+					continue;
+				}
+
+				StructType* ST = dyn_cast<StructType>(T);
+				errs() << "StructType=" << ST->getName() << "\n";
+
+//				//Insert a call to our function
+//				builder(loopStartIns);
+				builder.SetInsertPoint(loopStartIns);
+//				builder.SetInsertPoint(loopHeader,++builder.GetInsertPoint());
+
+				Value* old = GEP->getPointerOperand();
+				Value* bitcastedPtr = builder.CreateBitCast(old,Type::getInt8PtrTy(Ctx));
+				int size = DL.getTypeAllocSize(ST);
+
+				(*sizeArrMap)[GEP->getPointerOperand()->getName().str()]=size;
+
+				if(allocatedArraysMap.find(GEP->getPointerOperand()->getName().str())==allocatedArraysMap.end()){
+					node->setGEPbaseAddr(arrayAddrPtr);
+					outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtr << ",size=" << size <<  "\n";
+					allocatedArraysMap[GEP->getPointerOperand()->getName().str()]=arrayAddrPtr;
+					arrayAddrPtr += size;
+				}
+				else{
+					node->setGEPbaseAddr(allocatedArraysMap[GEP->getPointerOperand()->getName().str()]);
+					outs() << "NodeIdx:" << node->getIdx() << ",addr=" << allocatedArraysMap[GEP->getPointerOperand()->getName().str()] << ",size=" << size <<  "\n";
+				}
+
+				Constant* printArrFunc = F.getParent()->getOrInsertFunction(
+				  "printArr",
+				  FunctionType::getVoidTy(Ctx),
+				  Type::getInt8PtrTy(Ctx),
+				  Type::getInt8PtrTy(Ctx),
+				  Type::getInt32Ty(Ctx),
+				  Type::getInt8Ty(Ctx),
+				  Type::getInt32Ty(Ctx),
+				  NULL);
+
+				Value* st_name = builder.CreateGlobalStringPtr(ST->getName());
+				Value* argsi[] = {st_name,
+								  bitcastedPtr,
+						          ConstantInt::get(Type::getInt32Ty(Ctx),size),
+								  ConstantInt::get(Type::getInt8Ty(Ctx),1),
+								  ConstantInt::get(Type::getInt32Ty(Ctx),node->getGEPbaseAddr())
+								  };
+				Value* argso[] = {st_name,
+						          bitcastedPtr,
+								  ConstantInt::get(Type::getInt32Ty(Ctx),size),
+				                  ConstantInt::get(Type::getInt8Ty(Ctx),0),
+								  ConstantInt::get(Type::getInt32Ty(Ctx),node->getGEPbaseAddr())};
+//				builder.CreateCall(printArrFunc,args);
+
+				builder.CreateCall(printArrFunc,argsi);
+
+				for (int i = 0; i < loopExitInsVec.size(); ++i) {
+					builder.SetInsertPoint(loopExitInsVec[i]);
+					builder.CreateCall(printArrFunc,argso);
+				}
+
+
+				//experiment
+//				errs() << "Experiment, arraytype size = " << AT->getArrayNumElements() << "\n";
+
+			}
+			else{
+				if(dyn_cast<ArrayType>(T)){
+
+					if(handledGEPs.find(GEP->getPointerOperand())!=handledGEPs.end()){
+						continue;
+					}
+
+					ArrayType* AT = dyn_cast<ArrayType>(T);
+					errs() << "ArrayType="<< AT->getArrayNumElements() <<"\n";
+					errs() << "Size = " << DL.getTypeAllocSize(AT) << "\n";
+
+//					//Insert a call to our function
+//					IRBuilder<> builder(loopStartIns);
+					builder.SetInsertPoint(loopStartIns);
+					builder.SetInsertPoint(loopHeader,++builder.GetInsertPoint());
+
+					Value* old = GEP->getPointerOperand();
+					Value* bitcastedPtr = builder.CreateBitCast(old,Type::getInt8PtrTy(Ctx));
+					int size = DL.getTypeAllocSize(AT);
+
+					(*sizeArrMap)[GEP->getPointerOperand()->getName().str()]=size;
+					node->setGEPbaseAddr(arrayAddrPtr);
+					outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtr << ",size=" << size <<  "\n";
+					arrayAddrPtr += size;
+
+					Constant* printArrFunc = F.getParent()->getOrInsertFunction(
+					  "printArr",
+					  FunctionType::getVoidTy(Ctx),
+					  Type::getInt8PtrTy(Ctx),
+					  Type::getInt8PtrTy(Ctx),
+					  Type::getInt32Ty(Ctx),
+					  Type::getInt8Ty(Ctx),
+					  Type::getInt32Ty(Ctx),
+					  NULL);
+
+					Value* st_name = builder.CreateGlobalStringPtr(GEP->getPointerOperand()->getName());
+					Value* argsi[] = {st_name,
+							          bitcastedPtr,
+									  ConstantInt::get(Type::getInt32Ty(Ctx),size),
+									  ConstantInt::get(Type::getInt8Ty(Ctx),1),
+									  ConstantInt::get(Type::getInt32Ty(Ctx),node->getGEPbaseAddr())};
+					Value* argso[] = {st_name,
+							          bitcastedPtr,
+									  ConstantInt::get(Type::getInt32Ty(Ctx),size),
+									  ConstantInt::get(Type::getInt8Ty(Ctx),0),
+									  ConstantInt::get(Type::getInt32Ty(Ctx),node->getGEPbaseAddr())};
+
+					//Add a call in the begginning of the loop
+					builder.CreateCall(printArrFunc,argsi);
+
+					errs() << "loopExitInsVec.size()=" << loopExitInsVec.size() << "\n";
+					for (int i = 0; i < loopExitInsVec.size(); ++i) {
+						loopExitInsVec[i]->dump();
+						builder.SetInsertPoint(loopExitInsVec[i]);
+						builder.CreateCall(printArrFunc,argso);
+					}
+
+				}
+				else{
+					assert(dyn_cast<IntegerType>(T));
+					IntegerType* IT = dyn_cast<IntegerType>(T);
+
+//					IRBuilder<> builder(GEP);
+					builder.SetInsertPoint(GEP);
+//					builder.SetInsertPoint(loopHeader,++builder.GetInsertPoint());
+
+					Value* old = GEP->getPointerOperand();
+					Value* addr = GEP;
+					Value* bitcastedPtr = builder.CreateBitCast(old,Type::getInt8PtrTy(Ctx));
+					int size = DL.getTypeAllocSize(IT);
+
+					Constant* reportDynArrSize = F.getParent()->getOrInsertFunction(
+					"reportDynArrSize", FunctionType::getVoidTy(Ctx),
+										Type::getInt8PtrTy(Ctx),
+										Type::getInt8PtrTy(Ctx),
+										Type::getInt32Ty(Ctx),
+										Type::getInt32Ty(Ctx),
+										NULL);
+
+					Value* st_name = builder.CreateGlobalStringPtr(GEP->getPointerOperand()->getName());
+					Value* args[] = {st_name,
+									 bitcastedPtr,
+									 GEP->getOperand(1),
+									 ConstantInt::get(Type::getInt32Ty(Ctx),
+									 size)};
+					builder.CreateCall(reportDynArrSize,args);
+
+					std::string ptrName = GEP->getPointerOperand()->getName().str();
+
+					//checking for user defined input sizes
+					if(sizeArrMap->find(ptrName)!=sizeArrMap->end()){
+//						builder.SetInsertPoint(loopStartIns);
+//						builder.SetInsertPoint(loopHeader,++builder.GetInsertPoint());
+						int size = (*sizeArrMap)[ptrName];
+
+						if(allocatedArraysMap.find(ptrName)==allocatedArraysMap.end()){
+							node->setGEPbaseAddr(arrayAddrPtr);
+							outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtr << ",size=" << size <<  "\n";
+							allocatedArraysMap[ptrName]=arrayAddrPtr;
+							arrayAddrPtr += size;
+						}
+						else{
+							node->setGEPbaseAddr(allocatedArraysMap[ptrName]);
+							outs() << "NodeIdx:" << node->getIdx() << ",addr=" << allocatedArraysMap[ptrName] << ",size=" << size <<  "\n";
+						}
+
+
+						Constant* printArrFunc = F.getParent()->getOrInsertFunction(
+						  "printArr",
+						  FunctionType::getVoidTy(Ctx),
+						  Type::getInt8PtrTy(Ctx),
+						  Type::getInt8PtrTy(Ctx),
+						  Type::getInt32Ty(Ctx),
+						  Type::getInt8Ty(Ctx),
+						  Type::getInt32Ty(Ctx),
+						  NULL);
+
+						Value* argsi[] = {st_name,
+								          bitcastedPtr,
+										  ConstantInt::get(Type::getInt32Ty(Ctx),size),
+										  ConstantInt::get(Type::getInt8Ty(Ctx),1),
+										  ConstantInt::get(Type::getInt32Ty(Ctx),node->getGEPbaseAddr())};
+						Value* argso[] = {st_name,
+								          bitcastedPtr,
+										  ConstantInt::get(Type::getInt32Ty(Ctx),size),
+										  ConstantInt::get(Type::getInt8Ty(Ctx),0),
+										  ConstantInt::get(Type::getInt32Ty(Ctx),node->getGEPbaseAddr())};
+						//Add a call in the begginning of the loop
+						builder.CreateCall(printArrFunc,argsi);
+//
+						errs() << "loopExitInsVec.size()=" << loopExitInsVec.size() << "\n";
+						for (int i = 0; i < loopExitInsVec.size(); ++i) {
+							loopExitInsVec[i]->dump();
+							builder.SetInsertPoint(loopExitInsVec[i]);
+							builder.CreateCall(printArrFunc,argso);
+						}
+					}
+					else{
+						errs() << "Please provide sizes for the arrayptr : " << ptrName << "\n";
+						assert(0);
+					}
+
+				}
+			}
+
+
+			errs() << "GEPInvestigate : instrument code added!\n";
+			handledGEPs.insert(GEP->getPointerOperand());
+		}
+
+//		} // for(auto &I : *BB){
+//	} //for (auto &B : F){
+
+	} //Nodelist
+
+	Constant* printDynArrSize = F.getParent()->getOrInsertFunction(
+	  "printDynArrSize", FunctionType::getVoidTy(Ctx), NULL);
+
+	Constant* loopEndFn = F.getParent()->getOrInsertFunction(
+			  "loopEnd", FunctionType::getVoidTy(Ctx), NULL);
+
+	for (int i = 0; i < loopExitInsVec.size(); ++i) {
+		builder.SetInsertPoint(loopExitInsVec[i]);
+		builder.CreateCall(clearPrintedArrs);
+		builder.CreateCall(loopEndFn);
+	}
+
+} //End of GEPInvestigate Function
+
+void DFG::AssignOutLoopAddr() {
+
+	dfgNode* node;
+	for (int i = 0; i < NodeList.size(); ++i) {
+		node=NodeList[i];
+		if((node->getNameType().compare("OutLoopLOAD") == 0)||
+		   (node->getNameType().compare("OutLoopSTORE") == 0)){
+
+
+			int bytewidth;
+			if(dyn_cast<IntegerType>(OutLoopNodeMapReverse[node]->getType())){
+				bytewidth=OutLoopNodeMapReverse[node]->getType()->getIntegerBitWidth()/8;
+			}
+			else if(dyn_cast<ArrayType>(OutLoopNodeMapReverse[node]->getType())||
+					dyn_cast<StructType>(OutLoopNodeMapReverse[node]->getType())||
+					dyn_cast<PointerType>(OutLoopNodeMapReverse[node]->getType())
+					){
+				bytewidth=4;
+			}
+			else{
+				assert(0 && "should not come here");
+			}
+
+			outloopAddrPtr = outloopAddrPtr-bytewidth;
+			node->setoutloopAddr(outloopAddrPtr);
+			outs() << "NodeIdx:" << node->getIdx() << ",bytewidth=" << bytewidth << ",addr=" << outloopAddrPtr << "\n";
+		}
+	}
+}
+
+int DFG::phiselectInsert() {
+
+}
+

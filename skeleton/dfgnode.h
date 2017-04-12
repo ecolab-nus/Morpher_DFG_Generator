@@ -7,7 +7,7 @@ class CGRANode;
 class DFG;
 
 enum Port{NORTH,SOUTH,EAST,WEST,R0,R1,R2,R3,R4,R5,R6,R7,TILE,TREG,OP1,OP2,PRED,TILEIN,TILEOUT};
-enum HyCUBEIns{ADD,SUB,MUL,MULC,DIV,DIVC,LS,RS,ARS,AND,OR,XOR,Hy_LOAD,Hy_STORE,SELECT,BR,CMP,NOP};
+enum HyCUBEIns{ADD,SUB,MUL,MULC,DIV,DIVC,LS,RS,ARS,AND,OR,XOR,Hy_LOAD,Hy_STORE,Hy_LOADH,Hy_STOREH,Hy_LOADB,Hy_STOREB,SELECT,BR,CMP,NOP,SEXT,CMERGE};
 
 struct pathData{
 	CGRANode* cnode;
@@ -67,6 +67,15 @@ class dfgNode{
 			int routingPossibilities = 0;
 			int mappedRealTime = 0;
 			bool isMEMOp = false;
+
+			//OuterLoop addresses
+			int outloopAddr=-1;
+			int GEPbaseAddr=-1;
+			int typeSizeBytes=-1;
+
+			//Constant
+			int32_t constVal=-1;
+			bool constValFlag=false;
 
 		public :
 
@@ -174,6 +183,27 @@ class dfgNode{
 			//Out of loop instructions
 			void addStoreChild(Instruction * ins);
 			void addLoadParent(Instruction * ins);
+
+			//Memory Allocation
+			int getoutloopAddr();
+			void setoutloopAddr(int addr);
+			bool isOutLoop();
+			int getGEPbaseAddr();
+			void setGEPbaseAddr(int addr);
+			bool isGEP();
+			void setTypeSizeBytes(int size){typeSizeBytes = size;}
+			int getTypeSizeBytes(){return typeSizeBytes;}
+
+			//Add CMerge Child
+			dfgNode* addCMergeParent(dfgNode* phiBRAncestor,dfgNode* phiDataAncestor=NULL,int32_t constVal=-1);
+			dfgNode* addCMergeParent(dfgNode* phiBRAncestor,Instruction* outLoopLoadIns);
+			dfgNode* addCMergeParent(Instruction* phiBRAncestorIns,Instruction* outLoopLoadIns);
+			dfgNode* addCMergeParent(Instruction* phiBRAncestorIns,int32_t constVal);
+
+			//ConstantVal
+			int getConstantVal(){assert(constValFlag);return constVal;}
+			void setConstantVal(int val){constVal = val;constValFlag = true;}
+			bool hasConstantVal(){return constValFlag;}
 
 
 

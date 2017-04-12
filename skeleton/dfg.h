@@ -9,12 +9,15 @@
 #include "llvm/Analysis/ScalarEvolutionExpander.h"
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
 #include "llvm/Analysis/DependenceAnalysis.h"
+#include "llvm/IR/DataLayout.h"
 
 #include <iostream>
 #include <fstream>
 
 
 #define REGS_PER_NODE 4
+
+#define MEM_SIZE 4096
 
 class AStar;
 
@@ -121,7 +124,8 @@ typedef struct{
 	uint16_t regbypass;
 	uint16_t tregwen;
 	uint16_t opcode;
-	uint16_t constant;
+	uint32_t constant;
+	uint8_t constantValid;
 } binOp;
 
 enum MemOp   {LOAD,STORE,INVALID};
@@ -140,6 +144,10 @@ class DFG{
 			std::vector<nodeWithCost> globalNodesWithCost;
 //			std::vector<std::vector<int> > conMat;
 			std::vector<std::vector<std::vector<unsigned char> > > conMatArr;
+
+			//the pointer which the anyother outerloop load and stores should be written to
+			uint32_t outloopAddrPtr = MEM_SIZE;
+			uint32_t arrayAddrPtr = 0;
 
 
 
@@ -171,6 +179,8 @@ class DFG{
 			std::ofstream mappingOutFile;
 			AStar* astar;
 			std::map<Instruction*,dfgNode*> OutLoopNodeMap;
+			std::map<dfgNode*,Instruction*> OutLoopNodeMapReverse;
+			std::map<Instruction*,dfgNode*> LoopStartMap;
 
 			DFG(std::string name);
 
@@ -198,7 +208,7 @@ class DFG{
 
 			std::vector<dfgNode*> getRoots();
 
-			std::vector<dfgNode*> getLeafs(BasicBlock* BB, bool withinSameBB = false);
+			std::vector<dfgNode*> getLeafs(BasicBlock* BB);
 			std::vector<dfgNode*> getLeafs();
 
 			void connectBB();
@@ -316,7 +326,8 @@ class DFG{
 			int printCongestionInfo();
 
 			//Treat PHI Nodes
-			int handlePHINodes();
+			int handlePHINodes(std::set<BasicBlock*> LoopBB);
+			int phiselectInsert();
 
 			//Treat high-fan in PHI Nodes
 			int handlePHINodeFanIn();
@@ -349,6 +360,13 @@ class DFG{
 			//type
 			DFGType type;
 			static void partitionFuncDFG(DFG* funcDFG, std::vector<DFG*> dfgVectorPtr);
+
+			//investigate GEP
+			void GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeArrMap);
+			std::map<std::string,uint32_t> allocatedArraysMap;
+
+			//outerloop load and stores address assignment
+			void AssignOutLoopAddr();
 
 
 	};

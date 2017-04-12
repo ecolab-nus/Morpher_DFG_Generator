@@ -5,6 +5,29 @@ dfgNode::dfgNode(Instruction *ins, DFG* parent){
 	this->Node = ins;
 	this->BB = ins->getParent();
 	this->Parent = parent;
+
+	for (int i = 0; i < ins->getNumOperands(); ++i) {
+		if(ConstantInt *CI = dyn_cast<ConstantInt>(ins->getOperand(i))){
+
+			if(dyn_cast<PHINode>(ins)){
+				break;
+			}
+
+			if(this->hasConstantVal()){
+				ins->dump();
+			}
+			assert(this->hasConstantVal()==false);
+			this->setConstantVal(CI->getSExtValue());
+		}
+	}
+
+	if(dyn_cast<LoadInst>(ins)){
+		this->setTypeSizeBytes(ins->getType()->getIntegerBitWidth()/8);
+	}
+
+	if(StoreInst* SI = dyn_cast<StoreInst>(ins)){
+		this->setTypeSizeBytes(SI->getValueOperand()->getType()->getIntegerBitWidth()/8);
+	}
 }
 
 std::vector<Instruction*>::iterator dfgNode::getChildIterator(){
@@ -368,12 +391,14 @@ bool dfgNode::isConditional() {
 void dfgNode::addStoreChild(Instruction * ins) {
 	dfgNode* temp;
 
+
 	if(Parent->OutLoopNodeMap.find(ins) == Parent->OutLoopNodeMap.end()){
 		temp = new dfgNode(Parent);
 		temp->setNameType("OutLoopSTORE");
 		temp->setIdx(Parent->getNodesPtr()->size());
 		Parent->getNodesPtr()->push_back(temp);
 		Parent->OutLoopNodeMap[ins] = temp;
+		Parent->OutLoopNodeMapReverse[temp]=ins;
 	}
 	else{
 		temp = Parent->OutLoopNodeMap[ins];
@@ -383,10 +408,15 @@ void dfgNode::addStoreChild(Instruction * ins) {
 	this->addChildNode(temp);
 
 	temp->BB = this->getNode()->getParent();
+
+	temp->setTypeSizeBytes(ins->getType()->getIntegerBitWidth()/8);
+
+
 }
 
 void dfgNode::addLoadParent(Instruction * ins) {
 	dfgNode* temp;
+
 
 	if(Parent->OutLoopNodeMap.find(ins) == Parent->OutLoopNodeMap.end()){
 		temp = new dfgNode(Parent);
@@ -394,6 +424,7 @@ void dfgNode::addLoadParent(Instruction * ins) {
 		temp->setIdx(Parent->getNodesPtr()->size());
 		Parent->getNodesPtr()->push_back(temp);
 		Parent->OutLoopNodeMap[ins] = temp;
+		Parent->OutLoopNodeMapReverse[temp]=ins;
 	}
 	else{
 		temp = Parent->OutLoopNodeMap[ins];
@@ -402,5 +433,159 @@ void dfgNode::addLoadParent(Instruction * ins) {
 	this->addAncestorNode(temp);
 	temp->addChildNode(this);
 
-	temp->BB = this->getNode()->getParent();
+	temp->BB = this->BB;
+
+	temp->setTypeSizeBytes(ins->getType()->getIntegerBitWidth()/8);
+}
+
+int dfgNode::getoutloopAddr() {
+	//should be outerloop load and store instruction
+	assert((this->getNameType().compare("OutLoopLOAD") == 0)||(this->getNameType().compare("OutLoopSTORE") == 0));
+	return outloopAddr;
+}
+
+void dfgNode::setoutloopAddr(int addr) {
+	assert((this->getNameType().compare("OutLoopLOAD") == 0)||(this->getNameType().compare("OutLoopSTORE") == 0));
+	outloopAddr = addr;
+}
+
+int dfgNode::getGEPbaseAddr() {
+	assert(this->getNode());
+	assert(dyn_cast<GetElementPtrInst>(this->getNode()));
+	return GEPbaseAddr;
+}
+
+void dfgNode::setGEPbaseAddr(int addr) {
+	assert(this->getNode());
+	assert(dyn_cast<GetElementPtrInst>(this->getNode()));
+	GEPbaseAddr = addr;
+}
+
+dfgNode* dfgNode::addCMergeParent(dfgNode* phiBRAncestor,dfgNode* phiDataAncestor,int32_t constVal) {
+	dfgNode* temp = new dfgNode(Parent);
+	temp->setIdx(Parent->getNodesPtr()->size());
+	Parent->getNodesPtr()->push_back(temp);
+	temp->BB = this->BB;
+	temp->setNameType("CMERGE");
+
+	if(phiDataAncestor==NULL){
+		temp->setConstantVal(constVal);
+	}
+	else{
+		temp->addAncestorNode(phiDataAncestor);
+		phiDataAncestor->addChildNode(temp);
+
+	}
+
+	temp->addAncestorNode(phiBRAncestor);
+	phiBRAncestor->addChildNode(temp);
+
+	temp->addPHIChildNode(this);
+	this->addPHIAncestorNode(temp);
+
+	return temp;
+}
+
+dfgNode* dfgNode::addCMergeParent(dfgNode* phiBRAncestor,
+		Instruction* outLoopLoadIns) {
+
+	dfgNode* temp = new dfgNode(Parent);
+	temp->setIdx(Parent->getNodesPtr()->size());
+	Parent->getNodesPtr()->push_back(temp);
+	temp->setNameType("CMERGE");
+	temp->BB = this->BB;
+
+	temp->addLoadParent(outLoopLoadIns);
+
+
+	temp->addAncestorNode(phiBRAncestor);
+	phiBRAncestor->addChildNode(temp);
+
+	temp->addPHIChildNode(this);
+	this->addPHIAncestorNode(temp);
+
+	return temp;
+}
+
+bool dfgNode::isOutLoop() {
+	return (this->getNameType().compare("OutLoopLOAD") == 0)||(this->getNameType().compare("OutLoopSTORE") == 0);
+}
+
+bool dfgNode::isGEP() {
+	if (this->getNode() == NULL) return false;
+	if (dyn_cast<GetElementPtrInst>(this->getNode())){
+		return true;
+	}
+	else{
+		return false;
+	}
+}
+
+dfgNode* dfgNode::addCMergeParent(Instruction* phiBRAncestorIns,
+		Instruction* outLoopLoadIns) {
+
+	dfgNode* temp = new dfgNode(Parent);
+	temp->setIdx(Parent->getNodesPtr()->size());
+	Parent->getNodesPtr()->push_back(temp);
+	temp->setNameType("CMERGE");
+	temp->BB = this->BB;
+
+	temp->addLoadParent(outLoopLoadIns);
+
+	assert(phiBRAncestorIns!=NULL);
+	dfgNode* tempBR;
+	if(Parent->LoopStartMap.find(phiBRAncestorIns)!=Parent->LoopStartMap.end()){
+		tempBR = Parent->LoopStartMap[phiBRAncestorIns];
+	}
+	else{
+		tempBR = new dfgNode(Parent);
+		tempBR->setIdx(Parent->getNodesPtr()->size());
+		Parent->getNodesPtr()->push_back(tempBR);
+		tempBR->setNameType("LOOPSTART");
+		tempBR->BB = this->BB;
+		Parent->LoopStartMap[phiBRAncestorIns]=tempBR;
+	}
+
+
+	temp->addAncestorNode(tempBR);
+	tempBR->addChildNode(temp);
+
+	temp->addPHIChildNode(this);
+	this->addPHIAncestorNode(temp);
+
+	return temp;
+}
+
+dfgNode* dfgNode::addCMergeParent(Instruction* phiBRAncestorIns, int32_t constVal) {
+	dfgNode* temp = new dfgNode(Parent);
+	temp->setIdx(Parent->getNodesPtr()->size());
+	Parent->getNodesPtr()->push_back(temp);
+	temp->setNameType("CMERGE");
+	temp->BB = this->BB;
+
+	temp->setConstantVal(constVal);
+
+
+	assert(phiBRAncestorIns!=NULL);
+	dfgNode* tempBR;
+	if(Parent->LoopStartMap.find(phiBRAncestorIns)!=Parent->LoopStartMap.end()){
+		tempBR = Parent->LoopStartMap[phiBRAncestorIns];
+	}
+	else{
+		tempBR = new dfgNode(Parent);
+		tempBR->setIdx(Parent->getNodesPtr()->size());
+		Parent->getNodesPtr()->push_back(tempBR);
+		tempBR->setNameType("LOOPSTART");
+		tempBR->BB = this->BB;
+		Parent->LoopStartMap[phiBRAncestorIns]=tempBR;
+	}
+
+
+	temp->addAncestorNode(tempBR);
+	tempBR->addChildNode(temp);
+
+	temp->addPHIChildNode(this);
+	this->addPHIAncestorNode(temp);
+
+	return temp;
 }
