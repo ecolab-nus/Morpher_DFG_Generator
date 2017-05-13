@@ -70,6 +70,7 @@ class dfgNode{
 
 			//OuterLoop addresses
 			int outloopAddr=-1;
+			bool transferedByHost=false;
 			int GEPbaseAddr=-1;
 			int typeSizeBytes=-1;
 
@@ -204,10 +205,9 @@ class dfgNode{
 			int getConstantVal(){assert(constValFlag);return constVal;}
 			void setConstantVal(int val){constVal = val;constValFlag = true;}
 			bool hasConstantVal(){return constValFlag;}
-
-
-
-	};
+			bool isTransferedByHost() const {return transferedByHost;}
+			void setTransferedByHost(bool transferedByHost = false) {this->transferedByHost = transferedByHost;}
+};
 
 
 #endif

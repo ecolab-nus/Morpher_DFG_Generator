@@ -10,6 +10,7 @@
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
 #include "llvm/Analysis/DependenceAnalysis.h"
 #include "llvm/IR/DataLayout.h"
+#include "llvm/Transforms/Utils/BasicBlockUtils.h"
 
 #include <iostream>
 #include <fstream>
@@ -149,6 +150,15 @@ class DFG{
 			uint32_t outloopAddrPtr = MEM_SIZE;
 			uint32_t arrayAddrPtr = 0;
 
+			//LoopInfo if its a loop
+			Loop* L=NULL;
+			std::set<BasicBlock*> loopBB;
+			int loopIdx=-1;
+			std::map<Loop*,std::string>* loopNamesPtr;
+
+			//macro placement space
+
+
 
 
 			void renumber();
@@ -158,7 +168,7 @@ class DFG{
 			std::vector<dfgNode*> schedule;
 			void traverseCriticalPath(dfgNode* node, int level);
 
-			CGRA* currCGRA;
+			CGRA* currCGRA=NULL;
 			std::vector<ConnectedCGRANode> searchCandidates(CGRANode* mappedLoc, dfgNode* node, std::vector<std::pair<Instruction*,int>>* candidateNumbers);
 			void eraseAlreadyMappedNodes(std::vector<ConnectedCGRANode>* candidates);
 			void backTrack(int nodeSeq);
@@ -182,7 +192,7 @@ class DFG{
 			std::map<dfgNode*,Instruction*> OutLoopNodeMapReverse;
 			std::map<Instruction*,dfgNode*> LoopStartMap;
 
-			DFG(std::string name);
+			DFG(std::string name,std::map<Loop*,std::string>* lnPtr);
 
 
 			void setName(std::string str){name = str;}
@@ -253,7 +263,7 @@ class DFG{
 
 			std::vector<ConnectedCGRANode> FindCandidateCGRANodes(dfgNode* node);
 
-			void MapCGRA_SMART(int XDim, int YDim, ArchType arch = RegXbarTREG, int bTrack = 100);
+			void MapCGRA_SMART(int XDim, int YDim, ArchType arch = RegXbarTREG, int bTrack = 100, int initMII=1);
 			void MapCGRA_SA(int XDim, int YDim, std::string mapfileName = "Mapping.log");
 			bool MapMultiDest(std::map<dfgNode*,std::vector< std::pair<CGRANode*,int> > > *nodeDestMap, std::map<CGRANode*,std::vector<dfgNode*> > *destNodeMap);
 			bool MapASAPLevel(int MII, int XDim, int YDim, ArchType arch);
@@ -367,6 +377,22 @@ class DFG{
 
 			//outerloop load and stores address assignment
 			void AssignOutLoopAddr();
+
+			int PlaceMacro(DFG* mappedDFG, int XDim, int YDim, ArchType arch);
+
+			//LoopInfo
+			std::vector<DFG*> subLoopDFGs;
+			std::set<BasicBlock*> accumulatedBBs;
+			void setLoop(Loop* loop){L=loop;}
+			Loop* getLoop(){return L;}
+			void setLoopBB(std::set<BasicBlock*> BBs){loopBB=BBs;}
+			std::set<BasicBlock*>* getLoopBB(){return &loopBB;}
+			void setLoopIdx(int i){loopIdx=i;}
+			int getLoopIdx(){return loopIdx;}
+
+
+
+
 
 
 	};

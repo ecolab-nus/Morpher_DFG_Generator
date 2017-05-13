@@ -33,6 +33,30 @@ struct CGRAEdgeNew{
 	CGRAEdgeNew();
 };
 
+struct freeBlock{
+	int posX;
+	int posY;
+	int posT;
+	int sizeX;
+	int sizeY;
+	int sizeT;
+
+	//functions
+	freeBlock(int posX,int posY,int posT,int sizeX,int sizeY,int sizeT):posX(posX),posY(posY),posT(posT),sizeX(sizeX),sizeY(sizeY),sizeT(sizeT){}
+	static bool compare(const freeBlock &i, const freeBlock &j){
+		return (i.sizeX+i.sizeY+i.sizeT) < (j.sizeX+j.sizeY+j.sizeT);
+	}
+	bool fitsSize(int chkSizeX, int chkSizeY, int chkSizeT){
+		if((chkSizeX <= sizeX)&&(chkSizeY <= sizeY)&&(chkSizeT <= sizeT)){
+			return true;
+		}
+		else{
+			return false;
+		}
+	}
+
+};
+
 class CGRA{
 		private :
 			std::vector<std::vector<std::vector<CGRANode*> > > CGRANodes;
@@ -53,6 +77,8 @@ class CGRA{
 			int regsPerNode;
 			ArchType arch;
 			std::vector<std::vector<int> > phyConMat;
+			bool mapped=false;
+			std::vector<freeBlock> freeBlocks;
 
 			//Creating unwrapped substrate
 
@@ -63,8 +89,6 @@ class CGRA{
 			CGRANode* getCGRANode(int t, int y, int x);
 			CGRANode* getCGRANode(int phyLoc);
 			std::map<Port,std::vector<Port> > OrigInOutPortMap;
-
-
 
 			int getXdim();
 			int getYdim();
@@ -91,6 +115,14 @@ class CGRA{
 
 			//Creating unwrapped substrate
 			void addIINewNodes();
+			void combineCGRAs(CGRA* otherCGRA, int insertX, int insertY, int insertZ);
+			void combineCGRAs2(CGRA* otherCGRA, int insertX, int insertY, int insertZ);
+
+			bool getMapped(){return mapped;}
+			void setMapped(bool val){mapped=val;}
+
+			bool PlaceMacro(DFG* mappedDFG);
+			void clearFreeBlocks(){freeBlocks.clear();}
 	};
 
 

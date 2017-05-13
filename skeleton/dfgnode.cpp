@@ -399,6 +399,10 @@ void dfgNode::addStoreChild(Instruction * ins) {
 		Parent->getNodesPtr()->push_back(temp);
 		Parent->OutLoopNodeMap[ins] = temp;
 		Parent->OutLoopNodeMapReverse[temp]=ins;
+
+		if(Parent->accumulatedBBs.find(ins->getParent())==Parent->accumulatedBBs.end()){
+			temp->setTransferedByHost(true);
+		}
 	}
 	else{
 		temp = Parent->OutLoopNodeMap[ins];
@@ -409,7 +413,8 @@ void dfgNode::addStoreChild(Instruction * ins) {
 
 	temp->BB = this->getNode()->getParent();
 
-	temp->setTypeSizeBytes(ins->getType()->getIntegerBitWidth()/8);
+	//ceiling upto multiple of 8
+	temp->setTypeSizeBytes((ins->getType()->getIntegerBitWidth()+7)/8);
 
 
 }
@@ -425,6 +430,10 @@ void dfgNode::addLoadParent(Instruction * ins) {
 		Parent->getNodesPtr()->push_back(temp);
 		Parent->OutLoopNodeMap[ins] = temp;
 		Parent->OutLoopNodeMapReverse[temp]=ins;
+
+		if(Parent->accumulatedBBs.find(ins->getParent())==Parent->accumulatedBBs.end()){
+			temp->setTransferedByHost(true);
+		}
 	}
 	else{
 		temp = Parent->OutLoopNodeMap[ins];
@@ -435,7 +444,14 @@ void dfgNode::addLoadParent(Instruction * ins) {
 
 	temp->BB = this->BB;
 
-	temp->setTypeSizeBytes(ins->getType()->getIntegerBitWidth()/8);
+//	if(ins->getType()->getIntegerBitWidth() < 8){
+//		ins->dump();
+//		errs() << "integerBitWidth = " << ins->getType()->getIntegerBitWidth() << "\n";
+//	}
+//	assert(ins->getType()->getIntegerBitWidth() >= 8);
+
+	//ceiling upto multiple of 8
+	temp->setTypeSizeBytes((ins->getType()->getIntegerBitWidth()+7)/8);
 }
 
 int dfgNode::getoutloopAddr() {

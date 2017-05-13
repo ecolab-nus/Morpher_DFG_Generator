@@ -149,12 +149,11 @@ void DFG::connectBB(){
 	std::vector<BasicBlock*> analysedBB;
 	for (int i = 0 ; i < NodeList.size() ; i++) {
 		if(NodeList[i]->getNode() != NULL){
-			if(NodeList[i]->getNode()->getOpcode() == Instruction::Br){
+//			if(NodeList[i]->getNode()->getOpcode() == Instruction::Br){
+			if(BranchInst* BI = dyn_cast<BranchInst>(NodeList[i]->getNode())){
 				errs() << "$$$$$ This belongs to BB";
 				NodeList[i]->getNode()->getParent()->dump();
-	//			if (std::find(analysedBB.begin(), analysedBB.end(), NodeList[i].getNode()->getParent()) == analysedBB.end()){
-	//				analysedBB.push_back(NodeList[i].getNode()->getParent());
-	//			}
+
 				BasicBlock* BB = NodeList[i]->getNode()->getParent();
 				succ_iterator SI(succ_begin(BB)), SE(succ_end(BB));
 				 for (; SI != SE; ++SI){
@@ -169,17 +168,14 @@ void DFG::connectBB(){
 						 continue;
 					 }
 
+					 std::vector<dfgNode*> succLeafs = this->getLeafs(succ);
+					 for (int j = 0; j < succLeafs.size(); j++){
+						 BrSuccesors[succLeafs[j]].push_back(NodeList[i]);
+					 }
 
-	//				 if (std::find(analysedBB.begin(), analysedBB.end(), succ) == analysedBB.end()){
-	//					 analysedBB.push_back(succ);
-						 std::vector<dfgNode*> succLeafs = this->getLeafs(succ);
-						 for (int j = 0; j < succLeafs.size(); j++){
-							 BrSuccesors[succLeafs[j]].push_back(NodeList[i]);
-	//						 NodeList[i]->addChild(succLeafs[j]->getNode());
-	//						 succLeafs[j]->addAncestor(NodeList[i]->getNode());
-						 }
-	//				 }
 				 }
+
+
 			}
 		}
 	}
@@ -1749,6 +1745,13 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim, ArchType arch) {
 	astar = new AStar(&mappingOutFile,MII,this);
 	currCGRA = new CGRA(MII,XDim,YDim,REGS_PER_NODE,arch/*RegXbarTREG*/);
 
+	for (int i = 0; i < subLoopDFGs.size(); ++i) {
+		assert(currCGRA->PlaceMacro(subLoopDFGs[i]));
+	}
+
+	currCGRA->setMapped(true);
+
+
 	errs() << "STARTING MAPASAP with MII = " << MII << "with maxASAPLevel = " << maxASAPLevel << "\n";
 
 //	std::map<dfgNode*,std::vector<CGRANode*> > nodeDestMap;
@@ -1917,7 +1920,7 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim, ArchType arch) {
 	return true;
 }
 
-void DFG::MapCGRA_SMART(int XDim, int YDim, ArchType arch, int bTrack) {
+void DFG::MapCGRA_SMART(int XDim, int YDim, ArchType arch, int bTrack, int initMII) {
 
 	this->initBtrack = bTrack;
 	this->backtrackCounter = bTrack;
@@ -1942,7 +1945,7 @@ void DFG::MapCGRA_SMART(int XDim, int YDim, ArchType arch, int bTrack) {
 	mappingOutFile << "MapCGRAsa:: Recurrence Constrained MII = " << getMaxRecDist() << "\n";
 
 
-	MII = std::max(std::max(MII,getMaxRecDist()),memMII);
+	MII = std::max(std::max(MII,getMaxRecDist()),std::max(memMII,initMII));
 //	MII = 19;
 
 
@@ -4586,8 +4589,9 @@ int DFG::getMEMOpsToBePlaced() {
 	return memOpsToBePlaced;
 }
 
-DFG::DFG(std::string name) {
+DFG::DFG(std::string name, std::map<Loop*,std::string>* lnPtr) {
 	this->name = name;
+	this->loopNamesPtr = lnPtr;
 
 	HyCUBEInsStrings[NOP] = "NOP";
 	HyCUBEInsBinary[NOP] = 0 | (0b00000);
@@ -4856,6 +4860,7 @@ int DFG::nameNodes() {
 					node->setFinalIns(Hy_LOADB);
 				}
 				else{
+					outs() << "OutLoopLOAD size = " << node->getTypeSizeBytes() << "\n";
 					assert(0);
 				}
 			}
@@ -5186,8 +5191,10 @@ void DFG::GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeAr
 	IRBuilder<> builder(loopPHStartIns);
 //	builder.SetInsertPoint(loopPH,++builder.GetInsertPoint());
 
-	Value* printfSTARTstr = builder.CreateGlobalStringPtr("------------LOOP START--------------\n");
-	Value* printfENDstr = builder.CreateGlobalStringPtr("------------LOOP END----------------\n");
+	Value* printfSTARTstr = builder.CreateGlobalStringPtr((*this->loopNamesPtr)[L] + ":------------LOOP START--------------\n");
+	Value* printfENDstr = builder.CreateGlobalStringPtr((*this->loopNamesPtr)[L] + ":------------LOOP END----------------\n");
+	assert(this->loopNamesPtr->find(L)!=this->loopNamesPtr->end());
+	Value* loopName = builder.CreateGlobalStringPtr((*this->loopNamesPtr)[L]);
 
 //	Constant* printfMARKER = F.getParent()->getOrInsertFunction(
 //					  "printf",
@@ -5198,9 +5205,10 @@ void DFG::GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeAr
 	Constant* loopStartFn = F.getParent()->getOrInsertFunction(
 							"loopStart",
 							FunctionType::getVoidTy(Ctx),
+							Type::getInt8PtrTy(Ctx),
 							NULL);
 
-	builder.CreateCall(loopStartFn);
+	builder.CreateCall(loopStartFn,{loopName});
 
 
 	//the entry location for instrumentation code
@@ -5211,9 +5219,13 @@ void DFG::GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeAr
 	SmallVector<BasicBlock*,8> loopExitBlocks;
     L->getExitBlocks(loopExitBlocks);
     std::vector<Instruction*> loopExitInsVec;
+    assert(loopExitBlocks.size()!=0);
 	for (int i = 0; i < loopExitBlocks.size(); ++i) {
 		BasicBlock* LoopExitBB = loopExitBlocks[i];
-		BasicBlock::iterator instIter = --LoopExitBB->end();
+//		BasicBlock::iterator instIter = --LoopExitBB->end();
+		BasicBlock::iterator instIter = LoopExitBB->begin();
+		outs() << "LoopExit Blocks : \n";
+		LoopExitBB->dump();
 
 		if(std::find(loopExitInsVec.begin(),loopExitInsVec.end(),&*instIter)==loopExitInsVec.end()){
 			loopExitInsVec.push_back(&*instIter);
@@ -5236,6 +5248,9 @@ void DFG::GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeAr
 
 
 		if(node->getNameType().compare("OutLoopLOAD")==0){
+			if(!node->isTransferedByHost()){
+				continue;
+			}
 			errs() << "OutLoopLoad found!!\n";
 			Value* printfstr = builder.CreateGlobalStringPtr("OutLoopLoadNode:%d,val=%d,addr=%d\n");
 			assert(OutLoopNodeMapReverse[node]!=NULL);
@@ -5261,19 +5276,31 @@ void DFG::GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeAr
 									  loadVal->getType(), //value
 									  Type::getInt32Ty(Ctx), //addr
 									  Type::getInt8Ty(Ctx),  //isLoad
+									  Type::getInt8Ty(Ctx),  //isHostTrans
 									  NULL);
 
 			Value* isLoad = ConstantInt::get(Type::getInt8Ty(Ctx),1);
-			Value* args[] = {nodeIdx,loadVal,addrVal,isLoad};
+			Value* isHostTrans;
+			if(node->isTransferedByHost()){
+				isHostTrans = ConstantInt::get(Type::getInt8Ty(Ctx),1);
+			}
+			else{
+				isHostTrans = ConstantInt::get(Type::getInt8Ty(Ctx),0);
+			}
+			Value* args[] = {nodeIdx,loadVal,addrVal,isLoad,isHostTrans};
 			for (int i = 0; i < loopExitInsVec.size(); ++i) {
-				builder.SetInsertPoint(loopExitInsVec[i]);
+				builder.SetInsertPoint(loopExitBlocks[i],loopExitBlocks[i]->begin());
 //				builder.CreateCall(printf,args);
 				builder.CreateCall(outloopReportFn,args);
-
+//				outs() << "its a load\n";
+//				loopExitBlocks[i]->dump();
 			}
 		}
 
 		if(node->getNameType().compare("OutLoopSTORE")==0){
+			if(!node->isTransferedByHost()){
+				continue;
+			}
 			Value* printfstr = builder.CreateGlobalStringPtr("OutLoopStoreNode:%d,val=%d,addr=%d\n");
 			assert(node->getAncestors().size()==1);
 			Value* StoreVal = (node->getAncestors())[0]->getNode();
@@ -5297,14 +5324,25 @@ void DFG::GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeAr
 									  StoreVal->getType(), //value
 									  Type::getInt32Ty(Ctx), //addr
 									  Type::getInt8Ty(Ctx),  //isLoad
+									  Type::getInt8Ty(Ctx),  //isHostTrans
 									  NULL);
 
 			Value* isLoad = ConstantInt::get(Type::getInt8Ty(Ctx),0);
-			Value* args[] = {nodeIdx,StoreVal,addrVal,isLoad};
+			Value* isHostTrans;
+			if(node->isTransferedByHost()){
+				isHostTrans = ConstantInt::get(Type::getInt8Ty(Ctx),1);
+			}
+			else{
+				isHostTrans = ConstantInt::get(Type::getInt8Ty(Ctx),0);
+			}
+			Value* args[] = {nodeIdx,StoreVal,addrVal,isLoad,isHostTrans};
 			for (int i = 0; i < loopExitInsVec.size(); ++i) {
-				builder.SetInsertPoint(loopExitInsVec[i]);
+				builder.SetInsertPoint(loopExitBlocks[i],loopExitBlocks[i]->begin());
 //				builder.CreateCall(printf,args);
 				builder.CreateCall(outloopReportFn,args);
+//				outs() << "its a store\n";
+//				OutLoopNodeMapReverse[node]->dump();
+//				loopExitBlocks[i]->dump();
 			}
 		}
 
@@ -5562,12 +5600,12 @@ void DFG::GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeAr
 	  "printDynArrSize", FunctionType::getVoidTy(Ctx), NULL);
 
 	Constant* loopEndFn = F.getParent()->getOrInsertFunction(
-			  "loopEnd", FunctionType::getVoidTy(Ctx), NULL);
+			  "loopEnd", FunctionType::getVoidTy(Ctx),Type::getInt8PtrTy(Ctx), NULL);
 
 	for (int i = 0; i < loopExitInsVec.size(); ++i) {
 		builder.SetInsertPoint(loopExitInsVec[i]);
 		builder.CreateCall(clearPrintedArrs);
-		builder.CreateCall(loopEndFn);
+		builder.CreateCall(loopEndFn,{loopName});
 	}
 
 } //End of GEPInvestigate Function
@@ -5606,3 +5644,19 @@ int DFG::phiselectInsert() {
 
 }
 
+int DFG::PlaceMacro(DFG* mappedDFG, int XDim, int YDim, ArchType arch) {
+	if(this->currCGRA!=NULL){
+		assert(this->currCGRA->getMapped() == false);
+	}
+	int II=0; //this will be one inititally once it gets into the following while loop
+	bool macroPlaceSuccess=false;
+
+	while(macroPlaceSuccess==false){
+		II++;
+		delete currCGRA;
+		currCGRA = new CGRA(II,XDim,YDim,REGS_PER_NODE,arch);
+		macroPlaceSuccess = currCGRA->PlaceMacro(mappedDFG);
+	}
+
+	return II;
+}

@@ -1,4 +1,5 @@
 #include "CGRA.h"
+#include "dfg.h"
 
 void CGRA::connectNeighbors() {
 
@@ -72,6 +73,8 @@ CGRA::CGRA(int MII, int Xdim, int Ydim, int regs, ArchType aType) {
 	this->arch = aType;
 	CGRANode* tempNodePtr;
 	std::map<Port,std::vector<Port> > InOutPortMap;
+
+	freeBlocks.push_back(freeBlock(0,0,0,Xdim,Ydim,MII));
 
 
 //	InOutPortMap[NORTH] = {R0,R1,R2,R3,NORTH,EAST,WEST,SOUTH};
@@ -917,4 +920,224 @@ void CGRA::addIINewNodes() {
 
 
 
+}
+
+void CGRA::combineCGRAs(CGRA* otherCGRA, int insertX, int insertY,
+		int insertT) {
+
+	bool additionisBoundary=(insertX==this->getXdim()-1);
+	additionisBoundary = additionisBoundary || (insertY==this->getYdim()-1);
+	additionisBoundary = additionisBoundary || (insertT==this->getMII()-1);
+
+	//Add all otherCGRA edges to this one
+	std::map<CGRANode*,std::vector<CGRAEdge>>::iterator edgeIt;
+	for (edgeIt = otherCGRA->getCGRAEdges()->begin(); edgeIt != otherCGRA->getCGRAEdges()->end(); ++edgeIt) {
+		assert(CGRAEdges.find(edgeIt->first)==CGRAEdges.end()); //should not be already included.
+		CGRAEdges[edgeIt->first]=edgeIt->second;
+	}
+
+	int x;
+	int y;
+	int t;
+
+
+	//Connect YT Plane
+	x=insertX;
+	for (y = insertY; y < insertY+otherCGRA->getYdim(); ++y) {
+		for (t = insertT; t < insertT+otherCGRA->getMII(); ++t) {
+			if((x<getXdim())&&(y<getYdim())&&(t<getMII())){ //insertion point is inside the current CGRA
+
+				CGRANode* cnode = getCGRANode(t,y,x);
+				assert(CGRAEdges.find(cnode) != CGRAEdges.end());
+
+				for (int i = 0; i < CGRAEdges[cnode].size(); ++i) {
+					CGRANode* srcNode = CGRAEdges[cnode][i].Src;
+					assert(cnode==srcNode);
+					CGRANode* destNode = CGRAEdges[cnode][i].Dst;
+
+					if((destNode->getT() >= insertT)&&(destNode->getX() >= insertX)&&(destNode->getY() >= insertY)){
+						continue; // the destination node is inside the newly added CGRA fabric.
+					}
+
+					for (int j = 0; j < CGRAEdges[destNode].size(); ++j) {
+						if(CGRAEdges[destNode][j].Dst == srcNode){
+							CGRANode* newNode = otherCGRA->getCGRANode(t-insertT,y-insertY,x-insertX);
+							CGRAEdges[destNode][j].Dst = newNode;
+							CGRAEdges[newNode].push_back(CGRAEdge(newNode,CGRAEdges[destNode][j].DstPort,destNode,CGRAEdges[destNode][j].SrcPort));
+
+							for (int k = 0; k < CGRAEdges[srcNode].size(); ++k) {
+								if(CGRAEdges[srcNode][k].Dst == destNode){
+									//end node of x dimension
+									CGRANode* endNewNode = otherCGRA->getCGRANode(t-insertT,y-insertY,otherCGRA->getXdim()-1);
+									CGRAEdges[srcNode][k].Dst = endNewNode;
+									CGRAEdges[endNewNode].push_back(CGRAEdge(endNewNode,CGRAEdges[srcNode][k].DstPort,srcNode,CGRAEdges[srcNode][k].SrcPort));
+								}
+							}
+
+						}
+					}
+				}
+			}
+			else{ //insertion point is outside the current CGRA.
+				if(x == getXdim()){// boundrying to x
+					assert(y<getYdim());
+					assert(t<getMII());
+					assert(getXdim() > 1);
+					for (int i = 0; i < CGRAEdges[getCGRANode(0,0,1)].size(); ++i) {
+						if(CGRAEdges[getCGRANode(0,0,1)][i].Dst == getCGRANode(0,0,0)){
+							CGRAEdge cedge = CGRAEdges[getCGRANode(0,0,1)][i];
+							CGRAEdges[getCGRANode(t,y,x)].push_back(CGRAEdge(getCGRANode(t,y,x),cedge.SrcPort,getCGRANode(t,y,x-1),cedge.DstPort));
+							CGRAEdges[getCGRANode(t,y,x-1)].push_back(CGRAEdge(getCGRANode(t,y,x-1),cedge.DstPort,getCGRANode(t,y,x),cedge.SrcPort));
+						}
+					}
+				}
+				else if(y == getYdim()){
+					assert(t<getMII());
+					assert(x<getXdim());
+					assert(getYdim() > 1);
+					for (int i = 0; i < CGRAEdges[getCGRANode(0,1,0)].size(); ++i) {
+						if(CGRAEdges[getCGRANode(0,1,0)][i].Dst == getCGRANode(0,0,0)){
+							CGRAEdge cedge = CGRAEdges[getCGRANode(0,1,0)][i];
+							CGRAEdges[getCGRANode(t,y,x)].push_back(CGRAEdge(getCGRANode(t,y,x),cedge.SrcPort,getCGRANode(t,y-1,x),cedge.DstPort));
+							CGRAEdges[getCGRANode(t,y-1,x)].push_back(CGRAEdge(getCGRANode(t,y-1,x),cedge.DstPort,getCGRANode(t,y,x),cedge.SrcPort));
+						}
+					}
+				}
+				else if(t == getMII()){
+					assert(y<getYdim());
+					assert(x<getXdim());
+					assert(getMII() > 1);
+					for (int i = 0; i < CGRAEdges[getCGRANode(1,0,0)].size(); ++i) {
+						if(CGRAEdges[getCGRANode(1,0,0)][i].Dst == getCGRANode(0,0,0)){
+							CGRAEdge cedge = CGRAEdges[getCGRANode(1,0,0)][i];
+							CGRAEdges[getCGRANode(t,y,x)].push_back(CGRAEdge(getCGRANode(t,y,x),cedge.SrcPort,getCGRANode(t,y-1,x),cedge.DstPort));
+							CGRAEdges[getCGRANode(t,y-1,x)].push_back(CGRAEdge(getCGRANode(t,y-1,x),cedge.DstPort,getCGRANode(t,y,x),cedge.SrcPort));
+						}
+					}
+				}
+			}
+		}
+	}
+
+
+	//Connect XT Plane
+		y=insertY;
+		for (x = insertX; x < insertX+otherCGRA->getXdim(); ++x) {
+			for (t = insertT; t < insertT+otherCGRA->getMII(); ++t) {
+				if((x<getXdim())&&(y<getYdim())&&(t<getMII())){
+
+					CGRANode* cnode = getCGRANode(t,y,x);
+					assert(CGRAEdges.find(cnode) != CGRAEdges.end());
+
+					for (int i = 0; i < CGRAEdges[cnode].size(); ++i) {
+						CGRANode* srcNode = CGRAEdges[cnode][i].Src;
+						assert(cnode==srcNode);
+						CGRANode* destNode = CGRAEdges[cnode][i].Dst;
+
+						if((destNode->getT() >= insertT)&&(destNode->getX() >= insertX)&&(destNode->getY() >= insertY)){
+							continue; // the destination node is inside the newly added CGRA fabric.
+						}
+
+						for (int j = 0; j < CGRAEdges[destNode].size(); ++j) {
+							if(CGRAEdges[destNode][j].Dst == srcNode){
+								CGRANode* newNode = otherCGRA->getCGRANode(t-insertT,y-insertY,x-insertX);
+								CGRAEdges[destNode][j].Dst = newNode;
+								CGRAEdges[newNode].push_back(CGRAEdge(newNode,CGRAEdges[destNode][j].DstPort,destNode,CGRAEdges[destNode][j].SrcPort));
+
+								for (int k = 0; k < CGRAEdges[srcNode].size(); ++k) {
+									if(CGRAEdges[srcNode][k].Dst == destNode){
+										//end node of x dimension
+										CGRANode* endNewNode = otherCGRA->getCGRANode(t-insertT,otherCGRA->getYdim()-1,x-insertX);
+										CGRAEdges[srcNode][k].Dst = endNewNode;
+										CGRAEdges[endNewNode].push_back(CGRAEdge(endNewNode,CGRAEdges[srcNode][k].DstPort,srcNode,CGRAEdges[srcNode][k].SrcPort));
+									}
+								}
+
+							}
+						}
+					}
+				}
+			}
+		}
+
+
+}
+
+bool CGRA::PlaceMacro(DFG* mappedDFG) {
+	int macroSizeX = mappedDFG->getCGRA()->getXdim();
+	int macroSizeY = mappedDFG->getCGRA()->getYdim();
+	int macroSizeT = mappedDFG->getCGRA()->getMII();
+	bool found=false;
+
+	freeBlock currFreeBlock(-1,-1,-1,-1,-1,-1);
+	CGRA* otherCGRA = mappedDFG->getCGRA();
+	std::map<CGRANode*,std::vector<CGRAEdge>>* otherCGRAEdges = otherCGRA->getCGRAEdges();
+
+	std::sort(freeBlocks.begin(),freeBlocks.end(), freeBlock::compare);
+	for (int i = 0; i < freeBlocks.size(); ++i) {
+		if(freeBlocks[i].fitsSize(macroSizeX,macroSizeY,macroSizeT)){
+			found=true;
+
+			if(macroSizeT < freeBlocks[i].sizeT){
+				freeBlock newFreeBlock(freeBlocks[i].posX,freeBlocks[i].posY,freeBlocks[i].posT+macroSizeT,freeBlocks[i].sizeX,freeBlocks[i].sizeY,freeBlocks[i].sizeT-macroSizeT);
+				freeBlocks.push_back(newFreeBlock);
+			}
+
+			int diffY = freeBlocks[i].sizeY - macroSizeY;
+			int diffX = freeBlocks[i].sizeX - macroSizeX;
+
+			if(diffY > diffX){
+				freeBlock newFreeBlock(freeBlocks[i].posX,freeBlocks[i].posY+macroSizeY,freeBlocks[i].posT,freeBlocks[i].sizeX,diffY,freeBlocks[i].sizeT);
+				freeBlocks.push_back(newFreeBlock);
+
+				freeBlock newFreeBlock2(freeBlocks[i].posX+macroSizeX,freeBlocks[i].posY,freeBlocks[i].posT,diffX,diffY,freeBlocks[i].sizeT);
+				freeBlocks.push_back(newFreeBlock2);
+			}
+			else{
+				freeBlock newFreeBlock(freeBlocks[i].posX+macroSizeX,freeBlocks[i].posY,freeBlocks[i].posT,diffX,freeBlocks[i].sizeY,freeBlocks[i].sizeT);
+				freeBlocks.push_back(newFreeBlock);
+
+				freeBlock newFreeBlock2(freeBlocks[i].posX,freeBlocks[i].posY+macroSizeY,freeBlocks[i].posT,diffX,diffY,freeBlocks[i].sizeT);
+				freeBlocks.push_back(newFreeBlock2);
+			}
+			//erase the currently consumed block
+			currFreeBlock = freeBlocks[i];
+			currFreeBlock.sizeX = macroSizeX;
+			currFreeBlock.sizeY = macroSizeY;
+			currFreeBlock.sizeT = macroSizeT;
+			freeBlocks.erase(freeBlocks.begin()+i);
+			break;
+		}
+	}
+
+	if(!found){
+		return false;
+	}
+
+	//Copy the node and edge information
+	for (int t = 0; t < macroSizeT; ++t) {
+		for (int y = 0; y < macroSizeY; ++y) {
+			for (int x = 0; x < macroSizeX; ++x) {
+
+				CGRANode* currCnode = getCGRANode(currFreeBlock.posT+t,currFreeBlock.posY+y,currFreeBlock.posX+x);
+				CGRANode* macroCnode = mappedDFG->getCGRA()->getCGRANode(t,y,x);
+
+				//copy the node
+				currCnode->setMappedDFGNode(macroCnode->getmappedDFGNode());
+
+				//copy the edges
+				for (int i = 0; i < (*otherCGRAEdges)[macroCnode].size(); ++i) {
+					for (int j = 0; j < CGRAEdges[currCnode].size(); ++j) {
+						if(CGRAEdges[currCnode][j].SrcPort == (*otherCGRAEdges)[macroCnode][j].SrcPort){
+							assert(CGRAEdges[currCnode][j].DstPort == (*otherCGRAEdges)[macroCnode][j].DstPort);
+							CGRAEdges[currCnode][j].mappedDFGEdge=(*otherCGRAEdges)[macroCnode][j].mappedDFGEdge;
+							break;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return true;
 }

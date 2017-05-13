@@ -92,6 +92,7 @@ static std::map<std::string,int> sizeArrMap;
 STATISTIC(LoopsAnalyzed, "Number of loops analyzed for vectorization");
 
 static std::set<BasicBlock*> LoopBB;
+static std::map<const BasicBlock*,std::vector<const BasicBlock*>> BBSuccBasicBlocks;
 
 	void traverseDefTree(Instruction *I,
 				 	 	 int depth,
@@ -434,17 +435,23 @@ static std::set<BasicBlock*> LoopBB;
 				  basicblockmapfile.close();
 	    	}
 
-	    	void getInnerMostLoops(std::vector<Loop*>* innerMostLoops, std::vector<Loop*> loops){
+	    	void getInnerMostLoops(std::vector<Loop*>* innerMostLoops, std::vector<Loop*> loops, std::map<Loop*,std::string>* loopNames, std::string lnstr){
 				for (int i = 0; i < loops.size(); ++i) {
+					std::stringstream ss;
+					ss << lnstr << i;
+					(*loopNames)[loops[i]]=ss.str();
+
+					outs() << "LoopName : " << ss.str() << "\n";
+					  for (Loop::block_iterator bb = loops[i]->block_begin(); bb!= loops[i]->block_end(); ++bb){
+						outs() << (*bb)->getName() << ",";
+					}
+					outs() << "\n";
+
 					if(loops[i]->getSubLoops().size() == 0){
-
-
-
-
 						innerMostLoops->push_back(loops[i]);
 					}
 					else{
-						getInnerMostLoops(innerMostLoops, loops[i]->getSubLoops());
+						getInnerMostLoops(innerMostLoops, loops[i]->getSubLoops(), loopNames, ss.str());
 					}
 				}
 	    	}
@@ -484,6 +491,233 @@ static std::set<BasicBlock*> LoopBB;
 					}
 	    	}
 
+	    	void ReplaceCMPs(Function &F) {
+	    		dfgNode* node;
+	    		std::vector<Instruction*> instructions;
+
+	    		for (auto &BB : F){
+	    			for(auto &I : BB){
+	    				instructions.push_back(&I);
+	    			}
+				}
+
+	    			for(auto I : instructions){
+							if(CmpInst* CI = dyn_cast_or_null<CmpInst>(I)){
+								I->dump();
+	//	    					if(BI->isConditional()){
+	//	    						if(CmpInst* CI = dyn_cast<CmpInst>(&I)){
+
+										IRBuilder<> builder(CI);
+					//					builder.SetInsertPoint(&BB,++builder.GetInsertPoint());
+										assert(CI->getNumOperands() == 2);
+										switch (CI->getPredicate()) {
+											case CmpInst::ICMP_EQ:
+					//						case CmpInst::FCMP_OEQ:
+					//						case CmpInst::FCMP_UEQ:
+
+												break;
+											case CmpInst::ICMP_NE:
+					//						case CmpInst::FCMP_ONE:
+					//						case CmpInst::FCMP_UNE:
+											{
+												CmpInst* cmpEqNew=cast<CmpInst>(builder.CreateICmpEQ(CI->getOperand(0),CI->getOperand(1)));
+												Instruction* notIns=cast<Instruction>(builder.CreateNot(cmpEqNew));
+												BasicBlock::iterator ii(CI);
+												notIns->removeFromParent();
+												ReplaceInstWithInst(CI->getParent()->getInstList(),ii,notIns);
+												break;
+											}
+											case CmpInst::ICMP_SGE:
+											case CmpInst::ICMP_UGE:
+					//						case CmpInst::FCMP_OGE:
+					//						case CmpInst::FCMP_UGE:
+											{
+												CmpInst* cmpEqNew;
+												if(CI->getPredicate() == CmpInst::ICMP_SGE){
+													cmpEqNew=cast<CmpInst>(builder.CreateICmpSLT(CI->getOperand(1),CI->getOperand(0)));
+												}
+												else{ // ICMP_UGE
+													cmpEqNew=cast<CmpInst>(builder.CreateICmpULT(CI->getOperand(1),CI->getOperand(0)));
+												}
+												Instruction* notIns=cast<Instruction>(builder.CreateNot(cmpEqNew));
+												BasicBlock::iterator ii(CI);
+												notIns->removeFromParent();
+												ReplaceInstWithInst(CI->getParent()->getInstList(),ii,notIns);
+												break;
+											}
+											case CmpInst::ICMP_SGT:
+											case CmpInst::ICMP_UGT:
+					//						case CmpInst::FCMP_OGT:
+					//						case CmpInst::FCMP_UGT:
+
+												break;
+											case CmpInst::ICMP_SLT:
+											case CmpInst::ICMP_ULT:
+					//						case CmpInst::FCMP_OLT:
+					//						case CmpInst::FCMP_ULT:
+
+												break;
+											case CmpInst::ICMP_SLE:
+											case CmpInst::ICMP_ULE:
+					//						case CmpInst::FCMP_OLE:
+					//						case CmpInst::FCMP_ULE:
+											{
+												CmpInst* cmpEqNew;
+												if(CI->getPredicate() == CmpInst::ICMP_SLE){
+													cmpEqNew=cast<CmpInst>(builder.CreateICmpSGT(CI->getOperand(1),CI->getOperand(0)));
+												}
+												else{ // ICMP_ULE
+													cmpEqNew=cast<CmpInst>(builder.CreateICmpUGT(CI->getOperand(1),CI->getOperand(0)));
+												}
+												Instruction* notIns=cast<Instruction>(builder.CreateNot(cmpEqNew));
+												BasicBlock::iterator ii(CI);
+												notIns->removeFromParent();
+												ReplaceInstWithInst(CI->getParent()->getInstList(),ii,notIns);
+												break;
+											}
+												break;
+											default:
+												assert(0);
+												break;
+										}
+									}
+	    			} //iter thru BB
+
+	    	}
+
+
+	    	void mapParentLoop(DFG* childLoopDFG,std::map<Loop*,std::string>* loopNames, std::map<Loop*,DFG*>* loopDFGs){
+	    		assert(childLoopDFG->getLoop()!=NULL);
+	    		if(Loop* ParentLoop = childLoopDFG->getLoop()->getParentLoop()){
+
+	    			//currently assume single child loops
+	    			assert(ParentLoop->getSubLoops().size()==1);
+	    			assert(childLoopDFG->getCGRA()->getMapped());
+
+	    			outs() << "innerLoop Basic Blocks : \n";
+	    			for (BasicBlock* BB : (*childLoopDFG->getLoopBB())) {
+	    				outs() << BB->getName() << ",";
+					}
+	    			outs() << "\n innerLoop Basic Blocks end \n";
+
+	    			Function *F = ParentLoop->getHeader()->getParent();
+	    			assert(loopNames->find(ParentLoop) != loopNames->end());
+
+	    			DFG* parentLoopDFG;
+	    			if(loopDFGs->find(ParentLoop)!=loopDFGs->end()){
+	    				outs() << "Parent Loop already existed!\n";
+	    				parentLoopDFG = (*loopDFGs)[ParentLoop];
+	    			}
+	    			else{
+	    				outs() << "creating parent loop!\n";
+	    				parentLoopDFG = new DFG(F->getName().str()+"_"+ (*loopNames)[ParentLoop],loopNames);
+	    				(*loopDFGs)[ParentLoop] = parentLoopDFG;
+	    			}
+
+	    			parentLoopDFG->setLoop(ParentLoop);
+	    			parentLoopDFG->subLoopDFGs.push_back(childLoopDFG);
+	    			parentLoopDFG->accumulatedBBs.insert(childLoopDFG->getLoopBB()->begin(),childLoopDFG->getLoopBB()->end());
+
+	    			std::set<BasicBlock*> ParentLoopBB;
+					for (BasicBlock* BB : ParentLoop->getBlocks()){
+						ParentLoopBB.insert(BB);
+					}
+
+					SmallVector<BasicBlock*,8> loopExitBlocks;
+					ParentLoop->getExitBlocks(loopExitBlocks);
+					for (int i = 0; i < loopExitBlocks.size(); ++i) {
+						ParentLoopBB.insert(loopExitBlocks[i]);
+					}
+
+					//remove innerloop blocks
+					for (BasicBlock* BB : parentLoopDFG->accumulatedBBs) {
+						outs() << "Removing : " << BB->getName() << "\n";
+						ParentLoopBB.erase(BB);
+					}
+
+	    			outs() << "outerLoop Basic Blocks : \n";
+	    			for (BasicBlock* BB : ParentLoopBB) {
+	    				outs() << BB->getName() << ",";
+					}
+	    			outs() << "\n outerLoop Basic Blocks end \n";
+
+	    			//-----------------------
+	    			//Mapping the parent loop
+	    			//-----------------------
+					  parentLoopDFG->setBBSuccBasicBlocks(BBSuccBasicBlocks);
+					  parentLoopDFG->setLoopBB(ParentLoopBB);
+
+					  std::map<Instruction*,int> insMap;
+					  for (std::set<BasicBlock*>::iterator bb = ParentLoopBB.begin(); bb!=ParentLoopBB.end();++bb){
+						 BasicBlock *B = *bb;
+						 int Icount = 0;
+						 for (auto &I : *B) {
+
+							 if(insMap.find(&I) != insMap.end()){
+								 continue;
+							 }
+
+							  int depth = 0;
+							  traverseDefTree(&I, depth, parentLoopDFG, &insMap,BBSuccBasicBlocks,ParentLoopBB);
+						 }
+					  }
+					  parentLoopDFG->addPHIChildEdges();
+					  parentLoopDFG->connectBB();
+					  parentLoopDFG->handlePHINodes(ParentLoopBB);
+	//				  LoopDFG.handlePHINodeFanIn();
+					  parentLoopDFG->checkSanity();
+	//				  LoopDFG.addMemDepEdges(MD);
+	//				  LoopDFG.removeAlloc();
+	//				  LoopDFG.addMemRecDepEdges(DA);
+	//				  LoopDFG.addMemRecDepEdgesNew(DA);
+					  printDFGDOT (F->getName().str() + (*loopNames)[ParentLoop] + "_loopdfg.dot", parentLoopDFG);
+
+					  parentLoopDFG->scheduleASAP();
+					  parentLoopDFG->scheduleALAP();
+					  parentLoopDFG->CreateSchList();
+	//				  LoopDFG.MapCGRA(4,4);
+					  parentLoopDFG->printXML();
+	//				  LoopDFG.printREGIMapOuts();
+					  parentLoopDFG->handleMEMops();
+					  parentLoopDFG->nameNodes();
+
+
+					  //Checking Instrumentation Code
+					  parentLoopDFG->AssignOutLoopAddr();
+					  parentLoopDFG->GEPInvestigate(*F,ParentLoop,&sizeArrMap);
+	//				  return true;
+
+					  ArchType arch = RegXbarTREG;
+
+					  if(parentLoopDFG->getCGRA()){
+						  if(parentLoopDFG->getCGRA()->getMapped()){
+							  outs() << "Parent Loop DFG Mapped : true \n";
+						  }
+						  else{
+							  outs() << "Parent Loop DFG Mapped : false \n";
+						  }
+					  }
+
+					  int initMII = parentLoopDFG->PlaceMacro(childLoopDFG,4,4,arch);
+					  parentLoopDFG->MapCGRA_SMART(4,4, arch, 20, initMII);
+					  parentLoopDFG->addPHIParents();
+	//				  LoopDFG.MapCGRA_EMS(4,4,F.getName().str() + "_L" + std::to_string(loopCounter) + "_mapping.log");
+					  printDFGDOT (F->getName().str() + (*loopNames)[ParentLoop] + "_loopdfg.dot", parentLoopDFG);
+	//				  LoopDFG.printTurns();
+
+					  if((arch != NoNOC)&&(arch != ALL2ALL)){
+						  parentLoopDFG->printOutSMARTRoutes();
+						  parentLoopDFG->printMapping();
+					  }
+
+
+
+	    		}
+	    		else{
+	    			outs() << "There is not parent loop\n";
+	    		}
+	    	}
+
 
 namespace {
 
@@ -499,6 +733,7 @@ namespace {
 				static std::set<const BasicBlock*> funcBB;
 				std::error_code EC;
 
+				ReplaceCMPs(F);
 
 				std::ofstream timeFile;
 				std::string timeFileName = "time." + F.getName().str() + ".log";
@@ -520,6 +755,7 @@ namespace {
 					  errs() << "  error opening file for writing!";
 				  errs() << "\n";
 				  }
+
 
 			  //errs() << "In a function calledd " << F.getName() << "!\n";
 
@@ -552,7 +788,7 @@ namespace {
 
 			  SmallVector<std::pair<const BasicBlock *, const BasicBlock *>,1 > BackEdgesBB;
 			  FindFunctionBackedges(F,BackEdgesBB);
-			  std::map<const BasicBlock*,std::vector<const BasicBlock*>> BBSuccBasicBlocks;
+
 
 			  //errs() << "Starting search of successive basic blocks :\n";
 
@@ -593,13 +829,16 @@ namespace {
 
 
 			  std::vector<Loop*> innerMostLoops;
+			  std::map<Loop*,std::string> loopNames;
+			  std::map<Loop*,DFG*> loopDFGs;
 			  std::vector<Loop*> loops;
 			  for (LoopInfo::iterator i = LI.begin(); i != LI.end() ; ++i){
 				  Loop *L = *i;
 				  loops.push_back(L);
 			  }
 
-			  getInnerMostLoops(&innerMostLoops,loops);
+			  std::string lnstr("LN");
+			  getInnerMostLoops(&innerMostLoops,loops,&loopNames,lnstr);
 			  errs() << "Number of innermost loops : " << innerMostLoops.size() << "\n";
 
 			  for (int i = 0; i < innerMostLoops.size(); ++i) {
@@ -629,8 +868,8 @@ namespace {
 				SmallVector<BasicBlock*,8> loopExitBlocks;
 				L->getExitBlocks(loopExitBlocks);
 				for (int i = 0; i < loopExitBlocks.size(); ++i) {
-					loopExitBlocks[0]->dump();
-					LoopBB.insert(loopExitBlocks[0]);
+					loopExitBlocks[i]->dump();
+					LoopBB.insert(loopExitBlocks[i]);
 				}
 //				LoopBB.insert(L->getLoopPreheader());
 //				L->getLoopPreheader()->dump();
@@ -639,8 +878,12 @@ namespace {
 
 				  begin = clock();
 
-				  DFG LoopDFG(F.getName().str() + "_L" + std::to_string(loopCounter));
+				  DFG LoopDFG(F.getName().str() + "_L" + std::to_string(loopCounter),&loopNames);
+				  loopDFGs[L]=&LoopDFG;
 				  LoopDFG.setBBSuccBasicBlocks(BBSuccBasicBlocks);
+				  LoopDFG.setLoop(L);
+				  LoopDFG.setLoopBB(LoopBB);
+				  LoopDFG.setLoopIdx(loopCounter);
 
 				  insMap.clear();
 //				  for (Loop::block_iterator bb = L->block_begin(); bb!= L->block_end(); ++bb){
@@ -680,7 +923,7 @@ namespace {
 
 				  //Checking Instrumentation Code
 				  LoopDFG.AssignOutLoopAddr();
-				  LoopDFG.GEPInvestigate(F,L,&sizeArrMap);
+//				  LoopDFG.GEPInvestigate(F,L,&sizeArrMap);
 //				  return true;
 
 				  ArchType arch = RegXbarTREG;
@@ -697,10 +940,11 @@ namespace {
 
 //				  LoopDFG.printCongestionInfo();
 
-
 				  end = clock();
 				  timeFile << F.getName().str() << "_L" << std::to_string(loopCounter) << " time = " << double(end-begin)/CLOCKS_PER_SEC << "\n";
 
+				  mapParentLoop(&LoopDFG,&loopNames,&loopDFGs);
+				  LoopDFG.GEPInvestigate(F,L,&sizeArrMap);
 
 				  loopCounter++;
 			  } //end loopIterator
