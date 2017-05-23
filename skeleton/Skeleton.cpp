@@ -445,6 +445,13 @@ static std::map<const BasicBlock*,std::vector<const BasicBlock*>> BBSuccBasicBlo
 					  for (Loop::block_iterator bb = loops[i]->block_begin(); bb!= loops[i]->block_end(); ++bb){
 						outs() << (*bb)->getName() << ",";
 					}
+					outs() << "; EXIT=";
+					SmallVector<BasicBlock*,8> loopExitBlocks;
+					loops[i]->getExitBlocks(loopExitBlocks);
+					for (int i = 0; i < loopExitBlocks.size(); ++i) {
+						outs() << loopExitBlocks[i]->getName() << ",";
+					}
+
 					outs() << "\n";
 
 					if(loops[i]->getSubLoops().size() == 0){
