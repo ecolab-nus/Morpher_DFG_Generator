@@ -1066,6 +1066,19 @@ void DFG::scheduleALAP() {
 	errs() << "scheduleALAP DONE!\n";
 }
 
+void DFG::balanceASAPALAP() {
+	dfgNode* node;
+	for (int i = 0; i < NodeList.size(); ++i) {
+		node = NodeList[i];
+		int ASAP_ALAP_diff = node->getALAPnumber() - node->getASAPnumber();
+		ASAP_ALAP_diff = ASAP_ALAP_diff/2;
+		if(ASAP_ALAP_diff>0){
+			node->setASAPnumber(node->getASAPnumber() + ASAP_ALAP_diff);
+		}
+//		node->setASAPnumber(node->getALAPnumber());
+	}
+}
+
 std::vector<dfgNode*> DFG::getLeafs() {
 	std::vector<dfgNode*> leafNodes;
 	for (int i = 0 ; i < NodeList.size() ; i++) {
@@ -1520,7 +1533,10 @@ bool DFG::MapMultiDestRec(
 		parent = node->getAncestors()[j];
 		parentExt = currCGRA->getCGRANode((parent->getMappedLoc()->getT() + 1)%(currCGRA->getMII()),parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
 
-		errs() << "Path = "
+		errs() << "ParentIdx=" << parent->getIdx();
+		errs() << ",ParentType=" << parent->getNameType();
+		errs() << ",ParentRT=" << parent->getmappedRealTime();
+		errs() << ",Path = "
 			   << "(" << parentExt->getT() << ","
 			   	   	  << parentExt->getY() << ","
 					  << parentExt->getX() << ") to ...\n";
@@ -1548,7 +1564,7 @@ bool DFG::MapMultiDestRec(
 
 	while(!success){
 		localCGRAEdges = cgraEdges;
-		routeComplete = astar->Route(node,parents,&dests,&localCGRAEdges,&pathsNotRouted,&chosenCnode,&deadEndReached);
+		routeComplete = astar->Route(node,parents,&dests,&destllMap,&localCGRAEdges,&pathsNotRouted,&chosenCnode,&deadEndReached);
 
 		errs() << "MapMultiDestRec::routeComplete=" << routeComplete << "\n";
 		errs() << "MapMultiDestRec::deadEndReached=" << deadEndReached << "\n";
@@ -1786,8 +1802,9 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim, ArchType arch) {
 
 		for (int i = 0; i < currLevelNodes.size(); ++i) {
 				node = currLevelNodes[i];
-				int ll = 0;
+				int ll = node->getASAPnumber()-1;
 				int el = INT32_MAX;
+				dfgNode* latestParent;
 				for (int j = 0; j < node->getAncestors().size(); ++j) {
 					parent = node->getAncestors()[j];
 
@@ -1804,7 +1821,10 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim, ArchType arch) {
 						assert( parent->getmappedRealTime()%MII == parent->getMappedLoc()->getT() );
 //						ll = parent->getMappedLoc()->getT();
 						ll = parent->getmappedRealTime();
+						latestParent = parent;
 					}
+
+
 
 //					if(parent->getmappedRealTime() < el){
 //						assert( parent->getmappedRealTime()%MII == parent->getMappedLoc()->getT() );
@@ -1813,6 +1833,10 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim, ArchType arch) {
 //					}
 
 				}
+//				if(!node->getAncestors().empty()){
+//					ll+=node->getASAPnumber() - latestParent->getASAPnumber() - 1;
+//				}
+				outs() << "ll=" << ll << "\n";
 
 				if(!node->getRecAncestors().empty()){
 					errs() << "RecAnc for Node" << node->getIdx();
@@ -2991,14 +3015,17 @@ TreePath DFG::createTreePath(dfgNode* parent, CGRANode* dest) {
 
 	if(parent->getMappedLoc()->getPEType() == MEM){
 		ParentExt = currCGRA->getCGRANode((parent->getMappedLoc()->getT()+2)%MII,parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
+		tp.sourceSCpathTdimLengths[ParentExt] = 2;
 	}
 	else{
 		ParentExt = currCGRA->getCGRANode((parent->getMappedLoc()->getT()+1)%MII,parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
+		tp.sourceSCpathTdimLengths[ParentExt] = 1;
 	}
 	tp.sources.push_back(ParentExt);
 	tp.sourcePorts[ParentExt] = TILE;
 	tp.sourcePaths[ParentExt] = (std::make_pair(parent,parent));
 	tp.sourceSCpathLengths[ParentExt] = 0;
+
 
 //	if(parent->getIdx() == 22){
 //		errs() << "createTreePath::Parent=" << parent->getIdx() << "\n";
@@ -3032,6 +3059,7 @@ TreePath DFG::createTreePath(dfgNode* parent, CGRANode* dest) {
 
 
 					tp.sourceSCpathLengths[cnode]=(*child->getTreeBasedRoutingLocs())[parent][j]->SCpathLength;
+					tp.sourceSCpathTdimLengths[cnode]=(*child->getTreeBasedRoutingLocs())[parent][j]->TdimPathLength;
 					if(cnode == ParentExt){
 						tp.sourcePaths[cnode] = (std::make_pair(parent,parent));
 					}
@@ -3050,6 +3078,7 @@ TreePath DFG::createTreePath(dfgNode* parent, CGRANode* dest) {
 					tp.sourcePorts[cnode]=(*child->getTreeBasedGoalLocs())[parent][j]->lastPort;
 					assert(std::string("INV").compare(getCGRA()->getPortName(tp.sourcePorts[cnode])) != 0);
 					tp.sourceSCpathLengths[cnode]=(*child->getTreeBasedGoalLocs())[parent][j]->SCpathLength;
+					tp.sourceSCpathTdimLengths[cnode]=(*child->getTreeBasedGoalLocs())[parent][j]->TdimPathLength;
 					if(cnode == ParentExt){
 						tp.sourcePaths[cnode] = (std::make_pair(parent,parent));
 					}
@@ -5081,13 +5110,15 @@ TreePath DFG::createTreePathPHIDest(dfgNode* node, CGRANode* dest, CGRANode* phi
 		CGRANode* cnode;
 		int MII = currCGRA->getMII();
 
-		assert(!node->PHIchildren.empty());
+		assert(!node->getPHIchildren().empty());
 
 		if(dest->getPEType() == MEM){
 			NodeExt = currCGRA->getCGRANode((dest->getT()+2)%MII,dest->getY(),dest->getX());
+			tp.sourceSCpathTdimLengths[NodeExt] = 2;
 		}
 		else{
 			NodeExt = currCGRA->getCGRANode((dest->getT()+1)%MII,dest->getY(),dest->getX());
+			tp.sourceSCpathTdimLengths[NodeExt] = 1;
 		}
 		tp.sources.push_back(NodeExt);
 		tp.sourcePorts[NodeExt] = TILE;
@@ -5138,10 +5169,10 @@ void DFG::addPHIParents() {
 	std::vector<dfgNode*>::iterator searchParent;
 	for (int i = 0; i < NodeList.size(); ++i) {
 		node = NodeList[i];
-		for (int j = 0; j < node->PHIchildren.size(); ++j) {
-			phiChild = findNode(node->PHIchildren[j]);
+		for (int j = 0; j < node->getPHIchildren().size(); ++j) {
+			phiChild = node->getPHIchildren()[j];
 			ancestors = phiChild->getAncestors();
-			errs() << "addPHIParents : child : " << phiChild->getIdx() << "\n";
+			errs() << "\n addPHIParents : child : " << phiChild->getIdx() << "\n";
 			errs() << "addPHIParents : anc : " << node->getIdx() << "\n";
 			errs() << "ancestors.size= : " << ancestors.size() << "\n";
 			searchParent = std::find(ancestors.begin(),ancestors.end(),node);
@@ -5189,7 +5220,7 @@ void DFG::GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeAr
 	Instruction* loopPHStartIns = &*instIterPH;
 
 	IRBuilder<> builder(loopPHStartIns);
-//	builder.SetInsertPoint(loopPH,++builder.GetInsertPoint());
+	builder.SetInsertPoint(loopPH,loopPH->getFirstInsertionPt());
 
 	Value* printfSTARTstr = builder.CreateGlobalStringPtr((*this->loopNamesPtr)[L] + ":------------LOOP START--------------\n");
 	Value* printfENDstr = builder.CreateGlobalStringPtr((*this->loopNamesPtr)[L] + ":------------LOOP END----------------\n");
@@ -5233,12 +5264,18 @@ void DFG::GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeAr
 	}
 
 //	IRBuilder<> builder(loopStartIns);
-	builder.SetInsertPoint(loopStartIns);
+//	builder.SetInsertPoint(loopStartIns);
+	builder.SetInsertPoint(loopHeader,loopHeader->getFirstInsertionPt());
 	Constant* clearPrintedArrs = F.getParent()->getOrInsertFunction(
 	  "clearPrintedArrs", FunctionType::getVoidTy(Ctx), NULL);
 
-	for (int i = 0; i < loopExitInsVec.size(); ++i) {
-		builder.SetInsertPoint(loopExitInsVec[i]);
+//	for (int i = 0; i < loopExitInsVec.size(); ++i) {
+//		builder.SetInsertPoint(loopExitInsVec[i]);
+//		builder.CreateCall(clearPrintedArrs);
+//	}
+
+	for (int i = 0; i < loopExitBlocks.size(); ++i) {
+		builder.SetInsertPoint(loopExitBlocks[i],--loopExitBlocks[i]->end());
 		builder.CreateCall(clearPrintedArrs);
 	}
 
@@ -5288,8 +5325,8 @@ void DFG::GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeAr
 				isHostTrans = ConstantInt::get(Type::getInt8Ty(Ctx),0);
 			}
 			Value* args[] = {nodeIdx,loadVal,addrVal,isLoad,isHostTrans};
-			for (int i = 0; i < loopExitInsVec.size(); ++i) {
-				builder.SetInsertPoint(loopExitBlocks[i],loopExitBlocks[i]->begin());
+			for (int i = 0; i < loopExitBlocks.size(); ++i) {
+				builder.SetInsertPoint(loopExitBlocks[i],--loopExitBlocks[i]->end());
 //				builder.CreateCall(printf,args);
 				builder.CreateCall(outloopReportFn,args);
 //				outs() << "its a load\n";
@@ -5336,8 +5373,8 @@ void DFG::GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeAr
 				isHostTrans = ConstantInt::get(Type::getInt8Ty(Ctx),0);
 			}
 			Value* args[] = {nodeIdx,StoreVal,addrVal,isLoad,isHostTrans};
-			for (int i = 0; i < loopExitInsVec.size(); ++i) {
-				builder.SetInsertPoint(loopExitBlocks[i],loopExitBlocks[i]->begin());
+			for (int i = 0; i < loopExitBlocks.size(); ++i) {
+				builder.SetInsertPoint(loopExitBlocks[i],--loopExitBlocks[i]->end());
 //				builder.CreateCall(printf,args);
 				builder.CreateCall(outloopReportFn,args);
 //				outs() << "its a store\n";
@@ -5385,7 +5422,8 @@ void DFG::GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeAr
 
 //				//Insert a call to our function
 //				builder(loopStartIns);
-				builder.SetInsertPoint(loopStartIns);
+//				builder.SetInsertPoint(loopStartIns);
+				builder.SetInsertPoint(loopHeader,loopHeader->getFirstInsertionPt());
 //				builder.SetInsertPoint(loopHeader,++builder.GetInsertPoint());
 
 				Value* old = GEP->getPointerOperand();
@@ -5431,8 +5469,13 @@ void DFG::GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeAr
 
 				builder.CreateCall(printArrFunc,argsi);
 
-				for (int i = 0; i < loopExitInsVec.size(); ++i) {
-					builder.SetInsertPoint(loopExitInsVec[i]);
+//				for (int i = 0; i < loopExitInsVec.size(); ++i) {
+//					builder.SetInsertPoint(loopExitInsVec[i]);
+//					builder.CreateCall(printArrFunc,argso);
+//				}
+
+				for (int i = 0; i < loopExitBlocks.size(); ++i) {
+					builder.SetInsertPoint(loopExitBlocks[i],--loopExitBlocks[i]->end());
 					builder.CreateCall(printArrFunc,argso);
 				}
 
@@ -5454,8 +5497,8 @@ void DFG::GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeAr
 
 //					//Insert a call to our function
 //					IRBuilder<> builder(loopStartIns);
-					builder.SetInsertPoint(loopStartIns);
-					builder.SetInsertPoint(loopHeader,++builder.GetInsertPoint());
+//					builder.SetInsertPoint(loopStartIns);
+					builder.SetInsertPoint(loopHeader,loopHeader->getFirstInsertionPt());
 
 					Value* old = GEP->getPointerOperand();
 					Value* bitcastedPtr = builder.CreateBitCast(old,Type::getInt8PtrTy(Ctx));
@@ -5491,10 +5534,15 @@ void DFG::GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeAr
 					//Add a call in the begginning of the loop
 					builder.CreateCall(printArrFunc,argsi);
 
-					errs() << "loopExitInsVec.size()=" << loopExitInsVec.size() << "\n";
-					for (int i = 0; i < loopExitInsVec.size(); ++i) {
-						loopExitInsVec[i]->dump();
-						builder.SetInsertPoint(loopExitInsVec[i]);
+//					errs() << "loopExitInsVec.size()=" << loopExitInsVec.size() << "\n";
+//					for (int i = 0; i < loopExitInsVec.size(); ++i) {
+//						loopExitInsVec[i]->dump();
+//						builder.SetInsertPoint(loopExitInsVec[i]);
+//						builder.CreateCall(printArrFunc,argso);
+//					}
+
+					for (int i = 0; i < loopExitBlocks.size(); ++i) {
+						builder.SetInsertPoint(loopExitBlocks[i],--loopExitBlocks[i]->end());
 						builder.CreateCall(printArrFunc,argso);
 					}
 
@@ -5571,10 +5619,15 @@ void DFG::GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeAr
 						//Add a call in the begginning of the loop
 						builder.CreateCall(printArrFunc,argsi);
 //
-						errs() << "loopExitInsVec.size()=" << loopExitInsVec.size() << "\n";
-						for (int i = 0; i < loopExitInsVec.size(); ++i) {
-							loopExitInsVec[i]->dump();
-							builder.SetInsertPoint(loopExitInsVec[i]);
+//						errs() << "loopExitInsVec.size()=" << loopExitInsVec.size() << "\n";
+//						for (int i = 0; i < loopExitInsVec.size(); ++i) {
+//							loopExitInsVec[i]->dump();
+//							builder.SetInsertPoint(loopExitInsVec[i]);
+//							builder.CreateCall(printArrFunc,argso);
+//						}
+
+						for (int i = 0; i < loopExitBlocks.size(); ++i) {
+							builder.SetInsertPoint(loopExitBlocks[i],--loopExitBlocks[i]->end());
 							builder.CreateCall(printArrFunc,argso);
 						}
 					}
@@ -5602,11 +5655,19 @@ void DFG::GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeAr
 	Constant* loopEndFn = F.getParent()->getOrInsertFunction(
 			  "loopEnd", FunctionType::getVoidTy(Ctx),Type::getInt8PtrTy(Ctx), NULL);
 
-	for (int i = 0; i < loopExitInsVec.size(); ++i) {
-		builder.SetInsertPoint(loopExitInsVec[i]);
+//	for (int i = 0; i < loopExitInsVec.size(); ++i) {
+//		builder.SetInsertPoint(loopExitInsVec[i]);
+//		builder.CreateCall(clearPrintedArrs);
+//		builder.CreateCall(loopEndFn,{loopName});
+//	}
+
+	for (int i = 0; i < loopExitBlocks.size(); ++i) {
+		builder.SetInsertPoint(loopExitBlocks[i],--loopExitBlocks[i]->end());
 		builder.CreateCall(clearPrintedArrs);
 		builder.CreateCall(loopEndFn,{loopName});
 	}
+
+
 
 } //End of GEPInvestigate Function
 
@@ -5659,4 +5720,186 @@ int DFG::PlaceMacro(DFG* mappedDFG, int XDim, int YDim, ArchType arch) {
 	}
 
 	return II;
+}
+
+int DFG::classifyParents() {
+	dfgNode* node;
+	for (int i = 0; i < NodeList.size(); ++i) {
+		node = NodeList[i];
+
+		outs() << "classifyParent::currentNode = " << node->getIdx() << "\n";
+		outs() << "Parents : ";
+		for (dfgNode* parent : node->getAncestors()) {
+			outs() << parent->getIdx() << ",";
+		}
+		outs() << "\n";
+
+			for (dfgNode* parent : node->getAncestors()) {
+				Instruction* ins;
+				Instruction* parentIns;
+
+
+
+				if(node->getNode()!=NULL){
+					ins=node->getNode();
+				}
+				else{
+					if(node->getNameType().compare("CTRLBrOR")==0){
+						if(node->parentClassification.find(1) == node->parentClassification.end()){
+							node->parentClassification[1]=parent;
+						}
+						else{
+							assert(node->parentClassification.find(2) == node->parentClassification.end());
+							node->parentClassification[2]=parent;
+						}
+						continue;
+					}
+					if(node->getNameType().compare("OutLoopLOAD")==0){
+						//do nothing
+						continue;
+					}
+					if(node->getNameType().compare("OutLoopSTORE")==0){
+						assert(node->hasConstantVal());
+
+						//check for predicate parent
+						if(parent->getNode()!=NULL){
+							parentIns = parent->getNode();
+							if(BranchInst* BRI = dyn_cast<BranchInst>(parentIns)){
+								node->parentClassification[0]=parent;
+								continue;
+							}
+							else if(CmpInst * CMPI = dyn_cast<CmpInst>(parentIns)){
+								node->parentClassification[0]=parent;
+								continue;
+							}
+						}
+						else{
+							if(parent->getNameType().compare("CTRLBrOR")==0){
+								node->parentClassification[0]=parent;
+								continue;
+							}
+						}
+
+						//if it comes to this, it has to be a data parent.
+						node->parentClassification[1]=parent;
+						continue;
+					}
+					if(node->getNameType().compare("CMERGE")==0){
+						if(node->parentClassification.find(1) == node->parentClassification.end()){
+							node->parentClassification[1]=parent;
+						}
+						else{
+							assert(node->parentClassification.find(2) == node->parentClassification.end());
+							node->parentClassification[2]=parent;
+						}
+						continue;
+					}
+				}
+
+
+				if(dyn_cast<PHINode>(ins)){
+					if(parent->getNode() != NULL) parent->getNode()->dump();
+					outs() << "node : " << node->getIdx() << "\n";
+					outs() << "Parent : " << parent->getIdx() << "\n";
+					outs() << "Parent NameType : " << parent->getNameType() << "\n";
+					assert(parent->getNameType().compare("CMERGE")==0);
+					if(node->parentClassification.find(1) == node->parentClassification.end()){
+						node->parentClassification[1]=parent;
+					}
+					else{
+						assert(node->parentClassification.find(2) == node->parentClassification.end());
+						node->parentClassification[2]=parent;
+					}
+					continue;
+				}
+
+				if(parent->getNode()!=NULL){
+					parentIns = parent->getNode();
+					if(BranchInst* BRI = dyn_cast<BranchInst>(parentIns)){
+						node->parentClassification[0]=parent;
+						continue;
+					}
+					else if(CmpInst * CMPI = dyn_cast<CmpInst>(parentIns)){
+						node->parentClassification[0]=parent;
+						continue;
+					}
+				}
+				else{
+					if(parent->getNameType().compare("CTRLBrOR")==0){
+						node->parentClassification[0]=parent;
+						continue;
+					}
+					if(parent->getNameType().compare("OutLoopLOAD")==0){
+						parentIns = OutLoopNodeMapReverse[parent];
+					}
+				}
+				//Only ins!=NULL and non-PHI will reach here
+				node->parentClassification[findOperandNumber(node, ins,parentIns)]=parent;
+		}
+	}
+}
+
+int DFG::findOperandNumber(dfgNode* node, Instruction* child, Instruction* parent) {
+	if(LoadInst* LDI = dyn_cast<LoadInst>(child)){
+		assert(parent == LDI->getPointerOperand());
+		return 2;
+	}
+	else if(StoreInst* STI = dyn_cast<StoreInst>(child)){
+		if(parent == STI->getPointerOperand()){
+			return 2;
+		}
+		else{
+			return 1;
+		}
+	}
+	else{
+		if(child->getNumOperands()==3){
+			for (int i = 0; i < 3; ++i) {
+				if(Instruction* chkIns = dyn_cast<Instruction>(child->getOperand(i))){
+					if(parent == chkIns){
+						return i;
+					}
+				}
+				else{
+					assert(i!=0);
+					ConstantInt* CI = cast<ConstantInt>(child->getOperand(i));
+					if(i==1){
+						assert(parent==cast<Instruction>(child->getOperand(2)));
+						return 2;
+					}
+					else{ // i==2
+						assert(parent==cast<Instruction>(child->getOperand(1)));
+						return 1;
+					}
+				}
+			}
+		}
+		else if(child->getNumOperands()==2){
+			for (int i = 0; i < 2; ++i) {
+				if(Instruction* chkIns = dyn_cast<Instruction>(child->getOperand(i))){
+					if(parent == chkIns){
+						return i+1;
+					}
+				}
+				else{
+//					ConstantInt* CI = cast<ConstantInt>(child->getOperand(i));
+					assert(node->hasConstantVal());
+					if(i==0){
+						assert(parent==cast<Instruction>(child->getOperand(1)));
+						return 1;
+					}
+					else{ // i==1
+						assert(parent==cast<Instruction>(child->getOperand(0)));
+						return 0;
+					}
+				}
+			}
+		}
+		else if(child->getNumOperands()==1){
+			assert(parent==cast<Instruction>(child->getOperand(0)) );
+		}
+		else{
+			assert(false);
+		}
+	}
 }

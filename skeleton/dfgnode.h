@@ -13,7 +13,8 @@ struct pathData{
 	CGRANode* cnode;
 	Port lastPort;
 	int SCpathLength;
-	pathData(CGRANode* cnode, Port port, int SCpathLength) : cnode(cnode), lastPort(port), SCpathLength(SCpathLength){}
+	int TdimPathLength;
+	pathData(CGRANode* cnode, Port port, int SCpathLength, int TdimPathLength) : cnode(cnode), lastPort(port), SCpathLength(SCpathLength), TdimPathLength(TdimPathLength){}
 	pathData(){}
 };
 
@@ -78,6 +79,7 @@ class dfgNode{
 			int32_t constVal=-1;
 			bool constValFlag=false;
 
+
 		public :
 
 			//For XML
@@ -88,6 +90,9 @@ class dfgNode{
 
 			std::vector<Instruction*> PHIchildren;
 			const BasicBlock* BB;
+
+			//Parent Nodes
+			std::map<int,dfgNode*> parentClassification;
 
 
 			dfgNode(Instruction *ins, DFG* parent);

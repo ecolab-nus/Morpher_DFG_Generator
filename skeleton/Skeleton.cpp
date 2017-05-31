@@ -94,6 +94,8 @@ STATISTIC(LoopsAnalyzed, "Number of loops analyzed for vectorization");
 static std::set<BasicBlock*> LoopBB;
 static std::map<const BasicBlock*,std::vector<const BasicBlock*>> BBSuccBasicBlocks;
 
+static std::map<Loop*,std::vector<BasicBlock*> > loopsExclusieBasicBlockMap;
+
 	void traverseDefTree(Instruction *I,
 				 	 	 int depth,
 						 DFG* currBBDFG, std::map<Instruction*,int>* insMapIn,
@@ -140,7 +142,7 @@ static std::map<const BasicBlock*,std::vector<const BasicBlock*>> BBSuccBasicBlo
 
 						//Searching inside basicblocks of the loop
 						if(validBB.find(Inst->getParent()) == validBB.end()){
-							currBBDFG->findNode(I)->addStoreChild(Inst);
+							currBBDFG->findNode(I)->addStoreChild(I);
 							continue;
 						}
 
@@ -296,6 +298,7 @@ static std::map<const BasicBlock*,std::vector<const BasicBlock*>> BBSuccBasicBlo
 						ofs << ", " << node->getIdx() << ", ASAP=" << node->getASAPnumber()
 													 << ", ALAP=" << node->getALAPnumber()
 													 << ", (t,y,x)=(" << node->getMappedLoc()->getT() << "," << node->getMappedLoc()->getY() << "," << node->getMappedLoc()->getX() << ")"
+													 << ",RT=" << node->getmappedRealTime()
 													 << "\"]" << std::endl;
 	    			}
 	    			else{
@@ -438,7 +441,7 @@ static std::map<const BasicBlock*,std::vector<const BasicBlock*>> BBSuccBasicBlo
 	    	void getInnerMostLoops(std::vector<Loop*>* innerMostLoops, std::vector<Loop*> loops, std::map<Loop*,std::string>* loopNames, std::string lnstr){
 				for (int i = 0; i < loops.size(); ++i) {
 					std::stringstream ss;
-					ss << lnstr << i;
+					ss << lnstr << (i+1);
 					(*loopNames)[loops[i]]=ss.str();
 
 					outs() << "LoopName : " << ss.str() << "\n";
@@ -456,9 +459,27 @@ static std::map<const BasicBlock*,std::vector<const BasicBlock*>> BBSuccBasicBlo
 
 					if(loops[i]->getSubLoops().size() == 0){
 						innerMostLoops->push_back(loops[i]);
+
+						for(BasicBlock* BB : loops[i]->getBlocks()){
+							loopsExclusieBasicBlockMap[loops[i]].push_back(BB);
+						}
 					}
 					else{
 						getInnerMostLoops(innerMostLoops, loops[i]->getSubLoops(), loopNames, ss.str());
+
+						for(BasicBlock* BB : loops[i]->getBlocks()){
+							bool BBfound=false;
+							for(std::pair<Loop*,std::vector<BasicBlock*>> pair : loopsExclusieBasicBlockMap){
+								if(std::find(pair.second.begin(),pair.second.end(),BB) != pair.second.end()){
+									BBfound=true;
+									break;
+								}
+							}
+							if(!BBfound){
+								loopsExclusieBasicBlockMap[loops[i]].push_back(BB);
+							}
+						}
+
 					}
 				}
 	    	}
@@ -725,6 +746,100 @@ static std::map<const BasicBlock*,std::vector<const BasicBlock*>> BBSuccBasicBlo
 	    		}
 	    	}
 
+	    	void loopTrace(std::map<Loop*,std::string> loopNames, Function& F){
+
+	    		LLVMContext& Ctx = F.getContext();
+	    		BasicBlock& FentryBB = F.getEntryBlock();
+	    		IRBuilder<> builder(FentryBB.getFirstNonPHI());
+
+	    		//Function Calls
+
+	    		Constant* traceStartFn = F.getParent()->getOrInsertFunction(
+	    								"loopTraceOpen",
+	    								FunctionType::getVoidTy(Ctx),
+										Type::getInt8PtrTy(Ctx),
+	    								NULL);
+
+	    		Constant* traceEndFn = F.getParent()->getOrInsertFunction(
+	    								"loopTraceClose",
+	    								FunctionType::getVoidTy(Ctx),
+	    								NULL);
+
+	    		Constant* loopInvFn = F.getParent()->getOrInsertFunction(
+	    								"loopInvoke",
+	    								FunctionType::getVoidTy(Ctx),
+										Type::getInt8PtrTy(Ctx),
+	    								NULL);
+
+	    		Constant* loopInsUpdateFn = F.getParent()->getOrInsertFunction(
+	    								"loopInsUpdate",
+	    								FunctionType::getVoidTy(Ctx),
+										Type::getInt8PtrTy(Ctx),
+										Type::getInt32Ty(Ctx),
+	    								NULL);
+
+	    		Constant* loopInsClearFn = F.getParent()->getOrInsertFunction(
+	    								"loopInsClear",
+	    								FunctionType::getVoidTy(Ctx),
+										Type::getInt8PtrTy(Ctx),
+	    								NULL);
+
+	    		Constant* loopInvokeEndFn = F.getParent()->getOrInsertFunction(
+	    								"loopInvokeEnd",
+	    								FunctionType::getVoidTy(Ctx),
+										Type::getInt8PtrTy(Ctx),
+	    								NULL);
+
+	    		Constant* reportExecInsCountFn = F.getParent()->getOrInsertFunction(
+	    								"reportExecInsCount",
+	    								FunctionType::getVoidTy(Ctx),
+										Type::getInt32Ty(Ctx),
+	    								NULL);
+
+	    		builder.SetInsertPoint(&FentryBB,FentryBB.getFirstInsertionPt());
+	    		Value* fnName = builder.CreateGlobalStringPtr(F.getName().str());
+	    		builder.CreateCall(traceStartFn,{fnName});
+
+	    		for(std::pair<Loop*,std::string> lnPair : loopNames){
+	    			Value* loopName = builder.CreateGlobalStringPtr(lnPair.second);
+	    			Value* loopNameLLVM = builder.CreateGlobalStringPtr(lnPair.second + "-" + lnPair.first->getLoopPreheader()->getName().str());
+	    			BasicBlock* loopHeader = lnPair.first->getLoopPreheader();
+	    			builder.SetInsertPoint(loopHeader,loopHeader->getFirstInsertionPt());
+	    			builder.CreateCall(loopInvFn,{loopName});
+	    			builder.CreateCall(loopInsClearFn,{loopName});
+
+	    			for(BasicBlock* BB : loopsExclusieBasicBlockMap[lnPair.first]){
+	    				int instructionCountBB = BB->getInstList().size();
+	    				Value* instructionCountBBVal = ConstantInt::get(Type::getInt32Ty(Ctx),instructionCountBB);
+	    				builder.SetInsertPoint(BB,--BB->end());
+	    				builder.CreateCall(loopInsUpdateFn,{loopName,instructionCountBBVal});
+	    			}
+
+	    			SmallVector<BasicBlock*,8> loopExitBlocks;
+	    		    lnPair.first->getExitBlocks(loopExitBlocks);
+	    		    for(BasicBlock* BB : loopExitBlocks){
+	    				builder.SetInsertPoint(BB,--BB->end());
+	    				builder.CreateCall(loopInvokeEndFn,{loopName});
+	    		    }
+	    		}
+
+	    		//find return instruction
+	    		for(BasicBlock& BB : F){
+	    			Value* insCountBBVal = ConstantInt::get(Type::getInt32Ty(Ctx),BB.getInstList().size());
+					builder.SetInsertPoint(&BB,--BB.end());
+					builder.CreateCall(reportExecInsCountFn,{insCountBBVal});
+
+					for(Instruction& I : BB){
+						if(ReturnInst* RI = dyn_cast<ReturnInst>(&I)){
+							BasicBlock* retBB = RI->getParent();
+							builder.SetInsertPoint(retBB,--retBB->end());
+							builder.CreateCall(traceEndFn);
+						}
+					}
+	    		}
+
+	    	}
+
 
 namespace {
 
@@ -848,6 +963,7 @@ namespace {
 			  getInnerMostLoops(&innerMostLoops,loops,&loopNames,lnstr);
 			  errs() << "Number of innermost loops : " << innerMostLoops.size() << "\n";
 
+
 			  for (int i = 0; i < innerMostLoops.size(); ++i) {
 				  Loop *L = innerMostLoops[i];
 				  errs() << "*********Loop***********" << "\n";
@@ -920,6 +1036,7 @@ namespace {
 
 				  LoopDFG.scheduleASAP();
 				  LoopDFG.scheduleALAP();
+				  LoopDFG.balanceASAPALAP();
 				  LoopDFG.CreateSchList();
 //				  LoopDFG.MapCGRA(4,4);
 				  LoopDFG.printXML();
@@ -933,9 +1050,25 @@ namespace {
 //				  LoopDFG.GEPInvestigate(F,L,&sizeArrMap);
 //				  return true;
 
+				  std::string Filename = ("cfg." + F.getName() + ".dot").str();
+				  //errs() << "Writing '" << Filename << "'...";
+
+
+				  raw_fd_ostream File(Filename, EC, sys::fs::F_Text);
+
+				  if (!EC){
+					  WriteGraph(File, (const Function*)&F);
+				  }
+				  else{
+					  errs() << "  error opening file for writing!";
+				  errs() << "\n";
+				  }
+
 				  ArchType arch = RegXbarTREG;
 				  LoopDFG.MapCGRA_SMART(4,4, arch, 20);
+				  LoopDFG.GEPInvestigate(F,L,&sizeArrMap);
 				  LoopDFG.addPHIParents();
+				  LoopDFG.classifyParents();
 //				  LoopDFG.MapCGRA_EMS(4,4,F.getName().str() + "_L" + std::to_string(loopCounter) + "_mapping.log");
 				  printDFGDOT (F.getName().str() + "_L" + std::to_string(loopCounter) + "_loopdfg.dot", &LoopDFG);
 //				  LoopDFG.printTurns();
@@ -950,11 +1083,13 @@ namespace {
 				  end = clock();
 				  timeFile << F.getName().str() << "_L" << std::to_string(loopCounter) << " time = " << double(end-begin)/CLOCKS_PER_SEC << "\n";
 
-				  mapParentLoop(&LoopDFG,&loopNames,&loopDFGs);
-				  LoopDFG.GEPInvestigate(F,L,&sizeArrMap);
+//				  mapParentLoop(&LoopDFG,&loopNames,&loopDFGs);
+
 
 				  loopCounter++;
 			  } //end loopIterator
+
+			  loopTrace(loopNames,F);
 
 //			  if(!xmlRun){
 //				  DFG xmlDFG("asdsa");

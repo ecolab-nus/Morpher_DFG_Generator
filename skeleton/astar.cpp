@@ -15,17 +15,20 @@ CGRANode* AStar::AStarSearch(std::map<CGRANode*,std::vector<CGRAEdge> > graph,
 						CGRANode* start,
 						Port startPort,
 						CGRANode* goal,
+						int minkII,
 						std::map<pathData,pathData,pathDataComparer> *cameFrom,
 						std::map<CGRANode*,int> *costSoFar,
 						Port* endPort,
 						int SCpathLength,
-						int* endPathLength) {
+						int SCpathTDimLength,
+						int* endPathLength,
+						int* endPathTDimLength) {
 //	assert(start->getT() == goal->getT());
 
 
 	std::priority_queue<CGRANodeWithCost, std::vector<CGRANodeWithCost>, LessThanCGRANodeWithCost> frontier;
 	std::vector<CGRAEdge*> tempCGRAEdges;
-	frontier.push(CGRANodeWithCost(start,0,startPort,SCpathLength));
+	frontier.push(CGRANodeWithCost(start,0,startPort,SCpathLength,SCpathTDimLength));
 
 	std::pair<CGRANode*,Port> nextPair;
 	std::pair<CGRANode*,Port> currPair;
@@ -37,6 +40,7 @@ CGRANode* AStar::AStarSearch(std::map<CGRANode*,std::vector<CGRAEdge> > graph,
 	std::map<CGRANode*,pathData> localCameFrom;
 	std::map<CGRANode*,Port> localCameFromPort;
 	std::map<CGRANode*,int> localSCpathLength;
+	std::map<CGRANode*,int> localSCpathTdimLength;
 
 
 
@@ -46,10 +50,12 @@ CGRANode* AStar::AStarSearch(std::map<CGRANode*,std::vector<CGRAEdge> > graph,
 	CGRANode* current;
 	Port currentPort;
 	int currPathLength;
+	int currPathTdimLength;
 	CGRANode* next;
 	Port nextPort;
 	int nextCost;
 	int nextPathLength;
+	int nextPathTdimLength;
 
 	int newCost = 0;
 	int priority = 0;
@@ -68,10 +74,32 @@ CGRANode* AStar::AStarSearch(std::map<CGRANode*,std::vector<CGRAEdge> > graph,
 		current = frontier.top().Cnode;
 		currentPort = frontier.top().port;
 		currPathLength = frontier.top().SCpathLength;
+		currPathTdimLength = frontier.top().SCpathTdimLength;
 		frontier.pop();
 
-		if(current == goal){
-			break;
+//		outs() << "current=" << current->getName() ;
+//		outs() << ",currentPort=" << currDFG->getCGRA()->getPortName(currentPort);
+//		outs() << ",currPathTdimLength=" << currPathTdimLength;
+//		outs() << ",currPathLength=" << currPathLength;
+//		outs() << "\n";
+
+		if(minkII >= 0){
+			if((current == goal)&&(currPathTdimLength/currDFG->getCGRA()->getMII()==minkII)){
+				outs() << "currPathTdimLength=" << currPathTdimLength;
+				outs() << ",minkII=" << minkII << "\n";
+				break;
+			}
+		}
+		else{
+			if(current == goal){
+				break;
+			}
+		}
+
+		if(minkII >= 0){ //break for paths violating latency gap
+			if(currPathTdimLength/currDFG->getCGRA()->getMII()>minkII){
+				continue;
+			}
 		}
 
 		if(MaxSCpathLength != -1){ //break if the start it self is exceeding sc hop limit
@@ -106,9 +134,11 @@ CGRANode* AStar::AStarSearch(std::map<CGRANode*,std::vector<CGRAEdge> > graph,
 			if(current->getT() == next->getT()){
 				newCost = (*costSoFar)[current] + nextCost; //always graph.cost(current, next) = 1
 				nextPathLength = currPathLength + 1;
+				nextPathTdimLength = currPathTdimLength;
 			}else{
 				newCost = (*costSoFar)[current] + nextCost + 1000*((next->getT() - current->getT() + MII)%MII);
 				nextPathLength = 0;
+				nextPathTdimLength = currPathTdimLength + 1;
 			}
 
 			if(newCost <= (*costSoFar)[current]){
@@ -128,7 +158,7 @@ CGRANode* AStar::AStarSearch(std::map<CGRANode*,std::vector<CGRAEdge> > graph,
 			}
 			(*costSoFar)[next] = newCost;
 			priority = newCost + heuristic(goal,next);
-			frontier.push(CGRANodeWithCost(next,priority,nextPort,nextPathLength));
+			frontier.push(CGRANodeWithCost(next,priority,nextPort,nextPathLength, nextPathTdimLength));
 
 //			nextPair = std::make_pair(next,nextPort);
 			currPair = std::make_pair(current,currentPort);
@@ -144,10 +174,11 @@ CGRANode* AStar::AStarSearch(std::map<CGRANode*,std::vector<CGRAEdge> > graph,
 //			}
 //			assert(cameFrom->find(nextPair) == cameFrom->end());
 
-			pathData tempPathData(current,currentPort,currPathLength);
+			pathData tempPathData(current,currentPort,currPathLength,currPathTdimLength);
 			localCameFrom[next] = tempPathData;
 			localCameFromPort[next] = nextPort;
 			localSCpathLength[next] = nextPathLength;
+			localSCpathTdimLength[next] = nextPathTdimLength;
 //			(*cameFrom)[nextPair] = currPair;
 		}
 	}
@@ -156,7 +187,7 @@ CGRANode* AStar::AStarSearch(std::map<CGRANode*,std::vector<CGRAEdge> > graph,
 	pathData currPathData;
 	for(It = localCameFrom.begin(); It != localCameFrom.end(); It++){
 		currPathData = It->second;
-		pathData nextPathData(It->first,localCameFromPort[It->first],localSCpathLength[It->first]);
+		pathData nextPathData(It->first,localCameFromPort[It->first],localSCpathLength[It->first], localSCpathTdimLength[It->first]);
 //		nextPair = std::make_pair(It->first,localCameFromPort[It->first]);
 //		pathData tempPathData(It->first,localCameFromPort[It->first],localSCpathLength[It->first]);
 //		(*cameFrom)[nextPair] = currPair;
@@ -165,7 +196,18 @@ CGRANode* AStar::AStarSearch(std::map<CGRANode*,std::vector<CGRAEdge> > graph,
 
 	*endPathLength = currPathLength;
 	*endPort = currentPort;
+	*endPathTDimLength = currPathTdimLength;
 	return current;
+}
+
+int AStar::calckII(CGRANode* start, int startRT, CGRANode* goal, int goalRT){
+	outs() << "start" << start->getName() <<",startRT=" << startRT << ",goalRT=" << goalRT << ",goal=" << goal->getName() << "\n";
+	assert(start->getT() == startRT%(this->MII));
+	assert(goal->getT() == goalRT%(this->MII));
+	int kII = goalRT - startRT;
+	if(kII < 0) return -1;
+
+	return kII/currDFG->getCGRA()->getMII();
 }
 
 bool AStar::Route(dfgNode* currNode,
@@ -173,6 +215,7 @@ bool AStar::Route(dfgNode* currNode,
 //				  std::vector<std::pair<CGRANode*, CGRANode*> > paths,
 //				  std::vector<TreePath> treePaths,
 				  std::vector<CGRANode*>* dests,
+				  std::map<CGRANode*,int>* destllmap,
 			      std::map<CGRANode*,std::vector<CGRAEdge> >* cgraEdges,
 				  std::vector<std::pair<CGRANode*,CGRANode*> > *pathsNotRouted,
 				  CGRANode** chosenDest,
@@ -181,17 +224,20 @@ bool AStar::Route(dfgNode* currNode,
 	CGRANode* start;
 	Port startPort;
 	int startPathLength;
+	int startPathTdimLength;
 	CGRANode* goal;
 
 	CGRANode* current;
 	Port currPort;
 	int currPathLength;
+	int currPathTdimLength;
 //	pathData currPathData;
 //	std::pair<CGRANode*,Port> currNodePortPair;
 
 	CGRANode* end;
 	Port endPort;
 	int endPathLength;
+	int endPathTdimLength;
 	std::vector<Port>::iterator PortIter;
 
 	dfgNode* currParent;
@@ -328,7 +374,12 @@ bool AStar::Route(dfgNode* currNode,
 		}
 		std::sort(destCostArray.begin(),destCostArray.end(),LessThanDestCost());
 
-		assert(!destCostArray.empty());
+//		assert(!destCostArray.empty());
+		if(destCostArray.empty()){
+			errs() << "Route:: destCostArray is empty!!\n";
+			return false;
+		}
+
 		errs() << "Chosen Dest=" << destCostArray[0].dest->getName() << "\n";
 		*chosenDest = destCostArray[0].dest;
 		dests->erase(std::remove(dests->begin(),dests->end(),dest),dests->end());
@@ -346,8 +397,8 @@ bool AStar::Route(dfgNode* currNode,
 		}
 
 		//IF PHI Children are there
-		for (int j = 0; j < currNode->PHIchildren.size(); ++j) {
-			dfgNode* phiChildNode = currDFG->findNode(currNode->PHIchildren[j]);
+		for (int j = 0; j < currNode->getPHIchildren().size(); ++j) {
+			dfgNode* phiChildNode = currNode->getPHIchildren()[j];
 			assert(phiChildNode != NULL);
 
 			if(phiChildNode->getMappedLoc() != NULL){
@@ -362,6 +413,7 @@ bool AStar::Route(dfgNode* currNode,
 	}
 
 	//Route estimation
+	outs() << "Route Estimation!\n";
 	for(destTreePathMapIt = destTreePathMap.begin();
 		destTreePathMapIt != destTreePathMap.end();
 		destTreePathMapIt++){
@@ -381,21 +433,61 @@ bool AStar::Route(dfgNode* currNode,
 				assert(std::string("INV").compare(currDFG->getCGRA()->getPortName(startPort)) != 0);
 
 				startPathLength = destTreePathMap[dest][i].sourceSCpathLengths[start];
+				startPathTdimLength = destTreePathMap[dest][i].sourceSCpathTdimLengths[start];
 				goal = destTreePathMap[dest][i].dest;
 				goal = currDFG->getCGRA()->getCGRANode(goal->getT(),goal->getY(),goal->getX());
 
-	//			if(start != currDFG->getCGRA()->getCGRANode(start->getT(),start->getY(),start->getX())){
-	//				start = currDFG->getCGRA()->getCGRANode(start->getT(),start->getY(),start->getX());
-	//			}
+//				bool check = parents[i]==currNode;
+//				outs() << "parent is currNode = " << check << "\n";
+//				outs() << ",ParentPos=" << parents[i]->getMappedLoc()->getName();
+//				outs() << ",ParentRT=" << parents[i]->getmappedRealTime();
+//				outs() << "\n";
 
-	//			assert(start == currDFG->getCGRA()->getCGRANode(start->getT(),start->getY(),start->getX()));
-	//			assert(goal == currDFG->getCGRA()->getCGRANode(goal->getT(),goal->getY(),goal->getX()));
+				int startRT = parents[i]->getmappedRealTime() + startPathTdimLength;
+				int kII;
+				if(parents[i]==currNode){
+					kII = -1; //phi check
+				}
+				else if((parents[i]->getNameType().compare("OutLoopLOAD")==0)){
+					kII = -1;
+				}
+//				else if(parents.size() < 2){
+//					kII = -1;
+//				}
+				else{
+					outs() << "currParentLoc=" << parents[i]->getMappedLoc()->getName();
+					outs() << ",currParentRT=" << parents[i]->getmappedRealTime();
+					outs() << ",startPathTdimLength=" << startPathTdimLength;
+					outs() << ",startPathLength=" << startPathLength;
+					outs() << "\n";
+					kII = calckII(start,startRT,goal,(*destllmap)[goal]);
+				}
 
-				end = AStarSearch(*cgraEdges,start,startPort,goal,&cameFrom, &costSoFar,&endPort,startPathLength,&endPathLength);
+//				outs() << "currNodephichildrensize=" << currNode->PHIchildren.size() << "\n";
+//				if(parents[i]->getMappedLoc() != NULL){
+//					outs() << "ParentCNode=" << parents[i]->getMappedLoc()->getName();
+//				}
+//				outs() << "Goal=" << goal->getName() << "\n";
+
+
+				end = AStarSearch(*cgraEdges,
+							      start,
+								  startPort,
+								  goal,
+								  kII,
+								  &cameFrom,
+								  &costSoFar,
+								  &endPort,
+								  startPathLength,
+								  startPathTdimLength,
+								  &endPathLength,
+								  &endPathTdimLength);
 				if(end != goal){
-//					errs() << "failed::" << start->getName() << "->" << goal->getName() << ",";
+					errs() << "failed::" << start->getName() << "->" << goal->getName() << ",";
 					continue;
 				}
+
+				outs() << "TADA!!!!!!!!!\n";
 
 				assert(destTreePathMap[dest][i].sourcePaths[start].first != NULL);
 				assert(destTreePathMap[dest][i].sourcePaths[start].second != NULL);
@@ -408,10 +500,13 @@ bool AStar::Route(dfgNode* currNode,
 					assert(dest == goal);
 				}
 				destPathWithCostMap[dest].push_back(pathWithCost(std::make_pair(start,goal),costSoFar[goal],parents[i]));
+				outs() << "1:destPathWithCostMap size=" << destPathWithCostMap[dest].size() << "\n";
 			}
 //			errs() << "\n";
 
+			outs() << "2:destPathWithCostMap size=" << destPathWithCostMap[dest].size() << "\n";
 			std::sort(destPathWithCostMap[dest].begin(),destPathWithCostMap[dest].end(),LessThanPathWithCost());
+			outs() << "3:destPathWithCostMap size=" << destPathWithCostMap[dest].size() << "\n";
 
 			if(destPathWithCostMap[dest].size() == 0){
 				errs() << "SMARTRouteEst :: " << "Path is not routed = " << start->getName() << " to " << goal->getName() << "\n";
@@ -419,7 +514,7 @@ bool AStar::Route(dfgNode* currNode,
 				localDeadEndReached = reportDeadEnd(end,endPort,currNode,cgraEdges);
 				//it was not able to route from the starting point which happen to be due to previously placed
 				if(start == end){
-					localDeadEndReached = true;
+//					localDeadEndReached = true;
 				}
 
 				if(deadEndReached != NULL){
@@ -472,14 +567,17 @@ bool AStar::Route(dfgNode* currNode,
 			destCost += memOpOptCost;
 			if(MemOpsToBePlaced == currCGRAMEMPEs){
 				if(!currNode->getIsMemOp()){
+					outs() << "mem op problem\n";
 					continue;
 				}
 			}
 		}
+		outs() << "Pushing to destcostarr\n";
 		destCostArray.push_back(DestCost(dest,destCost,affCost));
 	}
 
 	if(destCostArray.empty()){
+		outs() << "parents.size()=" << parents.size() << "\n";
 		errs() << "Route:: destCostArray is empty!!\n";
 		return false;
 	}
@@ -560,11 +658,43 @@ bool AStar::Route(dfgNode* currNode,
 				start = destTreePathWithCostMap[dest][i].tp.sources[j];
 				startPort = destTreePathWithCostMap[dest][i].tp.sourcePorts[start];
 				startPathLength = destTreePathWithCostMap[dest][i].tp.sourceSCpathLengths[start];
+				startPathTdimLength = destTreePathWithCostMap[dest][i].tp.sourceSCpathTdimLengths[start];
 				start = currDFG->getCGRA()->getCGRANode(start->getT(),start->getY(),start->getX());
 				errs() << "AStar Search starts...\n";
-				end = AStarSearch(*cgraEdges,start,startPort,goal,&cameFrom, &costSoFar,&endPort,startPathLength,&endPathLength);
+
+				int startRT = currParent->getmappedRealTime() + startPathTdimLength;
+				int kII;
+				if(currParent==currNode){
+					kII = -1; //phi check
+				}
+				else if((currParent->getNameType().compare("OutLoopLOAD")==0)){
+					kII = -1;
+				}
+//				else if(parents.size() < 2){
+//					kII = -1;
+//				}
+				else{
+					outs() << "currParentLoc=" << currParent->getMappedLoc()->getName();
+					outs() << ",currParentRT=" << currParent->getmappedRealTime();
+					outs() << ",startPathTdimLength=" << startPathTdimLength;
+					outs() << "\n";
+					kII = calckII(start,startRT,goal,(*destllmap)[goal]);
+				}
+				end = AStarSearch(*cgraEdges,
+						          start,
+								  startPort,
+								  goal,
+								  kII,
+								  &cameFrom,
+								  &costSoFar,
+								  &endPort,
+								  startPathLength,
+								  startPathTdimLength,
+								  &endPathLength,
+								  &endPathTdimLength);
 				errs() << "AStar Search ends...\n";
 				if(end != goal){
+					outs() << "Routing Failed : " << start->getName() << "->" << goal->getName() << ",only routed to " << end->getName() << "\n";
 					*mappingOutFile << "Routing Failed : " << start->getName() << "->" << goal->getName() << ",only routed to " << end->getName() << std::endl;
 					continue;
 				}
@@ -596,6 +726,9 @@ bool AStar::Route(dfgNode* currNode,
 			destTreePathMap[dest][i].sourcePorts = destTreePathWithCostMap[dest][i].tp.sourcePorts;
 			destTreePathMap[dest][i].sourcePaths = destTreePathWithCostMap[dest][i].tp.sourcePaths;
 			destTreePathMap[dest][i].dest = destTreePathWithCostMap[dest][i].tp.dest;
+			destTreePathMap[dest][i].sourceSCpathLengths = destTreePathWithCostMap[dest][i].tp.sourceSCpathLengths;
+			destTreePathMap[dest][i].sourceSCpathTdimLengths = destTreePathWithCostMap[dest][i].tp.sourceSCpathTdimLengths;
+//			destTreePathMap[dest][i].
 
 			if(destTreePathMap[dest][i].sources.size() == 0){
 				*mappingOutFile << "routing not completed as it only routed until : " << end->getName() << std::endl;
@@ -617,6 +750,7 @@ bool AStar::Route(dfgNode* currNode,
 				start = destTreePathMap[dest][i].sources[j];
 				startPort = destTreePathMap[dest][i].sourcePorts[start];
 				startPathLength = destTreePathMap[dest][i].sourceSCpathLengths[start];
+				startPathTdimLength = destTreePathMap[dest][i].sourceSCpathTdimLengths[start];
 				start = currDFG->getCGRA()->getCGRANode(start->getT(),start->getY(),start->getX());
 				goal = destTreePathMap[dest][i].dest;
 				goal = currDFG->getCGRA()->getCGRANode(goal->getT(),goal->getY(),goal->getX());
@@ -631,7 +765,36 @@ bool AStar::Route(dfgNode* currNode,
 				*mappingOutFile << "start = (" << start->getT() << "," << start->getY() << "," << start->getX() << ")\n";
 				*mappingOutFile << "goal = (" << goal->getT() << "," << goal->getY() << "," << goal->getX() << ")\n";
 
-				end = AStarSearch(*cgraEdges,start,startPort,goal,&cameFrom, &costSoFar,&endPort,startPathLength,&endPathLength);
+				int startRT = currParent->getmappedRealTime() + startPathTdimLength;
+				int kII;
+				if(currParent==currNode){
+					kII = -1; //phi check
+				}
+				else if((currParent->getNameType().compare("OutLoopLOAD")==0)){
+					kII = -1;
+				}
+//				else if(parents.size() < 2){
+//					kII = -1;
+//				}
+				else{
+					outs() << "currParentLoc=" << currParent->getMappedLoc()->getName();
+					outs() << ",currParentRT=" << currParent->getmappedRealTime();
+					outs() << ",startPathTdimLength=" << startPathTdimLength;
+					outs() << "\n";
+					kII = calckII(start,startRT,goal,(*destllmap)[goal]);
+				}
+				end = AStarSearch(*cgraEdges,
+						          start,
+								  startPort,
+								  goal,
+								  kII,
+								  &cameFrom,
+								  &costSoFar,
+								  &endPort,
+								  startPathLength,
+								  startPathTdimLength,
+								  &endPathLength,
+								  &endPathTdimLength);
 //				assert(end == goal);
 	//			CameFromVerify(&cameFrom);
 
@@ -670,7 +833,7 @@ bool AStar::Route(dfgNode* currNode,
 			current = goal;
 
 			assert(std::string("INV").compare(currDFG->getCGRA()->getPortName(endPort)) != 0);
-			(*currNode->getTreeBasedGoalLocs())[currParent].push_back(new pathData(goal,endPort,endPathLength));
+			(*currNode->getTreeBasedGoalLocs())[currParent].push_back(new pathData(goal,endPort,endPathLength,endPathTdimLength));
 			(*currNode->getSourceRoutingPath())[currParent] = currSourcePath;
 
 			assert(currSourcePath.first != NULL);
@@ -724,6 +887,7 @@ bool AStar::Route(dfgNode* currNode,
 					if(cameFromIt->first.cnode == current){
 						currPort = cameFromIt->first.lastPort;
 						currPathLength = cameFromIt->first.SCpathLength;
+						currPathTdimLength = cameFromIt->first.TdimPathLength;
 						cameFromSearch = true;
 						break;
 					}
@@ -735,7 +899,7 @@ bool AStar::Route(dfgNode* currNode,
 	//			if(cameFrom[current] != start){
 
 					assert(current == currDFG->getCGRA()->getCGRANode(current->getT(),current->getY(),current->getX()));
-					pathData currPathData(current,currPort,currPathLength);
+					pathData currPathData(current,currPort,currPathLength,currPathTdimLength);
 					assert(std::string("INV").compare(currDFG->getCGRA()->getPortName(currPort)) != 0);
 					errs() << "getTreeBasedRoutingLocs update :: ";
 					errs() << ", currNode=" << currNode->getIdx();
@@ -746,10 +910,10 @@ bool AStar::Route(dfgNode* currNode,
 
 					if(currParent == currNode){
 						errs() << "PHI Child : " << currDFG->findNodeMappedLoc(goal)->getIdx() << "\n";
-						(*currDFG->findNodeMappedLoc(goal)->getTreeBasedRoutingLocs())[currParent].push_back(new pathData(current,currPort,currPathLength));
+						(*currDFG->findNodeMappedLoc(goal)->getTreeBasedRoutingLocs())[currParent].push_back(new pathData(current,currPort,currPathLength,currPathTdimLength));
 					}
 					else{
-						(*currNode->getTreeBasedRoutingLocs())[currParent].push_back(new pathData(current,currPort,currPathLength));
+						(*currNode->getTreeBasedRoutingLocs())[currParent].push_back(new pathData(current,currPort,currPathLength,currPathTdimLength));
 					}
 
 
@@ -945,10 +1109,10 @@ bool AStar::Route(dfgNode* currNode,
 
 			if(currParent == currNode){
 				errs() << "PHI Child : " << currDFG->findNodeMappedLoc(goal)->getIdx() << "\n";
-				(*currDFG->findNodeMappedLoc(goal)->getTreeBasedRoutingLocs())[currParent].push_back(new pathData(start,startPort,startPathLength));
+				(*currDFG->findNodeMappedLoc(goal)->getTreeBasedRoutingLocs())[currParent].push_back(new pathData(start,startPort,startPathLength,startPathTdimLength));
 			}
 			else{
-				(*currNode->getTreeBasedRoutingLocs())[currParent].push_back(new pathData(start,startPort,startPathLength));
+				(*currNode->getTreeBasedRoutingLocs())[currParent].push_back(new pathData(start,startPort,startPathLength,startPathTdimLength));
 			}
 
 
@@ -1887,9 +2051,9 @@ bool AStar::reportDeadEnd(CGRANode* end,
 	errs() << ", util = " << util << "\n";
 	errs() << ", oriEdgesSize = " << end->originalEdgesSize << "\n";
 
-	if(tempCGRAEdges.size() == 0){
-		return true;
-	}
+//	if(tempCGRAEdges.size() == 0){
+//		return true;
+//	}
 	return false;
 //	if(util >= end->originalEdgesSize){
 //		return true;
@@ -1897,3 +2061,5 @@ bool AStar::reportDeadEnd(CGRANode* end,
 //	return false;
 
 }
+
+

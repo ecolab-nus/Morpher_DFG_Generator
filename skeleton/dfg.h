@@ -111,6 +111,7 @@ struct TreePath{
 	std::vector<CGRANode*> sources;
 	std::map<CGRANode*,Port> sourcePorts;
 	std::map<CGRANode*,int> sourceSCpathLengths;
+	std::map<CGRANode*,int> sourceSCpathTdimLengths;
 	std::map<CGRANode*,std::pair<dfgNode*,dfgNode*> > sourcePaths;
 	CGRANode* bestSource;
 	int bestCost;
@@ -257,6 +258,7 @@ class DFG{
 
 			void scheduleASAP();
 			void scheduleALAP();
+			void balanceASAPALAP();
 
 			void MapCGRA(int XDim, int YDim);
 			void CreateSchList();
@@ -390,10 +392,9 @@ class DFG{
 			void setLoopIdx(int i){loopIdx=i;}
 			int getLoopIdx(){return loopIdx;}
 
-
-
-
-
+			// parent classification as operand1, operand2 or predicate
+			int classifyParents();
+			int findOperandNumber(dfgNode* node, Instruction* child, Instruction* parent);
 
 	};
 

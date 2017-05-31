@@ -13,8 +13,9 @@ struct CGRANodeWithCost{
 	int cost;
 	Port port;
 	int SCpathLength;
+	int SCpathTdimLength;
 	CGRANodeWithCost(CGRANode* Cnode, int cost, Port port) : Cnode(Cnode),  cost(cost), port(port){}
-	CGRANodeWithCost(CGRANode* Cnode, int cost, Port port, int SCpathLength) : Cnode(Cnode),  cost(cost), port(port), SCpathLength(SCpathLength){}
+	CGRANodeWithCost(CGRANode* Cnode, int cost, Port port, int SCpathLength, int SCpathTdimLength) : Cnode(Cnode),  cost(cost), port(port), SCpathLength(SCpathLength), SCpathTdimLength(SCpathTdimLength){}
 };
 
 struct LessThanCGRANodeWithCost {
@@ -45,11 +46,14 @@ public:
 							CGRANode* start,
 							Port startPort,
 							CGRANode* goal,
+							int minkII,
 							std::map<pathData,pathData,pathDataComparer> *cameFrom,
 							std::map<CGRANode*,int> *costSoFar,
 							Port* endPort,
 							int SCpathLength,
-							int* endPathLength);
+							int SCpathTDimLength,
+							int* endPathLength,
+							int* endPathTDimLength);
 
 	CGRANode* AStarSearchEMS(std::map<CGRANode*, std::vector<CGRAEdge> > graph,
 							 CGRANode* start,
@@ -64,6 +68,7 @@ public:
 //			   std::vector<std::pair<CGRANode*,CGRANode*> > paths,
 //			   std::vector<TreePath> treePaths,
 			   std::vector<CGRANode*>* dests,
+			   std::map<CGRANode*,int>* destllmap,
 			   std::map<CGRANode*,std::vector<CGRAEdge> >* cgraEdges,
 			   std::vector<std::pair<CGRANode*,CGRANode*> > *pathsNotRouted,
 			   CGRANode** chosenDest,
@@ -100,6 +105,9 @@ public:
 	int MaxSCpathLength = 4;
 
 	bool reportDeadEnd(CGRANode* end, Port endPort, dfgNode* currNode, std::map<CGRANode*,std::vector<CGRAEdge> >* cgraEdges);
+
+	//FIFO problem
+	int calckII(CGRANode* start, int startRT, CGRANode* goal, int goalRT);
 
 };
 

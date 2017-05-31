@@ -406,6 +406,7 @@ void dfgNode::addStoreChild(Instruction * ins) {
 	}
 	else{
 		temp = Parent->OutLoopNodeMap[ins];
+		return;
 	}
 
 	temp->addAncestorNode(this);
@@ -414,8 +415,8 @@ void dfgNode::addStoreChild(Instruction * ins) {
 	temp->BB = this->getNode()->getParent();
 
 	//ceiling upto multiple of 8
+	outs() << "addStoreChild : ins="; ins->dump();
 	temp->setTypeSizeBytes((ins->getType()->getIntegerBitWidth()+7)/8);
-
 
 }
 
@@ -451,7 +452,17 @@ void dfgNode::addLoadParent(Instruction * ins) {
 //	assert(ins->getType()->getIntegerBitWidth() >= 8);
 
 	//ceiling upto multiple of 8
-	temp->setTypeSizeBytes((ins->getType()->getIntegerBitWidth()+7)/8);
+	outs() << "addLoadParent :";
+	ins->dump();
+
+	if(GetElementPtrInst* GEP = dyn_cast<GetElementPtrInst>(ins)){
+		temp->setTypeSizeBytes(4);
+	}
+	else{
+		temp->setTypeSizeBytes((ins->getType()->getIntegerBitWidth()+7)/8);
+	}
+
+
 }
 
 int dfgNode::getoutloopAddr() {
@@ -463,6 +474,7 @@ int dfgNode::getoutloopAddr() {
 void dfgNode::setoutloopAddr(int addr) {
 	assert((this->getNameType().compare("OutLoopLOAD") == 0)||(this->getNameType().compare("OutLoopSTORE") == 0));
 	outloopAddr = addr;
+	constValFlag = true;
 }
 
 int dfgNode::getGEPbaseAddr() {
@@ -475,6 +487,7 @@ void dfgNode::setGEPbaseAddr(int addr) {
 	assert(this->getNode());
 	assert(dyn_cast<GetElementPtrInst>(this->getNode()));
 	GEPbaseAddr = addr;
+	constValFlag = true;
 }
 
 dfgNode* dfgNode::addCMergeParent(dfgNode* phiBRAncestor,dfgNode* phiDataAncestor,int32_t constVal) {
