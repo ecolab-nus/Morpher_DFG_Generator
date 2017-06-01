@@ -1025,6 +1025,7 @@ namespace {
 				  }
 				  LoopDFG.addPHIChildEdges();
 				  LoopDFG.connectBB();
+				  LoopDFG.treatFalsePaths();
 				  LoopDFG.handlePHINodes(LoopBB);
 //				  LoopDFG.handlePHINodeFanIn();
 				  LoopDFG.checkSanity();

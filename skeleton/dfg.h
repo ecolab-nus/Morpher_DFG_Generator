@@ -128,6 +128,7 @@ typedef struct{
 	uint16_t opcode;
 	uint32_t constant;
 	uint8_t constantValid;
+	uint8_t npb;
 } binOp;
 
 enum MemOp   {LOAD,STORE,INVALID};
@@ -395,6 +396,9 @@ class DFG{
 			// parent classification as operand1, operand2 or predicate
 			int classifyParents();
 			int findOperandNumber(dfgNode* node, Instruction* child, Instruction* parent);
+
+			// add not instructions for ctrlbr instructions
+			int treatFalsePaths();
 
 	};
 

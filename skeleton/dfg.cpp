@@ -4378,6 +4378,7 @@ int DFG::printMapping() {
 				currBinOp.tregwen = 0;
 				currBinOp.constant = 0;
 				currBinOp.constantValid = 0;
+				currBinOp.npb = 0;
 
 				if(node!=NULL){
 					if(node->hasConstantVal()){
@@ -4385,6 +4386,9 @@ int DFG::printMapping() {
 						currBinOp.outMap[OP2] = node->getConstantVal() >> 27;
 						currBinOp.constantValid = 1;
 						constantValidMaskMap[j][k]=(constantValidMaskMap[j][k]&(~1)|1) << 1;
+					}
+					if(node->getNPB()){
+						currBinOp.npb = 1;
 					}
 				}
 
@@ -4401,6 +4405,7 @@ int DFG::printMapping() {
 
 				//Print Binary
 				binFile << std::setfill('0');
+				binFile << std::setw(1) << std::bitset<1>(currBinOp.npb) ;//<< ",";
 				binFile << std::setw(1) << std::bitset<1>(currBinOp.constantValid) ;//<< ",";
 				binFile << std::setw(27) << std::bitset<27>(currBinOp.constant) ;//<< ",";
 				binFile << std::setw(5) << std::bitset<5>(currBinOp.opcode) ;//<< "," ;
@@ -4417,6 +4422,7 @@ int DFG::printMapping() {
 
 				//Print Binary with OpName
 				binOpNameFile << std::setfill('0');
+				binFile << std::setw(1) << std::bitset<1>(currBinOp.npb) ;//<< ",";
 				binOpNameFile << std::setw(1) << std::bitset<1>(currBinOp.constantValid) ;//<< ",";
 				binOpNameFile << std::setw(27) << std::bitset<27>(currBinOp.constant) ;//<< ",";
 				binOpNameFile << std::setw(5) << std::bitset<5>(currBinOp.opcode) ;//<< "," ;
@@ -4912,7 +4918,15 @@ int DFG::nameNodes() {
 					node->setFinalIns(SELECT);
 					break;
 				case Instruction::Br:
-					node->setFinalIns(BR);
+					{BranchInst* BRI = cast<BranchInst>(node->getNode());
+					if(BRI->isUnconditional()){
+						node->setFinalIns(OR);
+						node->setConstantVal(1);
+					}
+					else{
+						node->setFinalIns(OR);
+						node->setConstantVal(0);
+					}}
 					break;
 				case Instruction::ICmp:
 				case Instruction::FCmp:
@@ -4997,6 +5011,10 @@ int DFG::nameNodes() {
 			}
 			else if(node->getNameType().compare("LOOPSTART") == 0){
 				node->setFinalIns(BR);
+			}
+			else if(node->getNameType().compare("XORNOT") == 0){
+				node->setFinalIns(XOR);
+				node->setConstantVal(1);
 			}
 			else {
 				errs() << "Unknown custom node \n";
@@ -6002,4 +6020,48 @@ int DFG::findOperandNumber(dfgNode* node, Instruction* child, Instruction* paren
 			assert(false);
 		}
 	}
+}
+
+int DFG::treatFalsePaths() {
+	dfgNode* node;
+	int NOTsadded = 0;
+	for(int i = 0 ; i < NodeList.size() ; i++){
+		node = NodeList[i];
+		for(dfgNode* parent : node->getAncestors()){
+			if(parent->getNode()!=NULL){
+				if(BranchInst* BRI = dyn_cast<BranchInst>(parent->getNode())){
+					if(node->getNameType().compare("CTRLBrOR")==0){
+						if(BRI->isConditional()){
+							if(node->BB == BRI->getSuccessor(1)){
+								parent->removeChild(node);
+								node->removeAncestor(parent);
+								removeEdge(findEdge(parent,node));
+
+								dfgNode* temp = new dfgNode(this);
+								temp->setNameType("XORNOT");
+								temp->setIdx(NodeList.size());
+								NodeList.push_back(temp);
+
+								parent->addChildNode(temp);
+								temp->addAncestorNode(parent);
+
+								temp->addChildNode(node);
+								node->addAncestorNode(temp);
+								NOTsadded++;
+							}
+						}
+					}
+					else{
+						if(BRI->isConditional()){
+							if(node->BB == BRI->getSuccessor(1)){
+								node->setNPB(true);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	outs() << "treatFalsePaths:: NOTsadded = " << NOTsadded << "\n";
+	return 0;
 }
