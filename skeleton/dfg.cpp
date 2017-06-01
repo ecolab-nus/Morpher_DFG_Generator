@@ -4176,39 +4176,86 @@ int DFG::printMapping() {
 					}
 				}
 
+
 				if(cnode->getmappedDFGNode() != NULL){
 					if(PrevCnode->getmappedDFGNode() != NULL){
 						for (int l = 0; l < cnode->getmappedDFGNode()->getAncestors().size(); ++l) {
 							if(PrevCnode->getmappedDFGNode() == cnode->getmappedDFGNode()->getAncestors()[l]){
+								dfgNode* currCnodeNode = cnode->getmappedDFGNode();
+								dfgNode* cnodeParent = cnode->getmappedDFGNode()->getAncestors()[l];
 								if(PrevCnode->getmappedDFGNode()->getFinalIns() == NOP){
-									if(XBarMap[PrevCnode].find(PRED) == XBarMap[PrevCnode].end()){
-										XBarMap[PrevCnode][PRED] = TILE;
-									}
-									else if(XBarMap[PrevCnode].find(OP1) == XBarMap[PrevCnode].end()){
-										XBarMap[PrevCnode][OP1] = TILE;
-									}
-									else if(XBarMap[PrevCnode].find(OP2) == XBarMap[PrevCnode].end()){
-										XBarMap[PrevCnode][OP2] = TILE;
-									}
-									else{
-										assert(false);
-									}
+
+
+									//How can a NOP be a parent of someone?
+									assert(false);
+
+//									if(XBarMap[PrevCnode].find(PRED) == XBarMap[PrevCnode].end()){
+//										XBarMap[PrevCnode][PRED] = TILE;
+//									}
+//									else if(XBarMap[PrevCnode].find(OP1) == XBarMap[PrevCnode].end()){
+//										XBarMap[PrevCnode][OP1] = TILE;
+//									}
+//									else if(XBarMap[PrevCnode].find(OP2) == XBarMap[PrevCnode].end()){
+//										XBarMap[PrevCnode][OP2] = TILE;
+//									}
+//									else{
+//										assert(false);
+//									}
 								}
 								else{
-									if((PrevCnode->getmappedDFGNode()->getFinalIns() == CMP) ||
-									   (PrevCnode->getmappedDFGNode()->getFinalIns() == BR)	){
-										XBarMap[PrevCnode][PRED] = TILE;
-									}
-									else if(XBarMap[PrevCnode].find(OP1) == XBarMap[PrevCnode].end()){
-										XBarMap[PrevCnode][OP1] = TILE;
-									}
-									else if(XBarMap[PrevCnode].find(OP2) == XBarMap[PrevCnode].end()){
-										XBarMap[PrevCnode][OP2] = TILE;
+
+									bool found=false;
+									if(currCnodeNode->parentClassification.find(0) !=
+									   currCnodeNode->parentClassification.end() ){
+										if(currCnodeNode->parentClassification[0]==cnodeParent){
+											XBarMap[PrevCnode][PRED] = TILE;
+											found=true;
+										}
 									}
 									else{
-										errs() << "UNCOMMENT here : assertion failes here truly!\n";
-//										assert(false);
+										XBarMap[PrevCnode][PRED] = INV;
 									}
+
+									if(currCnodeNode->parentClassification.find(1) !=
+									   currCnodeNode->parentClassification.end() ){
+										if(currCnodeNode->parentClassification[1]==cnodeParent){
+											XBarMap[PrevCnode][OP1] = TILE;
+											found=true;
+										}
+									}
+									else{
+										XBarMap[PrevCnode][OP1] = INV;
+									}
+
+									if(currCnodeNode->parentClassification.find(2) !=
+									   currCnodeNode->parentClassification.end() ){
+										if(currCnodeNode->parentClassification[2]==cnodeParent){
+											XBarMap[PrevCnode][OP2] = TILE;
+											found=true;
+										}
+									}
+									else{
+										XBarMap[PrevCnode][OP2] = INV;
+									}
+
+									outs() << "printMapping : currNode = " << currCnodeNode->getIdx() << "\n";
+									outs() << "printMapping : currParent = " << cnodeParent->getIdx() << "\n";
+									assert(found);
+
+//									if((PrevCnode->getmappedDFGNode()->getFinalIns() == CMP) ||
+//									   (PrevCnode->getmappedDFGNode()->getFinalIns() == BR)	){
+//										XBarMap[PrevCnode][PRED] = TILE;
+//									}
+//									else if(XBarMap[PrevCnode].find(OP1) == XBarMap[PrevCnode].end()){
+//										XBarMap[PrevCnode][OP1] = TILE;
+//									}
+//									else if(XBarMap[PrevCnode].find(OP2) == XBarMap[PrevCnode].end()){
+//										XBarMap[PrevCnode][OP2] = TILE;
+//									}
+//									else{
+//										errs() << "UNCOMMENT here : assertion failes here truly!\n";
+////										assert(false);
+//									}
 
 								}
 							}
@@ -4218,36 +4265,83 @@ int DFG::printMapping() {
 
 				for (int m = 0; m < cgraEdges_t.size(); ++m) {
 					if(cgraEdges_t[m].mappedDFGEdge->getDest() == cnode->getmappedDFGNode()){
+						dfgNode* currCnodeNode = cnode->getmappedDFGNode();
+						dfgNode* cnodeParent = cgraEdges_t[m].mappedDFGEdge->getSrc();
+
 						if(cgraEdges_t[m].mappedDFGEdge->getSrc()->getFinalIns() == NOP){
-							if(XBarMap[PrevCnode].find(PRED) == XBarMap[PrevCnode].end()){
-								XBarMap[PrevCnode][PRED] = cgraEdges_t[m].DstPort;
-							}
-							else if(XBarMap[PrevCnode].find(OP1) == XBarMap[PrevCnode].end()){
-								XBarMap[PrevCnode][OP1] = cgraEdges_t[m].DstPort;
-							}
-							else if(XBarMap[PrevCnode].find(OP2) == XBarMap[PrevCnode].end()){
-								XBarMap[PrevCnode][OP2] = cgraEdges_t[m].DstPort;
-							}
-							else{
-								assert(false);
-							}
+
+							assert(false);
+							//Nothing should be routed from a NOP instruction
+
+//							if(XBarMap[PrevCnode].find(PRED) == XBarMap[PrevCnode].end()){
+//								XBarMap[PrevCnode][PRED] = cgraEdges_t[m].DstPort;
+//							}
+//							else if(XBarMap[PrevCnode].find(OP1) == XBarMap[PrevCnode].end()){
+//								XBarMap[PrevCnode][OP1] = cgraEdges_t[m].DstPort;
+//							}
+//							else if(XBarMap[PrevCnode].find(OP2) == XBarMap[PrevCnode].end()){
+//								XBarMap[PrevCnode][OP2] = cgraEdges_t[m].DstPort;
+//							}
+//							else{
+//								assert(false);
+//							}
+
 						}
 						else{
-							// mapped for hyCUBE instructions
-							if((cgraEdges_t[m].mappedDFGEdge->getSrc()->getFinalIns() == CMP) ||
-							   (cgraEdges_t[m].mappedDFGEdge->getSrc()->getFinalIns() == BR)	){
-								XBarMap[PrevCnode][PRED] = cgraEdges_t[m].DstPort;
-							}
-							else if(XBarMap[PrevCnode].find(OP1) == XBarMap[PrevCnode].end()){
-								XBarMap[PrevCnode][OP1] = cgraEdges_t[m].DstPort;
-							}
-							else if(XBarMap[PrevCnode].find(OP2) == XBarMap[PrevCnode].end()){
-								XBarMap[PrevCnode][OP2] = cgraEdges_t[m].DstPort;
+
+							bool found=false;
+							if(currCnodeNode->parentClassification.find(0) !=
+							   currCnodeNode->parentClassification.end() ){
+								if(currCnodeNode->parentClassification[0]==cnodeParent){
+									XBarMap[PrevCnode][PRED] = cgraEdges_t[m].DstPort;
+									found=true;
+								}
 							}
 							else{
-								errs() << "UNCOMMENT here : assertion failes here truly!\n";
-//								assert(false);
+								XBarMap[PrevCnode][PRED] = INV;
 							}
+
+							if(currCnodeNode->parentClassification.find(1) !=
+							   currCnodeNode->parentClassification.end() ){
+								if(currCnodeNode->parentClassification[1]==cnodeParent){
+									XBarMap[PrevCnode][OP1] = cgraEdges_t[m].DstPort;
+									found=true;
+								}
+							}
+							else{
+								XBarMap[PrevCnode][OP1] = INV;
+							}
+
+							if(currCnodeNode->parentClassification.find(2) !=
+							   currCnodeNode->parentClassification.end() ){
+								if(currCnodeNode->parentClassification[2]==cnodeParent){
+									XBarMap[PrevCnode][OP2] = cgraEdges_t[m].DstPort;
+									found=true;
+								}
+							}
+							else{
+								XBarMap[PrevCnode][OP2] = INV;
+							}
+
+							assert(found);
+
+							// mapped for hyCUBE instructions
+//							if((cgraEdges_t[m].mappedDFGEdge->getSrc()->getFinalIns() == CMP) ||
+//							   (cgraEdges_t[m].mappedDFGEdge->getSrc()->getFinalIns() == BR)	){
+//								XBarMap[PrevCnode][PRED] = cgraEdges_t[m].DstPort;
+//							}
+//							else if(XBarMap[PrevCnode].find(OP1) == XBarMap[PrevCnode].end()){
+//								XBarMap[PrevCnode][OP1] = cgraEdges_t[m].DstPort;
+//							}
+//							else if(XBarMap[PrevCnode].find(OP2) == XBarMap[PrevCnode].end()){
+//								XBarMap[PrevCnode][OP2] = cgraEdges_t[m].DstPort;
+//							}
+//							else{
+//								errs() << "UNCOMMENT here : assertion failes here truly!\n";
+////								assert(false);
+//							}
+
+
 						}
 					}
 				}
@@ -4288,7 +4382,7 @@ int DFG::printMapping() {
 				if(node!=NULL){
 					if(node->hasConstantVal()){
 						currBinOp.constant=node->getConstantVal();
-						currBinOp.outMap[OP2] = node->getConstantVal() >> 29;
+						currBinOp.outMap[OP2] = node->getConstantVal() >> 27;
 						currBinOp.constantValid = 1;
 						constantValidMaskMap[j][k]=(constantValidMaskMap[j][k]&(~1)|1) << 1;
 					}
@@ -4307,7 +4401,8 @@ int DFG::printMapping() {
 
 				//Print Binary
 				binFile << std::setfill('0');
-				binFile << std::setw(29) << std::bitset<29>(currBinOp.constant) ;//<< ",";
+				binFile << std::setw(1) << std::bitset<1>(currBinOp.constantValid) ;//<< ",";
+				binFile << std::setw(27) << std::bitset<27>(currBinOp.constant) ;//<< ",";
 				binFile << std::setw(5) << std::bitset<5>(currBinOp.opcode) ;//<< "," ;
 				binFile << std::setw(4) << std::bitset<4>(currBinOp.regwen) ;//<< ",";
 				binFile << std::bitset<1>(currBinOp.tregwen) ;//<< ",";
@@ -4322,7 +4417,8 @@ int DFG::printMapping() {
 
 				//Print Binary with OpName
 				binOpNameFile << std::setfill('0');
-				binOpNameFile << std::setw(29) << std::bitset<29>(currBinOp.constant) ;//<< ",";
+				binOpNameFile << std::setw(1) << std::bitset<1>(currBinOp.constantValid) ;//<< ",";
+				binOpNameFile << std::setw(27) << std::bitset<27>(currBinOp.constant) ;//<< ",";
 				binOpNameFile << std::setw(5) << std::bitset<5>(currBinOp.opcode) ;//<< "," ;
 				binOpNameFile << std::setw(4) << std::bitset<4>(currBinOp.regwen) ;//<< ",";
 				binOpNameFile << std::bitset<1>(currBinOp.tregwen) ;//<< ",";
@@ -4421,6 +4517,9 @@ int DFG::updateBinOp(binOp* binOpIns, Port outPort, Port inPort) {
 					break;
 				case TREG:
 					binOpIns->outMap[outPort]= 0b101;
+					break;
+				case INV:
+					binOpIns->outMap[outPort]= 0b111;
 					break;
 				default:
 					assert(false);
@@ -5897,6 +5996,7 @@ int DFG::findOperandNumber(dfgNode* node, Instruction* child, Instruction* paren
 		}
 		else if(child->getNumOperands()==1){
 			assert(parent==cast<Instruction>(child->getOperand(0)) );
+			return 1;
 		}
 		else{
 			assert(false);

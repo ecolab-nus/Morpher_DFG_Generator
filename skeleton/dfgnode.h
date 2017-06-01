@@ -6,7 +6,7 @@
 class CGRANode;
 class DFG;
 
-enum Port{NORTH,SOUTH,EAST,WEST,R0,R1,R2,R3,R4,R5,R6,R7,TILE,TREG,OP1,OP2,PRED,TILEIN,TILEOUT};
+enum Port{NORTH,SOUTH,EAST,WEST,R0,R1,R2,R3,R4,R5,R6,R7,TILE,TREG,OP1,OP2,PRED,TILEIN,TILEOUT,INV};
 enum HyCUBEIns{ADD,SUB,MUL,MULC,DIV,DIVC,LS,RS,ARS,AND,OR,XOR,Hy_LOAD,Hy_STORE,Hy_LOADH,Hy_STOREH,Hy_LOADB,Hy_STOREB,SELECT,BR,CMP,NOP,SEXT,CMERGE};
 
 struct pathData{
@@ -78,6 +78,9 @@ class dfgNode{
 			//Constant
 			int32_t constVal=-1;
 			bool constValFlag=false;
+
+			//negated predicated bit
+			bool npb=false;
 
 
 		public :
@@ -212,6 +215,11 @@ class dfgNode{
 			bool hasConstantVal(){return constValFlag;}
 			bool isTransferedByHost() const {return transferedByHost;}
 			void setTransferedByHost(bool transferedByHost = false) {this->transferedByHost = transferedByHost;}
+
+			//negated predicated bit
+			void setNPB(bool val){npb = val;}
+			bool getNPB(){return npb;}
+
 };
 
 
