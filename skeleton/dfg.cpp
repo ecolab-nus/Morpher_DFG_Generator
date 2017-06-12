@@ -105,12 +105,12 @@ std::vector<dfgNode*> DFG::getLeafs(BasicBlock* BB){
 			for(int j = 0; j < NodeList[i]->getChildren().size(); j++){
 				dfgNode* nodeToBeRemoved = NodeList[i]->getChildren()[j];
 				if(nodeToBeRemoved != NULL){
-					errs() << "LeafNodes : nodeToBeRemoved found...! : ";
+//					errs() << "LeafNodes : nodeToBeRemoved found...! : ";
 					if(nodeToBeRemoved->getNode() == NULL){
-						errs() << "NodeIdx:" << nodeToBeRemoved->getIdx() << "," << nodeToBeRemoved->getNameType() << "\n";
+//						errs() << "NodeIdx:" << nodeToBeRemoved->getIdx() << "," << nodeToBeRemoved->getNameType() << "\n";
 					}
 					else{
-						errs() << "NodeIdx:" << nodeToBeRemoved->getIdx() << ",";
+//						errs() << "NodeIdx:" << nodeToBeRemoved->getIdx() << ",";
 						nodeToBeRemoved->getNode()->dump();
 					}
 
@@ -129,19 +129,21 @@ void DFG::connectBB(){
 	errs() << "ConnectBB called!\n";
 
 	std::map<dfgNode*,std::vector<dfgNode*> > BrSuccesors;
+	std::map<dfgNode*,std::set<dfgNode*>> BrBackEdgeSuccessors;
 	std::map<const BasicBlock*,dfgNode*> BBPredicate;
 	dfgNode* temp;
 	dfgNode* node;
 
 	assert(NodeList.size() > 0);
 	dfgNode firstNode = *NodeList[0];
-	SmallVector<std::pair<const BasicBlock *, const BasicBlock *>,1 > Result;
+	SmallVector<std::pair<const BasicBlock *, const BasicBlock *>,8> Result;
 	FindFunctionBackedges(*(firstNode.getNode()->getFunction()),Result);
+	outs() << "Number of Backedges = " << Result.size() << "\n";
 
 	for (int i = 0; i < Result.size(); ++i) {
 		errs() << "Backedges .... :: \n";
-		Result[i].first->dump();
-		Result[i].second->dump();
+		outs() << "From : " << Result[i].first->getName();
+		outs() << ",To : " <<  Result[i].second->getName();
 		errs() << "\n";
 	}
 
@@ -151,24 +153,29 @@ void DFG::connectBB(){
 		if(NodeList[i]->getNode() != NULL){
 //			if(NodeList[i]->getNode()->getOpcode() == Instruction::Br){
 			if(BranchInst* BI = dyn_cast<BranchInst>(NodeList[i]->getNode())){
-				errs() << "$$$$$ This belongs to BB";
-				NodeList[i]->getNode()->getParent()->dump();
+				errs() << "$$$$$ This belongs to BB=" << NodeList[i]->getNode()->getParent()->getName() << "\n";
 
 				BasicBlock* BB = NodeList[i]->getNode()->getParent();
 				succ_iterator SI(succ_begin(BB)), SE(succ_end(BB));
 				 for (; SI != SE; ++SI){
 					 BasicBlock* succ = *SI;
-					 errs() << "$%$%$%$%$ successor Basic Blocks";
-					 succ->dump();
+					 errs() << "$%$%$%$%$ successor Basic Blocks\n";
+					 errs() << "Name=" << succ->getName() << "\n";
 					 errs() << "$%$%$%$%$\n";
 
+					 std::vector<dfgNode*> succLeafs = this->getLeafs(succ);
+					 errs() << "succLeafs.size = " << succLeafs.size() << "\n";
 
 					 std::pair <const BasicBlock*,const BasicBlock*> bbCouple(BB,succ);
 					 if(std::find(Result.begin(),Result.end(),bbCouple)!=Result.end()){
-						 continue;
+						 for (int j = 0; j < succLeafs.size(); j++){
+							 errs() << "Backedge from : " << NodeList[i]->getIdx() << ",To :" << succLeafs[j]->getIdx() << "\n";
+							 BrBackEdgeSuccessors[succLeafs[j]].insert(NodeList[i]);
+						 }
+//						 continue;
 					 }
 
-					 std::vector<dfgNode*> succLeafs = this->getLeafs(succ);
+
 					 for (int j = 0; j < succLeafs.size(); j++){
 						 BrSuccesors[succLeafs[j]].push_back(NodeList[i]);
 					 }
@@ -194,15 +201,31 @@ void DFG::connectBB(){
 		errs() << "ConnectBB :: " << "Init Round\n";
 
 		if(BBPredicate.find(it->first->BB) != BBPredicate.end()){
-			BBPredicate[node->BB]->addChildNode(node);
-			node->addAncestorNode(BBPredicate[node->BB]);
+			if(BrBackEdgeSuccessors[node].find(BBPredicate[node->BB]) ==
+			   BrBackEdgeSuccessors[node].end()){
+				BBPredicate[node->BB]->addChildNode(node);
+				node->addAncestorNode(BBPredicate[node->BB]);
+			}
+			else{
+				BBPredicate[node->BB]->addPHIChildNode(node);
+				node->addPHIAncestorNode(BBPredicate[node->BB]);
+			}
 			errs() << "ConnectBB :: " << "BB already done\n";
 			continue;
 		}
 
 		if(numberofbrs == 1){
-			BrSuccesors[node][0]->addChildNode(node);
-			node->addAncestorNode(BrSuccesors[node][0]);
+
+			if(BrBackEdgeSuccessors[node].find(BrSuccesors[node][0]) ==
+			   BrBackEdgeSuccessors[node].end()){
+				BrSuccesors[node][0]->addChildNode(node);
+				node->addAncestorNode(BrSuccesors[node][0]);
+			}
+			else{
+				BrSuccesors[node][0]->addPHIChildNode(node);
+				node->addPHIAncestorNode(BrSuccesors[node][0]);
+			}
+
 			BBPredicate[node->BB] = BrSuccesors[node][0];
 			continue;
 		}
@@ -212,10 +235,26 @@ void DFG::connectBB(){
 			temp->setNameType("CTRLBrOR");
 			temp->setIdx(NodeList.size());
 			NodeList.push_back(temp);
-			temp->addAncestorNode(BrSuccesors[node][i]);
-			temp->addAncestorNode(BrSuccesors[node][i+1]);
-			BrSuccesors[node][i]->addChildNode(temp);
-			BrSuccesors[node][i+1]->addChildNode(temp);
+
+			if(BrBackEdgeSuccessors[node].find(BrSuccesors[node][i]) ==
+			   BrBackEdgeSuccessors[node].end()){
+				temp->addAncestorNode(BrSuccesors[node][i]);
+				BrSuccesors[node][i]->addChildNode(temp);
+			}
+			else{
+				temp->addPHIAncestorNode(BrSuccesors[node][i]);
+				BrSuccesors[node][i]->addPHIChildNode(temp);
+			}
+
+			if(BrBackEdgeSuccessors[node].find(BrSuccesors[node][i+1]) ==
+			   BrBackEdgeSuccessors[node].end()){
+				temp->addAncestorNode(BrSuccesors[node][i+1]);
+				BrSuccesors[node][i+1]->addChildNode(temp);
+			}
+			else{
+				temp->addPHIAncestorNode(BrSuccesors[node][i+1]);
+				BrSuccesors[node][i+1]->addPHIChildNode(temp);
+			}
 			workingSet.push_back(temp);
 		}
 
@@ -230,11 +269,28 @@ void DFG::connectBB(){
 				temp->setIdx(NodeList.size());
 				NodeList.push_back(temp);
 				temp->setNameType("CTRLBrOR");
-				workingSet[i]->addChildNode(temp);
 				errs() << "ConnectBB :: " << "workingSet[i+1] = " << workingSet[i+1]->getIdx() << "\n";
-				workingSet[i+1]->addChildNode(temp);
-				temp->addAncestorNode(workingSet[i]);
-				temp->addAncestorNode(workingSet[i+1]);
+
+				if(BrBackEdgeSuccessors[node].find(workingSet[i]) ==
+				   BrBackEdgeSuccessors[node].end()){
+					workingSet[i]->addChildNode(temp);
+					temp->addAncestorNode(workingSet[i]);
+				}
+				else{
+					workingSet[i]->addPHIChildNode(temp);
+					temp->addPHIAncestorNode(workingSet[i]);
+				}
+
+				if(BrBackEdgeSuccessors[node].find(workingSet[i+1]) ==
+				   BrBackEdgeSuccessors[node].end()){
+					workingSet[i+1]->addChildNode(temp);
+					temp->addAncestorNode(workingSet[i+1]);
+				}
+				else{
+					workingSet[i+1]->addPHIChildNode(temp);
+					temp->addPHIAncestorNode(workingSet[i+1]);
+				}
+
 				nextWorkingSet.push_back(temp);
 			}
 			if(workingSet.size()%2==1){
@@ -249,8 +305,18 @@ void DFG::connectBB(){
 		}
 
 		assert(workingSet.size()==1);
-		workingSet[0]->addChildNode(node);
-		node->addAncestorNode(workingSet[0]);
+
+		if(BrBackEdgeSuccessors[node].find(workingSet[0]) ==
+		   BrBackEdgeSuccessors[node].end()){
+			workingSet[0]->addChildNode(node);
+			node->addAncestorNode(workingSet[0]);
+		}
+		else{
+			workingSet[0]->addPHIChildNode(node);
+			node->addAncestorNode(workingSet[0]);
+		}
+
+
 		BBPredicate[node->BB] = workingSet[0];
 	}
 	errs() << "ConnectBB DONE! \n";
@@ -1886,8 +1952,10 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim, ArchType arch) {
 
 							if(currCGRA->getCGRANode((ll+1)%MII,y,x)->getmappedDFGNode() == NULL){
 								if(node->getIsMemOp() == (currCGRA->getCGRANode((ll+1)%MII,y,x)->getPEType() == MEM)){
+
 									nodeDestMap[node].push_back(std::make_pair(currCGRA->getCGRANode((ll+1)%MII,y,x),(ll+1)));
 									destNodeMap[currCGRA->getCGRANode((ll+1)%MII,y,x)].push_back(node);
+
 								}
 							}
 
@@ -1907,8 +1975,24 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim, ArchType arch) {
 									if(currCGRA->getCGRANode((ll+1)%MII,y,x)->getmappedDFGNode() == NULL){
 										if(node->getIsMemOp()){ //if current operation is a memory operation
 											if(currCGRA->getCGRANode((ll+1)%MII,y,x)->getPEType() == MEM){ // only allocate PEs capable of doing memory operations
-												nodeDestMap[node].push_back(std::make_pair(currCGRA->getCGRANode((ll+1)%MII,y,x),(ll+1)));
-												destNodeMap[currCGRA->getCGRANode((ll+1)%MII,y,x)].push_back(node);
+
+												if(node->getLeftAlignedMemOp()==1){
+													if(x==0){
+														nodeDestMap[node].push_back(std::make_pair(currCGRA->getCGRANode((ll+1)%MII,y,x),(ll+1)));
+														destNodeMap[currCGRA->getCGRANode((ll+1)%MII,y,x)].push_back(node);
+													}
+												}
+												else if(node->getLeftAlignedMemOp()==2){
+													if(x==XDim-1){
+														nodeDestMap[node].push_back(std::make_pair(currCGRA->getCGRANode((ll+1)%MII,y,x),(ll+1)));
+														destNodeMap[currCGRA->getCGRANode((ll+1)%MII,y,x)].push_back(node);
+													}
+												}
+												else{
+													nodeDestMap[node].push_back(std::make_pair(currCGRA->getCGRANode((ll+1)%MII,y,x),(ll+1)));
+													destNodeMap[currCGRA->getCGRANode((ll+1)%MII,y,x)].push_back(node);
+												}
+
 											}
 										}
 										else{ // for any other operations can allocate any PE.
@@ -4701,7 +4785,9 @@ int DFG::handleMEMops() {
 		}
 		else{
 			if((node->getNameType().compare("LOAD") == 0)||
-			   (node->getNameType().compare("STORE") == 0)){
+			   (node->getNameType().compare("STORE") == 0)||
+			   (node->getNameType().compare("OutLoopSTORE") == 0)||
+			   (node->getNameType().compare("OutLoopLOAD") == 0)){
 				node->setIsMemOp(true);
 			}
 		}
@@ -4739,14 +4825,11 @@ DFG::DFG(std::string name, std::map<Loop*,std::string>* lnPtr) {
 	HyCUBEInsStrings[MUL] = "MUL";
 	HyCUBEInsBinary[MUL] = 0 | (0b00011);
 
-	HyCUBEInsStrings[MULC] = "MULC";
-	HyCUBEInsBinary[MULC] = 0 | (0b00100);
+	HyCUBEInsStrings[SEXT] = "SEXT";
+	HyCUBEInsBinary[SEXT] = 0 | (0b00100);
 
 	HyCUBEInsStrings[DIV] = "DIV";
 	HyCUBEInsBinary[DIV] = 0 | (0b00101);
-
-	HyCUBEInsStrings[DIVC] = "DIVC";
-	HyCUBEInsBinary[DIVC] = 0 | (0b00110);
 
 	HyCUBEInsStrings[LS] = "LS";
 	HyCUBEInsBinary[LS] = 0 | (0b01000);
@@ -4761,7 +4844,7 @@ DFG::DFG(std::string name, std::map<Loop*,std::string>* lnPtr) {
 	HyCUBEInsBinary[AND] = 0 | (0b01011);
 
 	HyCUBEInsStrings[OR] = "OR";
-	HyCUBEInsBinary[OR] = 0 | (0b01011);
+	HyCUBEInsBinary[OR] = 0 | (0b01100);
 
 	HyCUBEInsStrings[XOR] = "XOR";
 	HyCUBEInsBinary[XOR] = 0 | (0b01101);
@@ -4769,11 +4852,26 @@ DFG::DFG(std::string name, std::map<Loop*,std::string>* lnPtr) {
 	HyCUBEInsStrings[SELECT] = "SELECT";
 	HyCUBEInsBinary[SELECT] = 0 | (0b10000);
 
+	HyCUBEInsStrings[CMERGE] = "CMERGE";
+	HyCUBEInsBinary[CMERGE] = 0 | (0b10001);
+
 	HyCUBEInsStrings[CMP] = "CMP";
 	HyCUBEInsBinary[CMP] = 0 | (0b10010);
 
+	HyCUBEInsStrings[CLT] = "CLT";
+	HyCUBEInsBinary[CLT] = 0 | (0b10011);
+
 	HyCUBEInsStrings[BR] = "BR";
 	HyCUBEInsBinary[BR] = 0 | (0b10100);
+
+	HyCUBEInsStrings[CGT] = "CGT";
+	HyCUBEInsBinary[CGT] = 0 | (0b10101);
+
+	HyCUBEInsStrings[LOADCL] = "LOADCL";
+	HyCUBEInsBinary[LOADCL] = 0 | (0b10110);
+
+	HyCUBEInsStrings[MOVCL] = "MOVCL";
+	HyCUBEInsBinary[MOVCL] = 0 | (0b10111);
 
 	HyCUBEInsStrings[Hy_LOAD] = "LOAD";
 	HyCUBEInsBinary[Hy_LOAD] = 0 | (0b11000);
@@ -4793,11 +4891,11 @@ DFG::DFG(std::string name, std::map<Loop*,std::string>* lnPtr) {
 	HyCUBEInsStrings[Hy_STOREB] = "STOREB";
 	HyCUBEInsBinary[Hy_STOREB] = 0 | (0b11101);
 
-	HyCUBEInsStrings[SEXT] = "SEXT";
-	HyCUBEInsBinary[SEXT] = 0 | (0b00100);
+	HyCUBEInsStrings[JUMPL] = "JUMPL";
+	HyCUBEInsBinary[JUMPL] = 0 | (0b11110);
 
-	HyCUBEInsStrings[CMERGE] = "CMERGE";
-	HyCUBEInsBinary[CMERGE] = 0 | (0b10001);
+	HyCUBEInsStrings[MOVC] = "MOVC";
+	HyCUBEInsBinary[MOVC] = 0 | (0b11110);
 }
 
 int DFG::nameNodes() {
@@ -4881,6 +4979,7 @@ int DFG::nameNodes() {
 					break;
 				case Instruction::GetElementPtr:
 					node->setFinalIns(ADD);
+					node->setConstantVal(node->getGEPbaseAddr());
 					break;
 				case Instruction::Trunc:
 					{TruncInst* TI = cast<TruncInst>(node->getNode());
@@ -4929,6 +5028,25 @@ int DFG::nameNodes() {
 					}}
 					break;
 				case Instruction::ICmp:
+					{
+						CmpInst* CI = cast<CmpInst>(node->getNode());
+						switch(CI->getPredicate()){
+							case CmpInst::ICMP_SLT:
+							case CmpInst::ICMP_ULT:
+								node->setFinalIns(CLT);
+								break;
+							case CmpInst::ICMP_SGT:
+							case CmpInst::ICMP_UGT:
+								node->setFinalIns(CGT);
+								break;
+							case CmpInst::ICMP_EQ:
+								node->setFinalIns(CMP);
+								break;
+							default:
+								assert(false);
+								break;
+						}
+					}
 				case Instruction::FCmp:
 					node->setFinalIns(CMP);
 					break;
@@ -4990,6 +5108,7 @@ int DFG::nameNodes() {
 				else{
 					assert(0);
 				}
+				node->setConstantVal(node->getoutloopAddr());
 			}
 			else if(node->getNameType().compare("OutLoopLOAD") == 0){
 				if(node->getTypeSizeBytes()==4){
@@ -5005,6 +5124,7 @@ int DFG::nameNodes() {
 					outs() << "OutLoopLOAD size = " << node->getTypeSizeBytes() << "\n";
 					assert(0);
 				}
+				node->setConstantVal(node->getoutloopAddr());
 			}
 			else if(node->getNameType().compare("CMERGE") == 0){
 				node->setFinalIns(CMERGE);
@@ -5022,38 +5142,6 @@ int DFG::nameNodes() {
 			}
 		}
 	}
-
-	int nonBRAncSize = 0;
-
-	for (int i = 0; i < NodeList.size(); ++i) {
-		node = NodeList[i];
-		nonBRAncSize = 0;
-		switch(node->getFinalIns()){
-			case DIV:
-				for (int i = 0; i < node->getAncestors().size(); ++i) {
-					if((node->getFinalIns() != BR)&&((node->getFinalIns() != CMP))){
-						nonBRAncSize++;
-					}
-				}
-				if(nonBRAncSize < 2){
-					node->setFinalIns(DIVC);
-				}
-				break;
-			case MUL:
-				for (int i = 0; i < node->getAncestors().size(); ++i) {
-					if((node->getFinalIns() != BR)&&((node->getFinalIns() != CMP))){
-						nonBRAncSize++;
-					}
-				}
-				if(nonBRAncSize < 2){
-					node->setFinalIns(MULC);
-				}
-				break;
-			default:
-				break;
-		}
-	}
-
 }
 
 int DFG::checkSanity() {
@@ -5550,10 +5638,21 @@ void DFG::GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeAr
 				(*sizeArrMap)[GEP->getPointerOperand()->getName().str()]=size;
 
 				if(allocatedArraysMap.find(GEP->getPointerOperand()->getName().str())==allocatedArraysMap.end()){
-					node->setGEPbaseAddr(arrayAddrPtr);
-					outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtr << ",size=" << size <<  "\n";
-					allocatedArraysMap[GEP->getPointerOperand()->getName().str()]=arrayAddrPtr;
-					arrayAddrPtr += size;
+					dfgNode* memopChild = node->getChildren()[0];
+					assert(memopChild->getLeftAlignedMemOp()!=0);
+					if(memopChild->getLeftAlignedMemOp()==1){
+						node->setGEPbaseAddr(arrayAddrPtrLeft);
+						outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrLeft << ",size=" << size <<  "\n";
+						allocatedArraysMap[GEP->getPointerOperand()->getName().str()]=arrayAddrPtrLeft;
+						arrayAddrPtrLeft += size;
+					}
+					else{
+						node->setGEPbaseAddr(arrayAddrPtrRight);
+						outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrRight << ",size=" << size <<  "\n";
+						allocatedArraysMap[GEP->getPointerOperand()->getName().str()]=arrayAddrPtrRight;
+						arrayAddrPtrRight += size;
+					}
+
 				}
 				else{
 					node->setGEPbaseAddr(allocatedArraysMap[GEP->getPointerOperand()->getName().str()]);
@@ -5622,9 +5721,18 @@ void DFG::GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeAr
 					int size = DL.getTypeAllocSize(AT);
 
 					(*sizeArrMap)[GEP->getPointerOperand()->getName().str()]=size;
-					node->setGEPbaseAddr(arrayAddrPtr);
-					outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtr << ",size=" << size <<  "\n";
-					arrayAddrPtr += size;
+					dfgNode* memopChild = node->getChildren()[0];
+					assert(memopChild->getLeftAlignedMemOp()!=0);
+					if(memopChild->getLeftAlignedMemOp()==1){
+						node->setGEPbaseAddr(arrayAddrPtrLeft);
+						outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrLeft << ",size=" << size <<  "\n";
+						arrayAddrPtrLeft += size;
+					}
+					else{
+						node->setGEPbaseAddr(arrayAddrPtrRight);
+						outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrRight << ",size=" << size <<  "\n";
+						arrayAddrPtrRight += size;
+					}
 
 					Constant* printArrFunc = F.getParent()->getOrInsertFunction(
 					  "printArr",
@@ -5702,10 +5810,20 @@ void DFG::GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeAr
 						int size = (*sizeArrMap)[ptrName];
 
 						if(allocatedArraysMap.find(ptrName)==allocatedArraysMap.end()){
-							node->setGEPbaseAddr(arrayAddrPtr);
-							outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtr << ",size=" << size <<  "\n";
-							allocatedArraysMap[ptrName]=arrayAddrPtr;
-							arrayAddrPtr += size;
+							dfgNode* memopChild = node->getChildren()[0];
+							assert(memopChild->getLeftAlignedMemOp()!=0);
+							if(memopChild->getLeftAlignedMemOp()==1){
+								node->setGEPbaseAddr(arrayAddrPtrLeft);
+								outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrLeft << ",size=" << size <<  "\n";
+								allocatedArraysMap[ptrName]=arrayAddrPtrLeft;
+								arrayAddrPtrLeft += size;
+							}
+							else{
+								node->setGEPbaseAddr(arrayAddrPtrRight);
+								outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrRight << ",size=" << size <<  "\n";
+								allocatedArraysMap[ptrName]=arrayAddrPtrRight;
+								arrayAddrPtrRight += size;
+							}
 						}
 						else{
 							node->setGEPbaseAddr(allocatedArraysMap[ptrName]);
@@ -5796,6 +5914,7 @@ void DFG::AssignOutLoopAddr() {
 		if((node->getNameType().compare("OutLoopLOAD") == 0)||
 		   (node->getNameType().compare("OutLoopSTORE") == 0)){
 
+			assert(node->getMappedLoc()!=NULL);
 
 			int bytewidth;
 			if(dyn_cast<IntegerType>(OutLoopNodeMapReverse[node]->getType())){
@@ -5811,9 +5930,20 @@ void DFG::AssignOutLoopAddr() {
 				assert(0 && "should not come here");
 			}
 
-			outloopAddrPtr = outloopAddrPtr-bytewidth;
-			node->setoutloopAddr(outloopAddrPtr);
-			outs() << "NodeIdx:" << node->getIdx() << ",bytewidth=" << bytewidth << ",addr=" << outloopAddrPtr << "\n";
+			if(node->getMappedLoc()->getX()==0){
+				outloopAddrPtrLeft = outloopAddrPtrLeft-bytewidth;
+				node->setoutloopAddr(outloopAddrPtrLeft);
+				outs() << "NodeIdx:" << node->getIdx() << ",bytewidth=" << bytewidth << ",addr=" << outloopAddrPtrLeft << "\n";
+			}
+			else if(node->getMappedLoc()->getX()==currCGRA->getXdim()-1){
+				outloopAddrPtrRight = outloopAddrPtrRight-bytewidth;
+				node->setoutloopAddr(outloopAddrPtrRight);
+				outs() << "NodeIdx:" << node->getIdx() << ",bytewidth=" << bytewidth << ",addr=" << outloopAddrPtrRight << "\n";
+			}
+			else{
+				assert(false);
+			}
+
 		}
 	}
 }
@@ -6063,5 +6193,109 @@ int DFG::treatFalsePaths() {
 		}
 	}
 	outs() << "treatFalsePaths:: NOTsadded = " << NOTsadded << "\n";
+	return 0;
+}
+
+int DFG::partitionMemNodes() {
+	dfgNode* node;
+	std::map<Value*,std::vector<dfgNode*>> pointerMemInsMap;
+	std::vector<Value*> pointerOperandVec;
+
+	for (int i = 0; i < NodeList.size(); ++i) {
+		node = NodeList[i];
+		if(node->getNode()!=NULL){
+			if(LoadInst* LDI = dyn_cast<LoadInst>(node->getNode())){
+				GetElementPtrInst* GEP = cast<GetElementPtrInst>(LDI->getPointerOperand());
+				pointerMemInsMap[GEP->getPointerOperand()].push_back(node);
+			}
+
+			if(StoreInst* STI = dyn_cast<StoreInst>(node->getNode())){
+				GetElementPtrInst* GEP = cast<GetElementPtrInst>(STI->getPointerOperand());
+				pointerMemInsMap[GEP->getPointerOperand()].push_back(node);
+			}
+		}
+	}
+
+	int sum=0;
+	for(std::pair<Value*,std::vector<dfgNode*>> pair : pointerMemInsMap){
+		sum+=pair.second.size();
+		pointerOperandVec.push_back(pair.first);
+	}
+
+	int n = pointerOperandVec.size();
+
+	bool dp[n+1][sum+1];
+	std::map<int,std::map<int,std::vector<Value*> > > dpValueMap;
+
+	//first column is true :: 0 sum is possible with all elements
+	for (int i = 0; i <= n; ++i) {
+		dp[i][0]=true;
+	}
+
+    // Initialize top row, except dp[0][0], as false. With
+    // 0 elements, no other sum except 0 is possible
+    for (int j = 1; j <= sum; j++){
+        dp[0][j] = false;
+    }
+
+    // Fill the partition table in bottom up manner
+     for (int i=1; i<=n; i++)
+     {
+         for (int j=1; j<=sum; j++)
+         {
+             // If i'th element is excluded
+             dp[i][j] = dp[i-1][j];
+             if(dp[i-1][j]){
+            	 dpValueMap[i][j]=dpValueMap[i-1][j];
+             }
+
+             // If i'th element is included
+             int ithElement = pointerMemInsMap[pointerOperandVec[i-1]].size();
+             if(ithElement <= j){
+            	 dp[i][j] |= dp[i-1][j-ithElement];
+            	 if(dp[i-1][j-ithElement]){
+            		 dpValueMap[i][j] = dpValueMap[i-1][j-ithElement];
+            		 dpValueMap[i][j].push_back(pointerOperandVec[i-1]);
+            	 }
+             }
+         }
+     }
+
+     // Initialize difference of two sums.
+	int diff = INT_MAX;
+
+	// Find the largest j such that dp[n][j]
+	// is true where j loops from sum/2 t0 0
+	int minsumpart=0;
+	for (int j=sum/2; j>=0; j--)
+	{
+		// Find the
+		if (dp[n][j] == true)
+		{
+			diff = sum-2*j;
+			minsumpart = j;
+			break;
+		}
+	}
+
+	outs() << "Left side pointers : \n";
+	for(Value* pointerOp : dpValueMap[n][minsumpart]){
+		outs() << "("<< pointerOp->getName() << "," << pointerMemInsMap[pointerOp].size() << ");";
+		for (dfgNode* node : pointerMemInsMap[pointerOp]){
+			node->setLeftAlignedMemOp(1);
+		}
+		pointerOperandVec.erase(std::remove(pointerOperandVec.begin(), pointerOperandVec.end(), pointerOp), pointerOperandVec.end());
+	}
+	outs() << "\n";
+
+	outs() << "Right side pointers : \n";
+	for(Value* pointerOp : pointerOperandVec){
+		outs() << "("<< pointerOp->getName() << "," << pointerMemInsMap[pointerOp].size() << ");";
+		for (dfgNode* node : pointerMemInsMap[pointerOp]){
+			node->setLeftAlignedMemOp(2);
+		}
+	}
+	outs() << "\n";
+
 	return 0;
 }

@@ -149,8 +149,12 @@ class DFG{
 			std::vector<std::vector<std::vector<unsigned char> > > conMatArr;
 
 			//the pointer which the anyother outerloop load and stores should be written to
-			uint32_t outloopAddrPtr = MEM_SIZE;
-			uint32_t arrayAddrPtr = 0;
+			uint32_t outloopAddrPtrRight = MEM_SIZE;
+			uint32_t outloopAddrPtrLeft = MEM_SIZE/2;
+
+//			uint32_t arrayAddrPtr=0;
+			uint32_t arrayAddrPtrRight = MEM_SIZE/2;
+			uint32_t arrayAddrPtrLeft = 0;
 
 			//LoopInfo if its a loop
 			Loop* L=NULL;
@@ -399,6 +403,10 @@ class DFG{
 
 			// add not instructions for ctrlbr instructions
 			int treatFalsePaths();
+
+			//Memory Parition
+			std::map<dfgNode*,int> memNodePartitionMap;
+			int partitionMemNodes();
 
 	};
 

@@ -1043,11 +1043,11 @@ namespace {
 				  LoopDFG.printXML();
 //				  LoopDFG.printREGIMapOuts();
 				  LoopDFG.handleMEMops();
-				  LoopDFG.nameNodes();
+				  LoopDFG.partitionMemNodes();
+//				  LoopDFG.nameNodes();
 
 
 				  //Checking Instrumentation Code
-				  LoopDFG.AssignOutLoopAddr();
 //				  LoopDFG.GEPInvestigate(F,L,&sizeArrMap);
 //				  return true;
 
@@ -1067,9 +1067,11 @@ namespace {
 
 				  ArchType arch = RegXbarTREG;
 				  LoopDFG.MapCGRA_SMART(4,4, arch, 20);
+				  LoopDFG.AssignOutLoopAddr();
 				  LoopDFG.GEPInvestigate(F,L,&sizeArrMap);
 				  LoopDFG.addPHIParents();
 				  LoopDFG.classifyParents();
+				  LoopDFG.nameNodes();
 //				  LoopDFG.MapCGRA_EMS(4,4,F.getName().str() + "_L" + std::to_string(loopCounter) + "_mapping.log");
 				  printDFGDOT (F.getName().str() + "_L" + std::to_string(loopCounter) + "_loopdfg.dot", &LoopDFG);
 //				  LoopDFG.printTurns();

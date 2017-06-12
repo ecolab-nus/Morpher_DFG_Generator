@@ -7,7 +7,7 @@ class CGRANode;
 class DFG;
 
 enum Port{NORTH,SOUTH,EAST,WEST,R0,R1,R2,R3,R4,R5,R6,R7,TILE,TREG,OP1,OP2,PRED,TILEIN,TILEOUT,INV};
-enum HyCUBEIns{ADD,SUB,MUL,MULC,DIV,DIVC,LS,RS,ARS,AND,OR,XOR,Hy_LOAD,Hy_STORE,Hy_LOADH,Hy_STOREH,Hy_LOADB,Hy_STOREB,SELECT,BR,CMP,NOP,SEXT,CMERGE};
+enum HyCUBEIns{NOP,ADD,SUB,MUL,SEXT,DIV,LS,RS,ARS,AND,OR,XOR,SELECT,CMERGE,CMP,CLT,BR,CGT,LOADCL,MOVCL,Hy_LOAD,Hy_LOADH,Hy_LOADB,Hy_STORE,Hy_STOREH,Hy_STOREB,JUMPL,MOVC};
 
 struct pathData{
 	CGRANode* cnode;
@@ -74,6 +74,9 @@ class dfgNode{
 			bool transferedByHost=false;
 			int GEPbaseAddr=-1;
 			int typeSizeBytes=-1;
+
+			//load/store
+			int leftAlignedMemOP=0;  //0 - any left or right , 1 - left , 2 - right
 
 			//Constant
 			int32_t constVal=-1;
@@ -220,6 +223,9 @@ class dfgNode{
 			void setNPB(bool val){npb = val;}
 			bool getNPB(){return npb;}
 
+			//left aligned memop
+			int getLeftAlignedMemOp(){return leftAlignedMemOP;}
+			void setLeftAlignedMemOp(int leftAlignedMemOp) {leftAlignedMemOP = leftAlignedMemOp;}
 };
 
 
