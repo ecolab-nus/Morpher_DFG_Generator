@@ -52,11 +52,19 @@ dfgNode* DFG::findNode(Instruction* I){
 }
 
 Edge* DFG::findEdge(dfgNode* src, dfgNode* dest){
+
+	if(src == dest){
+		assert(src->getPHIchildren().size()==1);
+		dest = src->getPHIchildren()[0];
+	}
+
 	for (int i = 0; i < edgeList.size(); ++i) {
 		if(edgeList[i].getSrc() == src && edgeList[i].getDest() == dest) {
 			return &(edgeList[i]);
 		}
 	}
+
+	assert(false);
 	return NULL;
 }
 
@@ -1868,7 +1876,7 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim, ArchType arch) {
 
 		for (int i = 0; i < currLevelNodes.size(); ++i) {
 				node = currLevelNodes[i];
-				int ll = node->getASAPnumber()-1;
+				int ll = (node->getASAPnumber()/MII)*MII-1;
 				int el = INT32_MAX;
 				dfgNode* latestParent;
 				for (int j = 0; j < node->getAncestors().size(); ++j) {
@@ -1977,13 +1985,13 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim, ArchType arch) {
 											if(currCGRA->getCGRANode((ll+1)%MII,y,x)->getPEType() == MEM){ // only allocate PEs capable of doing memory operations
 
 												if(node->getLeftAlignedMemOp()==1){
-													if(x==0){
+													if((y==0||y==1)&&x==0){
 														nodeDestMap[node].push_back(std::make_pair(currCGRA->getCGRANode((ll+1)%MII,y,x),(ll+1)));
 														destNodeMap[currCGRA->getCGRANode((ll+1)%MII,y,x)].push_back(node);
 													}
 												}
 												else if(node->getLeftAlignedMemOp()==2){
-													if(x==XDim-1){
+													if((y==2||y==3)&&x==0){
 														nodeDestMap[node].push_back(std::make_pair(currCGRA->getCGRANode((ll+1)%MII,y,x),(ll+1)));
 														destNodeMap[currCGRA->getCGRANode((ll+1)%MII,y,x)].push_back(node);
 													}
@@ -2009,6 +2017,10 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim, ArchType arch) {
 						ll = (ll+1);
 					}
 				errs() << "MapASAPLevel:: nodeIdx=" << node->getIdx() << " ,Possible Dests = " << nodeDestMap[node].size() << "\n";
+				for (int i = 0; i < nodeDestMap[node].size(); ++i) {
+					errs() << nodeDestMap[node][i].first->getName() << ",RT=" << nodeDestMap[node][i].second << ";";
+				}
+				errs() << "\n";
 			}
 
 			errs() << "MapASAPLevel:: Finding dests are done!\n";
@@ -4136,6 +4148,147 @@ int DFG::sortPossibleDests(
 
 }
 
+int DFG::removeRedEdgesPHI() {
+	dfgNode* node;
+	for (int i = 0; i < NodeList.size(); ++i) {
+		node = NodeList[i];
+		if(node->getNode()==NULL)continue;
+
+		if(dyn_cast<PHINode>(node->getNode())){
+			for(dfgNode* parent : node->getAncestors()){
+				if(node->getNameType().compare("CMERGE")!=0){
+					parent->removeChild(node);
+					node->removeAncestor(parent);
+					removeEdge(findEdge(parent,node));
+				}
+			}
+		}
+	}
+}
+
+int DFG::addCMERGEtoSELECT() {
+	dfgNode* node;
+	for (int i = 0; i < NodeList.size(); ++i) {
+		node=NodeList[i];
+		if(node->getNode()==NULL)continue;
+
+		if(SelectInst* SEL = dyn_cast<SelectInst>(node->getNode())){
+			assert(node->getAncestors().size()==3);
+
+			dfgNode* condNode = findNode(cast<Instruction>(SEL->getCondition()));
+			assert(condNode!=NULL);
+			dfgNode* trueNode = findNode(cast<Instruction>(SEL->getTrueValue()));
+			assert(trueNode!=NULL);
+			dfgNode* falseNode = findNode(cast<Instruction>(SEL->getFalseValue()));
+			assert(falseNode!=NULL);
+
+			assert(std::find(node->getAncestors().begin(),node->getAncestors().end(),condNode) != node->getAncestors().end());
+			assert(std::find(node->getAncestors().begin(),node->getAncestors().end(),trueNode) != node->getAncestors().end());
+			assert(std::find(node->getAncestors().begin(),node->getAncestors().end(),falseNode) != node->getAncestors().end());
+
+			condNode->removeChild(node);
+			node->removeAncestor(condNode);
+			removeEdge(findEdge(condNode,node));
+
+			trueNode->removeChild(node);
+			node->removeAncestor(trueNode);
+			removeEdge(findEdge(trueNode,node));
+
+			falseNode->removeChild(node);
+			node->removeAncestor(falseNode);
+			removeEdge(findEdge(falseNode,node));
+
+			dfgNode* notnode = new dfgNode(this);
+			notnode->setIdx(this->getNodesPtr()->size());
+			this->getNodesPtr()->push_back(notnode);
+			notnode->BB = node->BB;
+			notnode->setNameType("XORNOT");
+
+			condNode->addChildNode(notnode);
+			notnode->addAncestorNode(condNode);
+
+			node->addCMergeParent(condNode,trueNode);
+			node->addCMergeParent(notnode,falseNode);
+		}
+
+	}
+	return 0;
+}
+
+int DFG::printJUMPLHeader(std::ofstream& binFile,
+		std::ofstream& binOpNameFile) {
+
+	binOp currBinOp;
+
+	currBinOp.opcode=HyCUBEInsBinary[JUMPL];
+	currBinOp.outMap[PRED] = 0b111;
+	currBinOp.outMap[OP1] = 0b111;
+	currBinOp.outMap[OP2] = 0b111;
+	currBinOp.outMap[NORTH] = 0b111;
+	currBinOp.outMap[EAST] = 0b111;
+	currBinOp.outMap[SOUTH] = 0b111;
+	currBinOp.outMap[WEST] = 0b111;
+	currBinOp.regwen = 0;
+	currBinOp.regbypass = 0;
+	currBinOp.tregwen = 0;
+
+	uint32_t constant = 1; //PC
+	constant = (constant << 5) | (currCGRA->getMII() & 0b11111); //LE
+	constant = (constant << 5) | 1;
+	currBinOp.constant = constant;
+	currBinOp.constantValid = 1;
+	currBinOp.npb = 0;
+
+	binFile << std::to_string(0) << std::endl;
+	binOpNameFile << std::to_string(0) << std::endl;
+
+
+	for (int j = 0; j < currCGRA->getYdim(); ++j) {
+		for (int k = 0; k < currCGRA->getXdim(); ++k) {
+			binFile << "Y=" << std::to_string(j) << " X=" << std::to_string(k) << ",";
+			binOpNameFile << "Y=" << std::to_string(j) << " X=" << std::to_string(k) << ",";
+
+			//Print Binary
+			binFile << std::setfill('0');
+			binFile << std::setw(1) << std::bitset<1>(currBinOp.npb) ;//<< ",";
+			binFile << std::setw(1) << std::bitset<1>(currBinOp.constantValid) ;//<< ",";
+			binFile << std::setw(27) << std::bitset<27>(currBinOp.constant) ;//<< ",";
+			binFile << std::setw(5) << std::bitset<5>(currBinOp.opcode) ;//<< "," ;
+			binFile << std::setw(4) << std::bitset<4>(currBinOp.regwen) ;//<< ",";
+			binFile << std::bitset<1>(currBinOp.tregwen) ;//<< ",";
+			binFile << std::setw(4) << std::bitset<4>(currBinOp.regbypass) ;//<< ",";
+			binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[PRED]) ;//<< ",";
+			binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[OP2]) ;//<< ",";
+			binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[OP1]) ;//<< ",";
+			binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[NORTH]) ;//<< ",";
+			binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[WEST]) ;//<< ",";
+			binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[SOUTH]) ;//<< ",";
+			binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[EAST]) << std::endl;
+
+			//Print Binary with OpName
+			binOpNameFile << std::setfill('0');
+			binOpNameFile << std::setw(1) << std::bitset<1>(currBinOp.npb) ;//<< ",";
+			binOpNameFile << std::setw(1) << std::bitset<1>(currBinOp.constantValid) ;//<< ",";
+			binOpNameFile << std::setw(27) << std::bitset<27>(currBinOp.constant) ;//<< ",";
+			binOpNameFile << std::setw(5) << std::bitset<5>(currBinOp.opcode) ;//<< "," ;
+			binOpNameFile << std::setw(4) << std::bitset<4>(currBinOp.regwen) ;//<< ",";
+			binOpNameFile << std::bitset<1>(currBinOp.tregwen) ;//<< ",";
+			binOpNameFile << std::setw(4) << std::bitset<4>(currBinOp.regbypass) ;//<< ",";
+			binOpNameFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[PRED]) ;//<< ",";
+			binOpNameFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[OP2]) ;//<< ",";
+			binOpNameFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[OP1]) ;//<< ",";
+			binOpNameFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[NORTH]) ;//<< ",";
+			binOpNameFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[WEST]) ;//<< ",";
+			binOpNameFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[SOUTH]) ;//<< ",";
+			binOpNameFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[EAST]) << ",";
+		    binOpNameFile << HyCUBEInsStrings[JUMPL] << std::endl;
+		}
+	}
+
+	binFile << std::endl;
+	binOpNameFile << std::endl;
+}
+
 int DFG::printMapping() {
 	dfgNode* node;
 	dfgNode* parent;
@@ -4187,22 +4340,26 @@ int DFG::printMapping() {
 			insFile << "Y=" << std::to_string(j) << " X=" << std::to_string(k) << ",";
 			insFile << "TREG,R0,R1,R2,R3,PRED,OP1,OP2,NORTH,EAST,WEST,SOUTH,";
 
-			binFile << "Y=" << std::to_string(j) << " X=" << std::to_string(k) << ",";
-			binFile << "PRED,OP1,OP2,NORTH,EAST,WEST,SOUTH,REGWEN,REGBYPASS,TREGWEN,OPCODE,CONSTANT,";
+//			binFile << "Y=" << std::to_string(j) << " X=" << std::to_string(k) << ",";
+
 		}
 	}
+	binFile << "NPB,CONSTVALID,CONST,OPCODE,REGWEN,TREGWEN,REGBYPASS,PRED,OP1,OP2,NORTH,WEST,SOUTH,EAST";
 	insFile << std::endl;
 	mapFile << std::endl;
 	binFile << std::endl;
 
 	std::map<int,std::map<int,uint64_t> > constantValidMaskMap;
 
+	printJUMPLHeader(binFile,binOpNameFile);
+
 	//Print Data
+	std::map<dfgNode*,std::vector<dfgNode*>> parentInfo;
 	for (int i = 0; i < currCGRA->getMII(); ++i) {
 		mapFile << std::to_string(i) << ",";
 		insFile << std::to_string(i) << ",";
-		binFile << std::to_string(i) << std::endl;
-		binOpNameFile << std::to_string(i) << std::endl;
+		binFile << std::to_string(i+1) << std::endl;
+		binOpNameFile << std::to_string(i+1) << std::endl;
 		for (int j = 0; j < currCGRA->getYdim(); ++j) {
 			for (int k = 0; k < currCGRA->getXdim(); ++k) {
 				cnode = currCGRA->getCGRANode(i,j,k);
@@ -4267,6 +4424,7 @@ int DFG::printMapping() {
 							if(PrevCnode->getmappedDFGNode() == cnode->getmappedDFGNode()->getAncestors()[l]){
 								dfgNode* currCnodeNode = cnode->getmappedDFGNode();
 								dfgNode* cnodeParent = cnode->getmappedDFGNode()->getAncestors()[l];
+								parentInfo[currCnodeNode].push_back(cnodeParent);
 								if(PrevCnode->getmappedDFGNode()->getFinalIns() == NOP){
 
 
@@ -4348,9 +4506,36 @@ int DFG::printMapping() {
 				}
 
 				for (int m = 0; m < cgraEdges_t.size(); ++m) {
-					if(cgraEdges_t[m].mappedDFGEdge->getDest() == cnode->getmappedDFGNode()){
-						dfgNode* currCnodeNode = cnode->getmappedDFGNode();
+					dfgNode* currCnodeNode = cnode->getmappedDFGNode();
+
+					if(currCnodeNode==NULL){
+						continue;
+					}
+
+					bool parentFound=false;
+					for(dfgNode* parent : currCnodeNode->getAncestors()){
+						if(parent == cgraEdges_t[m].mappedDFGEdge->getSrc()){
+							parentFound=true;
+						}
+					}
+//					bool parentFound = std::find(currCnodeNode->getAncestors().begin(),
+//												 currCnodeNode->getAncestors().end(),
+//												 cgraEdges_t[m].mappedDFGEdge->getSrc())
+//									   != currCnodeNode->getAncestors().end();
+					if(parentFound) {
+						outs() << "currCnodeNode=" << currCnodeNode->getIdx() << "\n";
+						outs() << "Parents=";
+						for(dfgNode* parent : currCnodeNode->getAncestors()){
+							outs() << parent->getIdx() << ",";
+						}
+						outs() << "\n";
+						outs() << "Parent=" << cgraEdges_t[m].mappedDFGEdge->getSrc()->getIdx() << "\n";
+					}
+
+					if((cgraEdges_t[m].mappedDFGEdge->getDest() == cnode->getmappedDFGNode())||parentFound){
+
 						dfgNode* cnodeParent = cgraEdges_t[m].mappedDFGEdge->getSrc();
+						parentInfo[currCnodeNode].push_back(cnodeParent);
 
 						if(cgraEdges_t[m].mappedDFGEdge->getSrc()->getFinalIns() == NOP){
 
@@ -4373,11 +4558,16 @@ int DFG::printMapping() {
 						}
 						else{
 
+							outs() << "printMapping : currNode = " << currCnodeNode->getIdx() << "\n";
+							outs() << "printMapping : currParent = " << cnodeParent->getIdx() << "\n";
+							outs() << "printMapping : PrevCnode = " << PrevCnode->getName() << "\n";
+
 							bool found=false;
 							if(currCnodeNode->parentClassification.find(0) !=
 							   currCnodeNode->parentClassification.end() ){
 								if(currCnodeNode->parentClassification[0]==cnodeParent){
 									XBarMap[PrevCnode][PRED] = cgraEdges_t[m].DstPort;
+									std::cout << "PRED : " << cgraEdges_t[m].DstPort << "\n";
 									found=true;
 								}
 							}
@@ -4389,6 +4579,7 @@ int DFG::printMapping() {
 							   currCnodeNode->parentClassification.end() ){
 								if(currCnodeNode->parentClassification[1]==cnodeParent){
 									XBarMap[PrevCnode][OP1] = cgraEdges_t[m].DstPort;
+									std::cout << "I1 : " << cgraEdges_t[m].DstPort << "\n";
 									found=true;
 								}
 							}
@@ -4400,12 +4591,14 @@ int DFG::printMapping() {
 							   currCnodeNode->parentClassification.end() ){
 								if(currCnodeNode->parentClassification[2]==cnodeParent){
 									XBarMap[PrevCnode][OP2] = cgraEdges_t[m].DstPort;
+									std::cout << "I2 : " << cgraEdges_t[m].DstPort << "\n";
 									found=true;
 								}
 							}
 							else{
 								XBarMap[PrevCnode][OP2] = INV;
 							}
+
 
 							assert(found);
 
@@ -4429,6 +4622,7 @@ int DFG::printMapping() {
 						}
 					}
 				}
+
 
 				//File Printing
 
@@ -4474,7 +4668,10 @@ int DFG::printMapping() {
 					if(node->getNPB()){
 						currBinOp.npb = 1;
 					}
+					outs() << "CurrNode=" << node->getIdx() << ",placed=" << node->getMappedLoc()->getName() << ",xbarop2=" << currBinOp.outMap[OP2] << "\n";
 				}
+
+
 
 
 				for (int l = 0; l < insPortOrder.size(); ++l) {
@@ -4486,6 +4683,8 @@ int DFG::printMapping() {
 						insFile << "NA,";
 					}
 				}
+
+				outs() << "xbarop2=" << currBinOp.outMap[OP2] << "\n";
 
 				//Print Binary
 				binFile << std::setfill('0');
@@ -4506,7 +4705,7 @@ int DFG::printMapping() {
 
 				//Print Binary with OpName
 				binOpNameFile << std::setfill('0');
-				binFile << std::setw(1) << std::bitset<1>(currBinOp.npb) ;//<< ",";
+				binOpNameFile << std::setw(1) << std::bitset<1>(currBinOp.npb) ;//<< ",";
 				binOpNameFile << std::setw(1) << std::bitset<1>(currBinOp.constantValid) ;//<< ",";
 				binOpNameFile << std::setw(27) << std::bitset<27>(currBinOp.constant) ;//<< ",";
 				binOpNameFile << std::setw(5) << std::bitset<5>(currBinOp.opcode) ;//<< "," ;
@@ -4535,15 +4734,33 @@ int DFG::printMapping() {
 		binFile << std::endl;
 	}
 
+	//Check whether all the parents are accounted for
+	for(std::pair<dfgNode*,std::vector<dfgNode*>> unit : parentInfo){
+		dfgNode* node = unit.first;
+		if(node->getAncestors().size()!=parentInfo[node].size()){
+			outs() << "This node :" << node->getIdx() << "'s parents are not accounted for\n";
+			outs() << "Accounted parents : ";
+			for(dfgNode* par : parentInfo[node]){
+				outs() << par->getIdx() << ",";
+			}
+			outs() << "\n";
+		}
+		assert(node->getAncestors().size()==parentInfo[node].size());
+	}
+
+//	outs() << "parentInfo.size() =" << parentInfo.size() << "\n";
+//	outs() << "NodeList.size() =" << NodeList.size() << "\n";
+//	assert(parentInfo.size()==NodeList.size());
+
 	binFile << std::endl;
 	binOpNameFile << std::endl;
 
-	for (int j = 0; j < currCGRA->getYdim(); ++j) {
-		for (int k = 0; k < currCGRA->getXdim(); ++k) {
-			binFile << "Y=" << j << ",X=" << k << "ContantValidMask=" << std::setw(32) << std::bitset<32>(constantValidMaskMap[j][k]) << std::endl;
-			binOpNameFile << "Y=" << j << ",X=" << k << "ContantValidMask=" << std::setw(32) << std::bitset<32>(constantValidMaskMap[j][k]) << std::endl;
-		}
-	}
+//	for (int j = 0; j < currCGRA->getYdim(); ++j) {
+//		for (int k = 0; k < currCGRA->getXdim(); ++k) {
+//			binFile << "Y=" << j << ",X=" << k << "ContantValidMask=" << std::setw(32) << std::bitset<32>(constantValidMaskMap[j][k]) << std::endl;
+//			binOpNameFile << "Y=" << j << ",X=" << k << "ContantValidMask=" << std::setw(32) << std::bitset<32>(constantValidMaskMap[j][k]) << std::endl;
+//		}
+//	}
 
 	mapFile.close();
 	insFile.close();
@@ -4786,6 +5003,9 @@ int DFG::handleMEMops() {
 		else{
 			if((node->getNameType().compare("LOAD") == 0)||
 			   (node->getNameType().compare("STORE") == 0)||
+			   (node->getNameType().compare("LOOPSTART") == 0)||
+			   (node->getNameType().compare("STORESTART") == 0)||
+			   (node->getNameType().compare("LOOPEXIT") == 0)||
 			   (node->getNameType().compare("OutLoopSTORE") == 0)||
 			   (node->getNameType().compare("OutLoopLOAD") == 0)){
 				node->setIsMemOp(true);
@@ -4895,7 +5115,7 @@ DFG::DFG(std::string name, std::map<Loop*,std::string>* lnPtr) {
 	HyCUBEInsBinary[JUMPL] = 0 | (0b11110);
 
 	HyCUBEInsStrings[MOVC] = "MOVC";
-	HyCUBEInsBinary[MOVC] = 0 | (0b11110);
+	HyCUBEInsBinary[MOVC] = 0 | (0b11111);
 }
 
 int DFG::nameNodes() {
@@ -5130,7 +5350,24 @@ int DFG::nameNodes() {
 				node->setFinalIns(CMERGE);
 			}
 			else if(node->getNameType().compare("LOOPSTART") == 0){
-				node->setFinalIns(BR);
+//				node->setFinalIns(BR);
+				node->setFinalIns(Hy_LOADB);
+				node->setConstantVal(MEM_SIZE - 2);
+			}
+			else if(node->getNameType().compare("LOADSTART") == 0){
+				node->setFinalIns(Hy_LOADB);
+				node->setConstantVal(MEM_SIZE - 2);
+			}
+			else if(node->getNameType().compare("STORESTART") == 0){
+				node->setFinalIns(Hy_STOREB);
+				node->setConstantVal(MEM_SIZE - 2);
+			}
+			else if(node->getNameType().compare("LOOPEXIT") == 0){
+				node->setFinalIns(Hy_STOREB);
+				node->setConstantVal(MEM_SIZE/2 - 1);
+			}
+			else if(node->getNameType().compare("MOVC") == 0){
+				node->setFinalIns(MOVC);
 			}
 			else if(node->getNameType().compare("XORNOT") == 0){
 				node->setFinalIns(XOR);
@@ -5452,8 +5689,14 @@ void DFG::GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeAr
 	BasicBlock::iterator instIter = loopHeader->begin();
 	Instruction* loopStartIns = &*instIter;
 
-	SmallVector<BasicBlock*,8> loopExitBlocks;
-    L->getExitBlocks(loopExitBlocks);
+	SmallVector<BasicBlock*,8> loopExitBlocksSV;
+    L->getExitBlocks(loopExitBlocksSV);
+
+    std::set<BasicBlock*> s;
+    for( unsigned i = 0; i < loopExitBlocksSV.size(); ++i ) s.insert( loopExitBlocksSV[i] );
+    std::vector<BasicBlock*> loopExitBlocks;
+    loopExitBlocks.assign( s.begin(), s.end() );
+
     std::vector<Instruction*> loopExitInsVec;
     assert(loopExitBlocks.size()!=0);
 	for (int i = 0; i < loopExitBlocks.size(); ++i) {
@@ -5932,11 +6175,27 @@ void DFG::AssignOutLoopAddr() {
 
 			if(node->getMappedLoc()->getX()==0){
 				outloopAddrPtrLeft = outloopAddrPtrLeft-bytewidth;
+
+				if(bytewidth==4){
+					outloopAddrPtrLeft = outloopAddrPtrLeft & (~0b11);
+				}
+				else if(bytewidth==2){
+					outloopAddrPtrLeft = outloopAddrPtrLeft & (~0b1);
+				}
+
 				node->setoutloopAddr(outloopAddrPtrLeft);
 				outs() << "NodeIdx:" << node->getIdx() << ",bytewidth=" << bytewidth << ",addr=" << outloopAddrPtrLeft << "\n";
 			}
 			else if(node->getMappedLoc()->getX()==currCGRA->getXdim()-1){
 				outloopAddrPtrRight = outloopAddrPtrRight-bytewidth;
+
+				if(bytewidth==4){
+					outloopAddrPtrRight = outloopAddrPtrRight & (~0b11);
+				}
+				else if(bytewidth==2){
+					outloopAddrPtrRight = outloopAddrPtrRight & (~0b1);
+				}
+
 				node->setoutloopAddr(outloopAddrPtrRight);
 				outs() << "NodeIdx:" << node->getIdx() << ",bytewidth=" << bytewidth << ",addr=" << outloopAddrPtrRight << "\n";
 			}
@@ -5991,6 +6250,11 @@ int DFG::classifyParents() {
 					ins=node->getNode();
 				}
 				else{
+					if(node->getNameType().compare("XORNOT")==0){
+						assert(node->parentClassification.find(1) == node->parentClassification.end());
+						node->parentClassification[1]=parent;
+						continue;
+					}
 					if(node->getNameType().compare("CTRLBrOR")==0){
 						if(node->parentClassification.find(1) == node->parentClassification.end()){
 							node->parentClassification[1]=parent;
@@ -5998,6 +6262,39 @@ int DFG::classifyParents() {
 						else{
 							assert(node->parentClassification.find(2) == node->parentClassification.end());
 							node->parentClassification[2]=parent;
+						}
+						continue;
+					}
+					if(node->getNameType().compare("STORESTART")==0){
+						assert(parent->getNode()==NULL);
+						if(parent->getNameType().compare("MOVC") == 0){
+							node->parentClassification[1]=parent;
+						}
+						else if(parent->getNameType().compare("LOOPSTART") == 0){
+							node->parentClassification[0]=parent;
+						}
+						else{
+							assert(false);
+						}
+						continue;
+					}
+					if(node->getNameType().compare("LOOPEXIT")==0){
+						if(parent->getNode()==NULL){
+							if(parent->getNameType().compare("MOVC") == 0){
+								assert(node->parentClassification.find(1) == node->parentClassification.end());
+								node->parentClassification[1]=parent;
+							}
+							else if(parent->getNameType().compare("CTRLBrOR") == 0){
+								assert(node->parentClassification.find(0) == node->parentClassification.end());
+								node->parentClassification[0]=parent;
+							}
+							else{
+								assert(false);
+							}
+						}
+						else{
+							assert(node->parentClassification.find(0) == node->parentClassification.end());
+							node->parentClassification[0]=parent;
 						}
 						continue;
 					}
@@ -6032,24 +6329,64 @@ int DFG::classifyParents() {
 						continue;
 					}
 					if(node->getNameType().compare("CMERGE")==0){
-						if(node->parentClassification.find(1) == node->parentClassification.end()){
-							node->parentClassification[1]=parent;
+
+						if(parent->getNode()!=NULL){
+							if((dyn_cast<BranchInst>(parent->getNode())) || (dyn_cast<CmpInst>(parent->getNode())) ){
+								assert(node->parentClassification.find(0)==node->parentClassification.end());
+								node->parentClassification[0]=parent;
+							}
+							else{
+								assert(node->parentClassification.find(1)==node->parentClassification.end());
+								node->parentClassification[1]=parent;
+							}
 						}
 						else{
-							assert(node->parentClassification.find(2) == node->parentClassification.end());
-							node->parentClassification[2]=parent;
+							if((parent->getNameType().compare("XORNOT")==0)){
+								assert(node->parentClassification.find(0)==node->parentClassification.end());
+								node->parentClassification[0]=parent;
+							}
+							else if(parent->getNameType().compare("LOOPSTART")==0){
+								assert(node->parentClassification.find(0)==node->parentClassification.end());
+								node->parentClassification[0]=parent;
+								node->setNPB(true);
+							}
+							else{
+								outs() << "Parent :" << parent->getIdx() << ", classified as I1\n";
+								assert(node->parentClassification.find(1)==node->parentClassification.end());
+								node->parentClassification[1]=parent;
+							}
 						}
+
+
+//						if(node->parentClassification.find(1) == node->parentClassification.end()){
+//							node->parentClassification[1]=parent;
+//						}
+//						else{
+//							assert(node->parentClassification.find(2) == node->parentClassification.end());
+//							node->parentClassification[2]=parent;
+//						}
 						continue;
 					}
 				}
 
 
-				if(dyn_cast<PHINode>(ins)){
+				if(dyn_cast<PHINode>(ins) || dyn_cast<SelectInst>(ins) ){
 					if(parent->getNode() != NULL) parent->getNode()->dump();
 					outs() << "node : " << node->getIdx() << "\n";
 					outs() << "Parent : " << parent->getIdx() << "\n";
 					outs() << "Parent NameType : " << parent->getNameType() << "\n";
 					assert(parent->getNameType().compare("CMERGE")==0);
+					if(node->parentClassification.find(1) == node->parentClassification.end()){
+						node->parentClassification[1]=parent;
+					}
+					else{
+						assert(node->parentClassification.find(2) == node->parentClassification.end());
+						node->parentClassification[2]=parent;
+					}
+					continue;
+				}
+
+				if(dyn_cast<BranchInst>(ins)){
 					if(node->parentClassification.find(1) == node->parentClassification.end()){
 						node->parentClassification[1]=parent;
 					}
@@ -6066,10 +6403,10 @@ int DFG::classifyParents() {
 						node->parentClassification[0]=parent;
 						continue;
 					}
-					else if(CmpInst * CMPI = dyn_cast<CmpInst>(parentIns)){
-						node->parentClassification[0]=parent;
-						continue;
-					}
+//					else if(CmpInst * CMPI = dyn_cast<CmpInst>(parentIns)){
+//						node->parentClassification[0]=parent;
+//						continue;
+//					}
 				}
 				else{
 					if(parent->getNameType().compare("CTRLBrOR")==0){
@@ -6080,7 +6417,7 @@ int DFG::classifyParents() {
 						parentIns = OutLoopNodeMapReverse[parent];
 					}
 				}
-				//Only ins!=NULL and non-PHI will reach here
+				//Only ins!=NULL and non-PHI and non-BR will reach here
 				node->parentClassification[findOperandNumber(node, ins,parentIns)]=parent;
 		}
 	}
@@ -6099,6 +6436,10 @@ int DFG::findOperandNumber(dfgNode* node, Instruction* child, Instruction* paren
 			return 1;
 		}
 	}
+	else if(GetElementPtrInst* GEP = dyn_cast<GetElementPtrInst>(child)){
+		assert(node->getAncestors().size() == 1);
+		return 1;
+	}
 	else{
 		if(child->getNumOperands()==3){
 			for (int i = 0; i < 3; ++i) {
@@ -6108,6 +6449,11 @@ int DFG::findOperandNumber(dfgNode* node, Instruction* child, Instruction* paren
 					}
 				}
 				else{
+					outs() << "child :\n";
+					child->dump();
+					outs() << "parent :\n";
+					parent->dump();
+					outs() << child->getOperand(i)->getName() << "\n";
 					assert(i!=0);
 					ConstantInt* CI = cast<ConstantInt>(child->getOperand(i));
 					if(i==1){
@@ -6205,13 +6551,27 @@ int DFG::partitionMemNodes() {
 		node = NodeList[i];
 		if(node->getNode()!=NULL){
 			if(LoadInst* LDI = dyn_cast<LoadInst>(node->getNode())){
-				GetElementPtrInst* GEP = cast<GetElementPtrInst>(LDI->getPointerOperand());
-				pointerMemInsMap[GEP->getPointerOperand()].push_back(node);
+
+				if(GetElementPtrInst* GEP = dyn_cast<GetElementPtrInst>(LDI->getPointerOperand())){
+//					GetElementPtrInst* GEP = cast<GetElementPtrInst>(LDI->getPointerOperand());
+					pointerMemInsMap[GEP->getPointerOperand()].push_back(node);
+				}
+				else{
+					pointerMemInsMap[LDI->getPointerOperand()].push_back(node);
+				}
+
 			}
 
 			if(StoreInst* STI = dyn_cast<StoreInst>(node->getNode())){
-				GetElementPtrInst* GEP = cast<GetElementPtrInst>(STI->getPointerOperand());
-				pointerMemInsMap[GEP->getPointerOperand()].push_back(node);
+
+				if(GetElementPtrInst* GEP = dyn_cast<GetElementPtrInst>(STI->getPointerOperand())){
+//					GetElementPtrInst* GEP = cast<GetElementPtrInst>(STI->getPointerOperand());
+					pointerMemInsMap[GEP->getPointerOperand()].push_back(node);
+				}
+				else{
+					pointerMemInsMap[STI->getPointerOperand()].push_back(node);
+				}
+
 			}
 		}
 	}
@@ -6299,3 +6659,96 @@ int DFG::partitionMemNodes() {
 
 	return 0;
 }
+
+int DFG::handlestartstop() {
+	dfgNode* node;
+
+	Loop* L = this->getLoop();
+	SmallVector<BasicBlock*,8> loopExitBlocks;
+	L->getExitBlocks(loopExitBlocks);
+
+	for (int i = 0; i < NodeList.size(); ++i) {
+		node = NodeList[i];
+
+		//LoopStart
+		if(node->getNode()==NULL){
+			if(node->getNameType().compare("LOOPSTART")==0){
+//				dfgNode* loadStart = new dfgNode(this);
+//				loadStart->setIdx(this->getNodesPtr()->size());
+//				this->getNodesPtr()->push_back(loadStart);
+//				loadStart->setNameType("LOADSTART");
+//				loadStart->BB = node->BB;
+
+				node->setLeftAlignedMemOp(2);
+
+				dfgNode* storeStart = new dfgNode(this);
+				storeStart->setIdx(this->getNodesPtr()->size());
+				this->getNodesPtr()->push_back(storeStart);
+				storeStart->setNameType("STORESTART");
+				storeStart->BB = node->BB;
+				storeStart->setLeftAlignedMemOp(2);
+				storeStart->setNPB(true);
+
+				node->addChildNode(storeStart);
+				storeStart->addAncestorNode(node);
+
+				dfgNode* movone = new dfgNode(this);
+				movone->setIdx(this->getNodesPtr()->size());
+				this->getNodesPtr()->push_back(movone);
+				movone->setNameType("MOVC");
+				movone->BB = node->BB;
+				movone->setConstantVal(1);
+
+				movone->addChildNode(storeStart);
+				storeStart->addAncestorNode(movone);
+
+//				for (dfgNode* child : node->getChildren()) {
+//					node->removeChild(child);
+//					child->removeAncestor(node);
+//					removeEdge(findEdge(node,child));
+//
+//					loadStart->addChildNode(child);
+//					child->addAncestorNode(loadStart);
+//				}
+			}
+		}
+		else {		//LoopExit
+			if(std::find(loopExitBlocks.begin(),loopExitBlocks.end(),node->getNode()->getParent())!=loopExitBlocks.end()){
+
+				if(!dyn_cast<BranchInst>(node->getNode())){
+					continue;
+				}
+
+				//current node belong to a loop exit basic block
+				dfgNode* loopexit = new dfgNode(this);
+				loopexit->setIdx(this->getNodesPtr()->size());
+				this->getNodesPtr()->push_back(loopexit);
+				loopexit->setNameType("LOOPEXIT");
+				loopexit->BB = node->BB;
+				loopexit->setLeftAlignedMemOp(1);
+
+				assert(node->getChildren().empty());
+				for(dfgNode* anc : node->getAncestors()){
+					anc->removeChild(node);
+					node->removeAncestor(anc);
+					removeEdge(findEdge(anc,node));
+
+					anc->addChildNode(loopexit);
+					loopexit->addAncestorNode(anc);
+				}
+
+				dfgNode* movone = new dfgNode(this);
+				movone->setIdx(this->getNodesPtr()->size());
+				this->getNodesPtr()->push_back(movone);
+				movone->setNameType("MOVC");
+				movone->BB = node->BB;
+				movone->setConstantVal(1);
+
+				movone->addChildNode(loopexit);
+				loopexit->addAncestorNode(movone);
+			}
+		}
+
+	}
+}
+

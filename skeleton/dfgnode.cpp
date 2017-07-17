@@ -458,6 +458,10 @@ void dfgNode::addLoadParent(Instruction * ins) {
 	if(GetElementPtrInst* GEP = dyn_cast<GetElementPtrInst>(ins)){
 		temp->setTypeSizeBytes(4);
 	}
+	else if(AllocaInst* ALOCA = dyn_cast<AllocaInst>(ins)){
+		errs() << "ALOCA\n";
+		temp->setTypeSizeBytes(4);
+	}
 	else{
 		temp->setTypeSizeBytes((ins->getType()->getIntegerBitWidth()+7)/8);
 	}

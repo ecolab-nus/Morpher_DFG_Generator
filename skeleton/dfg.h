@@ -149,8 +149,8 @@ class DFG{
 			std::vector<std::vector<std::vector<unsigned char> > > conMatArr;
 
 			//the pointer which the anyother outerloop load and stores should be written to
-			uint32_t outloopAddrPtrRight = MEM_SIZE;
-			uint32_t outloopAddrPtrLeft = MEM_SIZE/2;
+			uint32_t outloopAddrPtrRight = MEM_SIZE - 1; // -1 for CL
+			uint32_t outloopAddrPtrLeft = MEM_SIZE/2 - 2; // -2 for {CL,loopstart}
 
 //			uint32_t arrayAddrPtr=0;
 			uint32_t arrayAddrPtrRight = MEM_SIZE/2;
@@ -345,6 +345,8 @@ class DFG{
 			//Treat PHI Nodes
 			int handlePHINodes(std::set<BasicBlock*> LoopBB);
 			int phiselectInsert();
+			int removeRedEdgesPHI();
+			int addCMERGEtoSELECT();
 
 			//Treat high-fan in PHI Nodes
 			int handlePHINodeFanIn();
@@ -407,6 +409,12 @@ class DFG{
 			//Memory Parition
 			std::map<dfgNode*,int> memNodePartitionMap;
 			int partitionMemNodes();
+
+			//starting and stopping loops
+			int handlestartstop();
+
+			//print JUMPL header
+			int printJUMPLHeader(std::ofstream& binFile, std::ofstream& binOpNameFile);
 
 	};
 

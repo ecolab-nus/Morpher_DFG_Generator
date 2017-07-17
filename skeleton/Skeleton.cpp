@@ -1025,9 +1025,14 @@ namespace {
 				  }
 				  LoopDFG.addPHIChildEdges();
 				  LoopDFG.connectBB();
-				  LoopDFG.treatFalsePaths();
 				  LoopDFG.handlePHINodes(LoopBB);
+
+				  LoopDFG.removeRedEdgesPHI();
+				  LoopDFG.addCMERGEtoSELECT();
+				  LoopDFG.handlestartstop();
+
 //				  LoopDFG.handlePHINodeFanIn();
+				  LoopDFG.treatFalsePaths();
 				  LoopDFG.checkSanity();
 //				  LoopDFG.addMemDepEdges(MD);
 //				  LoopDFG.removeAlloc();
