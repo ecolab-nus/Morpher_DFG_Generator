@@ -89,6 +89,7 @@ class CGRA{
 			CGRANode* getCGRANode(int t, int y, int x);
 			CGRANode* getCGRANode(int phyLoc);
 			std::map<Port,std::vector<Port> > OrigInOutPortMap;
+			std::map<CGRANode*,std::set<Port>> busyPorts;
 
 			int getXdim();
 			int getYdim();
@@ -104,7 +105,7 @@ class CGRA{
 			void clearMapping();
 
 			int getRegsPerNode(){return regsPerNode;}
-			std::vector<CGRAEdge*> findCGRAEdges(CGRANode* currCNode, Port inPort, std::map<CGRANode*,std::vector<CGRAEdge>>* cgraEdgesPtr);
+			std::vector<CGRAEdge*> findCGRAEdges(CGRANode* currCNode, Port inPort, std::map<CGRANode*,std::vector<CGRAEdge>>* cgraEdgesPtr, CGRANode* goal = NULL);
 			static std::string getPortName(Port p);
 
 			ArchType getArch(){return arch;}
@@ -123,6 +124,8 @@ class CGRA{
 
 			bool PlaceMacro(DFG* mappedDFG);
 			void clearFreeBlocks(){freeBlocks.clear();}
+
+			void printCGRAEdge(CGRAEdge ce);
 	};
 
 

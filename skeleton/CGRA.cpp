@@ -619,7 +619,10 @@ void CGRA::clearMapping() {
 
 }
 
-std::vector<CGRAEdge*> CGRA::findCGRAEdges(CGRANode* currCNode, Port inPort,std::map<CGRANode*,std::vector<CGRAEdge>>* cgraEdgesPtr) {
+std::vector<CGRAEdge*> CGRA::findCGRAEdges(CGRANode* currCNode,
+		                                   Port inPort,
+										   std::map<CGRANode*,std::vector<CGRAEdge>>* cgraEdgesPtr,
+										   CGRANode* goal) {
 	std::vector<CGRAEdge*> candidateCGRAEdges;
 	std::vector<Port> candPorts;
 	Port currPort;
@@ -657,20 +660,97 @@ std::vector<CGRAEdge*> CGRA::findCGRAEdges(CGRANode* currCNode, Port inPort,std:
 		candPorts = currCNode->InOutPortMap[inPort];
 
 //		errs() << "findCGRAEdges:: (*cgraEdgesPtr)[currCNode].size() = " << (*cgraEdgesPtr)[currCNode].size() << "\n";
+
+//		std::set<Port> busyPorts;
+
+		for (int j = 0; j < (*cgraEdgesPtr)[currCNode].size(); ++j) {
+			currPort = (*cgraEdgesPtr)[currCNode][j].SrcPort;
+			CGRANode* dest = (*cgraEdgesPtr)[currCNode][j].Dst;
+			Port destPort = (*cgraEdgesPtr)[currCNode][j].DstPort;
+
+			if((*cgraEdgesPtr)[currCNode][j].mappedDFGEdge != NULL){
+				if((dest == goal && goal != NULL)){
+					errs() << "findCGRAEdges :: pushing busy port=(" << dest->getName() << "," << getPortName(destPort)<<")\n";
+					busyPorts[dest].insert(destPort);
+				}
+			}
+		}
+
 		for (int j = 0; j < (*cgraEdgesPtr)[currCNode].size(); ++j) {
 //			errs() << "findCGRAEdges:: j=" << j << "\n";
+			currPort = (*cgraEdgesPtr)[currCNode][j].SrcPort;
+			CGRANode* dest = (*cgraEdgesPtr)[currCNode][j].Dst;
+			Port destPort = (*cgraEdgesPtr)[currCNode][j].DstPort;
+
+			if( (this->getArch() == RegXbarTREG) || (this->getArch() == RegXbar) ){
+				if ((goal != NULL)&&(dest == goal)){
+					if(destPort==R0){
+						if( busyPorts[dest].find(NORTH)!=busyPorts[dest].end() ){
+							continue;
+						}
+					}
+					else if(destPort==R1){
+						if( busyPorts[dest].find(EAST)!=busyPorts[dest].end() ){
+							continue;
+						}
+					}
+					else if(destPort==R2){
+						if( busyPorts[dest].find(WEST)!=busyPorts[dest].end() ){
+							continue;
+						}
+					}
+					else if(destPort==R3){
+						if( busyPorts[dest].find(SOUTH)!=busyPorts[dest].end() ){
+							continue;
+						}
+					}
+					else if(destPort==NORTH){
+						if( busyPorts[dest].find(R0)!=busyPorts[dest].end() ){
+							continue;
+						}
+					}
+					else if(destPort==EAST){
+						if( busyPorts[dest].find(R1)!=busyPorts[dest].end() ){
+							continue;
+						}
+					}
+					else if(destPort==WEST){
+						if( busyPorts[dest].find(R2)!=busyPorts[dest].end() ){
+							continue;
+						}
+					}
+					else if(destPort==SOUTH){
+						if( busyPorts[dest].find(R3)!=busyPorts[dest].end() ){
+							continue;
+						}
+					}
+				}
+
+			}
+
 			if((*cgraEdgesPtr)[currCNode][j].mappedDFGEdge == NULL){
-				currPort = (*cgraEdgesPtr)[currCNode][j].SrcPort;
+
+
 				for (int i = 0; i < candPorts.size(); ++i) {
 					if(currPort == candPorts[i]){
+
+						if(currPort==R0) assert(inPort == R0 || inPort == NORTH);
+						if(currPort==R1) assert(inPort == R1 || inPort == EAST);
+						if(currPort==R2) assert(inPort == R2 || inPort == WEST);
+						if(currPort==R3) assert(inPort == R3 || inPort == SOUTH);
+
+
 						if((*cgraEdgesPtr)[currCNode][j].Dst->getT() >= MII){
 							errs() << "MII=" << MII << "\n";
 						}
 						assert((*cgraEdgesPtr)[currCNode][j].Dst->getT() < MII);
+//						if(!busyPorts[dest].empty()) printCGRAEdge((*cgraEdgesPtr)[currCNode][j]);
 						candidateCGRAEdges.push_back(&(*cgraEdgesPtr)[currCNode][j]);
 					}
 				}
+
 			}
+
 		}
 
 
@@ -1154,4 +1234,18 @@ bool CGRA::PlaceMacro(DFG* mappedDFG) {
 	}
 
 	return true;
+}
+
+void CGRA::printCGRAEdge(CGRAEdge ce) {
+
+	errs() << "CGRAEdge::" << "(" << ce.Src->getName() << "," << getPortName(ce.SrcPort) << ")";
+	errs() << " to " << ce.Dst->getName() << "," << getPortName(ce.DstPort) << "),";
+
+	if(ce.mappedDFGEdge == NULL){
+		errs() << "mapped to NULL\n";
+	}
+	else{
+		errs() << "mapped to " << ce.mappedDFGEdge->getSrc()->getIdx() << "_to_" << ce.mappedDFGEdge->getDest()->getIdx() << "\n";
+	}
+
 }

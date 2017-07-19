@@ -622,3 +622,8 @@ dfgNode* dfgNode::addCMergeParent(Instruction* phiBRAncestorIns, int32_t constVa
 
 	return temp;
 }
+
+void dfgNode::setFinalIns(HyCUBEIns ins){
+	outs() <<  "SetFinalIns::Node=" << this->getIdx() << ",HyIns=" << Parent->HyCUBEInsStrings[ins] << "\n";
+	finalIns = ins;
+}

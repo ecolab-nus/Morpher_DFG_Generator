@@ -22,7 +22,7 @@ struct pathDataComparer
 {
     bool operator()(const pathData & Left, const pathData & Right) const
     {
-        return Left.cnode < Right.cnode;
+        return (Left.cnode < Right.cnode) || (Left.cnode == Right.cnode && Left.lastPort < Right.lastPort);
     }
 };
 
@@ -189,7 +189,7 @@ class dfgNode{
 
 			bool isConditional();
 
-			void setFinalIns(HyCUBEIns ins){finalIns = ins;}
+			void setFinalIns(HyCUBEIns ins);
 			HyCUBEIns getFinalIns(){return finalIns;}
 
 			//Out of loop instructions

@@ -4354,7 +4354,7 @@ int DFG::printMapping() {
 	printJUMPLHeader(binFile,binOpNameFile);
 
 	//Print Data
-	std::map<dfgNode*,std::vector<dfgNode*>> parentInfo;
+	std::map<dfgNode*,std::set<dfgNode*>> parentInfo;
 	for (int i = 0; i < currCGRA->getMII(); ++i) {
 		mapFile << std::to_string(i) << ",";
 		insFile << std::to_string(i) << ",";
@@ -4424,7 +4424,7 @@ int DFG::printMapping() {
 							if(PrevCnode->getmappedDFGNode() == cnode->getmappedDFGNode()->getAncestors()[l]){
 								dfgNode* currCnodeNode = cnode->getmappedDFGNode();
 								dfgNode* cnodeParent = cnode->getmappedDFGNode()->getAncestors()[l];
-								parentInfo[currCnodeNode].push_back(cnodeParent);
+								parentInfo[currCnodeNode].insert(cnodeParent);
 								if(PrevCnode->getmappedDFGNode()->getFinalIns() == NOP){
 
 
@@ -4535,7 +4535,7 @@ int DFG::printMapping() {
 					if((cgraEdges_t[m].mappedDFGEdge->getDest() == cnode->getmappedDFGNode())||parentFound){
 
 						dfgNode* cnodeParent = cgraEdges_t[m].mappedDFGEdge->getSrc();
-						parentInfo[currCnodeNode].push_back(cnodeParent);
+						parentInfo[currCnodeNode].insert(cnodeParent);
 
 						if(cgraEdges_t[m].mappedDFGEdge->getSrc()->getFinalIns() == NOP){
 
@@ -4735,7 +4735,7 @@ int DFG::printMapping() {
 	}
 
 	//Check whether all the parents are accounted for
-	for(std::pair<dfgNode*,std::vector<dfgNode*>> unit : parentInfo){
+	for(std::pair<dfgNode*,std::set<dfgNode*>> unit : parentInfo){
 		dfgNode* node = unit.first;
 		if(node->getAncestors().size()!=parentInfo[node].size()){
 			outs() << "This node :" << node->getIdx() << "'s parents are not accounted for\n";
@@ -5249,17 +5249,21 @@ int DFG::nameNodes() {
 					break;
 				case Instruction::ICmp:
 					{
+						outs() << "NameNodes::Node=" << node->getIdx() << ",CMP=";
 						CmpInst* CI = cast<CmpInst>(node->getNode());
 						switch(CI->getPredicate()){
 							case CmpInst::ICMP_SLT:
 							case CmpInst::ICMP_ULT:
+								outs() << "LT\n";
 								node->setFinalIns(CLT);
 								break;
 							case CmpInst::ICMP_SGT:
 							case CmpInst::ICMP_UGT:
+								outs() << "GT\n";
 								node->setFinalIns(CGT);
 								break;
 							case CmpInst::ICMP_EQ:
+								outs() << "EQ\n";
 								node->setFinalIns(CMP);
 								break;
 							default:
@@ -5267,8 +5271,11 @@ int DFG::nameNodes() {
 								break;
 						}
 					}
+					break;
 				case Instruction::FCmp:
+					outs() << "NameNodes::Node=" << node->getIdx() << ",FCMP\n";
 					node->setFinalIns(CMP);
+					assert(false);
 					break;
 				default :
 					errs() << "The Op :" << node->getNode()->getOpcodeName() << " that I thought would not be in the compiled code\n";
