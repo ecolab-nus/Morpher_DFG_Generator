@@ -416,6 +416,18 @@ class DFG{
 			//print JUMPL header
 			int printJUMPLHeader(std::ofstream& binFile, std::ofstream& binOpNameFile);
 
+
+			// add shift operations before the GEPs of STOREH and STORE.
+			int insertshiftGEPs();
+
+
+			//add load stores which does not use GEPs with constants.
+			int nonGEPLoadStorecheck();
+
+			//add masking functions for instruction where word length < 4 bytes.
+			//Maybe we can fix this in the architecture ?
+			int addMaskLowBitInstructions();
+
 	};
 
 

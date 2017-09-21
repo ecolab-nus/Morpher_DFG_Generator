@@ -392,22 +392,22 @@ CGRA::CGRA(int MII, int Xdim, int Ydim, int regs, ArchType aType) {
 				tempNodePtr = new CGRANode(x,y,t,this);
 				tempNodePtr->InOutPortMap = InOutPortMap;
 
-				if(x == 0){
+//				if(x == 0){
+//					tempNodePtr->setPEType(MEM);
+//				}
+
+				if((x==0)&&(y==0)){
 					tempNodePtr->setPEType(MEM);
 				}
-
-//				if((x==0)&&(y==0)){
-//					tempNodePtr->setPEType(MEM);
-//				}
-//				else if((x==0)&&(y==Ydim-1)){
-//					tempNodePtr->setPEType(MEM);
-//				}
-//				else if((x==Xdim-1)&&(y==0)){
-//					tempNodePtr->setPEType(MEM);
-//				}
-//				else if((x==Xdim-1)&&(y==Ydim-1)){
-//					tempNodePtr->setPEType(MEM);
-//				}
+				else if((x==0)&&(y==Ydim-1)){
+					tempNodePtr->setPEType(MEM);
+				}
+				else if((x==Xdim-1)&&(y==0)){
+					tempNodePtr->setPEType(MEM);
+				}
+				else if((x==Xdim-1)&&(y==Ydim-1)){
+					tempNodePtr->setPEType(MEM);
+				}
 
 
 				tempL1.push_back(tempNodePtr);
@@ -683,7 +683,7 @@ std::vector<CGRAEdge*> CGRA::findCGRAEdges(CGRANode* currCNode,
 			Port destPort = (*cgraEdgesPtr)[currCNode][j].DstPort;
 
 			if( (this->getArch() == RegXbarTREG) || (this->getArch() == RegXbar) ){
-				if ((goal != NULL)&&(dest == goal)){
+//				if ((goal != NULL)&&(dest == goal)){
 					if(destPort==R0){
 						if( busyPorts[dest].find(NORTH)!=busyPorts[dest].end() ){
 							continue;
@@ -724,7 +724,7 @@ std::vector<CGRAEdge*> CGRA::findCGRAEdges(CGRANode* currCNode,
 							continue;
 						}
 					}
-				}
+//				}
 
 			}
 

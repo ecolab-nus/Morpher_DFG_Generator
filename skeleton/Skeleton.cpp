@@ -295,14 +295,14 @@ static std::map<Loop*,std::vector<BasicBlock*> > loopsExclusieBasicBlockMap;
 //	    			ofs << " ) ";
 
 	    			if(node->getMappedLoc() != NULL){
-						ofs << ", " << node->getIdx() << ", ASAP=" << node->getASAPnumber()
+						ofs << ",\n" << node->getIdx() << ", ASAP=" << node->getASAPnumber()
 													 << ", ALAP=" << node->getALAPnumber()
 													 << ", (t,y,x)=(" << node->getMappedLoc()->getT() << "," << node->getMappedLoc()->getY() << "," << node->getMappedLoc()->getX() << ")"
 													 << ",RT=" << node->getmappedRealTime()
 													 << "\"]" << std::endl;
 	    			}
 	    			else{
-						ofs << ", " << node->getIdx() << ", ASAP=" << node->getASAPnumber()
+						ofs << ",\n" << node->getIdx() << ", ASAP=" << node->getASAPnumber()
 													 << ", ALAP=" << node->getALAPnumber()
 	//												 << ", (t,y,x)=(" << node.getMappedLoc()->getT() << "," << node.getMappedLoc()->getY() << "," << node.getMappedLoc()->getX() << ")"
 													 << "\"]" << std::endl;
@@ -878,9 +878,7 @@ namespace {
 				  errs() << "\n";
 				  }
 
-
 			  //errs() << "In a function calledd " << F.getName() << "!\n";
-
 			  //TODO : please remove this after dtw test
 			  if(noName == false){
 				  if(fName != "na"){
@@ -992,7 +990,7 @@ namespace {
 				L->getExitBlocks(loopExitBlocks);
 				for (int i = 0; i < loopExitBlocks.size(); ++i) {
 					loopExitBlocks[i]->dump();
-					LoopBB.insert(loopExitBlocks[i]);
+//					LoopBB.insert(loopExitBlocks[i]);
 				}
 //				LoopBB.insert(L->getLoopPreheader());
 //				L->getLoopPreheader()->dump();
@@ -1033,6 +1031,10 @@ namespace {
 
 //				  LoopDFG.handlePHINodeFanIn();
 				  LoopDFG.treatFalsePaths();
+				  LoopDFG.insertshiftGEPs();
+				  LoopDFG.addMaskLowBitInstructions();
+				  //Checking
+//				  LoopDFG.nonGEPLoadStorecheck();
 				  LoopDFG.checkSanity();
 //				  LoopDFG.addMemDepEdges(MD);
 //				  LoopDFG.removeAlloc();
@@ -1069,8 +1071,8 @@ namespace {
 					  errs() << "  error opening file for writing!";
 				  errs() << "\n";
 				  }
-
 				  ArchType arch = RegXbarTREG;
+				  printDFGDOT (F.getName().str() + "_L" + std::to_string(loopCounter) + "_loopdfg.dot", &LoopDFG);
 				  LoopDFG.MapCGRA_SMART(4,4, arch, 20);
 				  LoopDFG.AssignOutLoopAddr();
 				  LoopDFG.GEPInvestigate(F,L,&sizeArrMap);

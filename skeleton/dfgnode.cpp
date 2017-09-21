@@ -452,7 +452,7 @@ void dfgNode::addLoadParent(Instruction * ins) {
 //	assert(ins->getType()->getIntegerBitWidth() >= 8);
 
 	//ceiling upto multiple of 8
-	outs() << "addLoadParent :";
+	outs() << "addLoadParent :" << ",node =" << temp->getIdx() << ",for the node=" << this->getIdx() << "\n";
 	ins->dump();
 
 	if(GetElementPtrInst* GEP = dyn_cast<GetElementPtrInst>(ins)){

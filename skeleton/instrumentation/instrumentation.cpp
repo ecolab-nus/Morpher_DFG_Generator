@@ -139,7 +139,7 @@ void clearPrintedArrs(){
 	printedArrs.clear();
 }
 
-void outloopValueReport(uint32_t nodeIdx, uint32_t value, uint32_t addr, uint8_t isLoad, uint8_t isHostTrans){
+void outloopValueReport(uint32_t nodeIdx, uint32_t value, uint32_t addr, uint8_t isLoad, uint8_t isHostTrans,uint8_t size){
 	std::stringstream ss;
 	uint8_t* bytePtr = (uint8_t*)&value;
 
@@ -152,7 +152,7 @@ void outloopValueReport(uint32_t nodeIdx, uint32_t value, uint32_t addr, uint8_t
 		ss << "StoreNode:" << nodeIdx;
 	}
 
-	for (int i = 0; i < 4; ++i) {
+	for (int i = 0; i < size; ++i) {
 		AddrDataTuple tuple;
 		tuple.name = ss.str();
 

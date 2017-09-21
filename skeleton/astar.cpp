@@ -91,9 +91,10 @@ CGRANode* AStar::AStarSearch(std::map<CGRANode*,std::vector<CGRAEdge> > graph,
 // 		outs() << "\n";
 
 		if(minkII >= 0){
-			if((current == goal)&&((currPathTdimLength-1)/currDFG->getCGRA()->getMII()==minkII)){
-				outs() << "currPathTdimLength=" << currPathTdimLength;
-				outs() << ",minkII=" << minkII << "\n";
+//			if((current == goal)&&((currPathTdimLength-1)/currDFG->getCGRA()->getMII()==minkII)){
+			if((current == goal)&&((currPathTdimLength)==minkII)){
+//				outs() << "currPathTdimLength=" << currPathTdimLength;
+//				outs() << ",minkII=" << minkII << "\n";
 				break;
 			}
 		}
@@ -104,7 +105,8 @@ CGRANode* AStar::AStarSearch(std::map<CGRANode*,std::vector<CGRAEdge> > graph,
 		}
 
 		if(minkII >= 0){ //break for paths violating latency gap
-			if((currPathTdimLength-1)/currDFG->getCGRA()->getMII()>minkII){
+//			if((currPathTdimLength-1)/currDFG->getCGRA()->getMII()>minkII){
+			if((currPathTdimLength)>minkII){
 				continue;
 			}
 		}
@@ -216,13 +218,14 @@ CGRANode* AStar::AStarSearch(std::map<CGRANode*,std::vector<CGRAEdge> > graph,
 }
 
 int AStar::calckII(CGRANode* start, int startRT, CGRANode* goal, int goalRT){
-	outs() << "start" << start->getName() <<",startRT=" << startRT << ",goalRT=" << goalRT << ",goal=" << goal->getName() << "\n";
+//	outs() << "start" << start->getName() <<",startRT=" << startRT << ",goalRT=" << goalRT << ",goal=" << goal->getName() << "\n";
 	assert(start->getT() == startRT%(this->MII));
 	assert(goal->getT() == goalRT%(this->MII));
 	int kII = goalRT - startRT;
 	if(kII < 0) return -1;
 
-	return kII/currDFG->getCGRA()->getMII();
+//	return kII/currDFG->getCGRA()->getMII();
+	return kII;
 }
 
 bool AStar::Route(dfgNode* currNode,
@@ -275,6 +278,7 @@ bool AStar::Route(dfgNode* currNode,
 	std::vector<CGRAEdge*> tempDestCGRAEdges;
 	std::vector<CGRAEdge*> tempDestCGRAEdges2;
 	std::map<CGRANode*,std::vector<CGRAEdge> > originalCGRAEdges = *cgraEdges;
+	std::map<CGRANode*,std::set<Port>> originalbusyPorts = currDFG->getCGRA()->busyPorts;
 
 	struct pathWithCost{
 		std::pair<CGRANode*, CGRANode*> path;
@@ -458,7 +462,8 @@ bool AStar::Route(dfgNode* currNode,
 //				outs() << ",ParentRT=" << parents[i]->getmappedRealTime();
 //				outs() << "\n";
 
-				int startRT = parents[i]->getmappedRealTime() + startPathTdimLength;
+//				int startRT = parents[i]->getmappedRealTime() + startPathTdimLength;
+				int parentRT = parents[i]->getmappedRealTime();
 				int kII;
 				if(parents[i]==currNode){
 					kII = -1; //phi check
@@ -481,7 +486,7 @@ bool AStar::Route(dfgNode* currNode,
 //					outs() << ",startPathTdimLength=" << startPathTdimLength;
 //					outs() << ",startPathLength=" << startPathLength;
 //					outs() << "\n";
-					kII = calckII(start,startRT,goal,(*destllmap)[goal]);
+					kII = calckII(parents[i]->getMappedLoc(),parentRT,goal,(*destllmap)[goal]);
 				}
 
 //				outs() << "currNodephichildrensize=" << currNode->PHIchildren.size() << "\n";
@@ -662,6 +667,7 @@ bool AStar::Route(dfgNode* currNode,
 
 	for (int j = 0; j < destCostArray.size(); ++j) {
 		dest = destCostArray[j].dest;
+		outs() << "iterating through dests,j=" << j+1 << " of " << destCostArray.size() <<"\n";
 		for (int i = 0; i < destTreePathWithCostMap[dest].size(); ++i) {
 			goal = destTreePathWithCostMap[dest][i].tp.dest;
 			goal = currDFG->getCGRA()->getCGRANode(goal->getT(),goal->getY(),goal->getX());
@@ -682,7 +688,8 @@ bool AStar::Route(dfgNode* currNode,
 				start = currDFG->getCGRA()->getCGRANode(start->getT(),start->getY(),start->getX());
 				errs() << "AStar Search starts...\n";
 
-				int startRT = currParent->getmappedRealTime() + startPathTdimLength;
+//				int startRT = currParent->getmappedRealTime() + startPathTdimLength;
+				int parentRT = currParent->getmappedRealTime();
 				int kII;
 				if(currParent==currNode){
 					kII = -1; //phi check
@@ -704,7 +711,7 @@ bool AStar::Route(dfgNode* currNode,
 //					outs() << ",currParentRT=" << currParent->getmappedRealTime();
 //					outs() << ",startPathTdimLength=" << startPathTdimLength;
 //					outs() << "\n";
-					kII = calckII(start,startRT,goal,(*destllmap)[goal]);
+					kII = calckII(currParent->getMappedLoc(),parentRT,goal,(*destllmap)[goal]);
 				}
 				end = AStarSearch(*cgraEdges,
 						          start,
@@ -765,6 +772,7 @@ bool AStar::Route(dfgNode* currNode,
 				}
 //				return false;
 				*cgraEdges = originalCGRAEdges;
+				currDFG->getCGRA()->busyPorts = originalbusyPorts;
 				routingComplete = false;
 				break;
 			}
@@ -791,7 +799,8 @@ bool AStar::Route(dfgNode* currNode,
 				*mappingOutFile << "start = (" << start->getT() << "," << start->getY() << "," << start->getX() << ")\n";
 				*mappingOutFile << "goal = (" << goal->getT() << "," << goal->getY() << "," << goal->getX() << ")\n";
 
-				int startRT = currParent->getmappedRealTime() + startPathTdimLength;
+//				int startRT = currParent->getmappedRealTime() + startPathTdimLength;
+				int parentRT = currParent->getmappedRealTime();
 				int kII;
 				if(currParent==currNode){
 					kII = -1; //phi check
@@ -813,7 +822,7 @@ bool AStar::Route(dfgNode* currNode,
 //					outs() << ",currParentRT=" << currParent->getmappedRealTime();
 //					outs() << ",startPathTdimLength=" << startPathTdimLength;
 //					outs() << "\n";
-					kII = calckII(start,startRT,goal,(*destllmap)[goal]);
+					kII = calckII(currParent->getMappedLoc(),parentRT,goal,(*destllmap)[goal]);
 				}
 				end = AStarSearch(*cgraEdges,
 						          start,
@@ -851,6 +860,8 @@ bool AStar::Route(dfgNode* currNode,
 				pathsNotRouted->push_back(std::make_pair(start,goal));
 				(*currNode->getTreeBasedRoutingLocs())[currParent].clear();
 				(*currNode->getTreeBasedGoalLocs())[currParent].clear();
+				*cgraEdges = originalCGRAEdges;
+				currDFG->getCGRA()->busyPorts = originalbusyPorts;
 				break;
 			}
 
@@ -922,8 +933,8 @@ bool AStar::Route(dfgNode* currNode,
 						cameFromSearch = true;
 						break;
 					}
-					outs() << "current=" << current->getName() << "\n";
-					outs() << ",wrong node=" << cameFromIt->first.cnode->getName() << "\n";
+//					outs() << "current=" << current->getName() << "\n";
+//					outs() << ",wrong node=" << cameFromIt->first.cnode->getName() << "\n";
 				}
 				assert(cameFromSearch);
 
@@ -1461,6 +1472,7 @@ bool AStar::EMSRoute(dfgNode* currNode,
 					 std::map<CGRANode*,std::vector<CGRAEdge> >* cgraEdges,
 					 std::vector<std::pair<CGRANode*,CGRANode*> > *pathsNotRouted,
 					 bool* deadEndReached) {
+	assert(false);
 
 	CGRANode* start;
 	CGRANode* goal;

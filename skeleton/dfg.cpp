@@ -1142,15 +1142,51 @@ void DFG::scheduleALAP() {
 
 void DFG::balanceASAPALAP() {
 	dfgNode* node;
+
+	std::map<dfgNode*,int> newASAPVal;
+
 	for (int i = 0; i < NodeList.size(); ++i) {
 		node = NodeList[i];
 		int ASAP_ALAP_diff = node->getALAPnumber() - node->getASAPnumber();
 		ASAP_ALAP_diff = ASAP_ALAP_diff/2;
-		if(ASAP_ALAP_diff>0){
-			node->setASAPnumber(node->getASAPnumber() + ASAP_ALAP_diff);
-		}
-//		node->setASAPnumber(node->getALAPnumber());
+		newASAPVal[node]= node->getASAPnumber() + ASAP_ALAP_diff;
 	}
+
+	for (int i = 0; i < NodeList.size(); ++i) {
+		node = NodeList[i];
+		if(node->getChildren().empty()){
+			node->setASAPnumber(newASAPVal[node]);
+		}
+		else{
+			int minASAP=0;
+			for (dfgNode* child : node->getChildren()){
+				if(minASAP < newASAPVal[child]){
+					minASAP = newASAPVal[child];
+				}
+			}
+
+			if(newASAPVal[node] < minASAP){
+				node->setASAPnumber(newASAPVal[node]);
+			}
+			else{
+				node->setASAPnumber(minASAP-1);
+				newASAPVal[node]=minASAP-1;
+			}
+		}
+	}
+
+//	for (int i = 0; i < NodeList.size(); ++i) {
+//		node = NodeList[i];
+//		int ASAP_ALAP_diff = node->getALAPnumber() - node->getASAPnumber();
+//		ASAP_ALAP_diff = ASAP_ALAP_diff/2;
+//		if(ASAP_ALAP_diff > 2){ //Hack for compressed sensing
+//			node->setASAPnumber(node->getASAPnumber() + ASAP_ALAP_diff + 2);
+//		}
+//		else if(ASAP_ALAP_diff>0){
+//			node->setASAPnumber(node->getASAPnumber() + ASAP_ALAP_diff);
+//		}
+////		node->setASAPnumber(node->getALAPnumber());
+//	}
 }
 
 std::vector<dfgNode*> DFG::getLeafs() {
@@ -1636,6 +1672,7 @@ bool DFG::MapMultiDestRec(
 
 	std::map<dfgNode*,std::vector< std::pair<CGRANode*,int> > >::iterator itlocal;
 
+
 	while(!success){
 		localCGRAEdges = cgraEdges;
 		routeComplete = astar->Route(node,parents,&dests,&destllMap,&localCGRAEdges,&pathsNotRouted,&chosenCnode,&deadEndReached);
@@ -1877,6 +1914,8 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim, ArchType arch) {
 		for (int i = 0; i < currLevelNodes.size(); ++i) {
 				node = currLevelNodes[i];
 				int ll = (node->getASAPnumber()/MII)*MII-1;
+//				int ll = node->getASAPnumber()-1;
+//				int ll=-1;
 				int el = INT32_MAX;
 				dfgNode* latestParent;
 				for (int j = 0; j < node->getAncestors().size(); ++j) {
@@ -1884,6 +1923,9 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim, ArchType arch) {
 
 
 					//every parent should be mapped
+					if(parent->getMappedLoc() == NULL){
+						errs() << "Parent : " << parent->getIdx() << " is not mapped!, this node=" << node->getIdx() << "\n";
+					}
 					assert(parent->getMappedLoc() != NULL);
 
 					if(parent->getmappedRealTime() > ll){
@@ -1985,13 +2027,18 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim, ArchType arch) {
 											if(currCGRA->getCGRANode((ll+1)%MII,y,x)->getPEType() == MEM){ // only allocate PEs capable of doing memory operations
 
 												if(node->getLeftAlignedMemOp()==1){
-													if((y==0||y==1)&&x==0){
+													if(x==0){
+//													if((y==0||y==1)&&x==0){
+//													if(( (y < currCGRA->getYdim()/2) || (currCGRA->getYdim() == 1) )&&x==0){
 														nodeDestMap[node].push_back(std::make_pair(currCGRA->getCGRANode((ll+1)%MII,y,x),(ll+1)));
 														destNodeMap[currCGRA->getCGRANode((ll+1)%MII,y,x)].push_back(node);
 													}
 												}
 												else if(node->getLeftAlignedMemOp()==2){
-													if((y==2||y==3)&&x==0){
+													if(x==currCGRA->getXdim()-1){
+//													assert(currCGRA->getYdim() > 2);
+//													if((y==2||y==3)&&x==0){
+//													if(( (y >= currCGRA->getYdim()/2) || (currCGRA->getYdim() == 1) )&&x==0){
 														nodeDestMap[node].push_back(std::make_pair(currCGRA->getCGRANode((ll+1)%MII,y,x),(ll+1)));
 														destNodeMap[currCGRA->getCGRANode((ll+1)%MII,y,x)].push_back(node);
 													}
@@ -4297,6 +4344,7 @@ int DFG::printMapping() {
 	CGRANode* PrevPrevCnode;
 	std::vector<CGRAEdge> cgraEdges;
 	std::vector<CGRAEdge> cgraEdges_t;
+	std::vector<CGRAEdge> cgraEdges_t2;
 	std::map<Port,Edge*> portDfgEdgeMap;
 
 	std::vector<Port> portOrder = {NORTH,EAST,WEST,SOUTH,R0,R1,R2,R3};
@@ -4385,6 +4433,8 @@ int DFG::printMapping() {
 				cnode = currCGRA->getCGRANode((i+1)%currCGRA->getMII(),j,k);
 				cgraEdges = (*currCGRA->getCGRAEdges())[cnode];
 				cgraEdges_t = currCGRA->getCGRAEdgesWithDest(cnode);
+
+
 				for (int l = 0; l < cgraEdges.size(); ++l) {
 					if(cgraEdges[l].mappedDFGEdge != NULL){
 						portDfgEdgeMap[cgraEdges[l].SrcPort] = cgraEdges[l].mappedDFGEdge;
@@ -4417,7 +4467,7 @@ int DFG::printMapping() {
 					}
 				}
 
-
+// TODO :: ADD a similiar if strucuture to MEM nodes where I need to check PrevPrevCnode instead of PrevCnode
 				if(cnode->getmappedDFGNode() != NULL){
 					if(PrevCnode->getmappedDFGNode() != NULL){
 						for (int l = 0; l < cnode->getmappedDFGNode()->getAncestors().size(); ++l) {
@@ -4450,6 +4500,7 @@ int DFG::printMapping() {
 									if(currCnodeNode->parentClassification.find(0) !=
 									   currCnodeNode->parentClassification.end() ){
 										if(currCnodeNode->parentClassification[0]==cnodeParent){
+											assert(XBarMap[PrevCnode].find(PRED)==XBarMap[PrevCnode].end());
 											XBarMap[PrevCnode][PRED] = TILE;
 											found=true;
 										}
@@ -4461,6 +4512,7 @@ int DFG::printMapping() {
 									if(currCnodeNode->parentClassification.find(1) !=
 									   currCnodeNode->parentClassification.end() ){
 										if(currCnodeNode->parentClassification[1]==cnodeParent){
+											assert(XBarMap[PrevCnode].find(OP1)==XBarMap[PrevCnode].end());
 											XBarMap[PrevCnode][OP1] = TILE;
 											found=true;
 										}
@@ -4472,6 +4524,7 @@ int DFG::printMapping() {
 									if(currCnodeNode->parentClassification.find(2) !=
 									   currCnodeNode->parentClassification.end() ){
 										if(currCnodeNode->parentClassification[2]==cnodeParent){
+											assert(XBarMap[PrevCnode].find(OP2)==XBarMap[PrevCnode].end());
 											XBarMap[PrevCnode][OP2] = TILE;
 											found=true;
 										}
@@ -4505,6 +4558,112 @@ int DFG::printMapping() {
 					}
 				}
 
+				//adding the similiar structure
+				if(PrevPrevCnode->getPEType() == MEM){
+					if(cnode->getmappedDFGNode() != NULL){
+						if(PrevPrevCnode->getmappedDFGNode() != NULL){
+							for (int l = 0; l < cnode->getmappedDFGNode()->getAncestors().size(); ++l) {
+								if(PrevPrevCnode->getmappedDFGNode() == cnode->getmappedDFGNode()->getAncestors()[l]){
+
+									dfgNode* currCnodeNode = cnode->getmappedDFGNode();
+									dfgNode* cnodeParent = cnode->getmappedDFGNode()->getAncestors()[l];
+									parentInfo[currCnodeNode].insert(cnodeParent);
+									if(PrevPrevCnode->getmappedDFGNode()->getFinalIns() == NOP){
+
+
+										//How can a NOP be a parent of someone?
+										assert(false);
+
+	//									if(XBarMap[PrevCnode].find(PRED) == XBarMap[PrevCnode].end()){
+	//										XBarMap[PrevCnode][PRED] = TILE;
+	//									}
+	//									else if(XBarMap[PrevCnode].find(OP1) == XBarMap[PrevCnode].end()){
+	//										XBarMap[PrevCnode][OP1] = TILE;
+	//									}
+	//									else if(XBarMap[PrevCnode].find(OP2) == XBarMap[PrevCnode].end()){
+	//										XBarMap[PrevCnode][OP2] = TILE;
+	//									}
+	//									else{
+	//										assert(false);
+	//									}
+									}
+									else{
+
+										bool found=false;
+										if(currCnodeNode->parentClassification.find(0) !=
+										   currCnodeNode->parentClassification.end() ){
+											if(currCnodeNode->parentClassification[0]==cnodeParent){
+												assert(XBarMap[PrevCnode].find(PRED)==XBarMap[PrevCnode].end());
+												XBarMap[PrevCnode][PRED] = TILE;
+												found=true;
+											}
+										}
+										else{
+											XBarMap[PrevCnode][PRED] = INV;
+										}
+
+										if(currCnodeNode->parentClassification.find(1) !=
+										   currCnodeNode->parentClassification.end() ){
+											if(currCnodeNode->parentClassification[1]==cnodeParent){
+												assert(XBarMap[PrevCnode].find(OP1)==XBarMap[PrevCnode].end());
+												XBarMap[PrevCnode][OP1] = TILE;
+												found=true;
+											}
+										}
+										else{
+											XBarMap[PrevCnode][OP1] = INV;
+										}
+
+										if(currCnodeNode->parentClassification.find(2) !=
+										   currCnodeNode->parentClassification.end() ){
+											if(currCnodeNode->parentClassification[2]==cnodeParent){
+												assert(XBarMap[PrevCnode].find(OP2)==XBarMap[PrevCnode].end());
+												XBarMap[PrevCnode][OP2] = TILE;
+												found=true;
+											}
+										}
+										else{
+											XBarMap[PrevCnode][OP2] = INV;
+										}
+
+										outs() << "printMapping : currNode = " << currCnodeNode->getIdx() << "\n";
+										outs() << "printMapping : currParent = " << cnodeParent->getIdx() << "\n";
+										assert(found);
+
+	//									if((PrevCnode->getmappedDFGNode()->getFinalIns() == CMP) ||
+	//									   (PrevCnode->getmappedDFGNode()->getFinalIns() == BR)	){
+	//										XBarMap[PrevCnode][PRED] = TILE;
+	//									}
+	//									else if(XBarMap[PrevCnode].find(OP1) == XBarMap[PrevCnode].end()){
+	//										XBarMap[PrevCnode][OP1] = TILE;
+	//									}
+	//									else if(XBarMap[PrevCnode].find(OP2) == XBarMap[PrevCnode].end()){
+	//										XBarMap[PrevCnode][OP2] = TILE;
+	//									}
+	//									else{
+	//										errs() << "UNCOMMENT here : assertion failes here truly!\n";
+	////										assert(false);
+	//									}
+
+									}
+								}
+							}
+						}
+					}
+				}
+
+				//removing other edges if edges with dest as current node is found
+				cgraEdges_t2.clear();
+				for (int m = 0; m < cgraEdges_t.size(); ++m) {
+					if(cgraEdges_t[m].mappedDFGEdge->getDest() == cnode->getmappedDFGNode()){
+						cgraEdges_t2.push_back(cgraEdges_t[m]);
+					}
+				}
+
+				if(!cgraEdges_t2.empty()){
+					cgraEdges_t = cgraEdges_t2;
+				}
+
 				for (int m = 0; m < cgraEdges_t.size(); ++m) {
 					dfgNode* currCnodeNode = cnode->getmappedDFGNode();
 
@@ -4512,8 +4671,14 @@ int DFG::printMapping() {
 						continue;
 					}
 
+					if(parentInfo[currCnodeNode].find(cgraEdges_t[m].mappedDFGEdge->getSrc())
+							!= parentInfo[currCnodeNode].end()){
+						continue;
+					}
+
 					bool parentFound=false;
 					for(dfgNode* parent : currCnodeNode->getAncestors()){
+						currCGRA->printCGRAEdge(cgraEdges_t[m]);
 						if(parent == cgraEdges_t[m].mappedDFGEdge->getSrc()){
 							parentFound=true;
 						}
@@ -4535,6 +4700,7 @@ int DFG::printMapping() {
 					if((cgraEdges_t[m].mappedDFGEdge->getDest() == cnode->getmappedDFGNode())||parentFound){
 
 						dfgNode* cnodeParent = cgraEdges_t[m].mappedDFGEdge->getSrc();
+						dfgNode* cnodeChild = cgraEdges_t[m].mappedDFGEdge->getDest();
 						parentInfo[currCnodeNode].insert(cnodeParent);
 
 						if(cgraEdges_t[m].mappedDFGEdge->getSrc()->getFinalIns() == NOP){
@@ -4566,6 +4732,8 @@ int DFG::printMapping() {
 							if(currCnodeNode->parentClassification.find(0) !=
 							   currCnodeNode->parentClassification.end() ){
 								if(currCnodeNode->parentClassification[0]==cnodeParent){
+									this->getCGRA()->printCGRAEdge(cgraEdges_t[m]);
+									assert(XBarMap[PrevCnode].find(PRED)==XBarMap[PrevCnode].end());
 									XBarMap[PrevCnode][PRED] = cgraEdges_t[m].DstPort;
 									std::cout << "PRED : " << cgraEdges_t[m].DstPort << "\n";
 									found=true;
@@ -4578,6 +4746,8 @@ int DFG::printMapping() {
 							if(currCnodeNode->parentClassification.find(1) !=
 							   currCnodeNode->parentClassification.end() ){
 								if(currCnodeNode->parentClassification[1]==cnodeParent){
+									this->getCGRA()->printCGRAEdge(cgraEdges_t[m]);
+									assert(XBarMap[PrevCnode].find(OP1)==XBarMap[PrevCnode].end());
 									XBarMap[PrevCnode][OP1] = cgraEdges_t[m].DstPort;
 									std::cout << "I1 : " << cgraEdges_t[m].DstPort << "\n";
 									found=true;
@@ -4590,6 +4760,8 @@ int DFG::printMapping() {
 							if(currCnodeNode->parentClassification.find(2) !=
 							   currCnodeNode->parentClassification.end() ){
 								if(currCnodeNode->parentClassification[2]==cnodeParent){
+									this->getCGRA()->printCGRAEdge(cgraEdges_t[m]);
+									assert(XBarMap[PrevCnode].find(OP2)==XBarMap[PrevCnode].end());
 									XBarMap[PrevCnode][OP2] = cgraEdges_t[m].DstPort;
 									std::cout << "I2 : " << cgraEdges_t[m].DstPort << "\n";
 									found=true;
@@ -4661,7 +4833,7 @@ int DFG::printMapping() {
 				if(node!=NULL){
 					if(node->hasConstantVal()){
 						currBinOp.constant=node->getConstantVal();
-						currBinOp.outMap[OP2] = node->getConstantVal() >> 27;
+//						currBinOp.outMap[OP2] = node->getConstantVal() >> 27;
 						currBinOp.constantValid = 1;
 						constantValidMaskMap[j][k]=(constantValidMaskMap[j][k]&(~1)|1) << 1;
 					}
@@ -5380,6 +5552,12 @@ int DFG::nameNodes() {
 				node->setFinalIns(XOR);
 				node->setConstantVal(1);
 			}
+			else if(node->getNameType().compare("GEPLEFTSHIFT") == 0){
+				node->setFinalIns(LS);
+			}
+			else if(node->getNameType().compare("MASKAND") == 0){
+				node->setFinalIns(AND);
+			}
 			else {
 				errs() << "Unknown custom node \n";
 				assert(false);
@@ -5769,17 +5947,19 @@ void DFG::GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeAr
 									  Type::getInt32Ty(Ctx), //addr
 									  Type::getInt8Ty(Ctx),  //isLoad
 									  Type::getInt8Ty(Ctx),  //isHostTrans
+									  Type::getInt8Ty(Ctx), //size
 									  NULL);
 
 			Value* isLoad = ConstantInt::get(Type::getInt8Ty(Ctx),1);
 			Value* isHostTrans;
+			Value* size = ConstantInt::get(Type::getInt8Ty(Ctx),node->getTypeSizeBytes());
 			if(node->isTransferedByHost()){
 				isHostTrans = ConstantInt::get(Type::getInt8Ty(Ctx),1);
 			}
 			else{
 				isHostTrans = ConstantInt::get(Type::getInt8Ty(Ctx),0);
 			}
-			Value* args[] = {nodeIdx,loadVal,addrVal,isLoad,isHostTrans};
+			Value* args[] = {nodeIdx,loadVal,addrVal,isLoad,isHostTrans,size};
 			for (int i = 0; i < loopExitBlocks.size(); ++i) {
 				builder.SetInsertPoint(loopExitBlocks[i],--loopExitBlocks[i]->end());
 //				builder.CreateCall(printf,args);
@@ -5817,17 +5997,19 @@ void DFG::GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeAr
 									  Type::getInt32Ty(Ctx), //addr
 									  Type::getInt8Ty(Ctx),  //isLoad
 									  Type::getInt8Ty(Ctx),  //isHostTrans
+									  Type::getInt8Ty(Ctx),  //size
 									  NULL);
 
 			Value* isLoad = ConstantInt::get(Type::getInt8Ty(Ctx),0);
 			Value* isHostTrans;
+			Value* size = ConstantInt::get(Type::getInt8Ty(Ctx),node->getTypeSizeBytes());
 			if(node->isTransferedByHost()){
 				isHostTrans = ConstantInt::get(Type::getInt8Ty(Ctx),1);
 			}
 			else{
 				isHostTrans = ConstantInt::get(Type::getInt8Ty(Ctx),0);
 			}
-			Value* args[] = {nodeIdx,StoreVal,addrVal,isLoad,isHostTrans};
+			Value* args[] = {nodeIdx,StoreVal,addrVal,isLoad,isHostTrans,size};
 			for (int i = 0; i < loopExitBlocks.size(); ++i) {
 				builder.SetInsertPoint(loopExitBlocks[i],--loopExitBlocks[i]->end());
 //				builder.CreateCall(printf,args);
@@ -6180,7 +6362,7 @@ void DFG::AssignOutLoopAddr() {
 				assert(0 && "should not come here");
 			}
 
-			if(node->getMappedLoc()->getX()==0){
+			if(node->getMappedLoc()->getY()<=1){
 				outloopAddrPtrLeft = outloopAddrPtrLeft-bytewidth;
 
 				if(bytewidth==4){
@@ -6193,7 +6375,7 @@ void DFG::AssignOutLoopAddr() {
 				node->setoutloopAddr(outloopAddrPtrLeft);
 				outs() << "NodeIdx:" << node->getIdx() << ",bytewidth=" << bytewidth << ",addr=" << outloopAddrPtrLeft << "\n";
 			}
-			else if(node->getMappedLoc()->getX()==currCGRA->getXdim()-1){
+			else if(node->getMappedLoc()->getY()>=2){
 				outloopAddrPtrRight = outloopAddrPtrRight-bytewidth;
 
 				if(bytewidth==4){
@@ -6258,6 +6440,16 @@ int DFG::classifyParents() {
 				}
 				else{
 					if(node->getNameType().compare("XORNOT")==0){
+						assert(node->parentClassification.find(1) == node->parentClassification.end());
+						node->parentClassification[1]=parent;
+						continue;
+					}
+					if(node->getNameType().compare("GEPLEFTSHIFT")==0){
+						assert(node->parentClassification.find(1) == node->parentClassification.end());
+						node->parentClassification[1]=parent;
+						continue;
+					}
+					if(node->getNameType().compare("MASKAND")==0){
 						assert(node->parentClassification.find(1) == node->parentClassification.end());
 						node->parentClassification[1]=parent;
 						continue;
@@ -6420,6 +6612,19 @@ int DFG::classifyParents() {
 						node->parentClassification[0]=parent;
 						continue;
 					}
+//					if(parent->getNameType().compare("GEPLEFTSHIFT")==0){
+//						assert(node->parentClassification.find(1)==node->parentClassification.end());
+//						node->parentClassification[1]=parent;
+//						continue;
+//					}
+					if(parent->getNameType().compare("GEPLEFTSHIFT")==0){
+						assert(parent->getAncestors().size()==1);
+						parentIns = parent->getAncestors()[0]->getNode();
+					}
+					if(parent->getNameType().compare("MASKAND")==0){
+						assert(parent->getAncestors().size()==1);
+						parentIns = parent->getAncestors()[0]->getNode();
+					}
 					if(parent->getNameType().compare("OutLoopLOAD")==0){
 						parentIns = OutLoopNodeMapReverse[parent];
 					}
@@ -6549,6 +6754,53 @@ int DFG::treatFalsePaths() {
 	return 0;
 }
 
+int DFG::insertshiftGEPs() {
+	outs() << "insertshiftGEPs started!\n";
+	dfgNode* node;
+	for (int i = 0; i < NodeList.size(); ++i) {
+		node = NodeList[i];
+
+		if(node->getNode()!=NULL){
+			if(GetElementPtrInst* GEP = dyn_cast<GetElementPtrInst>(node->getNode())){
+
+				int elementSize = 0;
+				GEP->dump();
+				for (dfgNode* child : node->getChildren()) {
+					if(child->getNode()!=NULL){
+						if(child->getNode()->mayReadOrWriteMemory()){
+							elementSize = child->getTypeSizeBytes();
+							outs() << "GEP element size = " << child->getTypeSizeBytes() << "\n";
+							break;
+						}
+					}
+				}
+
+				if(elementSize > 1){
+					dfgNode* temp = new dfgNode(this);
+					temp->setNameType("GEPLEFTSHIFT");
+					temp->setIdx(NodeList.size());
+					NodeList.push_back(temp);
+					temp->setConstantVal(Log2_32(elementSize));
+
+					for (dfgNode* parent : node->getAncestors()){
+						parent->removeChild(node);
+						node->removeAncestor(parent);
+						removeEdge(findEdge(parent,node));
+
+						parent->addChildNode(temp);
+						temp->addAncestorNode(parent);
+
+						temp->addChildNode(node);
+						node->addAncestorNode(temp);
+					}
+				}
+
+			}
+		}
+	}
+	outs() << "insertshiftGEPs ended!\n";
+}
+
 int DFG::partitionMemNodes() {
 	dfgNode* node;
 	std::map<Value*,std::vector<dfgNode*>> pointerMemInsMap;
@@ -6676,10 +6928,28 @@ int DFG::handlestartstop() {
 
 	for (int i = 0; i < NodeList.size(); ++i) {
 		node = NodeList[i];
+		if(node->getNode()==NULL){
+			if(node->getNameType().compare("LOOPSTART")==0){
+//				assert(false);
+			}
+		}
+	}
+
+	bool startFound = false;
+	bool exitFound = false;
+
+
+	for (int i = 0; i < NodeList.size(); ++i) {
+		node = NodeList[i];
+
+		if(startFound & exitFound){
+			break;
+		}
 
 		//LoopStart
 		if(node->getNode()==NULL){
 			if(node->getNameType().compare("LOOPSTART")==0){
+				startFound = true;
 //				dfgNode* loadStart = new dfgNode(this);
 //				loadStart->setIdx(this->getNodesPtr()->size());
 //				this->getNodesPtr()->push_back(loadStart);
@@ -6720,42 +6990,187 @@ int DFG::handlestartstop() {
 			}
 		}
 		else {		//LoopExit
-			if(std::find(loopExitBlocks.begin(),loopExitBlocks.end(),node->getNode()->getParent())!=loopExitBlocks.end()){
+//			if(std::find(loopExitBlocks.begin(),loopExitBlocks.end(),node->getNode()->getParent())!=loopExitBlocks.end()){
+//
+//				if(!dyn_cast<BranchInst>(node->getNode())){
+//					continue;
+//				}
+//
+//				//current node belong to a loop exit basic block
+//				dfgNode* loopexit = new dfgNode(this);
+//				loopexit->setIdx(this->getNodesPtr()->size());
+//				this->getNodesPtr()->push_back(loopexit);
+//				loopexit->setNameType("LOOPEXIT");
+//				loopexit->BB = node->BB;
+//				loopexit->setLeftAlignedMemOp(1);
+//
+//				assert(node->getChildren().empty());
+//				for(dfgNode* anc : node->getAncestors()){
+//					anc->removeChild(node);
+//					node->removeAncestor(anc);
+//					removeEdge(findEdge(anc,node));
+//
+//					anc->addChildNode(loopexit);
+//					loopexit->addAncestorNode(anc);
+//				}
+//
+//				dfgNode* movone = new dfgNode(this);
+//				movone->setIdx(this->getNodesPtr()->size());
+//				this->getNodesPtr()->push_back(movone);
+//				movone->setNameType("MOVC");
+//				movone->BB = node->BB;
+//				movone->setConstantVal(1);
+//
+//				movone->addChildNode(loopexit);
+//				loopexit->addAncestorNode(movone);
+//			}
 
-				if(!dyn_cast<BranchInst>(node->getNode())){
-					continue;
+			//checking
+//			assert(false); // please comment below to remove this assertion
+
+//			if(std::find(loopExitBlocks.begin(),loopExitBlocks.end(),node->getNode()->g)!=loopExitBlocks.end()){
+
+				if(BranchInst* BRI = dyn_cast<BranchInst>(node->getNode())){
+
+					for (int j = 0; j < BRI->getNumSuccessors(); ++j) {
+						if(std::find(loopExitBlocks.begin(),
+									 loopExitBlocks.end(),
+									 BRI->getSuccessor(j))!=loopExitBlocks.end()){
+
+							//current node belong to a loop exit basic block
+							dfgNode* loopexit = new dfgNode(this);
+							loopexit->setIdx(this->getNodesPtr()->size());
+							this->getNodesPtr()->push_back(loopexit);
+							loopexit->setNameType("LOOPEXIT");
+							loopexit->BB = BRI->getSuccessor(j);
+							loopexit->setLeftAlignedMemOp(1);
+
+							node->addChildNode(loopexit);
+							loopexit->addAncestorNode(node);
+
+							dfgNode* movone = new dfgNode(this);
+							movone->setIdx(this->getNodesPtr()->size());
+							this->getNodesPtr()->push_back(movone);
+							movone->setNameType("MOVC");
+							movone->BB = node->BB;
+							movone->setConstantVal(1);
+
+							movone->addChildNode(loopexit);
+							loopexit->addAncestorNode(movone);
+							exitFound = true;
+						}
+					}
+
+
+
+
+
 				}
 
-				//current node belong to a loop exit basic block
-				dfgNode* loopexit = new dfgNode(this);
-				loopexit->setIdx(this->getNodesPtr()->size());
-				this->getNodesPtr()->push_back(loopexit);
-				loopexit->setNameType("LOOPEXIT");
-				loopexit->BB = node->BB;
-				loopexit->setLeftAlignedMemOp(1);
-
-				assert(node->getChildren().empty());
-				for(dfgNode* anc : node->getAncestors()){
-					anc->removeChild(node);
-					node->removeAncestor(anc);
-					removeEdge(findEdge(anc,node));
-
-					anc->addChildNode(loopexit);
-					loopexit->addAncestorNode(anc);
-				}
-
-				dfgNode* movone = new dfgNode(this);
-				movone->setIdx(this->getNodesPtr()->size());
-				this->getNodesPtr()->push_back(movone);
-				movone->setNameType("MOVC");
-				movone->BB = node->BB;
-				movone->setConstantVal(1);
-
-				movone->addChildNode(loopexit);
-				loopexit->addAncestorNode(movone);
-			}
+//			}
 		}
 
 	}
 }
 
+int DFG::nonGEPLoadStorecheck() {
+	dfgNode* node;
+
+
+
+	for (int i = 0; i < NodeList.size(); ++i) {
+		node = NodeList[i];
+
+		if(node->getNode() == NULL) continue;
+		if(node->getNode()->mayReadOrWriteMemory() != true) continue;
+
+		const DataLayout DL = node->getNode()->getParent()->getParent()->getParent()->getDataLayout();
+
+		//only comes to here when there are loads and nodes
+		bool GEPfound=false;
+		for(dfgNode* parent : node->getAncestors()){
+			if(parent->getNode()==NULL) continue;
+			if(dyn_cast<GetElementPtrInst>(parent->getNode())){
+				GEPfound=true;
+				break;
+			}
+		}
+		if(GEPfound) continue;
+
+
+		Type* T;
+
+		if(LoadInst* LDI = dyn_cast<LoadInst>(node->getNode())){
+			T = LDI->getPointerOperand()->getType();
+			if(dyn_cast<Instruction>(LDI->getPointerOperand())){
+				continue;
+			}
+		}
+		else if(StoreInst* STI = dyn_cast<StoreInst>(node->getNode())){
+			T = STI->getPointerOperand()->getType();
+			if(dyn_cast<Instruction>(STI->getPointerOperand())){
+				continue;
+			}
+		}
+		else{
+			assert(false);
+		}
+
+		node->getNode()->dump();
+		int Size = DL.getTypeAllocSize(T);
+		outs() << "Size=" << Size << ",";
+
+		if(PointerType* PT = dyn_cast<PointerType>(T)){
+			outs() << "ElementSize=" << DL.getTypeAllocSize(PT->getElementType()) << ",";
+//			PT->is
+		}
+
+		errs() << "S/A/I/P=" << T->isStructTy()<< "/";
+		errs() << T->isArrayTy()<< "/";
+		errs() << T->isIntegerTy()<< "/";
+		errs() << T->isPointerTy()<< "\n";
+	}
+
+	assert(false);
+}
+
+int DFG::addMaskLowBitInstructions() {
+	for (dfgNode* node : NodeList){
+		if(node->getNode()!=NULL){
+			if(node->getNode()->getOpcode()==Instruction::Shl){
+				int byteWidth = node->getNode()->getType()->getIntegerBitWidth()/8;
+				if(byteWidth == 2 || byteWidth == 1){
+					dfgNode* mls = new dfgNode(this);
+					mls->setIdx(this->getNodesPtr()->size());
+					this->getNodesPtr()->push_back(mls);
+					mls->setNameType("MASKAND");
+					if(byteWidth == 2){
+						mls->setConstantVal(0xffff);
+					}
+					else{ //byteWidth == 1
+						mls->setConstantVal(0xff);
+					}
+					mls->BB = node->BB;
+
+					dfgNode* child;
+					for (int i = 0; i < node->getChildren().size(); ++i) {
+						child = node->getChildren()[i];
+
+						node->removeChild(child);
+						child->removeAncestor(node);
+						removeEdge(findEdge(node,child));
+
+						node->addChildNode(mls);
+						mls->addAncestorNode(node);
+
+						mls->addChildNode(child);
+						child->addAncestorNode(mls);
+					}
+				}
+				else{
+					assert(byteWidth == 4);
+				}
+			}
+		}
+	}
+}

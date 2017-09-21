@@ -90,6 +90,7 @@ class CGRA{
 			CGRANode* getCGRANode(int phyLoc);
 			std::map<Port,std::vector<Port> > OrigInOutPortMap;
 			std::map<CGRANode*,std::set<Port>> busyPorts;
+			std::map<dfgNode*,std::map<dfgNode*,std::pair<CGRANode*,Port>>> addedbusyPorts;
 
 			int getXdim();
 			int getYdim();
