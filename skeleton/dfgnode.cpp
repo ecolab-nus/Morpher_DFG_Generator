@@ -494,7 +494,7 @@ void dfgNode::setGEPbaseAddr(int addr) {
 	constValFlag = true;
 }
 
-dfgNode* dfgNode::addCMergeParent(dfgNode* phiBRAncestor,dfgNode* phiDataAncestor,int32_t constVal) {
+dfgNode* dfgNode::addCMergeParent(dfgNode* phiBRAncestor,dfgNode* phiDataAncestor,int32_t constVal,bool selectOp) {
 	dfgNode* temp = new dfgNode(Parent);
 	temp->setIdx(Parent->getNodesPtr()->size());
 	Parent->getNodesPtr()->push_back(temp);
@@ -513,8 +513,14 @@ dfgNode* dfgNode::addCMergeParent(dfgNode* phiBRAncestor,dfgNode* phiDataAncesto
 	temp->addAncestorNode(phiBRAncestor);
 	phiBRAncestor->addChildNode(temp);
 
-	temp->addPHIChildNode(this);
-	this->addPHIAncestorNode(temp);
+	if(selectOp){
+		temp->addChildNode(this);
+		this->addAncestorNode(temp);
+	}
+	else{
+		temp->addPHIChildNode(this);
+		this->addPHIAncestorNode(temp);
+	}
 
 	return temp;
 }
@@ -626,4 +632,22 @@ dfgNode* dfgNode::addCMergeParent(Instruction* phiBRAncestorIns, int32_t constVa
 void dfgNode::setFinalIns(HyCUBEIns ins){
 	outs() <<  "SetFinalIns::Node=" << this->getIdx() << ",HyIns=" << Parent->HyCUBEInsStrings[ins] << "\n";
 	finalIns = ins;
+}
+
+bool dfgNode::isParent(dfgNode* parent) {
+	if(this->getAncestors().empty()){
+		return false;
+	}
+
+	if(parent==NULL){
+		return false;
+	}
+
+	for(dfgNode* par : this->getAncestors()){
+		if(par == parent){
+			return true;
+		}
+	}
+
+	return false;
 }

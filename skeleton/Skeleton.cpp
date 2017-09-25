@@ -86,6 +86,7 @@ using namespace llvm;
 static cl::opt<unsigned> loopNumber("ln", cl::init(0), cl::desc("The loop number to map"));
 static cl::opt<std::string> fName("fn", cl::init("na"), cl::desc("the function name"));
 static cl::opt<bool> noName("nn", cl::desc("map all functions and loops"));
+static cl::opt<unsigned> initMII("ii", cl::init(0), cl::desc("The starting II for the mapping"));
 
 static std::map<std::string,int> sizeArrMap;
 
@@ -1045,6 +1046,7 @@ namespace {
 				  LoopDFG.scheduleASAP();
 				  LoopDFG.scheduleALAP();
 				  LoopDFG.balanceASAPALAP();
+//				  LoopDFG.addBreakLongerPaths();
 				  LoopDFG.CreateSchList();
 //				  LoopDFG.MapCGRA(4,4);
 				  LoopDFG.printXML();
@@ -1073,7 +1075,7 @@ namespace {
 				  }
 				  ArchType arch = RegXbarTREG;
 				  printDFGDOT (F.getName().str() + "_L" + std::to_string(loopCounter) + "_loopdfg.dot", &LoopDFG);
-				  LoopDFG.MapCGRA_SMART(4,4, arch, 20);
+				  LoopDFG.MapCGRA_SMART(4,4, arch, 20,initMII);
 				  LoopDFG.AssignOutLoopAddr();
 				  LoopDFG.GEPInvestigate(F,L,&sizeArrMap);
 				  LoopDFG.addPHIParents();
@@ -1085,6 +1087,7 @@ namespace {
 
 				  if((arch != NoNOC)&&(arch != ALL2ALL)){
 					  LoopDFG.printOutSMARTRoutes();
+//					  LoopDFG.analyzeRTpaths();
 					  LoopDFG.printMapping();
 				  }
 

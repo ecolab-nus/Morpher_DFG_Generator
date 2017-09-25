@@ -207,7 +207,7 @@ class dfgNode{
 			int getTypeSizeBytes(){return typeSizeBytes;}
 
 			//Add CMerge Child
-			dfgNode* addCMergeParent(dfgNode* phiBRAncestor,dfgNode* phiDataAncestor=NULL,int32_t constVal=-1);
+			dfgNode* addCMergeParent(dfgNode* phiBRAncestor,dfgNode* phiDataAncestor=NULL,int32_t constVal=-1, bool selectOp=false);
 			dfgNode* addCMergeParent(dfgNode* phiBRAncestor,Instruction* outLoopLoadIns);
 			dfgNode* addCMergeParent(Instruction* phiBRAncestorIns,Instruction* outLoopLoadIns);
 			dfgNode* addCMergeParent(Instruction* phiBRAncestorIns,int32_t constVal);
@@ -226,6 +226,9 @@ class dfgNode{
 			//left aligned memop
 			int getLeftAlignedMemOp(){return leftAlignedMemOP;}
 			void setLeftAlignedMemOp(int leftAlignedMemOp) {leftAlignedMemOP = leftAlignedMemOp;}
+
+			bool isParent(dfgNode* parent);
+
 };
 
 

@@ -74,6 +74,8 @@ CGRA::CGRA(int MII, int Xdim, int Ydim, int regs, ArchType aType) {
 	CGRANode* tempNodePtr;
 	std::map<Port,std::vector<Port> > InOutPortMap;
 
+	this->busyPorts.clear();
+
 	freeBlocks.push_back(freeBlock(0,0,0,Xdim,Ydim,MII));
 
 

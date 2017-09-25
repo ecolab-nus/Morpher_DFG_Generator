@@ -3295,7 +3295,6 @@ void DFG::printOutSMARTRoutes() {
 	int MII = currCGRA->getMII();
 	std::pair<dfgNode*,dfgNode*> sourcePath;
 
-	std::map<dfgNode*,std::map<dfgNode*,std::vector<CGRANode*>>> nodeRouteMap;
 
 	int pT = -1;
 	int pY = -1;
@@ -3502,6 +3501,7 @@ void DFG::printOutSMARTRoutes() {
 		pathLengthFile << std::endl;
 	}
 	pathLengthFile.close();
+	analyzeRTpaths();
 
 }
 
@@ -4254,8 +4254,8 @@ int DFG::addCMERGEtoSELECT() {
 			condNode->addChildNode(notnode);
 			notnode->addAncestorNode(condNode);
 
-			node->addCMergeParent(condNode,trueNode);
-			node->addCMergeParent(notnode,falseNode);
+			node->addCMergeParent(condNode,trueNode,-1,true);
+			node->addCMergeParent(notnode,falseNode,-1,true);
 		}
 
 	}
@@ -4655,9 +4655,15 @@ int DFG::printMapping() {
 				//removing other edges if edges with dest as current node is found
 				cgraEdges_t2.clear();
 				for (int m = 0; m < cgraEdges_t.size(); ++m) {
-					if(cgraEdges_t[m].mappedDFGEdge->getDest() == cnode->getmappedDFGNode()){
+
+					if(cnode->getmappedDFGNode() == NULL)break;
+					if(cnode->getmappedDFGNode()->isParent(cgraEdges_t[m].mappedDFGEdge->getSrc())){
 						cgraEdges_t2.push_back(cgraEdges_t[m]);
 					}
+
+//					if(cgraEdges_t[m].mappedDFGEdge->getDest() == cnode->getmappedDFGNode()){
+//
+//					}
 				}
 
 				if(!cgraEdges_t2.empty()){
@@ -4698,6 +4704,7 @@ int DFG::printMapping() {
 					}
 
 					if((cgraEdges_t[m].mappedDFGEdge->getDest() == cnode->getmappedDFGNode())||parentFound){
+
 
 						dfgNode* cnodeParent = cgraEdges_t[m].mappedDFGEdge->getSrc();
 						dfgNode* cnodeChild = cgraEdges_t[m].mappedDFGEdge->getDest();
@@ -5551,6 +5558,10 @@ int DFG::nameNodes() {
 			else if(node->getNameType().compare("XORNOT") == 0){
 				node->setFinalIns(XOR);
 				node->setConstantVal(1);
+			}
+			else if(node->getNameType().compare("ORZERO") == 0){
+				node->setFinalIns(OR);
+				node->setConstantVal(0);
 			}
 			else if(node->getNameType().compare("GEPLEFTSHIFT") == 0){
 				node->setFinalIns(LS);
@@ -6444,6 +6455,11 @@ int DFG::classifyParents() {
 						node->parentClassification[1]=parent;
 						continue;
 					}
+					if(node->getNameType().compare("ORZERO")==0){
+						assert(node->parentClassification.find(1) == node->parentClassification.end());
+						node->parentClassification[1]=parent;
+						continue;
+					}
 					if(node->getNameType().compare("GEPLEFTSHIFT")==0){
 						assert(node->parentClassification.find(1) == node->parentClassification.end());
 						node->parentClassification[1]=parent;
@@ -6541,6 +6557,10 @@ int DFG::classifyParents() {
 						}
 						else{
 							if((parent->getNameType().compare("XORNOT")==0)){
+								assert(node->parentClassification.find(0)==node->parentClassification.end());
+								node->parentClassification[0]=parent;
+							}
+							else if((parent->getNameType().compare("ORZERO")==0)){
 								assert(node->parentClassification.find(0)==node->parentClassification.end());
 								node->parentClassification[0]=parent;
 							}
@@ -7173,4 +7193,126 @@ int DFG::addMaskLowBitInstructions() {
 			}
 		}
 	}
+}
+
+int DFG::addBreakLongerPaths() {
+	dfgNode* node;
+
+	for (int i = 0; i < NodeList.size(); ++i) {
+		node = NodeList[i];
+		for (dfgNode* child : node->getChildren()){
+			int ASAPdistance = child->getASAPnumber() - node->getASAPnumber();
+			int internalASAPdist = ASAPdistance/4;
+			if(ASAPdistance > 5 && internalASAPdist > 0){
+				outs() << "breaking long paths adding op:OR 0 between " << ": node=" << node->getIdx() << "and node=" << child->getIdx() << "\n";
+
+				dfgNode* orzero1 = new dfgNode(this);
+				orzero1->setIdx(this->getNodesPtr()->size());
+				this->getNodesPtr()->push_back(orzero1);
+				orzero1->BB = node->BB;
+				orzero1->setNameType("ORZERO");
+
+				orzero1->setASAPnumber(node->getASAPnumber()+internalASAPdist);
+
+				dfgNode* orzero2 = new dfgNode(this);
+				orzero2->setIdx(this->getNodesPtr()->size());
+				this->getNodesPtr()->push_back(orzero2);
+				orzero2->BB = node->BB;
+				orzero2->setNameType("ORZERO");
+
+				orzero2->setASAPnumber(orzero1->getASAPnumber()+internalASAPdist);
+
+				dfgNode* orzero3 = new dfgNode(this);
+				orzero3->setIdx(this->getNodesPtr()->size());
+				this->getNodesPtr()->push_back(orzero3);
+				orzero3->BB = node->BB;
+				orzero3->setNameType("ORZERO");
+
+				orzero3->setASAPnumber(orzero2->getASAPnumber()+internalASAPdist);
+
+				orzero3->setALAPnumber(child->getALAPnumber() - 1);
+				orzero2->setALAPnumber(orzero3->getALAPnumber() - 1);
+				orzero1->setALAPnumber(orzero2->getALAPnumber() - 1);
+
+				node->removeChild(child);
+				child->removeAncestor(node);
+
+				node->addChildNode(orzero1);
+				orzero1->addAncestorNode(node);
+
+				orzero1->addChildNode(orzero2);
+				orzero2->addAncestorNode(orzero1);
+
+				orzero2->addChildNode(orzero3);
+				orzero3->addAncestorNode(orzero2);
+
+				orzero3->addChildNode(child);
+				child->addAncestorNode(orzero3);
+
+			}
+		}
+	}
+}
+
+int DFG::analyzeRTpaths() {
+	assert(!nodeRouteMap.empty());
+	outs() << "analyzeRTpaths :: begin\n";
+
+	for(dfgNode* node : NodeList){
+		if(node->getAncestors().empty())continue;
+		if(node->getNode() != NULL){
+			if (dyn_cast<PHINode>( node->getNode() ) ){
+				continue;
+			}
+		}
+		for(dfgNode* parent : node->getAncestors()){
+			if(parent->getNameType().compare("OutLoopLOAD") == 0 ||
+			   parent->getNameType().compare("MOVC") == 0	){
+				continue;
+			}
+
+			//analyzing distance in time
+			int distanceDt=1; //it should be atleast 1
+			int parent_tplus1_2 = parent_tplus1_2 = (parent->getMappedLoc()->getT()+1)%currCGRA->getMII();
+			if(parent->getMappedLoc()->getPEType() == MEM){
+				distanceDt=2;
+				parent_tplus1_2 = (parent->getMappedLoc()->getT()+2)%currCGRA->getMII();
+			}
+
+
+			outs() << "path size = " << nodeRouteMap[node][parent].size() << "\n";
+
+			int parent_y = parent->getMappedLoc()->getY();
+			int parent_x = parent->getMappedLoc()->getX();
+
+			CGRANode* startingCnode = currCGRA->getCGRANode(parent_tplus1_2,parent_y,parent_x);
+
+			for (int i = 1; i < nodeRouteMap[node][parent].size(); ++i) {
+
+				//this vector is going from destination to source
+				CGRANode* curr = nodeRouteMap[node][parent][i];
+				CGRANode* next = nodeRouteMap[node][parent][i-1];
+
+				if(curr->getT() != next->getT()){
+					outs() << "curr=" << curr->getNameSp() << ",next=" << next->getNameSp() << "\n";
+					distanceDt++;
+				}
+
+				if(curr == startingCnode){
+					break;
+				}
+			}
+
+			int distanceRT = node->getmappedRealTime() - parent->getmappedRealTime();
+
+			if(distanceDt != distanceRT){
+				outs() << "the path from " << parent->getMappedLoc()->getNameSp() << ",Node=" << parent->getIdx();
+				outs() << " to " << node->getMappedLoc()->getNameSp() << ",Node=" << node->getIdx();
+				outs() << " RealDistance=" << distanceRT << " and MappedDistance=" << distanceDt << "\n";
+			}
+
+			assert(distanceRT%currCGRA->getMII() == distanceDt%currCGRA->getMII());
+		}
+	}
+	outs() << "analyzeRTpaths :: end\n";
 }

@@ -428,6 +428,14 @@ class DFG{
 			//Maybe we can fix this in the architecture ?
 			int addMaskLowBitInstructions();
 
+			//break longer paths by adding or 0 instructions
+			int addBreakLongerPaths();
+
+			//making node route map of printsmartroute public and accessible
+			std::map<dfgNode*,std::map<dfgNode*,std::vector<CGRANode*>>> nodeRouteMap;
+
+			int analyzeRTpaths();
+
 	};
 
 

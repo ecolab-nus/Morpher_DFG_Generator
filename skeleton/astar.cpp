@@ -224,6 +224,9 @@ int AStar::calckII(CGRANode* start, int startRT, CGRANode* goal, int goalRT){
 	int kII = goalRT - startRT;
 	if(kII < 0) return -1;
 
+	//Delete this is for testing
+	return -1;
+
 //	return kII/currDFG->getCGRA()->getMII();
 	return kII;
 }

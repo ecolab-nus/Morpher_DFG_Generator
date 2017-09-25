@@ -102,7 +102,7 @@ public:
 	int maxSMARTPathLength;
 	std::map<int,std::vector<dfgNode*>> ASAPLevelNodeMap;
 
-	int MaxSCpathLength = 4;
+	int MaxSCpathLength = 6;
 
 	bool reportDeadEnd(CGRANode* end, Port endPort, dfgNode* currNode, std::map<CGRANode*,std::vector<CGRAEdge> >* cgraEdges);
 
