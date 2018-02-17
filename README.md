@@ -1,5 +1,6 @@
 # HyCUBE Compiler : Acquire DFG and Generate RTL Streams
 
+This version is for LLVM 7 
 A completely useless LLVM pass.
 
 Build:
