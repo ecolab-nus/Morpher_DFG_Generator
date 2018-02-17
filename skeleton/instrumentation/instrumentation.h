@@ -21,9 +21,18 @@ void loopTraceClose();
 void loopInvoke(const char* loopName);
 void loopInvokeEnd(const char* loopName);
 void loopInsUpdate(const char* name, int insCount);
+
+void loopBBInsUpdate(const char* loopName, const char* BBName, int insCount);
+void loopBBMappingUnitUpdate(const char* BBName, const char* munitName);
+
 void loopInsClear(const char* name);
+void loopBBInsClear();
+
+void updateLoopPreHeader(const char* loopName, const char* preheaderBB);
 
 void reportExecInsCount(int count);
+void recordUncondMunitTransition(const char* srcBB, const char* destBB);
+void recordCondMunitTransition(const char* srcBB, const char* destBB1, const char* destBB2, int condition);
 
 
 #ifdef __cplusplus

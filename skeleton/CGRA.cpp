@@ -394,22 +394,22 @@ CGRA::CGRA(int MII, int Xdim, int Ydim, int regs, ArchType aType) {
 				tempNodePtr = new CGRANode(x,y,t,this);
 				tempNodePtr->InOutPortMap = InOutPortMap;
 
-//				if(x == 0){
+				if(x == 0){
+					tempNodePtr->setPEType(MEM);
+				}
+
+//				if((x==0)&&(y==0)){
 //					tempNodePtr->setPEType(MEM);
 //				}
-
-				if((x==0)&&(y==0)){
-					tempNodePtr->setPEType(MEM);
-				}
-				else if((x==0)&&(y==Ydim-1)){
-					tempNodePtr->setPEType(MEM);
-				}
-				else if((x==Xdim-1)&&(y==0)){
-					tempNodePtr->setPEType(MEM);
-				}
-				else if((x==Xdim-1)&&(y==Ydim-1)){
-					tempNodePtr->setPEType(MEM);
-				}
+//				else if((x==0)&&(y==Ydim-1)){
+//					tempNodePtr->setPEType(MEM);
+//				}
+//				else if((x==Xdim-1)&&(y==0)){
+//					tempNodePtr->setPEType(MEM);
+//				}
+//				else if((x==Xdim-1)&&(y==Ydim-1)){
+//					tempNodePtr->setPEType(MEM);
+//				}
 
 
 				tempL1.push_back(tempNodePtr);
@@ -736,10 +736,11 @@ std::vector<CGRAEdge*> CGRA::findCGRAEdges(CGRANode* currCNode,
 				for (int i = 0; i < candPorts.size(); ++i) {
 					if(currPort == candPorts[i]){
 
-						if(currPort==R0) assert(inPort == R0 || inPort == NORTH);
-						if(currPort==R1) assert(inPort == R1 || inPort == EAST);
-						if(currPort==R2) assert(inPort == R2 || inPort == WEST);
-						if(currPort==R3) assert(inPort == R3 || inPort == SOUTH);
+						//TODO : DAC18
+//						if(currPort==R0) assert(inPort == R0 || inPort == NORTH);
+//						if(currPort==R1) assert(inPort == R1 || inPort == EAST);
+//						if(currPort==R2) assert(inPort == R2 || inPort == WEST);
+//						if(currPort==R3) assert(inPort == R3 || inPort == SOUTH);
 
 
 						if((*cgraEdgesPtr)[currCNode][j].Dst->getT() >= MII){
@@ -1247,6 +1248,8 @@ void CGRA::printCGRAEdge(CGRAEdge ce) {
 		errs() << "mapped to NULL\n";
 	}
 	else{
+		assert(ce.mappedDFGEdge->getSrc());
+		assert(ce.mappedDFGEdge->getDest());
 		errs() << "mapped to " << ce.mappedDFGEdge->getSrc()->getIdx() << "_to_" << ce.mappedDFGEdge->getDest()->getIdx() << "\n";
 	}
 

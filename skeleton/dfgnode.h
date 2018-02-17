@@ -85,6 +85,8 @@ class dfgNode{
 			//negated predicated bit
 			bool npb=false;
 
+			//served phi index
+
 
 		public :
 
@@ -211,6 +213,7 @@ class dfgNode{
 			dfgNode* addCMergeParent(dfgNode* phiBRAncestor,Instruction* outLoopLoadIns);
 			dfgNode* addCMergeParent(Instruction* phiBRAncestorIns,Instruction* outLoopLoadIns);
 			dfgNode* addCMergeParent(Instruction* phiBRAncestorIns,int32_t constVal);
+			dfgNode* addCMergeParent(Instruction* phiBRAncestorIns,dfgNode* phiDataAncestor);
 
 			//ConstantVal
 			int getConstantVal(){assert(constValFlag);return constVal;}
@@ -228,6 +231,7 @@ class dfgNode{
 			void setLeftAlignedMemOp(int leftAlignedMemOp) {leftAlignedMemOP = leftAlignedMemOp;}
 
 			bool isParent(dfgNode* parent);
+			void printName();
 
 };
 

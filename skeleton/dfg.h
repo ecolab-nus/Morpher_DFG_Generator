@@ -131,6 +131,20 @@ typedef struct{
 	uint8_t npb;
 } binOp;
 
+struct munitTransition{
+	int id;
+	BasicBlock* srcBB;
+	BasicBlock* destBB;
+};
+
+struct munitTransitionComparer
+{
+    bool operator()(const munitTransition & Left, const munitTransition & Right) const
+    {
+        return (Left.srcBB < Right.srcBB) || (Left.srcBB == Right.srcBB && Left.destBB < Right.destBB);
+    }
+};
+
 enum MemOp   {LOAD,STORE,INVALID};
 enum DFGType {NOLOOP,OUTLOOP,INLOOP};
 
@@ -159,6 +173,8 @@ class DFG{
 			//LoopInfo if its a loop
 			Loop* L=NULL;
 			std::set<BasicBlock*> loopBB;
+			std::set<std::pair<BasicBlock*,BasicBlock*>> loopentryBB;
+			std::set<std::pair<BasicBlock*,BasicBlock*>> loopexitBB;
 			int loopIdx=-1;
 			std::map<Loop*,std::string>* loopNamesPtr;
 
@@ -198,6 +214,8 @@ class DFG{
 			std::map<dfgNode*,Instruction*> OutLoopNodeMapReverse;
 			std::map<Instruction*,dfgNode*> LoopStartMap;
 
+			std::map<HyCUBEIns,int> hyCUBEInsHist;
+
 			DFG(std::string name,std::map<Loop*,std::string>* lnPtr);
 
 
@@ -220,7 +238,7 @@ class DFG{
 
 			dfgNode* findNode(Instruction* I);
 
-			Edge* findEdge(dfgNode* src, dfgNode* dest);
+			Edge* findEdge(dfgNode* src, dfgNode* dest, CGRANode* goal=NULL);
 
 			std::vector<dfgNode*> getRoots();
 
@@ -270,7 +288,7 @@ class DFG{
 
 			std::vector<ConnectedCGRANode> FindCandidateCGRANodes(dfgNode* node);
 
-			void MapCGRA_SMART(int XDim, int YDim, ArchType arch = RegXbarTREG, int bTrack = 100, int initMII=1);
+			bool MapCGRA_SMART(int XDim, int YDim, ArchType arch = RegXbarTREG, int bTrack = 100, int initMII=1);
 			void MapCGRA_SA(int XDim, int YDim, std::string mapfileName = "Mapping.log");
 			bool MapMultiDest(std::map<dfgNode*,std::vector< std::pair<CGRANode*,int> > > *nodeDestMap, std::map<CGRANode*,std::vector<dfgNode*> > *destNodeMap);
 			bool MapASAPLevel(int MII, int XDim, int YDim, ArchType arch);
@@ -357,6 +375,7 @@ class DFG{
 			int handleMEMops();
 
 			int getMEMOpsToBePlaced();
+			int getOutLoopMEMOps();
 
 			int nameNodes();
 			std::map<HyCUBEIns,std::string> HyCUBEInsStrings;
@@ -381,6 +400,7 @@ class DFG{
 			static void partitionFuncDFG(DFG* funcDFG, std::vector<DFG*> dfgVectorPtr);
 
 			//investigate GEP
+			void GEPInvestigate(Function &F, std::map<std::string,int>* sizeArrMap);
 			void GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeArrMap);
 			std::map<std::string,uint32_t> allocatedArraysMap;
 
@@ -395,6 +415,7 @@ class DFG{
 			void setLoop(Loop* loop){L=loop;}
 			Loop* getLoop(){return L;}
 			void setLoopBB(std::set<BasicBlock*> BBs){loopBB=BBs;}
+			void setLoopBB(std::set<BasicBlock*> BBs,std::set<std::pair<BasicBlock*,BasicBlock*>> entryBBs, std::set<std::pair<BasicBlock*,BasicBlock*>> exitBBs){loopBB=BBs;loopentryBB=entryBBs;loopexitBB=exitBBs;}
 			std::set<BasicBlock*>* getLoopBB(){return &loopBB;}
 			void setLoopIdx(int i){loopIdx=i;}
 			int getLoopIdx(){return loopIdx;}
@@ -412,6 +433,7 @@ class DFG{
 
 			//starting and stopping loops
 			int handlestartstop();
+			int handlestartstop_munit(std::vector<munitTransition> bbTrans);
 
 			//print JUMPL header
 			int printJUMPLHeader(std::ofstream& binFile, std::ofstream& binOpNameFile);
@@ -435,6 +457,14 @@ class DFG{
 			std::map<dfgNode*,std::map<dfgNode*,std::vector<CGRANode*>>> nodeRouteMap;
 
 			int analyzeRTpaths();
+
+			//Mutually Excluded Path Exploration
+			int checkMutexBBs();
+
+			int printHyCUBEInsHist();
+
+			//setting sizeArrMap accesible for the DFG class
+			std::map<std::string,int> sizeArrMap;
 
 	};
 

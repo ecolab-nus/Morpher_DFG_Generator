@@ -16,17 +16,23 @@ dfgNode::dfgNode(Instruction *ins, DFG* parent){
 			if(this->hasConstantVal()){
 				ins->dump();
 			}
-			assert(this->hasConstantVal()==false);
+			//TODO : DAC18:Currently I do not support two constants fix this later...
+//			assert(this->hasConstantVal()==false);
+
 			this->setConstantVal(CI->getSExtValue());
 		}
 	}
 
 	if(dyn_cast<LoadInst>(ins)){
-		this->setTypeSizeBytes(ins->getType()->getIntegerBitWidth()/8);
+		//TODO : DAC18
+		this->setTypeSizeBytes(ins->getType()->getPrimitiveSizeInBits()/8);
+//		this->setTypeSizeBytes(ins->getType()->getIntegerBitWidth()/8);
 	}
 
 	if(StoreInst* SI = dyn_cast<StoreInst>(ins)){
-		this->setTypeSizeBytes(SI->getValueOperand()->getType()->getIntegerBitWidth()/8);
+		//TODO : DAC18
+		this->setTypeSizeBytes(SI->getValueOperand()->getType()->getPrimitiveSizeInBits()/8);
+//		this->setTypeSizeBytes(SI->getValueOperand()->getType()->getIntegerBitWidth()/8);
 	}
 }
 
@@ -416,8 +422,19 @@ void dfgNode::addStoreChild(Instruction * ins) {
 
 	//ceiling upto multiple of 8
 	outs() << "addStoreChild : ins="; ins->dump();
-	temp->setTypeSizeBytes((ins->getType()->getIntegerBitWidth()+7)/8);
 
+	if(GetElementPtrInst* GEP = dyn_cast<GetElementPtrInst>(ins)){
+		temp->setTypeSizeBytes(4);
+	}
+	else if(dyn_cast<PointerType>(ins->getType())){
+		temp->setTypeSizeBytes(4);
+	}
+	else{
+
+		//TODO:DAC18
+//		temp->setTypeSizeBytes((ins->getType()->getIntegerBitWidth()+7)/8);
+		temp->setTypeSizeBytes((ins->getType()->getPrimitiveSizeInBits()+7)/8);
+	}
 }
 
 void dfgNode::addLoadParent(Instruction * ins) {
@@ -462,8 +479,24 @@ void dfgNode::addLoadParent(Instruction * ins) {
 		errs() << "ALOCA\n";
 		temp->setTypeSizeBytes(4);
 	}
+	else if(dyn_cast<PointerType>(ins->getType())){
+		temp->setTypeSizeBytes(4);
+	}
 	else{
-		temp->setTypeSizeBytes((ins->getType()->getIntegerBitWidth()+7)/8);
+
+		if(dyn_cast<ArrayType>(ins->getType())){
+			outs() << "A\n";
+		}
+		if(dyn_cast<StructType>(ins->getType())){
+			outs() << "S\n";
+		}
+		if(dyn_cast<PointerType>(ins->getType())){
+			outs() << "P\n";
+		}
+
+		//TODO:DAC18
+//		temp->setTypeSizeBytes((ins->getType()->getIntegerBitWidth()+7)/8);
+		temp->setTypeSizeBytes((ins->getType()->getPrimitiveSizeInBits()+7)/8);
 	}
 
 
@@ -561,6 +594,56 @@ bool dfgNode::isGEP() {
 }
 
 dfgNode* dfgNode::addCMergeParent(Instruction* phiBRAncestorIns,
+		dfgNode* phiDataAncestor) {
+
+	outs() << "BasicBlocks : " << "\n";
+	for(BasicBlock* bb : (*Parent->getLoopBB())){
+		outs() << bb->getName() << ",";
+		assert(phiBRAncestorIns->getParent() != bb);
+	}
+	outs() << "\n";
+
+	assert(phiBRAncestorIns!=NULL);
+	dfgNode* tempBR;
+	if(Parent->LoopStartMap.find(phiBRAncestorIns)!=Parent->LoopStartMap.end()){
+		tempBR = Parent->LoopStartMap[phiBRAncestorIns];
+	}
+	else{
+		tempBR = new dfgNode(Parent);
+		if(Parent->LoopStartMap.empty()){
+			tempBR->setIdx(Parent->getNodesPtr()->size());
+			Parent->getNodesPtr()->push_back(tempBR);
+		}
+		else{
+			tempBR->setIdx(10000);
+		}
+		tempBR->setNameType("LOOPSTART");
+		outs() << "Adding loopstart.\n";
+		phiBRAncestorIns->dump();
+		tempBR->BB = this->BB;
+		Parent->LoopStartMap[phiBRAncestorIns]=tempBR;
+	}
+
+	dfgNode* temp = new dfgNode(Parent);
+	temp->setIdx(Parent->getNodesPtr()->size());
+	Parent->getNodesPtr()->push_back(temp);
+	temp->BB = this->BB;
+	temp->setNameType("CMERGE");
+
+	if(phiDataAncestor==NULL){
+		temp->setConstantVal(constVal);
+	}
+	else{
+		temp->addAncestorNode(phiDataAncestor);
+		phiDataAncestor->addChildNode(temp);
+	}
+
+	temp->addAncestorNode(tempBR);
+	tempBR->addChildNode(temp);
+
+}
+
+dfgNode* dfgNode::addCMergeParent(Instruction* phiBRAncestorIns,
 		Instruction* outLoopLoadIns) {
 
 	dfgNode* temp = new dfgNode(Parent);
@@ -568,6 +651,13 @@ dfgNode* dfgNode::addCMergeParent(Instruction* phiBRAncestorIns,
 	Parent->getNodesPtr()->push_back(temp);
 	temp->setNameType("CMERGE");
 	temp->BB = this->BB;
+
+	outs() << "BasicBlocks : " << "\n";
+	for(BasicBlock* bb : (*Parent->getLoopBB())){
+		outs() << bb->getName() << ",";
+		assert(phiBRAncestorIns->getParent() != bb);
+	}
+	outs() << "\n";
 
 	temp->addLoadParent(outLoopLoadIns);
 
@@ -578,9 +668,16 @@ dfgNode* dfgNode::addCMergeParent(Instruction* phiBRAncestorIns,
 	}
 	else{
 		tempBR = new dfgNode(Parent);
-		tempBR->setIdx(Parent->getNodesPtr()->size());
-		Parent->getNodesPtr()->push_back(tempBR);
+		if(Parent->LoopStartMap.empty()){
+			tempBR->setIdx(Parent->getNodesPtr()->size());
+			Parent->getNodesPtr()->push_back(tempBR);
+		}
+		else{
+			tempBR->setIdx(10000);
+		}
 		tempBR->setNameType("LOOPSTART");
+		outs() << "Adding loopstart.\n";
+		phiBRAncestorIns->dump();
 		tempBR->BB = this->BB;
 		Parent->LoopStartMap[phiBRAncestorIns]=tempBR;
 	}
@@ -612,9 +709,17 @@ dfgNode* dfgNode::addCMergeParent(Instruction* phiBRAncestorIns, int32_t constVa
 	}
 	else{
 		tempBR = new dfgNode(Parent);
-		tempBR->setIdx(Parent->getNodesPtr()->size());
-		Parent->getNodesPtr()->push_back(tempBR);
+		if(Parent->LoopStartMap.empty()){
+			tempBR->setIdx(Parent->getNodesPtr()->size());
+			Parent->getNodesPtr()->push_back(tempBR);
+		}
+		else{
+			tempBR->setIdx(10000);
+		}
+
 		tempBR->setNameType("LOOPSTART");
+		outs() << "Adding loopstart.\n";
+		phiBRAncestorIns->dump();
 		tempBR->BB = this->BB;
 		Parent->LoopStartMap[phiBRAncestorIns]=tempBR;
 	}
@@ -650,4 +755,13 @@ bool dfgNode::isParent(dfgNode* parent) {
 	}
 
 	return false;
+}
+
+void dfgNode::printName() {
+	if(this->getNode()!=NULL){
+		this->getNode()->dump();
+	}
+	else{
+		outs() << this->getNameType() << "\n";
+	}
 }

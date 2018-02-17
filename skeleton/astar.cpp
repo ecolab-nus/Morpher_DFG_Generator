@@ -185,10 +185,11 @@ CGRANode* AStar::AStarSearch(std::map<CGRANode*,std::vector<CGRAEdge> > graph,
 //			}
 //			assert(cameFrom->find(nextPair) == cameFrom->end());
 
-			if(nextPort==R0) assert(currentPort == R0 || currentPort == NORTH);
-			if(nextPort==R1) assert(currentPort == R1 || currentPort == EAST);
-			if(nextPort==R2) assert(currentPort == R2 || currentPort == WEST);
-			if(nextPort==R3) assert(currentPort == R3 || currentPort == SOUTH);
+			//TODO : DAC18
+//			if(nextPort==R0) assert(currentPort == R0 || currentPort == NORTH);
+//			if(nextPort==R1) assert(currentPort == R1 || currentPort == EAST);
+//			if(nextPort==R2) assert(currentPort == R2 || currentPort == WEST);
+//			if(nextPort==R3) assert(currentPort == R3 || currentPort == SOUTH);
 
 			pathData nextPathData(next,nextPort,nextPathLength,nextPathTdimLength);
 			(*cameFrom)[nextPathData]=currPathData;
@@ -997,7 +998,7 @@ bool AStar::Route(dfgNode* currNode,
 						}
 						found=true;
 
-						tempCGRAEdges[j]->mappedDFGEdge = currDFG->findEdge(currParent,currNode);
+						tempCGRAEdges[j]->mappedDFGEdge = currDFG->findEdge(currParent,currNode,goal);
 						currDFG->getCGRA()->printCGRAEdge(*tempCGRAEdges[j]);
 
 						if((currDFG->getCGRA()->getArch() != DoubleXBar)&&(currDFG->getCGRA()->getArch() != ALL2ALL)){
@@ -1099,14 +1100,14 @@ bool AStar::Route(dfgNode* currNode,
 												}
 
 												if(tempDestCGRAEdges2[l]->mappedDFGEdge == NULL){
-													tempDestCGRAEdges2[l]->mappedDFGEdge = currDFG->findEdge(currParent,currNode);
+													tempDestCGRAEdges2[l]->mappedDFGEdge = currDFG->findEdge(currParent,currNode,goal);
 												}
 											}
 										}
 
 										assert(tempDestCGRAEdges[k]->Dst == currPathData.cnode);
 										if(tempDestCGRAEdges[k]->mappedDFGEdge == NULL){
-											tempDestCGRAEdges[k]->mappedDFGEdge = currDFG->findEdge(currParent,currNode);
+											tempDestCGRAEdges[k]->mappedDFGEdge = currDFG->findEdge(currParent,currNode,goal);
 										}
 								}
 								tempDestCGRAEdges = currDFG->getCGRA()->getCGRAEdgesWithDest(currPathData.cnode,cgraEdges);
@@ -1208,7 +1209,7 @@ bool AStar::Route(dfgNode* currNode,
 					start->InOutPortMap[R3] = {R3};
 
 					if(tempDestCGRAEdges[k]->mappedDFGEdge == NULL){
-						tempDestCGRAEdges[k]->mappedDFGEdge = currDFG->findEdge(currParent,currNode);
+						tempDestCGRAEdges[k]->mappedDFGEdge = currDFG->findEdge(currParent,currNode,goal);
 					}
 				}
 
@@ -1228,7 +1229,7 @@ bool AStar::Route(dfgNode* currNode,
 					currParent->getMappedLoc()->InOutPortMap[R3] = {R3};
 
 					if(tempDestCGRAEdges[k]->mappedDFGEdge == NULL){
-						tempDestCGRAEdges[k]->mappedDFGEdge = currDFG->findEdge(currParent,currNode);
+						tempDestCGRAEdges[k]->mappedDFGEdge = currDFG->findEdge(currParent,currNode,goal);
 					}
 				}
 			}
@@ -1296,7 +1297,7 @@ bool AStar::Route(dfgNode* currNode,
 					}
 
 					if(tempDestCGRAEdges[k]->mappedDFGEdge == NULL){
-						tempDestCGRAEdges[k]->mappedDFGEdge = currDFG->findEdge(currParent,currNode);
+						tempDestCGRAEdges[k]->mappedDFGEdge = currDFG->findEdge(currParent,currNode,goal);
 					}
 				}
 
@@ -1769,7 +1770,7 @@ bool AStar::EMSRoute(dfgNode* currNode,
 
 				for (int j = 0; j < tempCGRAEdges.size(); ++j) {
 					if(tempCGRAEdges[j]->Dst == current){
-						tempCGRAEdges[j]->mappedDFGEdge = currDFG->findEdge(currParent,currNode);
+						tempCGRAEdges[j]->mappedDFGEdge = currDFG->findEdge(currParent,currNode,goal);
 						break;
 					}
 				}
@@ -1787,7 +1788,7 @@ bool AStar::EMSRoute(dfgNode* currNode,
 							assert(tempCGRAEdges.size() != 0);
 							for (int j = 0; j < tempCGRAEdges.size(); ++j) {
 								if(tempCGRAEdges[j]->Dst == current){
-									tempCGRAEdges[j]->mappedDFGEdge = currDFG->findEdge(currParent,currNode);
+									tempCGRAEdges[j]->mappedDFGEdge = currDFG->findEdge(currParent,currNode,goal);
 									*mappingOutFile << "DEBUG :: " << "removing edge=" << tempCGRAEdges[j]->Src->getName() << " to " << tempCGRAEdges[j]->Dst->getName() << std::endl;
 									break;
 								}

@@ -29,10 +29,21 @@ static FILE* currentFile;
 static std::map<std::string,FILE*> currentFiles;
 
 static FILE* loopInvTraceFile;
+static FILE* MUnitInvTraceFile;
+static std::string currFnName;
 
 //static int loopRunIdx=0;
 static std::map<std::string,int> loopRunIdx;
 static std::map<std::string,int> LoopInsCount;
+static std::map<std::string,int> BBInsCount;
+static std::map<std::string,int> InsInBB;
+static std::map<std::string,std::set<std::string> > loopBasicBlocks;
+static std::map<std::string,std::string> BBMappingUnitMap;
+static std::map<std::string,std::string> loopPreHeaderBBMap;
+
+//recording transitions
+                //src Munit           //dest Munit
+static std::map<std::string,std::map<std::string,int> > munitTransProfile;
 
 typedef struct{
 	uint8_t pre_data;
@@ -201,13 +212,102 @@ void loopEnd(const char* loopName){
 
 void loopTraceOpen(const char* fnName){
 	std::string fnNameStr(fnName);
+	currFnName = fnNameStr;
 	fnNameStr = fnNameStr + "_looptrace.log";
 	loopInvTraceFile = fopen(fnNameStr.c_str(), "a");
-	fprintf(loopInvTraceFile,"call %s\n",fnName);
+	assert(loopInvTraceFile!=NULL);
+
+//	std::cout << "loopTrace opened\n";
+
+	std::string MUnitInvTraceFileName = currFnName + "_munittrace.log";
+	MUnitInvTraceFile = fopen(MUnitInvTraceFileName.c_str(),"a");
+
+	fprintf(MUnitInvTraceFile,"call begin : %s\n",fnName);
+	fprintf(loopInvTraceFile,"call begin : %s\n",fnName);
 }
 
 void loopTraceClose(){
+
+	FILE* looptraceinfoFile;
+	std::string looptraceinfoFileName = currFnName + "_loopinfo.log";
+	looptraceinfoFile = fopen(looptraceinfoFileName.c_str(), "a");
+
+	fprintf(looptraceinfoFile,"BB Profile Begin : \n");
+	for(std::pair<std::string,int> pair : BBInsCount){
+		fprintf(looptraceinfoFile,"BBName:%s,\t%d \n",pair.first.c_str(),pair.second);
+	}
+	fprintf(looptraceinfoFile,"BB Profile End. \n");
+
+	fprintf(looptraceinfoFile,"Loop Average Instructions Per Iteration : \n");
+	for(std::pair<std::string,std::set<std::string> > pair : loopBasicBlocks){
+		std::string loopName = pair.first;
+		fprintf(looptraceinfoFile,"LoopName:%s\n",pair.first.c_str());
+
+		int BBInvCount=0;
+		for (std::string BBName : pair.second){
+			BBInvCount+=BBInsCount[BBName];
+		}
+		fprintf(looptraceinfoFile,"TotalBBInvCount=%d\n",BBInvCount);
+
+		int maxInvBB=0;
+		for (std::string BBName : pair.second){
+			float BBInvCountFloat = (float)BBInvCount;
+			float BBInsCountFloat = (float)BBInsCount[BBName];
+			fprintf(looptraceinfoFile,"\t BBName:%s,BBInsCount:%d,BBInvCount:%d,BBLoopInvRatio:%f\n",
+					BBName.c_str(),
+					InsInBB[BBName],
+					BBInsCount[BBName],
+					BBInsCountFloat/BBInvCountFloat);
+			maxInvBB = std::max(maxInvBB,BBInsCount[BBName]);
+		}
+
+		int estimatedIterations = BBInvCount/maxInvBB;
+
+		float avgLpInstructions=0;
+		for (std::string BBName : pair.second){
+			float invWeight = (float)BBInsCount[BBName]/(float)maxInvBB;
+			avgLpInstructions+=invWeight*(float)InsInBB[BBName];
+		}
+		fprintf(looptraceinfoFile,"avgLpInstructions=%f\n",avgLpInstructions);
+		std::string preHeaderBBName = loopPreHeaderBBMap[loopName];
+		fprintf(looptraceinfoFile,"PreHeaderInvokations::BasicBlockName=%s,InvCount=%d\n\n",preHeaderBBName.c_str(),BBInsCount[preHeaderBBName]);
+	}
+	fprintf(looptraceinfoFile,"Loop Invocations Begin : \n");
+	for(std::pair<std::string,std::set<std::string> > pair : loopBasicBlocks){
+		std::string loopName = pair.first;
+		fprintf(looptraceinfoFile,"%s,%d\n",loopName.c_str(),BBInsCount[loopPreHeaderBBMap[loopName]]);
+	}
+	fprintf(looptraceinfoFile,"Loop Invocations End.\n");
+
+	fprintf(looptraceinfoFile,"Just Plain Number of Invocations : \n");
+	for(std::pair<std::string,std::set<std::string> > pair : loopBasicBlocks){
+		for (std::string BBName : pair.second){
+			fprintf(looptraceinfoFile,"%s,%d,%s,%s\n",BBName.c_str(),
+					                       BBInsCount[BBName],
+										   BBMappingUnitMap[BBName].c_str(),
+										   pair.first.c_str());
+		}
+	}
+
+	for(std::pair<std::string,std::map<std::string,int> > pair1 : munitTransProfile){
+//		fprintf(loopInvTraceFile,"%s,",pair1.first.c_str());
+		for(std::pair<std::string,int> pair2 : pair1.second){
+			fprintf(looptraceinfoFile,"%s,%s,%d\n",pair1.first.c_str(),pair2.first.c_str(),pair2.second);
+		}
+//		fprintf(loopInvTraceFile,"\n");
+	}
+
+	fprintf(MUnitInvTraceFile,"call end.\n");
+	fprintf(loopInvTraceFile,"call end.\n");
+
+	fprintf(looptraceinfoFile,"call end.\n");
+	fprintf(looptraceinfoFile,"************************************************\n");
+
+
+
+	fclose(MUnitInvTraceFile);
 	fclose(loopInvTraceFile);
+	fclose(looptraceinfoFile);
 }
 
 static int currentExecutedIns=0;
@@ -226,8 +326,9 @@ void loopInvoke(const char* loopName){
 		loopNumberInt = loopNumberInt * 10;
 	}
 	ss << loopNumber;
+	assert(loopInvTraceFile!=NULL);
+//    std::cout << "LoopNumber" << loopNumber << "," << ss.str() << "," << currentExecutedIns << "\n";
 	fprintf(loopInvTraceFile,"%s,START,%d\n",ss.str().c_str(),currentExecutedIns);
-//	cout << "LoopNumber" << loopNumber << "\n";
 }
 
 void loopInvokeEnd(const char* loopName){
@@ -248,8 +349,122 @@ void loopInsUpdate(const char* name, int insCount){
 	LoopInsCount[nameStr]+=insCount;
 }
 
+void loopBBInsUpdate(const char* loopName, const char* BBName, int insCount){
+	std::string BBnameStr(BBName);
+	std::string loopNameStr(loopName);
+
+	if(BBInsCount.find(BBnameStr)==BBInsCount.end()){
+		BBInsCount[BBnameStr]=0;
+	}
+//	BBInsCount[nameStr]+=insCount;
+	loopBasicBlocks[loopNameStr].insert(BBnameStr);
+	InsInBB[BBnameStr]=insCount;
+	BBInsCount[BBnameStr]++;
+}
+
 void loopInsClear(const char* name){
 	std::string nameStr(name);
 	LoopInsCount[nameStr]=0;
+}
+
+void loopBBInsClear(){
+//	BBInsCount.clear();
+}
+
+void updateLoopPreHeader(const char* loopName, const char* preheaderBB){
+	std::string loopNameStr(loopName);
+	std::string preheaderBBStr(preheaderBB);
+	loopPreHeaderBBMap[loopNameStr]=preheaderBBStr;
+}
+
+void loopBBMappingUnitUpdate(const char* BBName, const char* munitName){
+	std::string BBNameStr(BBName);
+	std::string munitNameStr(munitName);
+
+	BBMappingUnitMap[BBNameStr]=munitNameStr;
+}
+
+void recordUncondMunitTransition(const char* srcBB, const char* destBB){
+	std::string srcMunitStr = "FUNC_BODY";
+	std::string destMunitStr = "FUNC_BODY";
+
+	std::string srcBBStr(srcBB);
+	std::string destBBStr(destBB);
+
+	if(BBMappingUnitMap.find(srcBBStr)!=BBMappingUnitMap.end() && !srcBBStr.empty()){
+		if(!BBMappingUnitMap[srcBBStr].empty()){
+			srcMunitStr=BBMappingUnitMap[srcBBStr];
+		}
+	}
+
+	if(BBMappingUnitMap.find(destBBStr)!=BBMappingUnitMap.end() & !destBBStr.empty()){
+		if(!BBMappingUnitMap[destBBStr].empty()){
+			destMunitStr=BBMappingUnitMap[destBBStr];
+		}
+	}
+
+	if(srcMunitStr.compare(destMunitStr)!=0){
+		fprintf(MUnitInvTraceFile,"%s,%s\n",srcMunitStr.c_str(),destMunitStr.c_str());
+	}
+
+	if(munitTransProfile.find(srcMunitStr)==munitTransProfile.end()){
+		munitTransProfile[srcMunitStr][destMunitStr]=1;
+	}
+	else{
+		if(munitTransProfile[srcMunitStr].find(destMunitStr)==munitTransProfile[srcMunitStr].end()){
+			munitTransProfile[srcMunitStr][destMunitStr]=1;
+		}
+		else{
+			munitTransProfile[srcMunitStr][destMunitStr]++;
+		}
+	}
+}
+
+void recordCondMunitTransition(const char* srcBB, const char* destBB1, const char* destBB2, int condition){
+	std::string srcMunitStr = "FUNC_BODY";
+	std::string destMunitStr = "FUNC_BODY";
+
+	std::string srcBBStr(srcBB);
+	std::string destBB1Str(destBB1);
+	std::string destBB2Str(destBB2);
+
+	std::string destBBStr;
+	if(condition==1){
+		destBBStr=destBB1Str;
+	}
+	else{
+		destBBStr=destBB2Str;
+	}
+
+	if(BBMappingUnitMap.find(srcBBStr)!=BBMappingUnitMap.end() && !srcBBStr.empty()){
+		if(!BBMappingUnitMap[srcBBStr].empty()){
+			srcMunitStr=BBMappingUnitMap[srcBBStr];
+		}
+	}
+
+	if(BBMappingUnitMap.find(destBBStr)!=BBMappingUnitMap.end() & !destBBStr.empty()){
+		if(!BBMappingUnitMap[destBBStr].empty()){
+			destMunitStr=BBMappingUnitMap[destBBStr];
+		}
+	}
+	if(srcMunitStr.compare(destMunitStr)!=0){
+		fprintf(MUnitInvTraceFile,"%s,%s\n",srcMunitStr.c_str(),destMunitStr.c_str());
+	}
+
+	if(srcMunitStr.compare(destMunitStr)==0){
+		return;
+	}
+
+	if(munitTransProfile.find(srcMunitStr)==munitTransProfile.end()){
+		munitTransProfile[srcMunitStr][destMunitStr]=1;
+	}
+	else{
+		if(munitTransProfile[srcMunitStr].find(destMunitStr)==munitTransProfile[srcMunitStr].end()){
+			munitTransProfile[srcMunitStr][destMunitStr]=1;
+		}
+		else{
+			munitTransProfile[srcMunitStr][destMunitStr]++;
+		}
+	}
 }
 
