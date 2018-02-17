@@ -613,7 +613,7 @@ void DFG::printEdge(Edge* e, int depth) {
 	printFooterTag("EDGE",depth);
 }
 
-void DFG::addMemRecDepEdges(DependenceAnalysis* DA) {
+void DFG::addMemRecDepEdges(DependenceInfo* DI) {
 	std::vector<dfgNode*> memNodes;
 	dfgNode* nodePtr;
 	Instruction *Ins;
@@ -661,7 +661,7 @@ void DFG::addMemRecDepEdges(DependenceAnalysis* DA) {
 			  if (isa<LoadInst>(Src) && isa<LoadInst>(Des))
 				  continue;
 
-			  if (auto D = DA->depends(Src, Des, true)) {
+			  if (auto D = DI->depends(Src, Des, true)) {
 				  log << "addMemRecDepEdges :" << "Found Dependency between Src=" << memNodes[i]->getIdx() << " Des=" << memNodes[j]->getIdx() << "\n";
 
 
@@ -773,7 +773,7 @@ void DFG::findMaxRecDist() {
 
 
 
-void DFG::addMemRecDepEdgesNew(DependenceAnalysis* DA) {
+void DFG::addMemRecDepEdgesNew(DependenceInfo *DI) {
 	std::vector<dfgNode*> memNodes;
 		dfgNode* nodePtr;
 		Instruction *Ins;
@@ -826,7 +826,7 @@ void DFG::addMemRecDepEdgesNew(DependenceAnalysis* DA) {
 				  if (isa<LoadInst>(Src) && isa<LoadInst>(Des))
 					  continue;
 
-				  if (auto D = DA->depends(Src, Des, true)) {
+				  if (auto D = DI->depends(Src, Des, true)) {
 					  log << "addMemRecDepEdges :" << "Found Dependency between Src=" << memNodes[i]->getIdx() << " Des=" << memNodes[j]->getIdx() << "\n";
 
 
@@ -913,7 +913,7 @@ void DFG::addMemRecDepEdgesNew(DependenceAnalysis* DA) {
 		errs() << "&&&&&&&&&&&&&&&&&&&&Recurrence search done.....!\n";
 }
 
-void DFG::addMemDepEdges(MemoryDependenceAnalysis *MD) {
+void DFG::addMemDepEdges(MemoryDependenceResults *MD) {
 
 	assert(NodeList.size() > 0);
 	dfgNode firstNode = *NodeList[0];
@@ -6082,8 +6082,7 @@ void DFG::GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeAr
 	Constant* loopStartFn = F.getParent()->getOrInsertFunction(
 							"loopStart",
 							FunctionType::getVoidTy(Ctx),
-							Type::getInt8PtrTy(Ctx),
-							NULL);
+							Type::getInt8PtrTy(Ctx));
 
 	builder.CreateCall(loopStartFn,{loopName});
 
@@ -6119,7 +6118,7 @@ void DFG::GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeAr
 //	builder.SetInsertPoint(loopStartIns);
 	builder.SetInsertPoint(loopHeader,loopHeader->getFirstInsertionPt());
 	Constant* clearPrintedArrs = F.getParent()->getOrInsertFunction(
-	  "clearPrintedArrs", FunctionType::getVoidTy(Ctx), NULL);
+	  "clearPrintedArrs", FunctionType::getVoidTy(Ctx));
 
 //	for (int i = 0; i < loopExitInsVec.size(); ++i) {
 //		builder.SetInsertPoint(loopExitInsVec[i]);
@@ -6166,8 +6165,8 @@ void DFG::GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeAr
 									  Type::getInt32Ty(Ctx), //addr
 									  Type::getInt8Ty(Ctx),  //isLoad
 									  Type::getInt8Ty(Ctx),  //isHostTrans
-									  Type::getInt8Ty(Ctx), //size
-									  NULL);
+									  Type::getInt8Ty(Ctx) //size
+									  );
 
 			Value* isLoad = ConstantInt::get(Type::getInt8Ty(Ctx),1);
 			Value* isHostTrans;
@@ -6216,8 +6215,8 @@ void DFG::GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeAr
 									  Type::getInt32Ty(Ctx), //addr
 									  Type::getInt8Ty(Ctx),  //isLoad
 									  Type::getInt8Ty(Ctx),  //isHostTrans
-									  Type::getInt8Ty(Ctx),  //size
-									  NULL);
+									  Type::getInt8Ty(Ctx)  //size
+									  );
 
 			Value* isLoad = ConstantInt::get(Type::getInt8Ty(Ctx),0);
 			Value* isHostTrans;
@@ -6317,8 +6316,8 @@ void DFG::GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeAr
 				  Type::getInt8PtrTy(Ctx),
 				  Type::getInt32Ty(Ctx),
 				  Type::getInt8Ty(Ctx),
-				  Type::getInt32Ty(Ctx),
-				  NULL);
+				  Type::getInt32Ty(Ctx)
+				  );
 
 				Value* st_name = builder.CreateGlobalStringPtr(ST->getName());
 				Value* argsi[] = {st_name,
@@ -6392,8 +6391,8 @@ void DFG::GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeAr
 					  Type::getInt8PtrTy(Ctx),
 					  Type::getInt32Ty(Ctx),
 					  Type::getInt8Ty(Ctx),
-					  Type::getInt32Ty(Ctx),
-					  NULL);
+					  Type::getInt32Ty(Ctx)
+					  );
 
 					Value* st_name = builder.CreateGlobalStringPtr(GEP->getPointerOperand()->getName());
 					Value* argsi[] = {st_name,
@@ -6441,8 +6440,8 @@ void DFG::GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeAr
 										Type::getInt8PtrTy(Ctx),
 										Type::getInt8PtrTy(Ctx),
 										Type::getInt32Ty(Ctx),
-										Type::getInt32Ty(Ctx),
-										NULL);
+										Type::getInt32Ty(Ctx)
+										);
 
 					Value* st_name = builder.CreateGlobalStringPtr(GEP->getPointerOperand()->getName());
 					Value* args[] = {st_name,
@@ -6489,8 +6488,8 @@ void DFG::GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeAr
 						  Type::getInt8PtrTy(Ctx),
 						  Type::getInt32Ty(Ctx),
 						  Type::getInt8Ty(Ctx),
-						  Type::getInt32Ty(Ctx),
-						  NULL);
+						  Type::getInt32Ty(Ctx)
+						  );
 
 						Value* argsi[] = {st_name,
 								          bitcastedPtr,
@@ -6536,10 +6535,10 @@ void DFG::GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeAr
 	} //Nodelist
 
 	Constant* printDynArrSize = F.getParent()->getOrInsertFunction(
-	  "printDynArrSize", FunctionType::getVoidTy(Ctx), NULL);
+	  "printDynArrSize", FunctionType::getVoidTy(Ctx));
 
 	Constant* loopEndFn = F.getParent()->getOrInsertFunction(
-			  "loopEnd", FunctionType::getVoidTy(Ctx),Type::getInt8PtrTy(Ctx), NULL);
+			  "loopEnd", FunctionType::getVoidTy(Ctx),Type::getInt8PtrTy(Ctx));
 
 //	for (int i = 0; i < loopExitInsVec.size(); ++i) {
 //		builder.SetInsertPoint(loopExitInsVec[i]);
@@ -6587,8 +6586,8 @@ void DFG::GEPInvestigate(Function &F, std::map<std::string,int>* sizeArrMap) {
 	Constant* loopStartFn = F.getParent()->getOrInsertFunction(
 							"loopStart",
 							FunctionType::getVoidTy(Ctx),
-							Type::getInt8PtrTy(Ctx),
-							NULL);
+							Type::getInt8PtrTy(Ctx)
+							);
 
 	builder.CreateCall(loopStartFn,{loopName});
 
@@ -6624,7 +6623,7 @@ void DFG::GEPInvestigate(Function &F, std::map<std::string,int>* sizeArrMap) {
 //	builder.SetInsertPoint(loopStartIns);
 	builder.SetInsertPoint(loopHeader,loopHeader->getFirstInsertionPt());
 	Constant* clearPrintedArrs = F.getParent()->getOrInsertFunction(
-	  "clearPrintedArrs", FunctionType::getVoidTy(Ctx), NULL);
+	  "clearPrintedArrs", FunctionType::getVoidTy(Ctx));
 
 //	for (int i = 0; i < loopExitInsVec.size(); ++i) {
 //		builder.SetInsertPoint(loopExitInsVec[i]);
@@ -6671,8 +6670,8 @@ void DFG::GEPInvestigate(Function &F, std::map<std::string,int>* sizeArrMap) {
 									  Type::getInt32Ty(Ctx), //addr
 									  Type::getInt8Ty(Ctx),  //isLoad
 									  Type::getInt8Ty(Ctx),  //isHostTrans
-									  Type::getInt8Ty(Ctx), //size
-									  NULL);
+									  Type::getInt8Ty(Ctx) //size
+									  );
 
 			Value* isLoad = ConstantInt::get(Type::getInt8Ty(Ctx),1);
 			Value* isHostTrans;
@@ -6721,8 +6720,8 @@ void DFG::GEPInvestigate(Function &F, std::map<std::string,int>* sizeArrMap) {
 									  Type::getInt32Ty(Ctx), //addr
 									  Type::getInt8Ty(Ctx),  //isLoad
 									  Type::getInt8Ty(Ctx),  //isHostTrans
-									  Type::getInt8Ty(Ctx),  //size
-									  NULL);
+									  Type::getInt8Ty(Ctx)  //size
+									  );
 
 			Value* isLoad = ConstantInt::get(Type::getInt8Ty(Ctx),0);
 			Value* isHostTrans;
@@ -6822,8 +6821,8 @@ void DFG::GEPInvestigate(Function &F, std::map<std::string,int>* sizeArrMap) {
 				  Type::getInt8PtrTy(Ctx),
 				  Type::getInt32Ty(Ctx),
 				  Type::getInt8Ty(Ctx),
-				  Type::getInt32Ty(Ctx),
-				  NULL);
+				  Type::getInt32Ty(Ctx)
+				  );
 
 				Value* st_name = builder.CreateGlobalStringPtr(ST->getName());
 				Value* argsi[] = {st_name,
@@ -6897,8 +6896,8 @@ void DFG::GEPInvestigate(Function &F, std::map<std::string,int>* sizeArrMap) {
 					  Type::getInt8PtrTy(Ctx),
 					  Type::getInt32Ty(Ctx),
 					  Type::getInt8Ty(Ctx),
-					  Type::getInt32Ty(Ctx),
-					  NULL);
+					  Type::getInt32Ty(Ctx)
+					  );
 
 					Value* st_name = builder.CreateGlobalStringPtr(GEP->getPointerOperand()->getName());
 					Value* argsi[] = {st_name,
@@ -6946,8 +6945,8 @@ void DFG::GEPInvestigate(Function &F, std::map<std::string,int>* sizeArrMap) {
 										Type::getInt8PtrTy(Ctx),
 										Type::getInt8PtrTy(Ctx),
 										Type::getInt32Ty(Ctx),
-										Type::getInt32Ty(Ctx),
-										NULL);
+										Type::getInt32Ty(Ctx)
+										);
 
 					Value* st_name = builder.CreateGlobalStringPtr(GEP->getPointerOperand()->getName());
 					Value* args[] = {st_name,
@@ -6994,8 +6993,8 @@ void DFG::GEPInvestigate(Function &F, std::map<std::string,int>* sizeArrMap) {
 						  Type::getInt8PtrTy(Ctx),
 						  Type::getInt32Ty(Ctx),
 						  Type::getInt8Ty(Ctx),
-						  Type::getInt32Ty(Ctx),
-						  NULL);
+						  Type::getInt32Ty(Ctx)
+						  );
 
 						Value* argsi[] = {st_name,
 								          bitcastedPtr,
@@ -7041,10 +7040,10 @@ void DFG::GEPInvestigate(Function &F, std::map<std::string,int>* sizeArrMap) {
 	} //Nodelist
 
 	Constant* printDynArrSize = F.getParent()->getOrInsertFunction(
-	  "printDynArrSize", FunctionType::getVoidTy(Ctx), NULL);
+	  "printDynArrSize", FunctionType::getVoidTy(Ctx));
 
 	Constant* loopEndFn = F.getParent()->getOrInsertFunction(
-			  "loopEnd", FunctionType::getVoidTy(Ctx),Type::getInt8PtrTy(Ctx), NULL);
+			  "loopEnd", FunctionType::getVoidTy(Ctx),Type::getInt8PtrTy(Ctx));
 
 //	for (int i = 0; i < loopExitInsVec.size(); ++i) {
 //		builder.SetInsertPoint(loopExitInsVec[i]);

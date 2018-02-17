@@ -52,6 +52,8 @@
 #include "llvm/Analysis/TargetLibraryInfo.h"
 #include "llvm/Analysis/TargetTransformInfo.h"
 
+#include "llvm/IR/Attributes.h"
+
 //#include "/home/manupa/manycore/llvm-latest/llvm/lib/Transforms/Scalar/GVN.cpp"
 
 #include <iostream>
@@ -69,6 +71,8 @@
 #include "dfg.h"
 
 //#define CDFG
+
+AttributeList attr21;
 
 static bool xmlRun = false;
 
@@ -407,7 +411,7 @@ std::vector<munitTransition> munitTransitionsALL;
 	    		ofs.close();
 	    	}
 
-	    	Instruction* checkMemDepedency(Instruction *I, MemoryDependenceAnalysis *MD){
+	    	Instruction* checkMemDepedency(Instruction *I, MemoryDependenceResults *MD){
 				  MemDepResult mRes;
 				  //errs() << "#*#*#*#*#* This is a memory op #*#*#*#*#*\n";
 				  mRes = MD->getDependency(I);
@@ -1755,81 +1759,70 @@ std::vector<munitTransition> munitTransitionsALL;
 
 	    		//Function Calls
 
+
 	    		Constant* traceStartFn = F.getParent()->getOrInsertFunction(
 	    								"loopTraceOpen",
 	    								FunctionType::getVoidTy(Ctx),
-										Type::getInt8PtrTy(Ctx),
-	    								NULL);
+										Type::getInt8PtrTy(Ctx));
 
 	    		Constant* traceEndFn = F.getParent()->getOrInsertFunction(
 	    								"loopTraceClose",
-	    								FunctionType::getVoidTy(Ctx),
-	    								NULL);
+	    								FunctionType::getVoidTy(Ctx));
 
 	    		Constant* loopInvFn = F.getParent()->getOrInsertFunction(
 	    								"loopInvoke",
 	    								FunctionType::getVoidTy(Ctx),
-										Type::getInt8PtrTy(Ctx),
-	    								NULL);
+										Type::getInt8PtrTy(Ctx));
 
 	    		Constant* loopInsUpdateFn = F.getParent()->getOrInsertFunction(
 	    								"loopInsUpdate",
 	    								FunctionType::getVoidTy(Ctx),
 										Type::getInt8PtrTy(Ctx),
-										Type::getInt32Ty(Ctx),
-	    								NULL);
+										Type::getInt32Ty(Ctx));
 
 	    		Constant* loopBBInsUpdateFn = F.getParent()->getOrInsertFunction(
 	    								"loopBBInsUpdate",
 	    								FunctionType::getVoidTy(Ctx),
 										Type::getInt8PtrTy(Ctx),
 										Type::getInt8PtrTy(Ctx),
-										Type::getInt32Ty(Ctx),
-	    								NULL);
+										Type::getInt32Ty(Ctx));
 
 	    		Constant* loopInsClearFn = F.getParent()->getOrInsertFunction(
 	    								"loopInsClear",
 	    								FunctionType::getVoidTy(Ctx),
-										Type::getInt8PtrTy(Ctx),
-	    								NULL);
+										Type::getInt8PtrTy(Ctx));
 
 	    		Constant* loopBBInsClearFn = F.getParent()->getOrInsertFunction(
 	    								"loopBBInsClear",
-	    								FunctionType::getVoidTy(Ctx),
-	    								NULL);
+	    								FunctionType::getVoidTy(Ctx));
 
 	    		Constant* loopInvokeEndFn = F.getParent()->getOrInsertFunction(
 	    								"loopInvokeEnd",
 	    								FunctionType::getVoidTy(Ctx),
-										Type::getInt8PtrTy(Ctx),
-	    								NULL);
+										Type::getInt8PtrTy(Ctx));
 
 	    		Constant* reportExecInsCountFn = F.getParent()->getOrInsertFunction(
 	    								"reportExecInsCount",
 	    								FunctionType::getVoidTy(Ctx),
-										Type::getInt32Ty(Ctx),
-	    								NULL);
+										Type::getInt32Ty(Ctx));
 
 	    		Constant* updateLoopPreHeaderFn = F.getParent()->getOrInsertFunction(
 	    								"updateLoopPreHeader",
 	    								FunctionType::getVoidTy(Ctx),
 										Type::getInt8PtrTy(Ctx),
-										Type::getInt8PtrTy(Ctx),
-	    								NULL);
+										Type::getInt8PtrTy(Ctx));
 
 	    		Constant* loopBBMappingUnitUpdate = F.getParent()->getOrInsertFunction(
 	    								"loopBBMappingUnitUpdate",
 	    								FunctionType::getVoidTy(Ctx),
 										Type::getInt8PtrTy(Ctx),
-										Type::getInt8PtrTy(Ctx),
-	    								NULL);
+										Type::getInt8PtrTy(Ctx));
 
 	    		Constant* recordUncondMunitTransition = F.getParent()->getOrInsertFunction(
 	    								"recordUncondMunitTransition",
 	    								FunctionType::getVoidTy(Ctx),
 										Type::getInt8PtrTy(Ctx),
-										Type::getInt8PtrTy(Ctx),
-	    								NULL);
+										Type::getInt8PtrTy(Ctx));
 
 	    		Constant* recordCondMunitTransition = F.getParent()->getOrInsertFunction(
 	    								"recordCondMunitTransition",
@@ -1837,8 +1830,7 @@ std::vector<munitTransition> munitTransitionsALL;
 										Type::getInt8PtrTy(Ctx),
 										Type::getInt8PtrTy(Ctx),
 										Type::getInt8PtrTy(Ctx),
-										Type::getInt1Ty(Ctx),
-	    								NULL);
+										Type::getInt1Ty(Ctx));
 
 	    		for(std::pair<Loop*,std::string> lnPair : loopNames){
 	    			Value* loopName = builder.CreateGlobalStringPtr(lnPair.second);
@@ -2002,7 +1994,7 @@ namespace {
 			  LoopInfo &LI = getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
 //			  MemoryDependenceAnalysis *MD = &getAnalysis<MemoryDependenceAnalysis>();
 			  ScalarEvolution* SE = &getAnalysis<ScalarEvolutionWrapperPass>().getSE();
-			  DependenceAnalysis* DA = &getAnalysis<DependenceAnalysis>();
+			 //DependenceAnalysis* DA = &getAnalysis<DependenceAnalysis>();
 
 
 
@@ -2396,7 +2388,7 @@ namespace {
 		    AU.addRequired<ScalarEvolutionWrapperPass>();
 		    AU.addRequired<AAResultsWrapperPass>();
 		    AU.addRequired<DominatorTreeWrapperPass>();
-		    AU.addRequired<DependenceAnalysis>();
+//		    AU.addRequired<DependenceAnalysis>();
 		    AU.addRequiredID(LoopSimplifyID);
 		    AU.addRequiredID(LCSSAID);
 		}
@@ -2479,7 +2471,7 @@ namespace {
 		    AU.addRequired<AAResultsWrapperPass>();
 		    AU.addRequired<DominatorTreeWrapperPass>();
 //		    AU.addRequired<LoopInfoWrapperPass>();
-		    AU.addRequired<DependenceAnalysis>();
+//		    AU.addRequired<DependenceAnalysis>();
 		    AU.addRequiredID(LoopSimplifyID);
 		    AU.addRequiredID(LCSSAID);
 //		    AU.addRequired<LoopAccessAnalysis>();

@@ -247,9 +247,9 @@ class DFG{
 
 			void connectBB();
 
-			void addMemDepEdges(MemoryDependenceAnalysis *MD);
-			void addMemRecDepEdges(DependenceAnalysis *DA);
-			void addMemRecDepEdgesNew(DependenceAnalysis *DA);
+			void addMemDepEdges(MemoryDependenceResults *MD);
+			void addMemRecDepEdges(DependenceInfo *DI);
+			void addMemRecDepEdgesNew(DependenceInfo *DI);
 			MemOp isMemoryOp(dfgNode* node);
 
 		    int removeEdge(Edge* e);
