@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <ostream>
 #include <string>
 #include <sstream>
 #include <iomanip>
@@ -44,6 +45,40 @@ static std::map<std::string,std::string> loopPreHeaderBBMap;
 //recording transitions
                 //src Munit           //dest Munit
 static std::map<std::string,std::map<std::string,int> > munitTransProfile;
+
+
+//2018 triggered execution code
+struct pathInfo{
+	private:
+	std::vector<std::string> currentBBPath;
+	int currentBBPathCount=0;
+
+	public:
+	void clear(){
+		currentBBPath.clear();
+		currentBBPathCount=0;
+	}
+
+	bool insertBB(std::string bbNameStr){
+		if(std::find(currentBBPath.begin(),currentBBPath.end(),bbNameStr) != currentBBPath.end()){
+			return false;
+		}
+		//the basic block is not contained
+		currentBBPath.push_back(bbNameStr);
+		return true;
+	}
+
+	void incrementPathCount(){currentBBPathCount++;}
+	std::vector<std::string> getBBStrArry(){return currentBBPath;}
+	int getPathCount(){return currentBBPathCount;}
+};
+pathInfo currentPath;
+std::map<std::string,std::vector<std::vector<pathInfo>>> loopPathTrace;
+std::vector<pathInfo> pathTrace;
+std::map<std::vector<std::string>,int> pathsSoFar;
+pathInfo trimPreHeader(std::string preheaderBB, pathInfo path);
+
+
 
 typedef struct{
 	uint8_t pre_data;
@@ -341,6 +376,21 @@ void loopInvokeEnd(const char* loopName){
 		loopNumberInt = loopNumberInt * 10;
 	}
 	ss << loopNumber;
+
+	std::stringstream sstrig;
+	reportLoopEnd(loopName);
+	//2018 Triggered Instruction Work
+	for(pathInfo pi : pathTrace){
+		sstrig << ln << ",";
+		for(std::string bbName : pi.getBBStrArry()){
+			sstrig << bbName << "-->";
+		}
+		sstrig << "," << pi.getPathCount() << "\n";
+	}
+	fprintf(loopInvTraceFile,"%s",sstrig.str().c_str());
+//	pathTrace.clear();
+	//---------------------------------
+
 	fprintf(loopInvTraceFile,"%s,END,%d\n",ss.str().c_str(),currentExecutedIns);
 }
 
@@ -360,6 +410,9 @@ void loopBBInsUpdate(const char* loopName, const char* BBName, int insCount){
 	loopBasicBlocks[loopNameStr].insert(BBnameStr);
 	InsInBB[BBnameStr]=insCount;
 	BBInsCount[BBnameStr]++;
+
+	//2018 Triggered Instruction Work
+	reportNewBBinPath(BBName,loopName);
 }
 
 void loopInsClear(const char* name){
@@ -467,4 +520,109 @@ void recordCondMunitTransition(const char* srcBB, const char* destBB1, const cha
 		}
 	}
 }
+
+std::map<std::string,int> functionInsMap;
+std::map<std::string,std::map<std::string,int>> BBInsMap;
+
+void reportBBTrace(const char* FName, const char* BBName, int insCount){
+	std::string fNameStr(FName);
+	std::string BBNameStr(BBName);
+
+	functionInsMap[fNameStr]+=insCount;
+	BBInsMap[fNameStr][BBNameStr]+=insCount;
+}
+
+void sortandPrintStats(){
+	std::ofstream statFile;
+	statFile.open("statFile.log");
+
+	statFile << "*****************************************\n";
+	for(std::pair<std::string,int> pair : functionInsMap){
+		statFile << pair.first << "," << pair.second << "\n";
+	}
+	statFile << "*****************************************\n";
+}
+
+
+
+//2018 triggered execution code
+
+pathInfo trimPreHeader(std::string preheaderBB, pathInfo path){
+	pathInfo result;
+	assert(path.getPathCount() == 0);
+
+	bool preheaderFound = false;
+
+	for(std::string bb : path.getBBStrArry()){
+		if(preheaderFound){
+			result.insertBB(bb);
+		}
+
+		if(bb == preheaderBB){
+			preheaderFound = true;
+		}
+	}
+
+	if(!preheaderFound){
+		return path;
+	}
+	else{
+		assert(!result.getBBStrArry().empty());
+		return result;
+	}
+}
+
+
+void addPath2Profile(pathInfo currentPath, const char* loopName){
+	std::string loopNameStr(loopName);
+	std::string loopPreHeaderBB = loopPreHeaderBBMap[loopNameStr];
+	currentPath = trimPreHeader(loopPreHeaderBB,currentPath);
+
+	currentPath.incrementPathCount();
+	assert(!currentPath.getBBStrArry().empty());
+	if(pathsSoFar.find(currentPath.getBBStrArry())==pathsSoFar.end()){
+		pathsSoFar[currentPath.getBBStrArry()] = pathsSoFar.size();
+	}
+
+	if(!pathTrace.empty()){
+		pathInfo& lastPath = pathTrace[pathTrace.size()-1];
+		if(pathsSoFar[lastPath.getBBStrArry()] == pathsSoFar[currentPath.getBBStrArry()]){
+			lastPath.incrementPathCount();
+		}
+		else{
+			pathTrace.push_back(currentPath);
+//			currentPath.clear();
+		}
+	}
+	else{
+		pathTrace.push_back(currentPath);
+//		currentPath.clear();
+	}
+}
+
+void reportNewBBinPath(const char* bbName, const char* loopName){
+	if(currentPath.insertBB(std::string(bbName))){
+
+	}
+	else{
+		//coming here means its an backedge
+		addPath2Profile(currentPath,loopName);
+		currentPath.clear();
+		assert(currentPath.insertBB(bbName));
+	}
+}
+
+void reportLoopEnd(const char* loopName){
+	addPath2Profile(currentPath,loopName);
+	currentPath.clear();
+	std::string loopNameStr(loopName);
+	loopPathTrace[loopNameStr].push_back(pathTrace);
+}
+
+
+
+
+
+
+
 

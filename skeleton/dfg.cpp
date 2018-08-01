@@ -441,7 +441,15 @@ void DFG::printInEdges(dfgNode* node, int depth){
 
 		printHeaderTag("ID",depth+2);
 //		xmlFile << node->getAncestors()[i] << "to" << node->getNode();
-		xmlFile << findEdge(node->getAncestors()[i],node)->getID() ;
+		Edge* e = findEdge(node->getAncestors()[i],node);
+		assert(e);
+
+		if(xmlEdgeIdxMap.find(e)==xmlEdgeIdxMap.end()){
+			xmlEdgeIdxMap[e]=xmlEdgeCount;
+			xmlEdgeCount++;
+		}
+
+		xmlFile << xmlEdgeIdxMap[e];
 		printFooterTag("ID",depth+2);
 
 		printFooterTag("Edge",depth+1);
@@ -456,12 +464,21 @@ void DFG::printOutEdges(dfgNode* node, int depth){
 	printFooterTag("Out-edge-number",depth);
 
 	printHeaderTag("Out-edges",depth);
+
+
 	for (int i = 0; i < node->getChildren().size() ; ++i) {
 		printHeaderTag("Edge",depth+1);
 
 		printHeaderTag("ID",depth+2);
 //		xmlFile << node->getNode() << "to" << node->getChildren()[i];
-		xmlFile << findEdge(node,node->getChildren()[i])->getID() ;
+//		xmlFile << findEdge(node,node->getChildren()[i])->getID() ;
+		Edge* e = findEdge(node,node->getChildren()[i]);
+		assert(e);
+		if(xmlEdgeIdxMap.find(e)==xmlEdgeIdxMap.end()){
+			xmlEdgeIdxMap[e]=xmlEdgeCount;
+			xmlEdgeCount++;
+		}
+		xmlFile << xmlEdgeIdxMap[e];
 		printFooterTag("ID",depth+2);
 
 		printFooterTag("Edge",depth+1);
@@ -496,7 +513,16 @@ void DFG::printOP(dfgNode* node, int depth){
 		}
 	}
 	else{
-		xmlFile << node->getNameType();
+		if(node->getNameType().compare("OutLoopLOAD")==0){
+			xmlFile << "LOAD";
+		}
+		else if(node->getNameType().compare("OutLoopSTORE")==0){
+			xmlFile << "STORE";
+		}
+		else{
+			xmlFile << "NORMAL";
+		}
+		//xmlFile << node->getNameType();
 	}
 
 	printFooterTag("OP-type",depth+1);
@@ -558,23 +584,30 @@ void DFG::printEdges(int depth) {
 
 	printHeaderTag("Edge-number",depth);
 
-	for (int i = 0; i < edgeList.size(); ++i) {
-		e = &(edgeList[i]);
-		if(e->getType() == EDGE_TYPE_DATA){
-			edgeCount++;
-		}
-	}
-	xmlFile << edgeCount;
+//	for (int i = 0; i < edgeList.size(); ++i) {
+//		e = &(edgeList[i]);
+//		if(e->getType() == EDGE_TYPE_DATA){
+//			edgeCount++;
+//		}
+//	}
+//	xmlFile << edgeCount;
+	assert(xmlEdgeIdxMap.size()==xmlEdgeCount);
+	xmlFile << xmlEdgeIdxMap.size();
 
 	printFooterTag("Edge-number",depth);
 
 	// Currently only printing DATA dependency edges only
-	for (int i = 0; i < edgeList.size(); ++i) {
-		e = &(edgeList[i]);
-		if(e->getType() == EDGE_TYPE_DATA){
-			printEdge(e,depth);
-		}
+//	for (int i = 0; i < edgeList.size(); ++i) {
+//		e = &(edgeList[i]);
+//		if(e->getType() == EDGE_TYPE_DATA){
+//			printEdge(e,depth);
+//		}
+//	}
+
+	for (std::pair<Edge*,int> pair : xmlEdgeIdxMap){
+		printEdge(pair.first,depth);
 	}
+
 	printFooterTag("EDGEs",depth);
 }
 
@@ -593,7 +626,7 @@ void DFG::printEdge(Edge* e, int depth) {
 	printHeaderTag("EDGE",depth);
 
 	printHeaderTag("ID",depth+1);
-	xmlFile << e->getID();
+	xmlFile << xmlEdgeIdxMap[e];
 	printFooterTag("ID",depth+1);
 
 	printHeaderTag("Attribute",depth+1);
@@ -4275,31 +4308,75 @@ int DFG::addCMERGEtoSELECT() {
 		if(node->getNode()==NULL)continue;
 
 		if(SelectInst* SEL = dyn_cast<SelectInst>(node->getNode())){
-			assert(node->getAncestors().size()==3);
+			SEL->dump();
+			outs() << "node ancestors = " << node->getAncestors().size() << "\n";
+//			assert(node->getAncestors().size()==3);
 
-			dfgNode* condNode = findNode(cast<Instruction>(SEL->getCondition()));
-			cast<Instruction>(SEL->getCondition())->dump();
-			assert(condNode!=NULL);
-			dfgNode* trueNode = findNode(cast<Instruction>(SEL->getTrueValue()));
-			assert(trueNode!=NULL);
-			dfgNode* falseNode = findNode(cast<Instruction>(SEL->getFalseValue()));
-			assert(falseNode!=NULL);
+			int condVal;
+			dfgNode* condNode = NULL;
+//			if(ConstantInt *CI = dyn_cast<ConstantInt>(SEL->getCondition())){
+//				condVal = CI->getSExtValue();
+//			}
+			if(dyn_cast<Instruction>(SEL->getCondition())){
+				condNode = findNode(cast<Instruction>(SEL->getCondition()));
+				cast<Instruction>(SEL->getCondition())->dump();
+				assert(condNode!=NULL);
+				assert(std::find(node->getAncestors().begin(),node->getAncestors().end(),condNode) != node->getAncestors().end());
+			}
+			else{
+				assert(false);
+			}
 
-			assert(std::find(node->getAncestors().begin(),node->getAncestors().end(),condNode) != node->getAncestors().end());
-			assert(std::find(node->getAncestors().begin(),node->getAncestors().end(),trueNode) != node->getAncestors().end());
-			assert(std::find(node->getAncestors().begin(),node->getAncestors().end(),falseNode) != node->getAncestors().end());
+			int trueVal;
+			dfgNode* trueNode = NULL;
+			if(ConstantInt *CI = dyn_cast<ConstantInt>(SEL->getTrueValue())){
+				trueVal = CI->getSExtValue();
+			}
+			else if(ConstantFP *FP = dyn_cast<ConstantFP>(SEL->getTrueValue())){
+				trueVal = 0; // 2019 work
+			}
+			else if(dyn_cast<Instruction>(SEL->getTrueValue())){
+				trueNode = findNode(cast<Instruction>(SEL->getTrueValue()));
+				cast<Instruction>(SEL->getTrueValue())->dump();
+				assert(trueNode!=NULL);
+				assert(std::find(node->getAncestors().begin(),node->getAncestors().end(),trueNode) != node->getAncestors().end());
+			}
+			else{
+				assert(false);
+			}
+
+			int falseVal;
+			dfgNode* falseNode = NULL;
+			if(ConstantInt *CI = dyn_cast<ConstantInt>(SEL->getFalseValue())){
+				falseVal = CI->getSExtValue();
+			}
+			else if(ConstantFP *FP = dyn_cast<ConstantFP>(SEL->getFalseValue())){
+				falseVal = 0; // 2019 work
+			}
+			else if(dyn_cast<Instruction>(SEL->getFalseValue())){
+				falseNode = findNode(cast<Instruction>(SEL->getFalseValue()));
+				cast<Instruction>(SEL->getFalseValue())->dump();
+				assert(falseNode!=NULL);
+				assert(std::find(node->getAncestors().begin(),node->getAncestors().end(),falseNode) != node->getAncestors().end());
+			}
+			else{
+				assert(false);
+			}
+
 
 			condNode->removeChild(node);
 			node->removeAncestor(condNode);
 			removeEdge(findEdge(condNode,node));
 
-			trueNode->removeChild(node);
-			node->removeAncestor(trueNode);
-			removeEdge(findEdge(trueNode,node));
-
-			falseNode->removeChild(node);
-			node->removeAncestor(falseNode);
-			removeEdge(findEdge(falseNode,node));
+			if(trueNode){
+				trueNode->removeChild(node);
+				node->removeAncestor(trueNode);
+				removeEdge(findEdge(trueNode,node));
+				node->addCMergeParent(condNode,trueNode,-1,true);
+			}
+			else{
+				node->addCMergeParent(condNode,trueNode,trueVal,true);
+			}
 
 			dfgNode* notnode = new dfgNode(this);
 			notnode->setIdx(this->getNodesPtr()->size());
@@ -4310,8 +4387,16 @@ int DFG::addCMERGEtoSELECT() {
 			condNode->addChildNode(notnode);
 			notnode->addAncestorNode(condNode);
 
-			node->addCMergeParent(condNode,trueNode,-1,true);
-			node->addCMergeParent(notnode,falseNode,-1,true);
+			if(falseNode){
+				falseNode->removeChild(node);
+				node->removeAncestor(falseNode);
+				removeEdge(findEdge(falseNode,node));
+				node->addCMergeParent(notnode,falseNode,-1,true);
+			}
+			else{
+				node->addCMergeParent(notnode,falseNode,falseVal,true);
+			}
+
 		}
 
 	}
@@ -5443,7 +5528,7 @@ int DFG::nameNodes() {
 					node->setFinalIns(XOR);
 					break;
 				case Instruction::Load:
-					if(node->getTypeSizeBytes()==4){
+					if(node->getTypeSizeBytes()>=4){ //TODO : remove this, we dont support 8 byte data structs
 						node->setFinalIns(Hy_LOAD);
 					}
 					else if(node->getTypeSizeBytes()==2){
@@ -5452,12 +5537,25 @@ int DFG::nameNodes() {
 					else if(node->getTypeSizeBytes()==1){
 						node->setFinalIns(Hy_LOADB);
 					}
+					else if(node->getNode()->getType()->isPointerTy()){ //pointer is a 32 bit address
+						node->setFinalIns(Hy_LOAD);
+					}
 					else{
-						assert(0);
+						node->getNode()->dump();
+						outs() << "OutLoopLOAD size = " << node->getTypeSizeBytes() << "\n";
+						if(node->getNode()->getType()==Type::getDoubleTy(node->getNode()->getContext())){
+							node->setFinalIns(Hy_LOAD);
+						}
+						if(node->getNode()->getType()==Type::getDoublePtrTy(node->getNode()->getContext())){
+							node->setFinalIns(Hy_LOAD);
+						}
+						else{
+							assert(0);
+						}
 					}
 					break;
 				case Instruction::Store:
-					if(node->getTypeSizeBytes()==4){
+					if(node->getTypeSizeBytes()>=4){ //TODO : remove this, we dont support 8 byte data structs
 						node->setFinalIns(Hy_STORE);
 					}
 					else if(node->getTypeSizeBytes()==2){
@@ -5465,6 +5563,9 @@ int DFG::nameNodes() {
 					}
 					else if(node->getTypeSizeBytes()==1){
 						node->setFinalIns(Hy_STOREB);
+					}
+					else if(node->getNode()->getType()->isPointerTy() || node->getNode()->getOperand(0)->getType()->isPointerTy()){ //pointer is a 32 bit address
+						node->setFinalIns(Hy_STORE);
 					}
 					else{
 						node->getNode()->dump();
@@ -5497,19 +5598,21 @@ int DFG::nameNodes() {
 					node->setFinalIns(OR);
 					node->setConstantVal(0);
 					break;
-				case Instruction::FPTrunc:
+				case Instruction::SIToFP:
 				case Instruction::FPExt:
+				case Instruction::FPTrunc:
 				case Instruction::FPToUI:
 				case Instruction::FPToSI:
 				case Instruction::UIToFP:
-				case Instruction::SIToFP:
 				case Instruction::PtrToInt:
 				case Instruction::IntToPtr:
 				case Instruction::BitCast:
 				case Instruction::AddrSpaceCast:
 					node->getNode()->dump();
-					assert(0);
+//					assert(0);
+					//2019 work
 					node->setFinalIns(OR);
+					node->setConstantVal(0);
 					break;
 				case Instruction::PHI:
 				case Instruction::Select:
@@ -5530,6 +5633,7 @@ int DFG::nameNodes() {
 					{
 						outs() << "NameNodes::Node=" << node->getIdx() << ",CMP=";
 						CmpInst* CI = cast<CmpInst>(node->getNode());
+						CI->dump();
 						switch(CI->getPredicate()){
 							case CmpInst::ICMP_SLT:
 							case CmpInst::ICMP_ULT:
@@ -5554,7 +5658,8 @@ int DFG::nameNodes() {
 				case Instruction::FCmp:
 					outs() << "NameNodes::Node=" << node->getIdx() << ",FCMP\n";
 					node->setFinalIns(CMP);
-					assert(false);
+					//2019 work
+//					assert(false);
 					break;
 				default :
 					errs() << "The Op :" << node->getNode()->getOpcodeName() << " that I thought would not be in the compiled code\n";
@@ -5627,6 +5732,7 @@ int DFG::nameNodes() {
 					node->setFinalIns(Hy_LOADB);
 				}
 				else{
+					OutLoopNodeMapReverse[node]->dump();
 					outs() << "OutLoopLOAD size = " << node->getTypeSizeBytes() << "\n";
 					assert(0);
 				}
@@ -5665,6 +5771,9 @@ int DFG::nameNodes() {
 			}
 			else if(node->getNameType().compare("GEPLEFTSHIFT") == 0){
 				node->setFinalIns(LS);
+			}
+			else if(node->getNameType().compare("GEPADD") == 0){
+				node->setFinalIns(ADD);
 			}
 			else if(node->getNameType().compare("MASKAND") == 0){
 				node->setFinalIns(AND);
@@ -5821,11 +5930,11 @@ int DFG::handlePHINodes(std::set<BasicBlock*> LoopBB) {
 //					assert(CI->getBitWidth() <= 32);
 
 					if(LoopBB.find(brIns->getParent())==LoopBB.end()){
-						node->addCMergeParent(brIns,(int)(CF->getValueAPF().convertToDouble()));
+						node->addCMergeParent(brIns,(int)(CF->getValueAPF().convertToFloat()));
 					}
 					else{
 						assert(brNode!=NULL);
-						node->addCMergeParent(brNode,NULL,(int)(CF->getValueAPF().convertToDouble()));
+						node->addCMergeParent(brNode,NULL,(int)(CF->getValueAPF().convertToFloat()));
 					}
 
 				} //TODO : DAC18
@@ -5884,6 +5993,10 @@ int DFG::handlePHINodes(std::set<BasicBlock*> LoopBB) {
 
 				}
 				else{
+					for(std::pair<std::string,int> pair : sizeArrMap){
+						outs() << pair.first << ":" << pair.second << "\n";
+					}
+					outs() << "sizeARRMap size =" << sizeArrMap.size() << "\n";
 					phiIns->getIncomingValueForBlock(bb)->dump();
 					assert(0);
 				}
@@ -7208,6 +7321,16 @@ int DFG::classifyParents() {
 						}
 						continue;
 					}
+					if(node->getNameType().compare("GEPADD")==0){
+						if(node->parentClassification.find(1) == node->parentClassification.end()){
+							node->parentClassification[1]=parent;
+						}
+						else{
+							assert(node->parentClassification.find(2) == node->parentClassification.end());
+							node->parentClassification[2]=parent;
+						}
+						continue;
+					}
 					if(node->getNameType().compare("STORESTART")==0){
 						assert(parent->getNode()==NULL);
 						if(parent->getNameType().compare("MOVC") == 0){
@@ -7354,13 +7477,25 @@ int DFG::classifyParents() {
 					outs() << "node : " << node->getIdx() << "\n";
 					outs() << "Parent : " << parent->getIdx() << "\n";
 					outs() << "Parent NameType : " << parent->getNameType() << "\n";
+
+					if(parent->getNode()){
+						if(dyn_cast<BranchInst>(parent->getNode())){
+							node->parentClassification[0]=parent;
+							continue;
+						}
+					}
+
 					assert(parent->getNameType().compare("CMERGE")==0);
 					if(node->parentClassification.find(1) == node->parentClassification.end()){
 						node->parentClassification[1]=parent;
 					}
-					else{
-						assert(node->parentClassification.find(2) == node->parentClassification.end());
+					else if(node->parentClassification.find(2) == node->parentClassification.end()){
+//						assert(node->parentClassification.find(2) == node->parentClassification.end());
 						node->parentClassification[2]=parent;
+					}
+					else{
+						outs() << "Extra parent : " << parent->getIdx() << ",Nametype = " << parent->getNameType() << ",par_idx = " << node->parentClassification.size()+1 << "\n";
+						node->parentClassification[node->parentClassification.size()+1]=parent;
 					}
 					continue;
 				}
@@ -7421,6 +7556,9 @@ int DFG::classifyParents() {
 }
 
 int DFG::findOperandNumber(dfgNode* node, Instruction* child, Instruction* parent) {
+	parent->dump();
+	child->dump();
+
 	if(LoadInst* LDI = dyn_cast<LoadInst>(child)){
 		assert(parent == LDI->getPointerOperand());
 		return 2;
@@ -7492,7 +7630,7 @@ int DFG::findOperandNumber(dfgNode* node, Instruction* child, Instruction* paren
 				}
 				else{
 //					ConstantInt* CI = cast<ConstantInt>(child->getOperand(i));
-					assert(node->hasConstantVal());
+//					assert(node->hasConstantVal());
 					if(i==0){
 						assert(parent==cast<Instruction>(child->getOperand(1)));
 						return 1;
@@ -7573,31 +7711,83 @@ int DFG::insertshiftGEPs() {
 				for (dfgNode* child : node->getChildren()) {
 					if(child->getNode()!=NULL){
 						if(child->getNode()->mayReadOrWriteMemory()){
-							elementSize = child->getTypeSizeBytes();
-							outs() << "GEP element size = " << child->getTypeSizeBytes() << "\n";
+							elementSize = child->getTypeSizeBytes()/4;
+							outs() << "GEP element size = " << child->getTypeSizeBytes()/4 << "\n";
 							break;
 						}
 					}
 				}
 
-				if(elementSize > 1){
-					dfgNode* temp = new dfgNode(this);
-					temp->setNameType("GEPLEFTSHIFT");
-					temp->setIdx(NodeList.size());
-					NodeList.push_back(temp);
-					temp->setConstantVal(Log2_32(elementSize));
-					temp->BB=node->BB;
+				std::set<dfgNode*> non_control_parents;
+				for (dfgNode* parent : node->getAncestors()){
+					if(parent->getNameType() == "CTRLBrOR"){
+						continue;
+					}
+					else if(parent->getNode()!=NULL){
+						Instruction* parentIns = parent->getNode();
+						if(BranchInst* BRI = dyn_cast<BranchInst>(parentIns)){
+							continue;
+						}
+						else if(CmpInst * CMPI = dyn_cast<CmpInst>(parentIns)){
+							continue;
+						}
+					}
+					non_control_parents.insert(parent);
+				}
+				assert(non_control_parents.size() <= 2);
 
-					for (dfgNode* parent : node->getAncestors()){
+				if(non_control_parents.size() == 2){
+					dfgNode* tempADD = new dfgNode(this);
+					tempADD->setNameType("GEPADD");
+					tempADD->setIdx(NodeList.size());
+					NodeList.push_back(tempADD);
+					tempADD->BB = node->BB;
+
+					for(dfgNode* parent : non_control_parents){
 						parent->removeChild(node);
 						node->removeAncestor(parent);
 						removeEdge(findEdge(parent,node));
 
-						parent->addChildNode(temp);
-						temp->addAncestorNode(parent);
+						parent->addChildNode(tempADD);
+						tempADD->addAncestorNode(parent);
 					}
-					temp->addChildNode(node);
-					node->addAncestorNode(temp);
+
+					if(elementSize > 1){
+						dfgNode* temp = new dfgNode(this);
+						temp->setNameType("GEPLEFTSHIFT");
+						temp->setIdx(NodeList.size());
+						NodeList.push_back(temp);
+						temp->setConstantVal(Log2_32(elementSize));
+						temp->BB=node->BB;
+
+						tempADD->addChildNode(temp);
+						temp->addAncestorNode(tempADD);
+
+						temp->addChildNode(node);
+						node->addAncestorNode(temp);
+					}
+				}
+				else{
+					assert(non_control_parents.size() == 1);
+					if(elementSize > 1){
+						dfgNode* temp = new dfgNode(this);
+						temp->setNameType("GEPLEFTSHIFT");
+						temp->setIdx(NodeList.size());
+						NodeList.push_back(temp);
+						temp->setConstantVal(Log2_32(elementSize));
+						temp->BB=node->BB;
+
+						for (dfgNode* parent : node->getAncestors()){
+							parent->removeChild(node);
+							node->removeAncestor(parent);
+							removeEdge(findEdge(parent,node));
+
+							parent->addChildNode(temp);
+							temp->addAncestorNode(parent);
+						}
+						temp->addChildNode(node);
+						node->addAncestorNode(temp);
+					}
 				}
 
 			}
@@ -8290,11 +8480,11 @@ int DFG::analyzeRTpaths() {
 	outs() << "analyzeRTpaths :: end\n";
 }
 
-int DFG::checkMutexBBs() {
+std::map<BasicBlock*,std::set<BasicBlock*>> DFG::checkMutexBBs() {
 	assert(NodeList.size() > 0);
-	dfgNode firstNode = *NodeList[0];
+	dfgNode* firstNode = NodeList[0];
 	SmallVector<std::pair<const BasicBlock *, const BasicBlock *>,8> Result;
-	FindFunctionBackedges(*(firstNode.getNode()->getFunction()),Result);
+	FindFunctionBackedges(*(firstNode->BB->getParent()),Result);
 	outs() << "Number of Backedges = " << Result.size() << "\n";
 
 	std::map<BasicBlock*,std::set<BasicBlock*>> mutexBBs;
@@ -8302,9 +8492,13 @@ int DFG::checkMutexBBs() {
 	for(BasicBlock* BB1 : loopBB){
 		for(BasicBlock* BB2 : loopBB){
 			if(std::find(BBSuccBasicBlocks[BB1].begin(), BBSuccBasicBlocks[BB1].end(), BB2) == BBSuccBasicBlocks[BB1].end()){
-				// coming here means BB2 is not a successor of BB1
-				// then its mutually exclusive
-				mutexBBs[BB1].insert(BB2);
+				if(std::find(BBSuccBasicBlocks[BB2].begin(), BBSuccBasicBlocks[BB2].end(), BB1) == BBSuccBasicBlocks[BB2].end()){
+					// coming here means BB2 is not a successor of BB1
+					// coming here means BB1 is not a successor of BB2
+					// then its mutually exclusive
+					mutexBBs[BB1].insert(BB2);
+					mutexBBs[BB2].insert(BB1);
+				}
 			}
 		}
 	}
@@ -8316,6 +8510,8 @@ int DFG::checkMutexBBs() {
 		}
 		outs() << "\n";
 	}
+
+	return mutexBBs;
 }
 
 int DFG::printHyCUBEInsHist() {
@@ -8323,4 +8519,352 @@ int DFG::printHyCUBEInsHist() {
 	for (std::pair<HyCUBEIns,int> pair : hyCUBEInsHist){
 		outs() << "Ins:" << HyCUBEInsStrings[pair.first] << "," << pair.second << "\n";
 	}
+}
+
+void DFG::printNewDFGXML() {
+	std::string fileName = name + "_DFG.xml";
+	std::ofstream xmlFile;
+	xmlFile.open(fileName.c_str());
+
+	printREGIMapfiles();
+	addPHIParents();
+	classifyParents();
+	MergeCMerge();
+
+//    insertMOVC();
+//	scheduleASAP();
+//	scheduleALAP();
+//	balanceASAPALAP();
+//				  LoopDFG.addBreakLongerPaths();
+	CreateSchList();
+
+	std::map<BasicBlock*,std::set<BasicBlock*>> mBBs = checkMutexBBs();
+	std::map<std::string,std::set<std::string>> mBBs_str;
+
+	std::map<int,std::vector<dfgNode*>> asaplevelNodeList;
+	for (dfgNode* node : NodeList){
+		asaplevelNodeList[node->getASAPnumber()].push_back(node);
+	}
+
+	std::map<dfgNode*,std::string> nodeBBModified;
+	for(dfgNode* node : NodeList){
+		nodeBBModified[node]=node->BB->getName().str();
+	}
+
+
+	for(dfgNode* node : NodeList){
+		int cmergeParentCount=0;
+		std::set<std::string> mutexBBs;
+		for(dfgNode* parent: node->getAncestors()){
+			if(HyCUBEInsStrings[parent->getFinalIns()] == "CMERGE"){
+				nodeBBModified[parent]=nodeBBModified[parent]+ "_" + std::to_string(node->getIdx()) + "_" + std::to_string(cmergeParentCount);
+				mutexBBs.insert(nodeBBModified[parent]);
+				cmergeParentCount++;
+			}
+		}
+		for(std::string bb_str1 : mutexBBs){
+			for(std::string bb_str2 : mutexBBs){
+				if(bb_str2==bb_str1) continue;
+				mBBs_str[bb_str1].insert(bb_str2);
+			}
+		}
+	}
+
+
+	xmlFile << "<MutexBB>\n";
+	for(std::pair<BasicBlock*,std::set<BasicBlock*>> pair : mBBs){
+		BasicBlock* first = pair.first;
+		xmlFile << "<BB1 name=\"" << first->getName().str() << "\">\n";
+		for(BasicBlock* second : pair.second){
+			xmlFile << "\t<BB2 name=\"" << second->getName().str() << "\"/>\n";
+		}
+		xmlFile << "</BB1>\n";
+	}
+	for(std::pair<std::string,std::set<std::string>> pair : mBBs_str){
+		std::string first = pair.first;
+		xmlFile << "<BB1 name=\"" << first << "\">\n";
+		for(std::string second : pair.second){
+			xmlFile << "\t<BB2 name=\"" << second << "\"/>\n";
+		}
+		xmlFile << "</BB1>\n";
+	}
+	xmlFile << "</MutexBB>\n";
+
+	xmlFile << "<DFG count=\"" << NodeList.size() << "\">\n";
+
+	for(dfgNode* node : NodeList){
+//	for (int i = 0; i < maxASAPLevel; ++i) {
+//		for(dfgNode* node : asaplevelNodeList[i]){
+			xmlFile << "<Node idx=\"" << node->getIdx() << "\"";
+		    xmlFile << "ASAP=\"" << node->getASAPnumber() << "\"";
+
+//		    if(node->getNameType() == "OutLoopLOAD") {
+//		    	xmlFile << "OutLoopLOAD=\"1\"";
+//		    }
+//		    else{
+//		    	xmlFile << "OutLoopLOAD=\"0\"";
+//		    }
+//
+//		    if(node->getNameType() == "OutLoopSTORE") {
+//		    	xmlFile << "OutLoopSTORE=\"1\"";
+//		    }
+//		    else{
+//		    	xmlFile << "OutLoopSTORE=\"0\"";
+//		    }
+
+//		    xmlFile << "BB=\"" << node->BB->getName().str() << "\"";
+		    xmlFile << "BB=\"" << nodeBBModified[node] << "\"";
+		    if(node->hasConstantVal()){
+		    	xmlFile << "CONST=\"" << node->getConstantVal() << "\"";
+		    }
+			xmlFile << ">\n";
+
+			xmlFile << "<OP>";
+			if((node->getNameType() == "OutLoopLOAD") || (node->getNameType() == "OutLoopSTORE") ){
+				xmlFile << "O";
+			}
+			xmlFile << HyCUBEInsStrings[node->getFinalIns()] << "</OP>\n";
+//			xmlFile << "<OP>" << HyCUBEInsStrings[node->getFinalIns()] << "</OP>\n";
+
+			xmlFile << "<Inputs>\n";
+			for(dfgNode* parent : node->getAncestors()){
+	//			xmlFile << "\t<Input idx=\"" << parent->getIdx() << "\" type=\"DATA\"/>\n";
+				xmlFile << "\t<Input idx=\"" << parent->getIdx() << "\"/>\n";
+			}
+	//		for(dfgNode* parentPHI : node->getPHIancestors()){
+	//			xmlFile << "\t<Input idx=\"" << parentPHI->getIdx() << "\" type=\"PHI\"/>\n";
+	//		}
+			xmlFile << "</Inputs>\n";
+
+			xmlFile << "<Outputs>\n";
+			for(dfgNode* child : node->getChildren()){
+	//			xmlFile << "\t<Output idx=\"" << child->getIdx() <<"\" type=\"DATA\"/>\n";
+				xmlFile << "\t<Output idx=\"" << child->getIdx() << "\" ";
+
+				if(child->parentClassification[0]==node){
+					xmlFile << "type=\"P\"/>\n";
+				}
+				else if(child->parentClassification[1]==node){
+					xmlFile << "type=\"I1\"/>\n";
+				}
+				else if(child->parentClassification[2]==node){
+					xmlFile << "type=\"I2\"/>\n";
+				}
+				else{
+					bool found=false;
+					for(std::pair<int,dfgNode*> pair : child->parentClassification){
+						if(pair.second == node){
+							xmlFile << "type=\"I2\"/>\n";
+							found=true;
+							break;
+						}
+					}
+
+					assert(found);
+				}
+			}
+	//		for(dfgNode* phiChild : node->getPHIchildren()){
+	//			xmlFile << "\t<Output idx=\"" << phiChild->getIdx() << "\" type=\"PHI\"/>\n";
+	//		}
+			xmlFile << "</Outputs>\n";
+
+			xmlFile << "<RecParents>\n";
+			for(dfgNode* recParent : node->getRecAncestors()){
+				xmlFile << "\t<RecParent idx=\"" << recParent->getIdx() << "\"/>\n";
+			}
+			xmlFile << "</RecParents>\n";
+
+			xmlFile << "</Node>\n\n";
+
+	}
+//		}
+//	}
+
+
+
+
+	xmlFile << "</DFG>\n";
+	xmlFile.close();
+}
+
+void DFG::printREGIMapfiles() {
+	std::map<HyCUBEIns,int> regimapInsIdxMap;
+	regimapInsIdxMap[NOP]=32;
+	regimapInsIdxMap[ADD]=0;
+	regimapInsIdxMap[SUB]=1;
+	regimapInsIdxMap[MUL]=2;
+	regimapInsIdxMap[SEXT]=4;
+	regimapInsIdxMap[DIV]=3;
+	regimapInsIdxMap[LS]=4;
+	regimapInsIdxMap[RS]=5;
+	regimapInsIdxMap[ARS]=regimapInsIdxMap[RS];
+	regimapInsIdxMap[AND]=6;
+	regimapInsIdxMap[OR]=7;
+	regimapInsIdxMap[XOR]=8;
+	regimapInsIdxMap[SELECT]=29;
+	regimapInsIdxMap[CMERGE]=regimapInsIdxMap[OR];
+	regimapInsIdxMap[CMP]=10;
+	regimapInsIdxMap[CLT]=12;
+	regimapInsIdxMap[BR]=31;
+	regimapInsIdxMap[CGT]=9;
+
+	regimapInsIdxMap[Hy_LOAD]=19;regimapInsIdxMap[Hy_LOADH]=19;regimapInsIdxMap[Hy_LOADB]=19;
+	regimapInsIdxMap[Hy_STORE]=21;regimapInsIdxMap[Hy_STOREH]=21;regimapInsIdxMap[Hy_STOREB]=21;
+	regimapInsIdxMap[JUMPL]=regimapInsIdxMap[BR];
+	regimapInsIdxMap[LOADCL]=regimapInsIdxMap[Hy_LOAD];
+	regimapInsIdxMap[MOVCL]=regimapInsIdxMap[OR];
+	regimapInsIdxMap[MOVC]=regimapInsIdxMap[OR];
+
+	//NOP,ADD,SUB,MUL,SEXT,DIV,LS,RS,ARS,AND,OR,XOR,SELECT,CMERGE,CMP,CLT,BR,CGT,LOADCL,MOVCL,Hy_LOAD,Hy_LOADH,Hy_LOADB,Hy_STORE,Hy_STOREH,Hy_STOREB,JUMPL,MOVC
+
+	std::string nodefileName = name + "_REGI_node.txt";
+	std::string edgefileName = name + "_REGI_edge.txt";
+
+	std::ofstream nodeFile;
+	nodeFile.open(nodefileName.c_str());
+
+	std::ofstream edgeFile;
+	edgeFile.open(edgefileName.c_str());
+
+	int additionalDataNodeStartIdx = 1000;
+
+	for(dfgNode* node : NodeList){
+		if(regimapInsIdxMap[node->getFinalIns()] == 19 || regimapInsIdxMap[node->getFinalIns()] == 21){
+			nodeFile << node->getIdx() << "\t" << regimapInsIdxMap[node->getFinalIns()] << "\n";
+			nodeFile << additionalDataNodeStartIdx << "\t" << regimapInsIdxMap[node->getFinalIns()] + 1 << "\n";
+
+			if(regimapInsIdxMap[node->getFinalIns()] == 19){
+				edgeFile << node->getIdx() << "\t" << additionalDataNodeStartIdx << "\tLRE\n";
+			}
+			else{
+				assert(regimapInsIdxMap[node->getFinalIns()] == 21);
+				edgeFile << node->getIdx() << "\t" << additionalDataNodeStartIdx << "\tSRE\n";
+			}
+
+			for(dfgNode* child : node->getChildren()){
+				edgeFile << additionalDataNodeStartIdx << "\t" << child->getIdx() << "\tTRU\n";
+			}
+			for(dfgNode* child : node->getPHIchildren()){
+				edgeFile << additionalDataNodeStartIdx << "\t" << child->getIdx() << "\tPRE\n";
+			}
+			additionalDataNodeStartIdx++;
+		}
+		else{
+			nodeFile << node->getIdx() << "\t" << regimapInsIdxMap[node->getFinalIns()] << "\n";
+			for(dfgNode* child : node->getChildren()){
+				edgeFile << node->getIdx() << "\t" << child->getIdx() << "\tTRU\n";
+			}
+			for(dfgNode* child : node->getPHIchildren()){
+				edgeFile << node->getIdx() << "\t" << child->getIdx() << "\tPRE\n";
+			}
+		}
+	}
+
+	nodeFile.close();
+	edgeFile.close();
+}
+
+void DFG::MergeCMerge() {
+
+	std::set<dfgNode*> delNodes;
+
+	for(dfgNode* node : NodeList){
+		if(node->getNameType().compare("CMERGE")==0){
+			assert(node->parentClassification.find(0)!=node->parentClassification.end());
+//			assert(node->parentClassification.find(1)!=node->parentClassification.end());
+			if(node->parentClassification.find(1)==node->parentClassification.end()){
+				continue; // no data parent
+			}
+
+			dfgNode* predParent = node->parentClassification[0];
+			dfgNode* dataParent = node->parentClassification[1];
+
+			if(dataParent->getAncestors().size() > 0){
+				if(dataParent->parentClassification.find(0)!=dataParent->parentClassification.end()){
+					continue;
+				}
+			}
+
+			if(dataParent->getChildren().size() == 1){
+				predParent->removeChild(node);
+				node->removeAncestor(predParent);
+				removeEdge(findEdge(predParent,node));
+
+				dataParent->removeChild(node);
+				node->removeAncestor(dataParent);
+				removeEdge(findEdge(dataParent,node));
+
+				delNodes.insert(node);
+
+				predParent->addChildNode(dataParent);
+				dataParent->addAncestorNode(predParent);
+				dataParent->parentClassification[0]=predParent;
+
+				std::vector<dfgNode*> children = node->getChildren();
+				for(dfgNode* child : children){
+					dataParent->addChildNode(child);
+					child->addAncestorNode(dataParent);
+
+					outs() << "parentClassification size = " << child->parentClassification.size() << "\n";
+//					if(child->parentClassification[0]==node){
+//						child->parentClassification[0]=dataParent;
+//					}
+//					else if(child->parentClassification[1]==node){
+//						child->parentClassification[1]=dataParent;
+//					}
+//					else if(child->parentClassification[2]==node){
+//						child->parentClassification[2]=dataParent;
+//					}
+//					else{
+//						assert(false);
+//					}
+					bool found=false;
+					for(std::pair<int,dfgNode*> pair : child->parentClassification){
+						if(pair.second==node){
+							child->parentClassification[pair.first]=dataParent;
+							found=true;
+							break;
+						}
+					}
+					assert(found);
+
+					node->removeChild(child);
+					child->removeAncestor(node);
+					removeEdge(findEdge(node,child));
+				}
+			}
+		}
+	}
+
+	for(dfgNode* del : delNodes){
+		NodeList.erase(std::find(NodeList.begin(),NodeList.end(),del));
+	}
+
+}
+
+void DFG::insertMOVC() {
+	int beforeNodeListSize = NodeList.size();
+	std::vector<dfgNode*> tobeadded;
+
+	for(dfgNode* node : NodeList){
+		if(node->hasConstantVal()){
+			dfgNode* temp = new dfgNode(this);
+			temp->setNameType("MOVC");
+			temp->setIdx(NodeList.size()+tobeadded.size());
+			temp->BB=node->BB;
+			temp->setFinalIns(MOVC);
+			temp->setConstantVal(node->getConstantVal());
+			tobeadded.push_back(temp);
+
+			temp->addChildNode(node);
+			node->addAncestorNode(temp);
+			node->parentClassification[2]=temp;
+		}
+	}
+
+	for(dfgNode* newNode : tobeadded){
+		NodeList.push_back(newNode);
+	}
+
+	outs() << "NodeList Size was increased : from=" << beforeNodeListSize << ", to=" << NodeList.size() << "\n";
 }

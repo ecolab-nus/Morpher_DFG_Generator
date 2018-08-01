@@ -34,6 +34,15 @@ void reportExecInsCount(int count);
 void recordUncondMunitTransition(const char* srcBB, const char* destBB);
 void recordCondMunitTransition(const char* srcBB, const char* destBB1, const char* destBB2, int condition);
 
+//2018 work of profiling NNVM compiled caffe code
+void reportBBTrace(const char* FName, const char* BBName, int insCount);
+void sortandPrintStats();
+
+
+//2018 work of triggered CGRA execution
+void reportNewBBinPath(const char* bbName, const char* loopName);
+void reportLoopEnd(const char* loopName);
+
 
 #ifdef __cplusplus
 }

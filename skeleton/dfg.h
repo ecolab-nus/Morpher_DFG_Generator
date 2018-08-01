@@ -459,12 +459,21 @@ class DFG{
 			int analyzeRTpaths();
 
 			//Mutually Excluded Path Exploration
-			int checkMutexBBs();
+			std::map<BasicBlock*,std::set<BasicBlock*>> checkMutexBBs();
 
 			int printHyCUBEInsHist();
 
 			//setting sizeArrMap accesible for the DFG class
 			std::map<std::string,int> sizeArrMap;
+
+			void printNewDFGXML();
+			void printREGIMapfiles();
+			std::map<Edge*,int> xmlEdgeIdxMap;
+			int xmlEdgeCount=0;
+
+			void MergeCMerge();
+
+			void insertMOVC();
 
 	};
 

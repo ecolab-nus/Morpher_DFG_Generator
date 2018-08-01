@@ -472,6 +472,8 @@ std::vector<munitTransition> munitTransitionsALL;
 
 	    	void populateNonLoopBBs(Function& F, std::vector<Loop*> loops){
 	    		for(BasicBlock &BB : F){
+
+
 	    			BasicBlock* BBPtr = cast<BasicBlock>(&BB);
 	    			nonloopBBs.insert(BBPtr);
 	    		}
@@ -1084,6 +1086,7 @@ std::vector<munitTransition> munitTransitionsALL;
 							 Instruction* pointerOp;
 							 if(ptrName.empty()){
 								 pointerOp = cast<Instruction>(GEP->getPointerOperand());
+								 pointerOp->dump();
 								 if(LoadInst* pointerOpLD = dyn_cast<LoadInst>(GEP->getPointerOperand())){
 									 ptrName =  pointerOpLD->getPointerOperand()->getName().str();
 									 outs() << "NewPtrName = " << ptrName << "\n";
@@ -1091,8 +1094,13 @@ std::vector<munitTransition> munitTransitionsALL;
 							 }
 							 while(ptrName.empty()){
 								 pointerOp = cast<Instruction>(pointerOp->getOperand(0));
+								 pointerOp->dump();
 								 if(GetElementPtrInst* OrignalGEP = dyn_cast<GetElementPtrInst>(pointerOp)){
 									 ptrName = OrignalGEP->getPointerOperand()->getName().str();
+									 outs() << "NewPtrName = " << ptrName << "\n";
+								 }
+								 if(CallInst* CLI = dyn_cast<CallInst>(pointerOp)){ //2019 work
+									 ptrName = CLI->getName().str();
 									 outs() << "NewPtrName = " << ptrName << "\n";
 								 }
 							 }
@@ -1122,13 +1130,17 @@ std::vector<munitTransition> munitTransitionsALL;
 
 							for (int i = 0; i < I.getNumOperands(); ++i) {
 								if(I.getOperand(i)->getName().str().compare(pair1.first) == 0){
-									for(User *U : I.users()){
-										if(StoreInst* STI = dyn_cast<StoreInst>(U)) continue;
-										if(LoadInst* LDI = dyn_cast<LoadInst>(U)) continue;
-										if(Instruction* childIns = dyn_cast<Instruction>(U)){
-											usesQ.insert(std::make_pair(childIns,pair1.first));
-										}
+									I.dump();
+									if(Instruction* childIns = dyn_cast<Instruction>(&I)){
+										usesQ.insert(std::make_pair(childIns,pair1.first));
 									}
+//									for(User *U : I.users()){
+//										if(StoreInst* STI = dyn_cast<StoreInst>(U)) continue;
+//										if(LoadInst* LDI = dyn_cast<LoadInst>(U)) continue;
+//										if(Instruction* childIns = dyn_cast<Instruction>(U)){
+//											usesQ.insert(std::make_pair(childIns,pair1.first));
+//										}
+//									}
 								}
 							}
 						}
@@ -1935,6 +1947,25 @@ std::vector<munitTransition> munitTransitionsALL;
 
 	    	}
 
+//	    	void BasicBlockPathTrace(std::map<Loop*,std::string> loopNames, Function& F, LoopTree rootLoop){
+//
+//	    		Constant* traceStartFn = F.getParent()->getOrInsertFunction(
+//	    								"loopTraceOpen",
+//	    								FunctionType::getVoidTy(Ctx),
+//										Type::getInt8PtrTy(Ctx));
+//
+//	    		for(std::pair<Loop*,std::string> lnPair : loopNames){
+//	    			Loop* loop = lnPair.first;
+//	    			std::string loopName = lnPair.second;
+//	    			for(BasicBlock* BB : loop->blocks()){
+//
+//
+//	    			}
+//
+//	    		}
+//
+//	    	}
+
 
 namespace {
 
@@ -1995,6 +2026,7 @@ namespace {
 //			  MemoryDependenceAnalysis *MD = &getAnalysis<MemoryDependenceAnalysis>();
 			  ScalarEvolution* SE = &getAnalysis<ScalarEvolutionWrapperPass>().getSE();
 			 //DependenceAnalysis* DA = &getAnalysis<DependenceAnalysis>();
+			  DependenceInfo* DI = &getAnalysis<DependenceAnalysisWrapperPass>().getDI();
 
 
 
@@ -2058,6 +2090,8 @@ namespace {
 				  loops.push_back(L);
 			  }
 
+
+
 			  populateNonLoopBBs(F,loops);
 			  std::string lnstr("LN");
 			  getInnerMostLoops(&innerMostLoops,loops,&loopNames,lnstr,&rootLoop);
@@ -2067,8 +2101,8 @@ namespace {
 			  printMappableUnitMap();
 			  populateBBTrans();
 			  printFileOutMappingUnitVars(F,&sizeArrMap,loopNames);
-			  loopTrace(loopNames,F,rootLoop);
-			  analyzeAllMappingUnits(F,loopNames);
+//			  loopTrace(loopNames,F,rootLoop);
+//			  analyzeAllMappingUnits(F,loopNames);
 			  return 0;
 
 			  if(munitName == "na"){
@@ -2083,6 +2117,7 @@ namespace {
 			  DFG LoopDFG(F.getName().str() + "_" + munitName,&loopNames);
 //			  loopDFGs[L]=&LoopDFG;
 			  LoopDFG.setBBSuccBasicBlocks(BBSuccBasicBlocks);
+			  LoopDFG.sizeArrMap=sizeArrMap;
 //			  LoopDFG.setLoop(L);
 
 			  outs() << "Currently mapping unit : " << munitName << "\n";
@@ -2128,8 +2163,8 @@ namespace {
 			  LoopDFG.checkSanity();
 //				  LoopDFG.addMemDepEdges(MD);
 //				  LoopDFG.removeAlloc();
-//				  LoopDFG.addMemRecDepEdges(DA);
-//		      LoopDFG.addMemRecDepEdgesNew(DA);
+//		      LoopDFG.addMemRecDepEdges(DI);
+		      LoopDFG.addMemRecDepEdgesNew(DI);
 			  printDFGDOT (LoopDFG.getName() + "_loopdfg.dot", &LoopDFG);
 			  LoopDFG.checkMutexBBs();
 
@@ -2145,7 +2180,10 @@ namespace {
 			  LoopDFG.partitionMemNodes();
 		      LoopDFG.nameNodes();
 		      LoopDFG.printHyCUBEInsHist();
-			  return 0;
+
+		      //This code segment is just to check the new DFG xml
+		      LoopDFG.printNewDFGXML(); printDFGDOT (LoopDFG.getName() + "_loopdfg.dot", &LoopDFG);
+		      return false;
 
 
 			  //Checking Instrumentation Code
@@ -2165,7 +2203,7 @@ namespace {
 				  errs() << "  error opening file for writing!";
 			  errs() << "\n";
 			  }
-			  ArchType arch = NoNOC;
+			  ArchType arch = RegXbarTREG;
 			  printDFGDOT (LoopDFG.getName() + "_loopdfg.dot", &LoopDFG);
 
 //			  unsigned int dX;
@@ -2381,6 +2419,7 @@ namespace {
 //			AU.setPreservesAll();
 //			AU.addRequired<LoopInfoWrapperPass>();
 //			AU.addRequired<MemoryDependenceAnalysis>();
+		    AU.addRequired<DependenceAnalysisWrapperPass>();
 
 			AU.setPreservesAll();
 			AU.addRequired<LoopInfoWrapperPass>();
@@ -2466,14 +2505,16 @@ namespace {
 		void getAnalysisUsage(AnalysisUsage &AU) const override {
 			AU.setPreservesAll();
 			AU.addRequired<LoopInfoWrapperPass>();
+//		    AU.addRequired<AAResultsWrapperPass>();
+		    AU.addRequired<DependenceAnalysisWrapperPass>();
 //			AU.addRequired<MemoryDependenceAnalysis>();
 		    AU.addRequired<ScalarEvolutionWrapperPass>();
-		    AU.addRequired<AAResultsWrapperPass>();
-		    AU.addRequired<DominatorTreeWrapperPass>();
+//		    AU.addRequired<AAResultsWrapperPass>();
+//		    AU.addRequired<DominatorTreeWrapperPass>();
 //		    AU.addRequired<LoopInfoWrapperPass>();
 //		    AU.addRequired<DependenceAnalysis>();
-		    AU.addRequiredID(LoopSimplifyID);
-		    AU.addRequiredID(LCSSAID);
+//		    AU.addRequiredID(LoopSimplifyID);
+//		    AU.addRequiredID(LCSSAID);
 //		    AU.addRequired<LoopAccessAnalysis>();
 		}
 
