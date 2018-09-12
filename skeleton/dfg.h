@@ -149,7 +149,7 @@ enum MemOp   {LOAD,STORE,INVALID};
 enum DFGType {NOLOOP,OUTLOOP,INLOOP};
 
 class DFG{
-		private :
+		protected :
 			std::vector<dfgNode*> NodeList;
 			std::ofstream xmlFile;
 			std::vector<Edge> edgeList;

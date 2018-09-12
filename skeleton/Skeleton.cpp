@@ -69,6 +69,7 @@
 #include "edge.h"
 #include "dfgnode.h"
 #include "dfg.h"
+#include "DFGTrig.h"
 
 //#define CDFG
 
@@ -176,6 +177,14 @@ std::vector<munitTransition> munitTransitionsALL;
 						if(validBB.find(Inst->getParent()) == validBB.end()){
 							currBBDFG->findNode(I)->addStoreChild(I);
 							continue;
+						}
+
+						if(Inst->getOpcode() == Instruction::PHI){
+							errs() << "#####TRAVDEFTREE :: PHI Child found2!\n";
+							 currBBDFG->findNode(I)->addPHIchild(Inst);
+							 I->dump();
+							 Inst->dump();
+							 continue;
 						}
 
 
@@ -2103,13 +2112,44 @@ namespace {
 			  printFileOutMappingUnitVars(F,&sizeArrMap,loopNames);
 //			  loopTrace(loopNames,F,rootLoop);
 //			  analyzeAllMappingUnits(F,loopNames);
-			  return 0;
+//			  return 0;
 
 			  if(munitName == "na"){
 				  //exit here if a mapping unit name is not given
 				  return 0;
 			  }
 
+			  //-----------------------------------
+			  // New Code for 2018 work
+			  //-----------------------------------
+	    {
+			  DFGTrig LoopDFG(F.getName().str() + "_" + munitName,&loopNames);
+			  LoopDFG.setBBSuccBasicBlocks(BBSuccBasicBlocks);
+			  LoopDFG.sizeArrMap=sizeArrMap;
+			  outs() << "Currently mapping unit : " << munitName << "\n";
+			  assert(!mappingUnitMap[munitName].allBlocks.empty());
+			  LoopDFG.setLoopBB(mappingUnitMap[munitName].allBlocks,
+					  	  	    mappingUnitMap[munitName].entryBlocks,
+								mappingUnitMap[munitName].exitBlocks);
+			  insMap.clear();
+			  for (BasicBlock* B : *LoopDFG.getLoopBB()){
+				 int Icount = 0;
+				 for (auto &I : *B) {
+
+					 if(insMap.find(&I) != insMap.end()){
+						 continue;
+					 }
+
+					  int depth = 0;
+					  traverseDefTree(&I, depth, &LoopDFG, &insMap,BBSuccBasicBlocks,*LoopDFG.getLoopBB());
+				 }
+			  }
+
+			  LoopDFG.addMemRecDepEdgesNew(DI);
+			  LoopDFG.generateTrigDFGDOT();
+			  return false;
+    	}
+	    return false;
 			  //-----------------------------------
 			  // New Code for 2017 work
 			  //-----------------------------------

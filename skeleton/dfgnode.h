@@ -26,7 +26,10 @@ struct pathDataComparer
     }
 };
 
+enum CondVal{UNCOND,TRUE,FALSE};
+
 using namespace llvm;
+
 
 
 
@@ -88,6 +91,7 @@ class dfgNode{
 			//served phi index
 
 
+
 		public :
 
 			//For XML
@@ -132,8 +136,8 @@ class dfgNode{
 
 //			void addChildNode(dfgNode* node){ChildNodes.push_back(node);}
 //			void addAncestorNode(dfgNode* node){AncestorNodes.push_back(node);}
-			void addChildNode(dfgNode* node, int type=EDGE_TYPE_DATA);
-			void addAncestorNode(dfgNode* node, int type=EDGE_TYPE_DATA);
+			void addChildNode(dfgNode* node, int type=EDGE_TYPE_DATA, bool isBackEdge=false, bool isControlDependent=false, bool ControlValue=true);
+			void addAncestorNode(dfgNode* node, int type=EDGE_TYPE_DATA, bool isBackEdge=false, bool isControlDependent=false, bool ControlValue=true);
 			void addRecChildNode(dfgNode* node){RecChildNodes.push_back(node);}
 			void addRecAncestorNode(dfgNode* node){RecAncestorNodes.push_back(node);}
 			void addPHIChildNode(dfgNode* node){PHIchildNodes.push_back(node);}
@@ -195,8 +199,8 @@ class dfgNode{
 			HyCUBEIns getFinalIns(){return finalIns;}
 
 			//Out of loop instructions
-			void addStoreChild(Instruction * ins);
-			void addLoadParent(Instruction * ins);
+			dfgNode* addStoreChild(Instruction * ins);
+			dfgNode* addLoadParent(Instruction * ins);
 
 			//Memory Allocation
 			int getoutloopAddr();
@@ -232,6 +236,13 @@ class dfgNode{
 
 			bool isParent(dfgNode* parent);
 			void printName();
+
+			//triggered
+			std::map<dfgNode*,bool> childBackEdgeMap;
+			std::map<dfgNode*,bool> ancestorBackEdgeMap;
+			std::map<dfgNode*,CondVal> childConditionalMap;
+			std::map<dfgNode*,CondVal> ancestorConditionaMap;
+
 
 };
 

@@ -86,11 +86,64 @@ void dfgNode::addAncestor(Instruction *anc, int type){
 	Parent->InsertEdge(temp);
 }
 
-void dfgNode::addChildNode(dfgNode* node, int type) {
+void dfgNode::addChildNode(dfgNode* node, int type, bool isBackEdge,
+		bool isControlDependent, bool ControlValue) {
+
+	if(std::find(ChildNodes.begin(),ChildNodes.end(),node)!=ChildNodes.end()) { //already a child
+		outs() << "Src : " << this->getIdx() << "to " << "Dest : " << node->getIdx() << "\n";
+
+		if(childConditionalMap[node]!=UNCOND){
+			assert(isControlDependent);
+			if(ControlValue){
+				assert(childConditionalMap[node]==FALSE);
+				removeChild(node);
+				return;
+			}
+			else{
+				assert(childConditionalMap[node]==TRUE);
+				childConditionalMap[node]=UNCOND;
+				removeChild(node);
+				return;
+			}
+		}
+	}
+
 	ChildNodes.push_back(node);
+	childBackEdgeMap[node]=isBackEdge;
+
+	if(isControlDependent){
+		if(ControlValue==true){
+			childConditionalMap[node]=TRUE;
+		}
+		else{
+			childConditionalMap[node]=FALSE;
+		}
+	}
+	else{
+		childConditionalMap[node]=UNCOND;
+	}
+
 }
 
-void dfgNode::addAncestorNode(dfgNode* node, int type) {
+void dfgNode::addAncestorNode(dfgNode* node, int type, bool isBackEdge,
+		bool isControlDependent, bool ControlValue) {
+
+	if(std::find(AncestorNodes.begin(),AncestorNodes.end(),node)!=AncestorNodes.end()){
+		if(ancestorConditionaMap[node]!=UNCOND){
+			assert(isControlDependent);
+			if(ControlValue){
+				assert(ancestorConditionaMap[node]==FALSE);
+				removeAncestor(node);
+				return;
+			}
+			else{
+				assert(ancestorConditionaMap[node]==TRUE);
+				removeAncestor(node);
+				return;
+			}
+		}
+	}
+
 	AncestorNodes.push_back(node);
 	Edge temp;
 	temp.setID(Parent->getEdges().size());
@@ -103,6 +156,21 @@ void dfgNode::addAncestorNode(dfgNode* node, int type) {
 	temp.setDest(this);
 
 	Parent->InsertEdge(temp);
+	ancestorBackEdgeMap[node]=isBackEdge;
+//	this->setBackEdge(isBackEdge);
+
+	if(isControlDependent){
+		if(ControlValue==true){
+			ancestorConditionaMap[node]=TRUE;
+		}
+		else{
+			ancestorConditionaMap[node]=FALSE;
+		}
+	}
+	else{
+		ancestorConditionaMap[node]=UNCOND;
+	}
+
 }
 
 void dfgNode::addPHIAncestorNode(dfgNode* node) {
@@ -146,6 +214,8 @@ int dfgNode::removeChild(Instruction* child) {
 int dfgNode::removeChild(dfgNode* child) {
 	assert(child != NULL);
 	ChildNodes.erase(std::remove(ChildNodes.begin(),ChildNodes.end(),child),ChildNodes.end());
+	childBackEdgeMap.erase(child);
+	childConditionalMap.erase(child);
 	return 1;
 }
 
@@ -168,6 +238,8 @@ int dfgNode::removeAncestor(Instruction* anc) {
 int dfgNode::removeAncestor(dfgNode* anc) {
 	assert(anc != NULL);
 	AncestorNodes.erase(std::remove(AncestorNodes.begin(),AncestorNodes.end(),anc),AncestorNodes.end());
+	ancestorBackEdgeMap.erase(anc);
+	ancestorConditionaMap.erase(anc);
 	return 1;
 }
 
@@ -394,7 +466,7 @@ bool dfgNode::isConditional() {
 	return false;
 }
 
-void dfgNode::addStoreChild(Instruction * ins) {
+dfgNode* dfgNode::addStoreChild(Instruction * ins) {
 	dfgNode* temp;
 
 
@@ -412,7 +484,7 @@ void dfgNode::addStoreChild(Instruction * ins) {
 	}
 	else{
 		temp = Parent->OutLoopNodeMap[ins];
-		return;
+		return temp;
 	}
 
 	temp->addAncestorNode(this);
@@ -435,9 +507,11 @@ void dfgNode::addStoreChild(Instruction * ins) {
 //		temp->setTypeSizeBytes((ins->getType()->getIntegerBitWidth()+7)/8);
 		temp->setTypeSizeBytes((ins->getType()->getPrimitiveSizeInBits()+7)/8);
 	}
+
+	return temp;
 }
 
-void dfgNode::addLoadParent(Instruction * ins) {
+dfgNode* dfgNode::addLoadParent(Instruction * ins) {
 	dfgNode* temp;
 
 
@@ -499,7 +573,7 @@ void dfgNode::addLoadParent(Instruction * ins) {
 		temp->setTypeSizeBytes((ins->getType()->getPrimitiveSizeInBits()+7)/8);
 	}
 
-
+	return temp;
 }
 
 int dfgNode::getoutloopAddr() {
@@ -765,3 +839,4 @@ void dfgNode::printName() {
 		outs() << this->getNameType() << "\n";
 	}
 }
+

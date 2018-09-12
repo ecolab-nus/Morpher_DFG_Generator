@@ -17,6 +17,8 @@ add_library(SkeletonPass MODULE
     tinyxml2.cpp
     dfgmacro.cpp
     dfgmacro.h
+    DFGTrig.h
+    DFGTrig.cpp
 )
 
 
