@@ -243,6 +243,8 @@ class dfgNode{
 			std::map<dfgNode*,CondVal> childConditionalMap;
 			std::map<dfgNode*,CondVal> ancestorConditionaMap;
 
+			void setBackEdge(dfgNode* child, bool val);
+
 
 };
 

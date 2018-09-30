@@ -70,6 +70,7 @@
 #include "dfgnode.h"
 #include "dfg.h"
 #include "DFGTrig.h"
+#include "DFGPartPred.h"
 
 //#define CDFG
 
@@ -2012,7 +2013,7 @@ namespace {
 			  }
 
 			  //TODO : DAC18
-//			  ReplaceCMPs(F);
+			  ReplaceCMPs(F);
 			  ParseSizeAttr(F,&sizeArrMap);
 
 			  std::string Filename = ("cfg." + F.getName() + ".dot").str();
@@ -2123,7 +2124,7 @@ namespace {
 			  // New Code for 2018 work
 			  //-----------------------------------
 	    {
-			  DFGTrig LoopDFG(F.getName().str() + "_" + munitName,&loopNames);
+			  DFGPartPred LoopDFG(F.getName().str() + "_" + munitName,&loopNames);
 			  LoopDFG.setBBSuccBasicBlocks(BBSuccBasicBlocks);
 			  LoopDFG.sizeArrMap=sizeArrMap;
 			  outs() << "Currently mapping unit : " << munitName << "\n";

@@ -840,3 +840,6 @@ void dfgNode::printName() {
 	}
 }
 
+void dfgNode::setBackEdge(dfgNode* child, bool val) {
+	childBackEdgeMap[child]=val;
+}

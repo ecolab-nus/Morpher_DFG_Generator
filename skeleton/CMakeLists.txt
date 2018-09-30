@@ -19,6 +19,8 @@ add_library(SkeletonPass MODULE
     dfgmacro.h
     DFGTrig.h
     DFGTrig.cpp
+    DFGPartPred.h
+    DFGPartPred.cpp
 )
 
 

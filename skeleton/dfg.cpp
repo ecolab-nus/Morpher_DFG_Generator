@@ -7548,6 +7548,20 @@ int DFG::classifyParents() {
 					if(parent->getNameType().compare("OutLoopLOAD")==0){
 						parentIns = OutLoopNodeMapReverse[parent];
 					}
+					if(parent->getNameType().compare("CMERGE")==0){
+						if(node->parentClassification.find(1) == node->parentClassification.end()){
+							node->parentClassification[1]=parent;
+						}
+						else if(node->parentClassification.find(2) == node->parentClassification.end()){
+	//						assert(node->parentClassification.find(2) == node->parentClassification.end());
+							node->parentClassification[2]=parent;
+						}
+						else{
+							outs() << "Extra parent : " << parent->getIdx() << ",Nametype = " << parent->getNameType() << ",par_idx = " << node->parentClassification.size()+1 << "\n";
+							node->parentClassification[node->parentClassification.size()+1]=parent;
+						}
+						continue;
+					}
 				}
 				//Only ins!=NULL and non-PHI and non-BR will reach here
 				node->parentClassification[findOperandNumber(node, ins,parentIns)]=parent;
@@ -7567,8 +7581,11 @@ int DFG::findOperandNumber(dfgNode* node, Instruction* child, Instruction* paren
 		if(parent == STI->getPointerOperand()){
 			return 2;
 		}
-		else{
+		else if(parent == STI->getValueOperand()){
 			return 1;
+		}
+		else{
+			return 0;
 		}
 	}
 	else if(GetElementPtrInst* GEP = dyn_cast<GetElementPtrInst>(child)){
