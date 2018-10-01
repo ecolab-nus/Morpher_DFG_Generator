@@ -36,7 +36,7 @@ struct ScheduleOrder{
 		int slack1 = node1->getALAPnumber() - node1->getASAPnumber();
 		int slack2 = node2->getALAPnumber() - node2->getASAPnumber();
 
-		if(node1->getASAPnumber() < node2->getASAPnumber()){
+		if(node1->getALAPnumber() < node2->getALAPnumber()){
 			return true;
 		}
 		else{

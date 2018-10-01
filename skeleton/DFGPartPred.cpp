@@ -635,6 +635,7 @@ void DFGPartPred::generateTrigDFGDOT() {
 	fillCMergeMutexNodes();
 	scheduleASAP();
 	scheduleALAP();
+//	assignALAPasASAP();
 //	balanceSched();
 	printDOT(this->name + "_TrigDFG.dot");
 	printNewDFGXML();
@@ -960,7 +961,8 @@ void DFGPartPred::printNewDFGXML() {
 //	for (int i = 0; i < maxASAPLevel; ++i) {
 //		for(dfgNode* node : asaplevelNodeList[i]){
 			xmlFile << "<Node idx=\"" << node->getIdx() << "\"";
-		    xmlFile << "ASAP=\"" << node->getASAPnumber() << "\"";
+		    xmlFile << " ASAP=\"" << node->getASAPnumber() << "\"";
+		    xmlFile << " ALAP=\"" << node->getALAPnumber() << "\"";
 
 //		    if(node->getNameType() == "OutLoopLOAD") {
 //		    	xmlFile << "OutLoopLOAD=\"1\"";
@@ -1359,6 +1361,14 @@ int DFGPartPred::classifyParents() {
 				//Only ins!=NULL and non-PHI and non-BR will reach here
 				node->parentClassification[findOperandNumber(node, ins,parentIns)]=parent;
 		}
+	}
+
+}
+
+void DFGPartPred::assignALAPasASAP() {
+
+	for(dfgNode* node : NodeList){
+		node->setASAPnumber(node->getALAPnumber());
 	}
 
 }

@@ -25,6 +25,7 @@ class DFGPartPred : public DFG{
 		void scheduleASAP();
 		void scheduleALAP();
 		void balanceSched();
+		void assignALAPasASAP();
 
 		int maxASAPLevel=0;
 
