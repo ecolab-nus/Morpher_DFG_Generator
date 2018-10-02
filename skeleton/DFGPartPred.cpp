@@ -1022,7 +1022,7 @@ void DFGPartPred::printNewDFGXML() {
 						}
 						else{ // if not phi
 							written = true;
-							int operand_no = findOperandNumber(node,child->getNode(),cmergePHINodes[node]->getNode());
+							int operand_no = findOperandNumber(child,child->getNode(),cmergePHINodes[node]->getNode());
 							if( operand_no == 0){
 								xmlFile << "type=\"P\"/>\n";
 							}
@@ -1341,21 +1341,26 @@ int DFGPartPred::classifyParents() {
 						parentIns = OutLoopNodeMapReverse[parent];
 					}
 					if(parent->getNameType().compare("CMERGE")==0){
-						if(node->parentClassification.find(1) == node->parentClassification.end()){
-							node->parentClassification[1]=parent;
-						}
-						else if(node->parentClassification.find(2) == node->parentClassification.end()){
-	//						assert(node->parentClassification.find(2) == node->parentClassification.end());
-							node->parentClassification[2]=parent;
-						}
-						else{
-							outs() << "Extra parent : " << parent->getIdx() << ",Nametype = " << parent->getNameType() << ",par_idx = " << node->parentClassification.size()+1 << "\n";
-							node->parentClassification[node->parentClassification.size()+1]=parent;
-						}
-						continue;
+//						if(node->parentClassification.find(1) == node->parentClassification.end()){
+//							node->parentClassification[1]=parent;
+//						}
+//						else if(node->parentClassification.find(2) == node->parentClassification.end()){
+//	//						assert(node->parentClassification.find(2) == node->parentClassification.end());
+//							node->parentClassification[2]=parent;
+//						}
+//						else{
+//							outs() << "Extra parent : " << parent->getIdx() << ",Nametype = " << parent->getNameType() << ",par_idx = " << node->parentClassification.size()+1 << "\n";
+//							node->parentClassification[node->parentClassification.size()+1]=parent;
+//						}
+//						continue;
 
-//						parentIns = cmergePHINodes[parent]->getNode();
-//						assert(parentIns);
+						parentIns = cmergePHINodes[parent]->getNode();
+						outs() << "CMERGE Parent" << parent->getIdx() << "to non-nametype child=" << node->getIdx() << ".\n";
+						outs() << "parentIns = "; parentIns->dump();
+						outs() << "node = "; node->getNode()->dump();
+						outs() << "OpNumber = " << findOperandNumber(node, ins,parentIns) << "\n";
+
+						assert(parentIns);
 					}
 				}
 				//Only ins!=NULL and non-PHI and non-BR will reach here
