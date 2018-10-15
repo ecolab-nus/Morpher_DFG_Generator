@@ -22,6 +22,8 @@ class DFGPartPred : public DFG{
 		void scheduleCleanBackedges();
 
 		void fillCMergeMutexNodes();
+		void constructCMERGETree();
+
 		void scheduleASAP();
 		void scheduleALAP();
 		void balanceSched();
@@ -54,6 +56,9 @@ class DFGPartPred : public DFG{
 		std::map<dfgNode*,dfgNode*> cmergeDataInputs;
 
 		std::map<dfgNode*,dfgNode*> cmergePHINodes;
+
+		std::set<std::set<dfgNode*>> mutexSets;
+		std::map<dfgNode*,dfgNode*> selectPHIAncestorMap;
 
 
 

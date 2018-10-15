@@ -1,90 +1,179 @@
 #include "DFGTrig.h"
 #include "llvm/Analysis/CFG.h"
 #include <algorithm>
+#include <queue>
+#include <map>
+#include <set>
+#include <vector>
+#include <unordered_set>
 
-void DFGTrig::connectBB(){
+void DFGTrig::connectBB() {
 
-	SmallVector<std::pair<const BasicBlock *, const BasicBlock *>,8> BackedgeBBs;
-	dfgNode firstNode = *NodeList[0];
-	FindFunctionBackedges(*(firstNode.getNode()->getFunction()),BackedgeBBs);
+	std::map<BasicBlock*,std::set<std::pair<BasicBlock*,CondVal>>> CtrlBBInfo = getCtrlInfoBB();
 
-	for(dfgNode* node : NodeList){
-		if(node->getNode()==NULL) continue;
-		if(BranchInst* BRI = dyn_cast<BranchInst>(node->getNode())){
-			for(int i=0; i<BRI->getNumSuccessors(); i++){
+	for(std::pair<BasicBlock*,std::set<std::pair<BasicBlock*,CondVal>>> p1 : CtrlBBInfo){
+		BasicBlock* childBB = p1.first;
+		std::vector<dfgNode*> leaves = getLeafs(childBB);
 
-				const BasicBlock* currBB = BRI->getParent();
-				const BasicBlock* succBB = BRI->getSuccessor(i);
-				std::pair<const BasicBlock *, const BasicBlock *> BBCouple = std::make_pair(currBB,succBB);
+		for(std::pair<BasicBlock*,CondVal> p2 : p1.second){
+			BasicBlock* parentBB = p2.first;
+			CondVal parentVal = p2.second;
 
-				bool isBackEdge = false;
-				if(std::find(BackedgeBBs.begin(),BackedgeBBs.end(),BBCouple) != BackedgeBBs.end()){
-					isBackEdge = true;
-				}
+			BranchInst* BRI = cast<BranchInst>(parentBB->getTerminator());
+			bool isConditional = BRI->isConditional();
+			assert(isConditional);
 
-				bool isConditional = BRI->isConditional();
-				bool conditionVal = true;
-				if(isConditional){
-					if(i == 1){
-						conditionVal = false;
-					}
-				}
+			dfgNode* BR = findNode(BRI); assert(BR);
 
-				std::vector<dfgNode*> leafs = getLeafs(BRI->getSuccessor(i)); //this doesnt include phinodes
+			assert(BR->getAncestors().size() == 1);
+			BrParentMap[parentBB]=BR->getAncestors()[0];
+			BrParentMapInv[BR->getAncestors()[0]]=parentBB;
 
-				if(node->getAncestors().size()!=1){
-					BRI->dump();
-					outs() << "BR node ancestor size = " << node->getAncestors().size() << "\n";
-				}
-//				assert(node->getAncestors().size()==1); //should be a unique parent;
-//				dfgNode* BRParent = node->getAncestors()[0];
+			std::cout << "ConnectBB :: From=" << BrParentMap[parentBB]->getIdx() << ",To=";
+			for(dfgNode* succNode : leaves){
+				std::cout << succNode->getIdx() << ",";
+				assert(succNode->getNameType() != "OutLoopLOAD");
+			}
+			std::cout << "\n";
 
-				for(dfgNode* BRParent : node->getAncestors()){
-
-					if(!isConditional){
-						const BasicBlock* BRParentBB = BRParent->BB;
-						const BranchInst* BRParentBRI = cast<BranchInst>(BRParentBB->getTerminator());
-//						assert(BRParentBRI->isConditional());
-//						if(BRParentBRI->getSuccessor(0)==currBB){
-//							conditionVal=true;
-//						}
-//						else if(BRParentBRI->getSuccessor(1)==currBB){
-//							conditionVal=false;
-//						}
-//						else{
-//							BRParentBRI->dump();
-//							outs() << BRParentBRI->getSuccessor(0)->getName() << "\n";
-//							outs() << BRParentBRI->getSuccessor(1)->getName() << "\n";
-//							outs() << currBB->getName() << "\n";
-//							outs() << BRParent->getIdx() << "\n";
-//							assert(false);
-//						}
-						std::set<const BasicBlock*> searchSoFar;
-						assert(checkBRPath(BRParentBRI,currBB,conditionVal,searchSoFar));
-						isConditional=true; //this is always true. coz there is no backtoback unconditional branches.
-					}
-
-					outs() << "BR : ";
-					BRI->dump();
-					outs() << " and BRParent :" << BRParent->getIdx() << "\n";
-
-
-					outs() << "leafs from basicblock=" << currBB->getName() << " for basicblock=" << succBB->getName().str() << "\n";
-					for(dfgNode* succNode : leafs){
-						outs() << succNode->getIdx() << ",";
-					}
-					outs() << "\n";
-
-					for(dfgNode* succNode : leafs){
-						BRParent->addChildNode(succNode,EDGE_TYPE_DATA,isBackEdge,isConditional,conditionVal);
-						succNode->addAncestorNode(BRParent,EDGE_TYPE_DATA,isBackEdge,isConditional,conditionVal);
-					}
-
+			for(dfgNode* BRParent : BR->getAncestors()){
+				for(dfgNode* succNode : leaves){
+					leafControlInputs[succNode].insert(BRParent);
+	//				isBackEdge = checkBackEdge(node,succNode); //getCtrlInfoBB does not return backedges
+//					if(!succNode->isParent(BRParent)){
+						BRParent->addChildNode(succNode,EDGE_TYPE_DATA,false,isConditional,(parentVal==TRUE));
+						succNode->addAncestorNode(BRParent,EDGE_TYPE_DATA,false,isConditional,(parentVal==TRUE));
+//					}
 				}
 			}
 		}
 	}
 
+
+
+//
+//	SmallVector<std::pair<const BasicBlock *, const BasicBlock *>,8> BackedgeBBs;
+//	dfgNode firstNode = *NodeList[0];
+//	FindFunctionBackedges(*(firstNode.getNode()->getFunction()),BackedgeBBs);
+//
+//	for(dfgNode* node : NodeList){
+//		if(node->getNode()==NULL) continue;
+//		if(BranchInst* BRI = dyn_cast<BranchInst>(node->getNode())){
+//			const BasicBlock* currBB = BRI->getParent();
+//			for(int i=0; i<BRI->getNumSuccessors(); i++){
+////			for(BasicBlock* succBB : this->loopBB){
+//
+//
+//				const BasicBlock* succBB = BRI->getSuccessor(i);
+//				std::pair<const BasicBlock *, const BasicBlock *> BBCouple = std::make_pair(currBB,succBB);
+//
+//				bool isBackEdge = false;
+//				if(std::find(BackedgeBBs.begin(),BackedgeBBs.end(),BBCouple) != BackedgeBBs.end()){
+//					isBackEdge = true;
+//				}
+//
+//
+//				bool isConditional = BRI->isConditional();
+//				bool conditionVal = true;
+//				if(isConditional){
+//					if(i == 1){
+//						conditionVal = false;
+//					}
+//				}
+//
+////				std::vector<dfgNode*> leaves = getStoreInstructions(BRI->getSuccessor(i)); //this doesnt include phinodes
+//				std::vector<dfgNode*> leaves = getLeafs(BRI->getSuccessor(i));
+//
+//
+//				if(node->getAncestors().size()!=1){
+//					BRI->dump();
+//					outs() << "BR node ancestor size = " << node->getAncestors().size() << "\n";
+//				}
+////				assert(node->getAncestors().size()==1); //should be a unique parent;
+////				dfgNode* BRParent = node->getAncestors()[0];
+//
+//				for(dfgNode* BRParent : node->getAncestors()){
+//
+//					if(!isConditional){
+//						const BasicBlock* BRParentBB = BRParent->BB;
+//						const BranchInst* BRParentBRI = cast<BranchInst>(BRParentBB->getTerminator());
+////						assert(BRParentBRI->isConditional());
+////						if(BRParentBRI->getSuccessor(0)==currBB){
+////							conditionVal=true;
+////						}
+////						else if(BRParentBRI->getSuccessor(1)==currBB){
+////							conditionVal=false;
+////						}
+////						else{
+////							BRParentBRI->dump();
+////							outs() << BRParentBRI->getSuccessor(0)->getName() << "\n";
+////							outs() << BRParentBRI->getSuccessor(1)->getName() << "\n";
+////							outs() << currBB->getName() << "\n";
+////							outs() << BRParent->getIdx() << "\n";
+////							assert(false);
+////						}
+//						std::set<const BasicBlock*> searchSoFar;
+//						assert(checkBRPath(BRParentBRI,currBB,conditionVal,searchSoFar));
+//						isConditional=true; //this is always true. coz there is no backtoback unconditional branches.
+//					}
+//
+//					outs() << "BR : ";
+//					BRI->dump();
+//					outs() << " and BRParent :" << BRParent->getIdx() << "\n";
+//
+//
+//					outs() << "leafs from basicblock=" << currBB->getName() << " for basicblock=" << succBB->getName().str() << "\n";
+//					for(dfgNode* succNode : leaves){
+//						outs() << succNode->getIdx() << ",";
+//					}
+//					outs() << "\n";
+//
+//					for(dfgNode* succNode : leaves){
+//						leafControlInputs[succNode].insert(BRParent);
+//						isBackEdge = checkBackEdge(node,succNode);
+//						BRParent->addChildNode(succNode,EDGE_TYPE_DATA,isBackEdge,isConditional,conditionVal);
+//						succNode->addAncestorNode(BRParent,EDGE_TYPE_DATA,isBackEdge,isConditional,conditionVal);
+//					}
+//
+//				}
+//			}
+//		}
+//	}
+//
+
+}
+
+std::vector<dfgNode*> DFGTrig::getStoreInstructions(BasicBlock* BB) {
+
+	std::vector<dfgNode*> res;
+	for(dfgNode* node : NodeList){
+		if(node->BB != BB) continue;
+		if(node->getNode()){
+			if(StoreInst* STI = dyn_cast<StoreInst>(node->getNode())){
+				bool parentInThisBB = false;
+				for(dfgNode* parent : node->getAncestors()){
+					if(parent->BB == BB) parentInThisBB = true; break;
+				}
+				if(!parentInThisBB) res.push_back(node);
+			}
+			else if(BranchInst* BRI = dyn_cast<BranchInst>(node->getNode())){
+				if(!BRI->isConditional()){
+					res.push_back(node);
+				}
+			}
+//			else if(PHINode* PHI = dyn_cast<PHINode>(node->getNode())){
+//				res.push_back(node);
+//			}
+		}
+		else if(node->getNameType() == "OutLoopSTORE"){
+			bool parentInThisBB = false;
+			for(dfgNode* parent : node->getAncestors()){
+				if(parent->BB == BB) parentInThisBB = true; break;
+			}
+			if(!parentInThisBB) res.push_back(node);
+		}
+	}
+	return res;
 }
 
 int DFGTrig::handlePHINodes(std::set<BasicBlock*> LoopBB) {
@@ -97,6 +186,7 @@ int DFGTrig::handlePHINodes(std::set<BasicBlock*> LoopBB) {
 		}
 	}
 
+
 	for(dfgNode* node : phiNodes){
 		if(node->getNode()==NULL)continue;
 		if(PHINode* PHI = dyn_cast<PHINode>(node->getNode())){
@@ -108,9 +198,14 @@ int DFGTrig::handlePHINodes(std::set<BasicBlock*> LoopBB) {
 				assert(false);
 			}
 
+			outs() << "DEBUG........... begin\n";
+			outs() << "PHI :: "; PHI->dump();
+
+
 			for (int i = 0; i < PHI->getNumIncomingValues(); ++i) {
 				BasicBlock* bb = PHI->getIncomingBlock(i);
 				Value* V = PHI->getIncomingValue(i);
+				outs() << "V :: "; V->dump();
 				bool incomingCTRLVal;
 
 				dfgNode* previousCTRLNode;
@@ -126,6 +221,7 @@ int DFGTrig::handlePHINodes(std::set<BasicBlock*> LoopBB) {
 					previousCTRLNode = findNode(BRI);
 					bool isConditional = BRI->isConditional();
 
+					BRI->dump();
 					assert(previousCTRLNode->getAncestors().size()==1);
 					previousCTRLNode = previousCTRLNode->getAncestors()[0];
 					const BasicBlock* currBB = BRI->getParent();
@@ -161,8 +257,12 @@ int DFGTrig::handlePHINodes(std::set<BasicBlock*> LoopBB) {
 							assert(BRI->getSuccessor(1) == node->BB);
 						}
 					}
+
+					outs() << "previousCTRLNode : "; previousCTRLNode->getNode()->dump();
+					outs() << "CTRL VAL : " << incomingCTRLVal << "\n";
 				}
 				assert(previousCTRLNode!=NULL);
+
 
 				dfgNode* mergeNode;
 				if(ConstantInt* CI = dyn_cast<ConstantInt>(V)){
@@ -184,9 +284,6 @@ int DFGTrig::handlePHINodes(std::set<BasicBlock*> LoopBB) {
 					mergeNode = insertMergeNode(node,previousCTRLNode,incomingCTRLVal,constant);
 				}
 				else{
-					outs() << "DEBUG........... begin\n";
-					PHI->dump();
-					V->dump();
 
 					Instruction* ins = cast<Instruction>(V);
 					dfgNode* phiParent = findNode(ins);
@@ -199,20 +296,20 @@ int DFGTrig::handlePHINodes(std::set<BasicBlock*> LoopBB) {
 						else{
 							phiParent=addLoadParent(ins,node);
 							bool isBackEdge = checkBackEdge(previousCTRLNode,phiParent);
-							previousCTRLNode->addChildNode(phiParent,EDGE_TYPE_DATA,isBackEdge,true,incomingCTRLVal);
-							phiParent->addAncestorNode(previousCTRLNode,EDGE_TYPE_DATA,isBackEdge,true,incomingCTRLVal);
+//							previousCTRLNode->addChildNode(phiParent,EDGE_TYPE_DATA,isBackEdge,true,incomingCTRLVal);
+//							phiParent->addAncestorNode(previousCTRLNode,EDGE_TYPE_DATA,isBackEdge,true,incomingCTRLVal);
 						}
 					}
 					assert(phiParent!=NULL);
 
 
 					bool isPhiParentSuccCTRL=false;
-					for (int succ = 0; succ < previousCTRLNode->BB->getTerminator()->getNumSuccessors(); ++succ) {
-						if(previousCTRLNode->BB->getTerminator()->getSuccessor(succ)==phiParent->BB){
-							isPhiParentSuccCTRL=true;
-							break;
-						}
-					}
+//					for (int succ = 0; succ < previousCTRLNode->BB->getTerminator()->getNumSuccessors(); ++succ) {
+//						if(previousCTRLNode->BB->getTerminator()->getSuccessor(succ)==phiParent->BB){
+//							isPhiParentSuccCTRL=true;
+//							break;
+//						}
+//					}
 
 //					if(previousCTRLNode->BB != phiParent->BB){
 					if(!isPhiParentSuccCTRL){
@@ -247,11 +344,49 @@ int DFGTrig::handlePHINodes(std::set<BasicBlock*> LoopBB) {
 				if(recursivePhiNodes) break;
 			}
 
+			outs() << "USERS ::::::::::::\n";
+			for(User* u : PHI->users()){
+				u->dump();
+				if(PHINode* phiChildIns = dyn_cast<PHINode>(u)){
+					if(dfgNode* phichildnode = findNode(phiChildIns)){
+						recursivePhiNodes=true;
+						break;
+					}
+				}
+			}
+
 			assert(node->getAncestors().empty());
+
+//			assert(!backedgeChildMergeNodes.empty());
+
+			//This is hack for keep phinodes being removed
+			// UPDATE : i just keep the induction variable
+			if(PHI == currLoop->getCanonicalInductionVariable()){
+				recursivePhiNodes=true;
+			}
 
 			if(recursivePhiNodes){
 				for(dfgNode* mergeNode : mergeNodes){
-					bool isBackEdge = checkBackEdge(mergeNode,node);
+
+					bool isBackEdge;
+					if(backedgeChildMergeNodes.find(mergeNode)!=backedgeChildMergeNodes.end()){
+						isBackEdge = true;
+					}
+					else{
+						isBackEdge = checkBackEdge(mergeNode,node);
+					}
+
+					//this is if we decide to keep the phi nodes then there children should be backedges
+					//if one of the ancestor is a backedge
+//					if(isBackEdge){
+//						for(dfgNode* child : node->getChildren()){
+//							node->childBackEdgeMap[child]=true;
+//							child->ancestorBackEdgeMap[node]=true;
+//						}
+//					}
+//					isBackEdge = false;
+
+//					bool isBackEdge = checkBackEdge(actPHI,node);
 					node->addAncestorNode(mergeNode,EDGE_TYPE_DATA,isBackEdge);
 					mergeNode->addChildNode(node,EDGE_TYPE_DATA,isBackEdge);
 				}
@@ -268,7 +403,17 @@ int DFGTrig::handlePHINodes(std::set<BasicBlock*> LoopBB) {
 					for(dfgNode* mergeNode : mergeNodes){
 						outs() << mergeNode->getIdx() << ",";
 
-						bool isBackEdge = checkBackEdge(mergeNode,child);
+						bool isBackEdge;
+						if(backedgeChildMergeNodes.find(mergeNode)!=backedgeChildMergeNodes.end()){
+							isBackEdge = true;
+						}
+						else{
+							isBackEdge = checkBackEdge(mergeNode,child);
+						}
+
+//						bool isBackEdge = checkBackEdge(actPHI,child);
+
+
 						child->addAncestorNode(mergeNode,EDGE_TYPE_DATA,isBackEdge);
 						mergeNode->addChildNode(child,EDGE_TYPE_DATA,isBackEdge);
 
@@ -335,7 +480,10 @@ dfgNode* DFGTrig::insertMergeNode(dfgNode* PHINode, dfgNode* ctrl, bool controlV
 //	if(std::find(BackedgeBBs.begin(),BackedgeBBs.end(),bbCuple)!=BackedgeBBs.end()){
 //		isCTRL2PHIBackEdge=true;
 //	}
-	isCTRL2PHIBackEdge = checkBackEdge(ctrl,PHINode);
+//	isCTRL2PHIBackEdge = checkBackEdge(ctrl,PHINode);
+	isCTRL2PHIBackEdge=false;
+
+	cmergePHINodes[temp]=PHINode;
 
 //	bbCuple = std::make_pair(dataBB,phiBB);
 //	if(std::find(BackedgeBBs.begin(),BackedgeBBs.end(),bbCuple)!=BackedgeBBs.end()){
@@ -345,9 +493,21 @@ dfgNode* DFGTrig::insertMergeNode(dfgNode* PHINode, dfgNode* ctrl, bool controlV
 	isDATA2PHIBackEdge = isCTRL2PHIBackEdge;
 
 	temp->setNameType("CMERGE");
-	temp->BB = PHINode->BB;
+//	temp->BB = PHINode->BB;
+
+	if(startNodes.find((BasicBlock*)ctrl->BB) != startNodes.end()){
+		temp->BB = PHINode->BB;
+	}
+	else{
+		temp->BB = ctrl->BB;
+		if(checkBackEdge(ctrl,PHINode) || ctrl->BB == PHINode->BB) backedgeChildMergeNodes.insert(temp);
+	}
+
 	temp->setIdx(NodeList.size());
 	NodeList.push_back(temp);
+
+	cmergeCtrlInputs[temp]=ctrl;
+	cmergeDataInputs[temp]=data;
 
 	temp->addAncestorNode(ctrl,EDGE_TYPE_DATA,isCTRL2PHIBackEdge,true,controlVal);
 	ctrl->addChildNode(temp,EDGE_TYPE_DATA,isCTRL2PHIBackEdge,true,controlVal);
@@ -369,15 +529,31 @@ dfgNode* DFGTrig::insertMergeNode(dfgNode* PHINode, dfgNode* ctrl,
 
 	bool isCTRL2PHIBackEdge=false;
 
+	cmergePHINodes[temp]=PHINode;
+
 //	std::pair<const BasicBlock *, const BasicBlock *> bbCuple;
 //	bbCuple = std::make_pair(ctrlBB,phiBB);
 //	if(std::find(BackedgeBBs.begin(),BackedgeBBs.end(),bbCuple)!=BackedgeBBs.end()){
 //		isCTRL2PHIBackEdge=true;
 //	}
-	isCTRL2PHIBackEdge = checkBackEdge(ctrl,PHINode);
+//	isCTRL2PHIBackEdge = checkBackEdge(ctrl,PHINode);
+//	backedgeChildMergeNodes.insert(temp);
 
 	temp->setNameType("CMERGE");
-	temp->BB = PHINode->BB;
+//	temp->BB = PHINode->BB;
+
+	cmergeCtrlInputs[temp]=ctrl;
+
+
+	if(startNodes.find((BasicBlock*)ctrl->BB) != startNodes.end()){
+		temp->BB = PHINode->BB;
+	}
+	else{
+		temp->BB = ctrl->BB;
+		if(checkBackEdge(ctrl,PHINode) || ctrl->BB == PHINode->BB) backedgeChildMergeNodes.insert(temp);
+	}
+
+
 	temp->setIdx(NodeList.size());
 	NodeList.push_back(temp);
 
@@ -491,6 +667,8 @@ bool DFGTrig::checkBackEdge(dfgNode* src, dfgNode* dest) {
 	const BasicBlock* srcBB = src->BB;
 	const BasicBlock* destBB = dest->BB;
 
+//	if(srcBB == destBB) return true;
+
 	if(std::find(BBSuccBasicBlocks[srcBB].begin(), BBSuccBasicBlocks[srcBB].end(), destBB) != BBSuccBasicBlocks[srcBB].end()){
 		return false; //not a backedge
 	}
@@ -502,12 +680,35 @@ bool DFGTrig::checkBackEdge(dfgNode* src, dfgNode* dest) {
 
 void DFGTrig::generateTrigDFGDOT() {
 
+//	printDomTree();
+//	getCtrlInfoBB();
 	connectBB();
 	handlePHINodes(this->loopBB);
+
 //	insertshiftGEPs();
 	addMaskLowBitInstructions();
 	removeDisconnetedNodes();
-	printDOT(this->name + "_TrigDFG.dot");
+//	scheduleCleanBackedges();
+	fillCMergeMutexNodes();
+//	constructCMERGETree();
+	mirrorCtrlNodes();
+	scheduleASAP();
+	scheduleALAP();
+//	assignALAPasASAP();
+//	balanceSched();
+
+	populateSubPathDFGs();
+	annotateNodesBr();
+//	annotateCtrlFrontierAsCtrlParent();
+
+	printCtrlTree();
+	nameNodes();
+//	ConnectBrCtrls();
+
+	printSubPathDOT(this->name + "_TrigFullPredDFG");
+	printDOT(this->name + "_TrigFullPredDFG.dot");
+
+	printNewDFGXML();
 }
 
 bool DFGTrig::checkPHILoop(dfgNode* node1, dfgNode* node2) {
@@ -571,6 +772,1881 @@ bool DFGTrig::checkBRPath(const BranchInst* BRParentBRI, const BasicBlock* currB
 		return false;
 	}
 
+}
+
+void DFGTrig::scheduleCleanBackedges() {
+
+	std::queue<dfgNode*> q;
+	std::set<dfgNode*> visited;
+
+	for(std::pair<BasicBlock*,dfgNode*> pair : startNodes){
+		q.push(pair.second);
+	}
+
+	assert(q.size() == 1);
+
+	while(!q.empty()){
+		dfgNode* nFront = q.front(); q.pop();
+		for(dfgNode* child : nFront->getChildren()){
+			if(visited.find(child) != visited.end()){ // already visited, should be a backedge
+				nFront->setBackEdge(child,true);
+			}
+			else{ // should not be a backedge
+				nFront->setBackEdge(child,false);
+				q.push(child);
+			}
+		}
+
+		visited.insert(nFront);
+	}
+
+}
+
+void DFGTrig::fillCMergeMutexNodes() {
+
+	for(dfgNode* node : NodeList){
+		std::set<dfgNode*> currMutexSet;
+		for(dfgNode* parent : node->getAncestors()){
+			if(parent->getNameType() == "CMERGE"){
+				currMutexSet.insert(parent);
+			}
+		}
+
+		if(!currMutexSet.empty()) mutexSets.insert(currMutexSet);
+
+		for(dfgNode* m1 : currMutexSet){
+			for(dfgNode* m2 : currMutexSet){
+				if(m1 == m2) continue;
+				mutexNodes[m1].insert(m2);
+			}
+		}
+	}
+
+}
+
+void DFGTrig::constructCMERGETree() {
+	assert(!mutexSets.empty());
+
+	for(std::set<dfgNode*> cmergeSet : mutexSets){
+		std::queue<dfgNode*> thisIterSet;
+		std::queue<dfgNode*> nextIterSet;
+
+		for(dfgNode* cmergeNode : cmergeSet){
+			bool isBackEdge=false;
+			for(dfgNode* child : cmergeNode->getChildren()){
+				if(isBackEdge) assert(cmergeNode->childBackEdgeMap[child] == true);
+				if(cmergeNode->childBackEdgeMap[child]){
+					isBackEdge = true;
+				}
+			}
+
+			if(isBackEdge){
+				selectPHIAncestorMap[cmergeNode]=cmergePHINodes[cmergeNode];
+				nextIterSet.push(cmergeNode);
+			}
+			else{
+				selectPHIAncestorMap[cmergeNode]=cmergePHINodes[cmergeNode];
+				thisIterSet.push(cmergeNode);
+			}
+		}
+
+		if(thisIterSet.size() + nextIterSet.size() <= 2) continue;
+
+		std::cout << "This ITER connections CMERGE Tree.\n";
+		while(!thisIterSet.empty()){
+			dfgNode* cmerge_left = thisIterSet.front(); thisIterSet.pop();
+			std::cout << "CMERGE LEFT : " << cmerge_left->getIdx() << ",";
+			if(thisIterSet.empty()){ //odd number of nodes
+
+			}
+			else{
+				dfgNode* cmerge_right = thisIterSet.front(); thisIterSet.pop();
+				if(thisIterSet.empty()){
+					std::cout << "\n";
+					continue; //no need to merge the last two;
+				}
+
+				std::cout << "CMERGE RIGHT : " << cmerge_right->getIdx() << ",";
+				dfgNode* temp = new dfgNode(this);
+				temp->setIdx(1000 + NodeList.size());
+				temp->setNameType("SELECTPHI");
+				temp->BB = cmerge_left->BB;
+				NodeList.push_back(temp);
+				selectPHIAncestorMap[temp] = selectPHIAncestorMap[cmerge_left];
+				std::cout << "CREATING NEW NODE = " << temp->getIdx() << ",";
+
+				assert(cmerge_left->getChildren().size() == cmerge_right->getChildren().size());
+				std::vector<dfgNode*> cmergeLeftChildrenOrig = cmerge_left->getChildren();
+				std::vector<dfgNode*> cmergeRightChildrenOrig = cmerge_right->getChildren();
+
+				temp->addAncestorNode(cmerge_left); cmerge_left->addChildNode(temp);
+				temp->addAncestorNode(cmerge_right); cmerge_right->addChildNode(temp);
+
+				for (int i = 0; i < cmergeLeftChildrenOrig.size(); ++i) {
+					dfgNode* left_child = cmergeLeftChildrenOrig[i];
+					dfgNode* right_child = cmergeRightChildrenOrig[i];
+					assert(left_child == right_child);
+
+					cmerge_left->removeChild(left_child); left_child->removeAncestor(cmerge_left);
+					cmerge_right->removeChild(right_child); right_child->removeAncestor(cmerge_right);
+					left_child->addAncestorNode(temp); temp->addChildNode(left_child);
+				}
+				thisIterSet.push(temp);
+			}
+			std::cout << "\n";
+		}
+
+		std::cout << "Next ITER connections CMERGE Tree.\n";
+		while(!nextIterSet.empty()){
+			dfgNode* cmerge_left = nextIterSet.front(); nextIterSet.pop();
+			std::cout << "CMERGE LEFT : " << cmerge_left->getIdx() << ",";
+			if(nextIterSet.empty()){ //odd number of nodes
+
+			}
+			else{
+				dfgNode* cmerge_right = nextIterSet.front(); nextIterSet.pop();
+				if(nextIterSet.empty()) {
+					std::cout << "\n";
+					continue; //no need to merge the last two;
+				}
+
+				std::cout << "CMERGE RIGHT : " << cmerge_right->getIdx() << ",";
+				dfgNode* temp = new dfgNode(this);
+				temp->setIdx(1000 + NodeList.size());
+				temp->setNameType("SELECTPHI");
+				temp->BB = cmerge_left->BB;
+				NodeList.push_back(temp);
+				std::cout << "CREATING NEW NODE = " << temp->getIdx() << ",";
+				selectPHIAncestorMap[temp] = selectPHIAncestorMap[cmerge_left];
+
+				assert(cmerge_left->getChildren().size() == cmerge_right->getChildren().size());
+				std::vector<dfgNode*> cmergeLeftChildrenOrig = cmerge_left->getChildren();
+				std::vector<dfgNode*> cmergeRightChildrenOrig = cmerge_right->getChildren();
+
+				temp->addAncestorNode(cmerge_left); cmerge_left->addChildNode(temp);
+				temp->addAncestorNode(cmerge_right); cmerge_right->addChildNode(temp);
+
+
+				for (int i = 0; i < cmergeLeftChildrenOrig.size(); ++i) {
+					dfgNode* left_child = cmergeLeftChildrenOrig[i];
+					dfgNode* right_child = cmergeRightChildrenOrig[i];
+					assert(left_child == right_child);
+
+					cmerge_left->removeChild(left_child); left_child->removeAncestor(cmerge_left);
+					cmerge_right->removeChild(right_child); right_child->removeAncestor(cmerge_right);
+					left_child->addAncestorNode(temp,EDGE_TYPE_DATA,true); temp->addChildNode(left_child,EDGE_TYPE_DATA,true);
+				}
+				nextIterSet.push(temp);
+			}
+			std::cout << "\n";
+		}
+	}
+}
+
+void DFGTrig::scheduleASAP() {
+
+	std::queue<std::vector<dfgNode*>> q;
+	std::vector<dfgNode*> qv;
+	for(std::pair<BasicBlock*,dfgNode*> p : startNodes){
+		qv.push_back(p.second);
+	}
+
+	for(dfgNode* n : NodeList){
+		if(n->getNameType() == "OutLoopLOAD"){
+			if(n->getAncestors().size() == 0){
+				qv.push_back(n);
+			}
+		}
+	}
+
+	q.push(qv);
+
+	int level = 0;
+
+	std::set<dfgNode*> visitedNodes;
+
+	outs() << "Schedule ASAP ..... \n";
+
+
+	while(!q.empty()){
+		std::vector<dfgNode*> q_element = q.front(); q.pop();
+		std::vector<dfgNode*> nqv; nqv.clear();
+
+		if(level > maxASAPLevel) maxASAPLevel = level;
+
+
+		for(dfgNode* node : q_element){
+			visitedNodes.insert(node);
+
+			if(node->getASAPnumber() < level){
+				node->setASAPnumber(level);
+			}
+
+
+
+			for(dfgNode* child : node->getChildren()){
+				bool isBackEdge = node->childBackEdgeMap[child];
+				if(!isBackEdge){
+					nqv.push_back(child);
+				}
+			}
+		}
+		if(!nqv.empty()){
+			q.push(nqv);
+		}
+//		outs() << "Node Idx = " << node->getIdx();
+		level++;
+	}
+
+	assert(visitedNodes.size() == NodeList.size());
+}
+
+void DFGTrig::scheduleALAP() {
+
+	std::queue<std::vector<dfgNode*>> q;
+	std::vector<dfgNode*> qv;
+
+	assert(maxASAPLevel != 0);
+
+	//initially fill this with childless nodes
+	for(dfgNode* node : NodeList){
+		int childCount = 0;
+		for(dfgNode* child : node->getChildren()){
+			if(node->childBackEdgeMap[child]) continue;
+			childCount++;
+		}
+		if(childCount == 0){
+			qv.push_back(node);
+		}
+	}
+	q.push(qv);
+
+	int level = maxASAPLevel;
+	std::set<dfgNode*> visitedNodes;
+
+	outs() << "Schedule ALAP ..... \n";
+
+	while(!q.empty()){
+		assert(level >= 0);
+		std::vector<dfgNode*> q_element = q.front(); q.pop();
+		std::vector<dfgNode*> nq; nq.clear();
+
+		for(dfgNode* node : q_element){
+			visitedNodes.insert(node);
+
+			if(node->getALAPnumber() > level || node->getALAPnumber() == -1){
+				node->setALAPnumber(level);
+			}
+
+			for(dfgNode* parent : node->getAncestors()){
+				if(parent->childBackEdgeMap[node]) continue;
+				nq.push_back(parent);
+			}
+		}
+
+		if(!nq.empty()) q.push(nq);
+
+		level--;
+	}
+
+
+	assert(visitedNodes.size() == NodeList.size());
+}
+
+void DFGTrig::balanceSched() {
+
+	for(dfgNode* node : NodeList){
+
+		int asap = node->getASAPnumber();
+
+		int leastASAPChild = node->getALAPnumber();
+		for(dfgNode* child : node->getChildren()){
+			if(node->childBackEdgeMap[child]) continue;
+			if(child->getASAPnumber() < leastASAPChild){
+				leastASAPChild = child->getASAPnumber();
+			}
+		}
+
+		if(node->getALAPnumber() == maxASAPLevel) continue; // no need balance last level nodes
+
+		int diff = leastASAPChild - asap;
+
+		int new_asap = asap + diff/2;
+		node->setASAPnumber(new_asap);
+	}
+
+}
+
+void DFGTrig::printNewDFGXML() {
+
+
+	std::string fileName = name + "_DFG.xml";
+	std::ofstream xmlFile;
+	xmlFile.open(fileName.c_str());
+
+	nameNodes();
+	classifyParents();
+
+//    insertMOVC();
+//	scheduleASAP();
+//	scheduleALAP();
+//	balanceASAPALAP();
+//				  LoopDFG.addBreakLongerPaths();
+	CreateSchList();
+
+	std::map<BasicBlock*,std::set<BasicBlock*>> mBBs = checkMutexBBs();
+	std::map<std::string,std::set<std::string>> mBBs_str;
+
+	std::map<int,std::vector<dfgNode*>> asaplevelNodeList;
+	for (dfgNode* node : NodeList){
+		asaplevelNodeList[node->getASAPnumber()].push_back(node);
+	}
+
+	std::map<dfgNode*,std::string> nodeBBModified;
+	for(dfgNode* node : NodeList){
+		nodeBBModified[node]=node->BB->getName().str();
+	}
+
+
+	for(dfgNode* node : NodeList){
+		int cmergeParentCount=0;
+		std::set<std::string> mutexBBs;
+		for(dfgNode* parent: node->getAncestors()){
+			if(HyCUBEInsStrings[parent->getFinalIns()] == "CMERGE" || parent->getNameType() == "SELECTPHI"){
+				nodeBBModified[parent]=nodeBBModified[parent]+ "_" + std::to_string(node->getIdx()) + "_" + std::to_string(cmergeParentCount);
+				mutexBBs.insert(nodeBBModified[parent]);
+				cmergeParentCount++;
+			}
+		}
+		for(std::string bb_str1 : mutexBBs){
+			for(std::string bb_str2 : mutexBBs){
+				if(bb_str2==bb_str1) continue;
+				mBBs_str[bb_str1].insert(bb_str2);
+			}
+		}
+	}
+
+	std::map<std::string,std::pair<std::string,std::string>> sameControlDomainBBs;
+
+	for(dfgNode* pn : pCMPNodes){
+		nodeBBModified[pn]=nodeBBModified[pn] + "_P";
+	}
+
+	for(std::pair<dfgNode*,dfgNode*> p1 : nCMP2pCMP){
+		dfgNode* negNode = p1.first;
+		dfgNode* posNode = p1.second;
+		if(posNode){
+			std::string posBB = nodeBBModified[posNode];
+
+//			nodeBBModified[posNode]=nodeBBModified[posNode] + "_P";
+			nodeBBModified[negNode]=nodeBBModified[negNode] + "_N";
+			sameControlDomainBBs[posBB]=std::make_pair(nodeBBModified[posNode],nodeBBModified[negNode]);
+
+			mBBs_str[nodeBBModified[posNode]].insert(nodeBBModified[negNode]);
+			mBBs_str[nodeBBModified[negNode]].insert(nodeBBModified[posNode]);
+		}
+
+	}
+
+	assert(CtrlTrees.size()==1);
+	std::set<std::pair<TreeNode<BasicBlock*>*,bool>> allCtrlNodes = CtrlTrees[0]->getAllNodes();
+	for(std::pair<TreeNode<BasicBlock*>*,bool> p1 : allCtrlNodes){
+		std::cout << "CTRL :: " << p1.first->getData()->getName().str() << "(" << p1.second << ")\n";
+
+		std::string bb1Name = p1.first->getData()->getName().str();
+		bool branch1Val = p1.second;
+
+		if(branch1Val) bb1Name = bb1Name + "_P";
+		if(!branch1Val) bb1Name = bb1Name + "_N";
+
+		std::set<std::pair<TreeNode<BasicBlock*>*,bool>> mutexNodes = CtrlTrees[0]->getMutexNodes(p1.first->getData(),p1.second);
+		for(std::pair<TreeNode<BasicBlock*>*,bool> p2 : mutexNodes){
+
+			bool branch2Val = p2.second;
+			std::string bb2Name = p2.first->getData()->getName().str();
+			std::cout << "\tMUTEX :: " << p2.first->getData()->getName().str() << "(" << p2.second << ")\n";
+
+			if(branch2Val) bb2Name = bb2Name + "_P";
+			if(!branch2Val) bb2Name = bb2Name + "_N";
+
+			mBBs_str[bb1Name].insert(bb2Name);
+			mBBs_str[bb2Name].insert(bb1Name);
+
+		}
+	}
+//	assert(false);
+
+
+//	std::set<std::pair<TreeNode<BasicBlock*>*,bool>> leaves = CtrlTrees[0]->getLeafs();
+//	for(std::pair<TreeNode<BasicBlock*>*,bool> p1 : leaves){
+//		std::cout << "LEAF :: " << p1.first->getData()->getName().str() << "(" << p1.second << ")\n";
+//		for(std::pair<TreeNode<BasicBlock*>*,bool> p2 : leaves){
+//			if(p1 == p2) continue;
+//			std::cout << "\tLEAF :: " << p2.first->getData()->getName().str() << "(" << p2.second << ")\n";
+//			BasicBlock* bb1 = p1.first->getData();
+//			bool branch1Val = p1.second;
+//			std::string bb1Name = bb1->getName().str();
+//
+//			BasicBlock* bb2 = p2.first->getData();
+//			bool branch2Val = p2.second;
+//			std::string bb2Name = bb2->getName().str();
+//
+////			if(sameControlDomainBBs.find(bb1Name)!=sameControlDomainBBs.end()){
+//				if(branch1Val) bb1Name = bb1Name + "_P";
+//				if(!branch1Val) bb1Name = bb1Name + "_N";
+////			}
+////			else{
+////				bb1Name = bb1Name + "_P";
+////			}
+//
+////			if(sameControlDomainBBs.find(bb2Name)!=sameControlDomainBBs.end()){
+//				if(branch2Val) bb2Name = bb2Name + "_P";
+//				if(!branch2Val) bb2Name = bb2Name + "_N";
+////			}
+////			else{
+////				bb2Name = bb2Name + "_P";
+////			}
+//
+//			mBBs_str[bb1Name].insert(bb2Name);
+//			mBBs_str[bb2Name].insert(bb1Name);
+//		}
+//	}
+////	assert(false);
+
+
+	xmlFile << "<Paths>\n";
+	for(std::pair<std::set<dfgNode*>,std::vector<std::pair<BasicBlock*,CondVal>> > p1 : subPathDFGMap){
+		std::vector<std::pair<BasicBlock*,CondVal>> path = p1.second;
+		std::reverse(path.begin(),path.end());
+		xmlFile << "\t<Path>\n";
+			for(std::pair<BasicBlock*,CondVal> p2 : path){
+				xmlFile << "\t\t<Step BB=\"" << p2.first->getName().str() << "\" ";
+				xmlFile << "node =\"" << BrParentMap[p2.first]->getIdx() << "\" ";
+				xmlFile << "value =\"" << dfgNode::getCondValStr(p2.second) << "\"/>\n";
+			}
+		xmlFile << "\t</Path>\n";
+	}
+	xmlFile << "</Paths>\n";
+
+
+	xmlFile << "<MutexBB>\n";
+	for(std::pair<BasicBlock*,std::set<BasicBlock*>> pair : mBBs){
+		BasicBlock* first = pair.first;
+		xmlFile << "<BB1 name=\"" << first->getName().str() << "\">\n";
+		for(BasicBlock* second : pair.second){
+			if(sameControlDomainBBs.find(second->getName().str()) != sameControlDomainBBs.end()){
+				xmlFile << "\t<BB2 name=\"" << sameControlDomainBBs[second->getName().str()].first << "\"/>\n";
+				xmlFile << "\t<BB2 name=\"" << sameControlDomainBBs[second->getName().str()].second << "\"/>\n";
+			}
+			xmlFile << "\t<BB2 name=\"" << second->getName().str() << "\"/>\n";
+		}
+		xmlFile << "</BB1>\n";
+	}
+	for(std::pair<std::string,std::set<std::string>> pair : mBBs_str){
+		std::string first = pair.first;
+		xmlFile << "<BB1 name=\"" << first << "\">\n";
+		for(std::string second : pair.second){
+			xmlFile << "\t<BB2 name=\"" << second << "\"/>\n";
+		}
+		xmlFile << "</BB1>\n";
+	}
+	xmlFile << "</MutexBB>\n";
+
+	xmlFile << "<DFG count=\"" << NodeList.size() << "\">\n";
+
+	for(dfgNode* node : NodeList){
+//	for (int i = 0; i < maxASAPLevel; ++i) {
+//		for(dfgNode* node : asaplevelNodeList[i]){
+			xmlFile << "<Node idx=\"" << node->getIdx() << "\"";
+		    xmlFile << " ASAP=\"" << node->getASAPnumber() << "\"";
+		    xmlFile << " ALAP=\"" << node->getALAPnumber() << "\"";
+
+//		    if(node->getNameType() == "OutLoopLOAD") {
+//		    	xmlFile << "OutLoopLOAD=\"1\"";
+//		    }
+//		    else{
+//		    	xmlFile << "OutLoopLOAD=\"0\"";
+//		    }
+//
+//		    if(node->getNameType() == "OutLoopSTORE") {
+//		    	xmlFile << "OutLoopSTORE=\"1\"";
+//		    }
+//		    else{
+//		    	xmlFile << "OutLoopSTORE=\"0\"";
+//		    }
+
+//		    xmlFile << "BB=\"" << node->BB->getName().str() << "\"";
+		    xmlFile << "BB=\"" << nodeBBModified[node] << "\"";
+		    if(node->hasConstantVal()){
+		    	xmlFile << "CONST=\"" << node->getConstantVal() << "\"";
+		    }
+
+		    if(pCMPNodes.find(node)!=pCMPNodes.end() || nCMP2pCMP[node]){
+		    	xmlFile << " CTRL=\"1\"";
+		    }
+		    else{
+		    	xmlFile << " CTRL=\"0\"";
+		    }
+
+			if(nCMP2pCMP[node]){
+				xmlFile << " NEG=\"1\"";
+			}
+			else{
+				xmlFile << " NEG=\"0\"";
+			}
+
+
+			xmlFile << ">\n";
+
+			xmlFile << "<OP>";
+			if((node->getNameType() == "OutLoopLOAD") || (node->getNameType() == "OutLoopSTORE") ){
+				xmlFile << "O";
+			}
+
+			if(nCMP2pCMP[node]){
+				xmlFile << HyCUBEInsStrings[nCMP2pCMP[node]->getFinalIns()] << "</OP>\n";
+			}
+			else{
+				xmlFile << HyCUBEInsStrings[node->getFinalIns()] << "</OP>\n";
+			}
+
+//			xmlFile << "<OP>" << HyCUBEInsStrings[node->getFinalIns()] << "</OP>\n";
+
+			xmlFile << "<Inputs>\n";
+			for(dfgNode* parent : node->getAncestors()){
+	//			xmlFile << "\t<Input idx=\"" << parent->getIdx() << "\" type=\"DATA\"/>\n";
+				xmlFile << "\t<Input idx=\"" << parent->getIdx() << "\"/>\n";
+			}
+	//		for(dfgNode* parentPHI : node->getPHIancestors()){
+	//			xmlFile << "\t<Input idx=\"" << parentPHI->getIdx() << "\" type=\"PHI\"/>\n";
+	//		}
+			xmlFile << "</Inputs>\n";
+
+			xmlFile << "<Outputs>\n";
+			for(dfgNode* child : node->getChildren()){
+	//			xmlFile << "\t<Output idx=\"" << child->getIdx() <<"\" type=\"DATA\"/>\n";
+				xmlFile << "\t<Output idx=\"" << child->getIdx() << "\" ";
+
+				if(node->childBackEdgeMap[child]){
+					xmlFile << "nextiter=\"1\" ";
+				}
+				else{
+					xmlFile << "nextiter=\"0\" ";
+				}
+
+				if(node->childConditionalMap[child] == UNCOND){
+					xmlFile << " cond=\"UNCOND\" ";
+				}
+				else if(node->childConditionalMap[child] == TRUE){
+					xmlFile << " cond=\"TRUE\" ";
+				}
+				else if(node->childConditionalMap[child] == FALSE){
+					xmlFile << " cond=\"FALSE\" ";
+				}
+				else{
+					assert(false);
+				}
+
+				bool written=false;
+
+				if(leafControlInputs[child].find(node) != leafControlInputs[child].end()){
+					written=true;
+					xmlFile << "type=\"P\"/>\n";
+				}
+
+
+				if(node->getNameType()=="CMERGE"){
+					if(child->getNode()){
+						if(dyn_cast<PHINode>(child->getNode())){
+
+						}
+						else{ // if not phi
+							written = true;
+							int operand_no = findOperandNumber(child,child->getNode(),cmergePHINodes[node]->getNode());
+							if( operand_no == 0){
+								xmlFile << "type=\"P\"/>\n";
+							}
+							else if ( operand_no == 1){
+								xmlFile << "type=\"I1\"/>\n";
+							}
+							else if(( operand_no == 2)){
+								xmlFile << "type=\"I2\"/>\n";
+							}
+							else{
+								assert(false);
+							}
+						}
+					}
+				}
+
+				if(node->getNameType()=="SELECTPHI"){
+					if(child->getNode()){
+						written = true;
+						int operand_no = findOperandNumber(child,child->getNode(),selectPHIAncestorMap[node]->getNode());
+						if( operand_no == 0){
+							xmlFile << "type=\"P\"/>\n";
+						}
+						else if ( operand_no == 1){
+							xmlFile << "type=\"I1\"/>\n";
+						}
+						else if(( operand_no == 2)){
+							xmlFile << "type=\"I2\"/>\n";
+						}
+						else{
+							assert(false);
+						}
+					}
+				}
+
+				if(written){
+				}
+				else if(child->parentClassification[0]==node){
+					xmlFile << "type=\"P\"/>\n";
+				}
+				else if(child->parentClassification[1]==node){
+					xmlFile << "type=\"I1\"/>\n";
+				}
+				else if(child->parentClassification[2]==node){
+					xmlFile << "type=\"I2\"/>\n";
+				}
+				else{
+					bool found=false;
+					for(std::pair<int,dfgNode*> pair : child->parentClassification){
+						if(pair.second == node){
+							xmlFile << "type=\"I2\"/>\n";
+							found=true;
+							break;
+						}
+					}
+
+					if(!found){
+						outs() << "node = " << node->getIdx() << ", child = " << child->getIdx() << "\n";
+					}
+
+					assert(found);
+				}
+			}
+	//		for(dfgNode* phiChild : node->getPHIchildren()){
+	//			xmlFile << "\t<Output idx=\"" << phiChild->getIdx() << "\" type=\"PHI\"/>\n";
+	//		}
+			xmlFile << "</Outputs>\n";
+
+			xmlFile << "<RecParents>\n";
+			for(dfgNode* recParent : node->getRecAncestors()){
+				xmlFile << "\t<RecParent idx=\"" << recParent->getIdx() << "\"/>\n";
+			}
+			xmlFile << "</RecParents>\n";
+
+			//BelongstoBR
+			xmlFile << "<BelongsToBr>\n";
+			for(std::pair<BasicBlock*,CondVal> p1 : node->BelongsToBr){
+				xmlFile << "\t<Br name=\"" << p1.first->getName().str() << "\" ";
+				xmlFile << "node=\"" << BrParentMap[p1.first]->getIdx() << "\" ";
+				xmlFile << "value=\"" << dfgNode::getCondValStr(p1.second) << "\"/>\n";
+			}
+			xmlFile << "</BelongsToBr>\n";
+
+
+			xmlFile << "</Node>\n\n";
+
+	}
+//		}
+//	}
+
+
+
+
+	xmlFile << "</DFG>\n";
+	xmlFile.close();
+
+
+
+
+}
+
+int DFGTrig::classifyParents() {
+
+	dfgNode* node;
+	for (int i = 0; i < NodeList.size(); ++i) {
+		node = NodeList[i];
+
+		outs() << "classifyParent::currentNode = " << node->getIdx() << "\n";
+		outs() << "Parents : ";
+		for (dfgNode* parent : node->getAncestors()) {
+			outs() << parent->getIdx() << ",";
+		}
+		outs() << "\n";
+
+			for (dfgNode* parent : node->getAncestors()) {
+				Instruction* ins;
+				Instruction* parentIns;
+
+
+				if(leafControlInputs[node].find(parent) != leafControlInputs[node].end()){
+					node->parentClassification[0]=parent;
+					continue;
+				}
+
+
+				if(node->getNode()!=NULL){
+					ins=node->getNode();
+				}
+				else{
+					if(node->getNameType().compare("XORNOT")==0){
+						assert(node->parentClassification.find(1) == node->parentClassification.end());
+						node->parentClassification[1]=parent;
+						continue;
+					}
+					if(node->getNameType().compare("ORZERO")==0){
+						assert(node->parentClassification.find(1) == node->parentClassification.end());
+						node->parentClassification[1]=parent;
+						continue;
+					}
+					if(node->getNameType().compare("GEPLEFTSHIFT")==0){
+						if(parent->getNode()!=NULL){
+							parentIns = parent->getNode();
+							if(BranchInst* BRI = dyn_cast<BranchInst>(parentIns)){
+								node->parentClassification[0]=parent;
+								continue;
+							}
+							else if(CmpInst * CMPI = dyn_cast<CmpInst>(parentIns)){
+								node->parentClassification[0]=parent;
+								continue;
+							}
+						}
+						assert(node->parentClassification.find(1) == node->parentClassification.end());
+						node->parentClassification[1]=parent;
+						continue;
+					}
+					if(node->getNameType().compare("MASKAND")==0){
+						assert(node->parentClassification.find(1) == node->parentClassification.end());
+						node->parentClassification[1]=parent;
+						continue;
+					}
+					if(node->getNameType().compare("PREDAND")==0){
+						assert(node->parentClassification.find(1) == node->parentClassification.end());
+						node->parentClassification[1]=parent;
+						continue;
+					}
+					if(node->getNameType().compare("CTRLBrOR")==0){
+						if(node->parentClassification.find(1) == node->parentClassification.end()){
+							node->parentClassification[1]=parent;
+						}
+						else{
+							assert(node->parentClassification.find(2) == node->parentClassification.end());
+							node->parentClassification[2]=parent;
+						}
+						continue;
+					}
+					if(node->getNameType().compare("SELECTPHI")==0){
+						if(node->parentClassification.find(1) == node->parentClassification.end()){
+							node->parentClassification[1]=parent;
+						}
+						else{
+							assert(node->parentClassification.find(2) == node->parentClassification.end());
+							node->parentClassification[2]=parent;
+						}
+						continue;
+					}
+					if(node->getNameType().compare("GEPADD")==0){
+						if(node->parentClassification.find(1) == node->parentClassification.end()){
+							node->parentClassification[1]=parent;
+						}
+						else{
+							assert(node->parentClassification.find(2) == node->parentClassification.end());
+							node->parentClassification[2]=parent;
+						}
+						continue;
+					}
+					if(node->getNameType().compare("STORESTART")==0){
+						assert(parent->getNode()==NULL);
+						if(parent->getNameType().compare("MOVC") == 0){
+							node->parentClassification[1]=parent;
+						}
+						else if(parent->getNameType().compare("LOOPSTART") == 0){
+							node->parentClassification[0]=parent;
+						}
+						else if(parent->getNameType().compare("PREDAND") == 0){
+							node->parentClassification[0]=parent;
+						}
+						else{
+							assert(false);
+						}
+						continue;
+					}
+					if(node->getNameType().compare("LOOPEXIT")==0){
+						if(parent->getNode()==NULL){
+							if(parent->getNameType().compare("MOVC") == 0){
+								assert(node->parentClassification.find(1) == node->parentClassification.end());
+								node->parentClassification[1]=parent;
+							}
+							else if(parent->getNameType().compare("CTRLBrOR") == 0){
+								assert(node->parentClassification.find(0) == node->parentClassification.end());
+								node->parentClassification[0]=parent;
+							}
+							else{
+								assert(false);
+							}
+						}
+						else{
+							assert(node->parentClassification.find(0) == node->parentClassification.end());
+							node->parentClassification[0]=parent;
+						}
+						continue;
+					}
+					if(node->getNameType().compare("OutLoopLOAD")==0){
+						//do nothing
+						assert(node->parentClassification.find(0) == node->parentClassification.end());
+						node->parentClassification[0]=parent;
+						continue;
+					}
+					if(node->getNameType().compare("OutLoopSTORE")==0){
+						assert(node->hasConstantVal());
+
+						//check for predicate parent
+						if(parent->getNode()!=NULL){
+							parentIns = parent->getNode();
+							if(BranchInst* BRI = dyn_cast<BranchInst>(parentIns)){
+								node->parentClassification[0]=parent;
+								continue;
+							}
+							else if(CmpInst * CMPI = dyn_cast<CmpInst>(parentIns)){
+								node->parentClassification[0]=parent;
+								continue;
+							}
+						}
+						else{
+							if(parent->getNameType().compare("CTRLBrOR")==0){
+								node->parentClassification[0]=parent;
+								continue;
+							}
+						}
+
+						//if it comes to this, it has to be a data parent.
+						node->parentClassification[1]=parent;
+						continue;
+					}
+					if(node->getNameType().compare("CMERGE")==0){
+
+						if(cmergeCtrlInputs[node] == parent){
+							node->parentClassification[0] = parent;
+						}
+						else if(cmergeDataInputs[node] == parent){
+							node->parentClassification[1] = parent;
+						}
+						else{
+							assert(false);
+						}
+						continue;
+
+					}
+					if(node->getNameType().compare("N_CMP")==0){
+						ins=nCMP2pCMP[node]->getNode(); assert(ins);
+					}
+				}
+
+
+				if(dyn_cast<PHINode>(ins)){
+					if(parent->getNode() != NULL) parent->getNode()->dump();
+					outs() << "node : " << node->getIdx() << "\n";
+					outs() << "Parent : " << parent->getIdx() << "\n";
+					outs() << "Parent NameType : " << parent->getNameType() << "\n";
+
+					if(parent->getNode()){
+						if(dyn_cast<BranchInst>(parent->getNode())){
+							node->parentClassification[0]=parent;
+							continue;
+						}
+					}
+
+					assert(parent->getNameType().compare("CMERGE")==0);
+					if(node->parentClassification.find(1) == node->parentClassification.end()){
+						node->parentClassification[1]=parent;
+					}
+					else if(node->parentClassification.find(2) == node->parentClassification.end()){
+//						assert(node->parentClassification.find(2) == node->parentClassification.end());
+						node->parentClassification[2]=parent;
+					}
+					else{
+						outs() << "Extra parent : " << parent->getIdx() << ",Nametype = " << parent->getNameType() << ",par_idx = " << node->parentClassification.size()+1 << "\n";
+						node->parentClassification[node->parentClassification.size()+1]=parent;
+					}
+					continue;
+				}
+
+				if( dyn_cast<SelectInst>(ins) ){
+
+
+				}
+
+				if(dyn_cast<BranchInst>(ins)){
+					if(node->parentClassification.find(1) == node->parentClassification.end()){
+						node->parentClassification[1]=parent;
+					}
+					else{
+						assert(node->parentClassification.find(2) == node->parentClassification.end());
+						node->parentClassification[2]=parent;
+					}
+					continue;
+				}
+
+				if(parent->getNode()!=NULL){
+					parentIns = parent->getNode();
+					if(BranchInst* BRI = dyn_cast<BranchInst>(parentIns)){
+						node->parentClassification[0]=parent;
+						continue;
+					}
+//					else if(CmpInst * CMPI = dyn_cast<CmpInst>(parentIns)){
+//						node->parentClassification[0]=parent;
+//						continue;
+//					}
+				}
+				else{
+					if(parent->getNameType().compare("CTRLBrOR")==0){
+						node->parentClassification[0]=parent;
+						continue;
+					}
+					if(parent->getNameType().compare("PREDAND")==0){
+						node->parentClassification[0]=parent;
+						continue;
+					}
+//					if(parent->getNameType().compare("GEPLEFTSHIFT")==0){
+//						assert(node->parentClassification.find(1)==node->parentClassification.end());
+//						node->parentClassification[1]=parent;
+//						continue;
+//					}
+					if(parent->getNameType().compare("GEPLEFTSHIFT")==0){
+						assert(parent->getAncestors().size()<3);
+						node->parentClassification[1]=parent;
+						continue;
+					}
+					if(parent->getNameType().compare("N_CMP")==0){
+						node->parentClassification[1]=parent;
+						continue;
+					}
+					if(parent->getNameType().compare("MASKAND")==0){
+						assert(parent->getAncestors().size()==1);
+						parentIns = parent->getAncestors()[0]->getNode();
+					}
+					if(parent->getNameType().compare("OutLoopLOAD")==0){
+						parentIns = OutLoopNodeMapReverse[parent];
+					}
+					if(parent->getNameType().compare("CMERGE")==0){
+//						if(node->parentClassification.find(1) == node->parentClassification.end()){
+//							node->parentClassification[1]=parent;
+//						}
+//						else if(node->parentClassification.find(2) == node->parentClassification.end()){
+//	//						assert(node->parentClassification.find(2) == node->parentClassification.end());
+//							node->parentClassification[2]=parent;
+//						}
+//						else{
+//							outs() << "Extra parent : " << parent->getIdx() << ",Nametype = " << parent->getNameType() << ",par_idx = " << node->parentClassification.size()+1 << "\n";
+//							node->parentClassification[node->parentClassification.size()+1]=parent;
+//						}
+//						continue;
+
+						parentIns = cmergePHINodes[parent]->getNode();
+						outs() << "CMERGE Parent" << parent->getIdx() << "to non-nametype child=" << node->getIdx() << ".\n";
+						outs() << "parentIns = "; parentIns->dump();
+						outs() << "node = "; node->getNode()->dump();
+						outs() << "OpNumber = " << findOperandNumber(node, ins,parentIns) << "\n";
+
+						assert(parentIns);
+					}
+					if(parent->getNameType().compare("SELECTPHI")==0){
+						parentIns = selectPHIAncestorMap[parent]->getNode();
+						outs() << "SELECTPHI Parent" << parent->getIdx() << "to non-nametype child=" << node->getIdx() << ".\n";
+						outs() << "parentIns = "; parentIns->dump();
+						outs() << "node = "; node->getNode()->dump();
+						outs() << "OpNumber = " << findOperandNumber(node, ins,parentIns) << "\n";
+
+						assert(parentIns);
+					}
+				}
+				//Only ins!=NULL and non-PHI and non-BR will reach here
+				node->parentClassification[findOperandNumber(node, ins,parentIns)]=parent;
+		}
+	}
+
+}
+
+void DFGTrig::assignALAPasASAP() {
+
+	for(dfgNode* node : NodeList){
+		node->setASAPnumber(node->getALAPnumber());
+	}
+
+}
+
+void DFGTrig::printDomTree() {
+	assert(!this->loopBB.empty());
+	for(BasicBlock* bb : loopBB){
+		BasicBlock* idomBB = DT->getNode(bb)->getIDom()->getBlock();
+		outs() << "BasicBlock : " << bb->getName().str() << " ::";
+		outs() << " IDom = " << idomBB->getName() << "\n";
+	}
+	assert(false);
+}
+
+std::set<BasicBlock*> DFGTrig::getBBsWhoHasIDomAs(BasicBlock* bb) {
+	std::set<BasicBlock*>  res;
+
+	assert(!this->loopBB.empty());
+	for(BasicBlock* B : loopBB){
+		BasicBlock* idomBB = DT->getNode(B)->getIDom()->getBlock();
+		outs() << "BasicBlock : " << bb->getName().str() << " ::";
+		outs() << " IDom = " << idomBB->getName() << "\n";
+
+		if(idomBB == bb){
+			res.insert(B);
+		}
+	}
+
+	return res;
+}
+
+std::map<BasicBlock*,std::set<std::pair<BasicBlock*,CondVal>>> DFGTrig::getCtrlInfoBB() {
+
+	//This function will return a map of basicblocks to their control dependent parents with the
+	// respective control value
+
+	SmallVector<std::pair<const BasicBlock *, const BasicBlock *>,8> BackedgeBBs;
+	dfgNode firstNode = *NodeList[0];
+	FindFunctionBackedges(*(firstNode.getNode()->getFunction()),BackedgeBBs);
+
+	std::map<BasicBlock*,std::set<std::pair<BasicBlock*,CondVal>>> res;
+
+	for(BasicBlock* BB : loopBB){
+
+		std::queue<BasicBlock*> q;
+		q.push(BB);
+
+		std::map<BasicBlock*,std::set<CondVal>> visited;
+
+		while(!q.empty()){
+			BasicBlock* curr = q.front(); q.pop();
+//			outs() << "curr=" << curr->getName() << "\n";
+
+			for (auto it = pred_begin(curr), et = pred_end(curr); it != et; ++it)
+			{
+			  BasicBlock* predecessor = *it;
+		      if(loopBB.find(predecessor)==loopBB.end()){
+		    	  continue; // no need to care for out of loop BBs.
+		      }
+
+//		      if(predecessor == BB) continue;
+
+		      std::pair<const BasicBlock*,const BasicBlock*> bbPair = std::make_pair((const BasicBlock*)predecessor,(const BasicBlock*)curr);
+		      if(std::find(BackedgeBBs.begin(),BackedgeBBs.end(),bbPair)!=BackedgeBBs.end()){
+		    	  continue; // no need to traverse backedges;
+		      }
+
+			  CondVal cv;
+			  BranchInst* BRI = cast<BranchInst>(predecessor->getTerminator());
+//			  BRI->dump();
+
+			  if(!BRI->isConditional()){
+//				  outs() << "\t0 :: ";
+				  cv = UNCOND;
+			  }
+			  else{
+				  for (int i = 0; i < BRI->getNumSuccessors(); ++i) {
+					  if(BRI->getSuccessor(i) == curr){
+						  if(i==0){
+//							  outs() << "\t1 :: ";
+							  cv = TRUE;
+						  }
+						  else if(i==1){
+//							  outs() << "\t2 :: ";
+							  cv = FALSE;
+						  }
+						  else{
+							  assert(false);
+						  }
+					  }
+				  }
+			  }
+
+//			  outs() << "\tPred=" << predecessor->getName() << "(" << dfgNode::getCondValStr(cv) << ")\n";
+
+			  visited[predecessor].insert(cv);
+			  q.push(predecessor);
+			}
+		}
+
+		outs() << "BasicBlock : " << BB->getName() << " :: DependentCtrlBBs = ";
+		res[BB];
+		for(std::pair<BasicBlock*,std::set<CondVal>> pair : visited){
+			BasicBlock* bb = pair.first;
+			std::set<CondVal> brOuts = pair.second;
+
+
+//			if(brOuts.size() == 1){
+//				if(brOuts.find(UNCOND) == brOuts.end()){
+					outs() << bb->getName();
+//					if(brOuts.find(UNCOND) != brOuts.end()){
+//						res[BB].insert(std::make_pair(bb,UNCOND));
+//						outs() << "(UNCOND),";
+//					}
+					if(brOuts.find(TRUE) != brOuts.end()){
+						res[BB].insert(std::make_pair(bb,TRUE));
+						outs() << "(TRUE),";
+					}
+					if(brOuts.find(FALSE) != brOuts.end()){
+						res[BB].insert(std::make_pair(bb,FALSE));
+						outs() << "(FALSE),";
+					}
+//					res[BB].insert(std::make_pair(bb,cv));
+//				}
+//			}
+		}
+		outs() << "\n";
+	}
+
+	outs() << "###########################################################################\n";
+
+
+	std::map<BasicBlock*,std::set<std::pair<BasicBlock*,CondVal>>> temp1;
+
+	for(std::pair<BasicBlock*,std::set<std::pair<BasicBlock*,CondVal>>> pair : res){
+		std::set<std::pair<BasicBlock*,CondVal>> tobeRemoved;
+		BasicBlock* currBB = pair.first;
+		outs() << "BasicBlock : " << currBB->getName() << " :: DependentCtrlBBs = ";
+
+		for(std::pair<BasicBlock*,CondVal> bbVal : pair.second){
+			BasicBlock* depBB = bbVal.first;
+			for(std::pair<BasicBlock*,CondVal> p2 : res[depBB]){
+				tobeRemoved.insert(p2);
+			}
+		}
+
+		for(std::pair<BasicBlock*,CondVal> bbVal : pair.second){
+			if(tobeRemoved.find(bbVal)==tobeRemoved.end()){
+				outs() << bbVal.first->getName();
+				outs() << "(" << dfgNode::getCondValStr(bbVal.second) << "),";
+				temp1[currBB].insert(bbVal);
+			}
+		}
+		outs() << "\n";
+	}
+
+	std::map<BasicBlock*,std::set<std::pair<BasicBlock*,CondVal>>> temp2;
+
+	for(std::pair<BasicBlock*,std::set<std::pair<BasicBlock*,CondVal>>> pair : temp1){
+		BasicBlock* currBB = pair.first;
+		std::set<std::pair<BasicBlock*,CondVal>> bbValPairs = pair.second;
+
+		std::queue<std::pair<BasicBlock*,CondVal>> bbValQ;
+		for(std::pair<BasicBlock*,CondVal> bbVal: bbValPairs){
+			bbValQ.push(bbVal);
+		}
+
+		bbValPairs.clear();
+		int rounds = 0;
+		while(!bbValQ.empty()){
+			if(rounds == bbValQ.size()*2) break;
+			std::pair<BasicBlock*,CondVal> topBBVal1 = bbValQ.front(); bbValQ.pop();
+			if(!bbValQ.empty()){
+				std::pair<BasicBlock*,CondVal> topBBVal2 = bbValQ.front();
+				if(topBBVal1.first == topBBVal2.first){
+					rounds=0;
+					bbValQ.pop();
+					if(!temp1[topBBVal1.first].empty()){
+						bbValQ.push(*temp1[topBBVal1.first].rbegin());
+					}
+				}
+				else{
+					bbValQ.push(topBBVal1);
+					rounds++;
+//					break;
+				}
+			}else{
+				bbValPairs.insert(topBBVal1);
+			}
+		}
+
+		while(!bbValQ.empty()){
+			bbValPairs.insert(bbValQ.front()); bbValQ.pop();
+		}
+		temp2[currBB]=bbValPairs;
+	}
+
+	outs() << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n";
+
+	for(std::pair<BasicBlock*,std::set<std::pair<BasicBlock*,CondVal>>> pair : temp2){
+		BasicBlock* currBB = pair.first;
+		std::set<std::pair<BasicBlock*,CondVal>> bbValPairs = pair.second;
+		outs() << "BasicBlock : " << currBB->getName() << " :: DependentCtrlBBs = ";
+		for(std::pair<BasicBlock*,CondVal> bbVal: bbValPairs){
+			outs() << bbVal.first->getName();
+			outs() << "(" << dfgNode::getCondValStr(bbVal.second) << "),";
+		}
+		outs() << "\n";
+	}
+//	assert(false);
+	return temp2;
+}
+
+std::map<BasicBlock*,std::set<std::pair<BasicBlock*,CondVal>>> DFGTrig::getCtrlInfoBBMorePaths() {
+
+	//This function will return a map of basicblocks to their control dependent parents with the
+	// respective control value
+
+	SmallVector<std::pair<const BasicBlock *, const BasicBlock *>,8> BackedgeBBs;
+	dfgNode firstNode = *NodeList[0];
+	FindFunctionBackedges(*(firstNode.getNode()->getFunction()),BackedgeBBs);
+
+	std::map<BasicBlock*,std::set<std::pair<BasicBlock*,CondVal>>> res;
+
+	for(BasicBlock* BB : loopBB){
+
+		std::queue<BasicBlock*> q;
+		q.push(BB);
+
+		std::map<BasicBlock*,std::set<CondVal>> visited;
+
+		while(!q.empty()){
+			BasicBlock* curr = q.front(); q.pop();
+//			outs() << "curr=" << curr->getName() << "\n";
+
+			for (auto it = pred_begin(curr), et = pred_end(curr); it != et; ++it)
+			{
+			  BasicBlock* predecessor = *it;
+		      if(loopBB.find(predecessor)==loopBB.end()){
+		    	  continue; // no need to care for out of loop BBs.
+		      }
+
+//		      if(predecessor == BB) continue;
+
+		      std::pair<const BasicBlock*,const BasicBlock*> bbPair = std::make_pair((const BasicBlock*)predecessor,(const BasicBlock*)curr);
+		      if(std::find(BackedgeBBs.begin(),BackedgeBBs.end(),bbPair)!=BackedgeBBs.end()){
+		    	  continue; // no need to traverse backedges;
+		      }
+
+			  CondVal cv;
+			  BranchInst* BRI = cast<BranchInst>(predecessor->getTerminator());
+//			  BRI->dump();
+
+			  if(!BRI->isConditional()){
+//				  outs() << "\t0 :: ";
+				  cv = UNCOND;
+			  }
+			  else{
+				  for (int i = 0; i < BRI->getNumSuccessors(); ++i) {
+					  if(BRI->getSuccessor(i) == curr){
+						  if(i==0){
+//							  outs() << "\t1 :: ";
+							  cv = TRUE;
+						  }
+						  else if(i==1){
+//							  outs() << "\t2 :: ";
+							  cv = FALSE;
+						  }
+						  else{
+							  assert(false);
+						  }
+					  }
+				  }
+			  }
+
+//			  outs() << "\tPred=" << predecessor->getName() << "(" << dfgNode::getCondValStr(cv) << ")\n";
+
+			  visited[predecessor].insert(cv);
+			  q.push(predecessor);
+			}
+		}
+
+		outs() << "BasicBlock : " << BB->getName() << " :: DependentCtrlBBs = ";
+		res[BB];
+		for(std::pair<BasicBlock*,std::set<CondVal>> pair : visited){
+			BasicBlock* bb = pair.first;
+			std::set<CondVal> brOuts = pair.second;
+
+
+//			if(brOuts.size() == 1){
+//				if(brOuts.find(UNCOND) == brOuts.end()){
+					outs() << bb->getName();
+//					if(brOuts.find(UNCOND) != brOuts.end()){
+//						res[BB].insert(std::make_pair(bb,UNCOND));
+//						outs() << "(UNCOND),";
+//					}
+					if(brOuts.find(TRUE) != brOuts.end()){
+						res[BB].insert(std::make_pair(bb,TRUE));
+						outs() << "(TRUE),";
+					}
+					if(brOuts.find(FALSE) != brOuts.end()){
+						res[BB].insert(std::make_pair(bb,FALSE));
+						outs() << "(FALSE),";
+					}
+//					res[BB].insert(std::make_pair(bb,cv));
+//				}
+//			}
+		}
+		outs() << "\n";
+	}
+
+	outs() << "###########################################################################\n";
+
+
+	std::map<BasicBlock*,std::set<std::pair<BasicBlock*,CondVal>>> temp1;
+
+	for(std::pair<BasicBlock*,std::set<std::pair<BasicBlock*,CondVal>>> pair : res){
+		std::set<std::pair<BasicBlock*,CondVal>> tobeRemoved;
+		BasicBlock* currBB = pair.first;
+		outs() << "BasicBlock : " << currBB->getName() << " :: DependentCtrlBBs = ";
+
+		for(std::pair<BasicBlock*,CondVal> bbVal : pair.second){
+			BasicBlock* depBB = bbVal.first;
+			for(std::pair<BasicBlock*,CondVal> p2 : res[depBB]){
+				tobeRemoved.insert(p2);
+			}
+		}
+
+		for(std::pair<BasicBlock*,CondVal> bbVal : pair.second){
+			if(tobeRemoved.find(bbVal)==tobeRemoved.end()){
+				outs() << bbVal.first->getName();
+				outs() << "(" << dfgNode::getCondValStr(bbVal.second) << "),";
+				temp1[currBB].insert(bbVal);
+			}
+		}
+		outs() << "\n";
+	}
+
+	std::map<BasicBlock*,std::set<std::pair<BasicBlock*,CondVal>>> temp2;
+
+	for(std::pair<BasicBlock*,std::set<std::pair<BasicBlock*,CondVal>>> pair : temp1){
+		BasicBlock* currBB = pair.first;
+		std::set<std::pair<BasicBlock*,CondVal>> bbValPairs = pair.second;
+
+		std::queue<std::pair<BasicBlock*,CondVal>> bbValQ;
+		for(std::pair<BasicBlock*,CondVal> bbVal: bbValPairs){
+			bbValQ.push(bbVal);
+		}
+
+		bbValPairs.clear();
+		int rounds = 0;
+		while(!bbValQ.empty()){
+			if(rounds == bbValQ.size()*2) break;
+			std::pair<BasicBlock*,CondVal> topBBVal1 = bbValQ.front(); bbValQ.pop();
+			if(!bbValQ.empty()){
+				std::pair<BasicBlock*,CondVal> topBBVal2 = bbValQ.front();
+				if(topBBVal1.first == topBBVal2.first){
+					rounds=0;
+					bbValQ.pop();
+					if(!temp1[topBBVal1.first].empty()){
+						bbValQ.push(*temp1[topBBVal1.first].rbegin());
+					}
+				}
+				else{
+					bbValQ.push(topBBVal1);
+					rounds++;
+//					break;
+				}
+			}else{
+				bbValPairs.insert(topBBVal1);
+			}
+		}
+
+		while(!bbValQ.empty()){
+			bbValPairs.insert(bbValQ.front()); bbValQ.pop();
+		}
+		temp2[currBB]=bbValPairs;
+	}
+
+	outs() << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n";
+
+	for(std::pair<BasicBlock*,std::set<std::pair<BasicBlock*,CondVal>>> pair : temp2){
+		BasicBlock* currBB = pair.first;
+		std::set<std::pair<BasicBlock*,CondVal>> bbValPairs = pair.second;
+		outs() << "BasicBlock : " << currBB->getName() << " :: DependentCtrlBBs = ";
+		for(std::pair<BasicBlock*,CondVal> bbVal: bbValPairs){
+			outs() << bbVal.first->getName();
+			outs() << "(" << dfgNode::getCondValStr(bbVal.second) << "),";
+		}
+		outs() << "\n";
+
+		if(!bbValPairs.empty()){
+			temp2[currBB] = temp1[currBB];
+		}
+
+	}
+//	assert(false);
+	return temp2;
+}
+
+std::vector<dfgNode*> DFGTrig::getLeafs(BasicBlock* BB) {
+
+
+	errs() << "start getting the LeafNodes...!\n";
+	std::vector<dfgNode*> leafNodes;
+	for (int i = 0 ; i < NodeList.size() ; i++) {
+		dfgNode* node = NodeList[i];
+		if(node->BB == BB){
+
+			if(node->getNode()!=NULL){
+				if(dyn_cast<PHINode>(node->getNode())){
+					continue;
+				}
+			}
+
+			if(node->getNameType().compare("OutLoopLOAD")==0){
+
+			}
+			else{
+				leafNodes.push_back(node);
+			}
+
+//			for(dfgNode* parent : node->getAncestors()){
+//				if(parent->getNameType() == "OutLoopLOAD"){
+//					if(parent->getAncestors().empty()){
+//						leafNodes.push_back(parent);
+//					}
+//				}
+//			}
+
+
+
+
+		}
+	}
+	errs() << "LeafNodes init done...!\n";
+
+	for (int i = 0 ; i < NodeList.size() ; i++) {
+//		if(NodeList[i]->getNode()->getParent() == BB){
+		if(NodeList[i]->BB == BB){
+
+			if(NodeList[i]->getNameType().compare("OutLoopLOAD")==0){
+				continue;
+			}
+
+			for(int j = 0; j < NodeList[i]->getChildren().size(); j++){
+				dfgNode* nodeToBeRemoved = NodeList[i]->getChildren()[j];
+				if(nodeToBeRemoved != NULL){
+//					errs() << "LeafNodes : nodeToBeRemoved found...! : ";
+					if(nodeToBeRemoved->getNode() == NULL){
+//						errs() << "NodeIdx:" << nodeToBeRemoved->getIdx() << "," << nodeToBeRemoved->getNameType() << "\n";
+					}
+					else{
+//						errs() << "NodeIdx:" << nodeToBeRemoved->getIdx() << ",";
+//						nodeToBeRemoved->getNode()->dump();
+					}
+
+					if (std::find(leafNodes.begin(), leafNodes.end(), nodeToBeRemoved) != leafNodes.end()){
+						leafNodes.erase(std::remove(leafNodes.begin(),leafNodes.end(), nodeToBeRemoved));
+					}
+				}
+			}
+		}
+	}
+	errs() << "got the LeafNodes...!\n";
+	return leafNodes;
+
+
+
+}
+
+void DFGTrig::popCtrlTrees(std::vector<std::pair<BasicBlock*,CondVal>> path) {
+
+	assert(!path.empty());
+	std::reverse(path.begin(),path.end());
+
+	TreeNode<BasicBlock*>* root;
+	bool found=false;
+	for(TreeNode<BasicBlock*>* ctrl : CtrlTrees){
+		if(ctrl->getData() == path[0].first){
+			root = ctrl;
+			found = true;
+			break;
+		}
+	}
+
+	if(!found){
+		root = new TreeNode<BasicBlock*>(path[0].first);
+		CtrlTrees.push_back(root);
+	}
+
+	for (int i = 1; i < path.size(); ++i) {
+		outs() << "INSERT CHILD : " << path[i].first->getName() << ", PARENT = " << path[i-1].first->getName() << "\n";
+		root->insertChild(path[i].first,path[i-1].first,(path[i-1].second==TRUE));
+	}
+
+	assert(CtrlTrees.size()==1);
+}
+
+void DFGTrig::printCtrlTree() {
+	assert(CtrlTrees.size() == 1);
+
+	std::queue<std::set<TreeNode<BasicBlock*>*>> q;
+	std::set<TreeNode<BasicBlock*>*> q_init; q_init.insert(CtrlTrees[0]);
+	q.push(q_init);
+
+	outs() << "PRINTING CTRL TREE :::\n";
+	while(!q.empty()){
+		std::set<TreeNode<BasicBlock*>*> front = q.front(); q.pop();
+		std::set<TreeNode<BasicBlock*>*> q_new;
+
+		for(TreeNode<BasicBlock*>* tn : front){
+			outs() << tn->getData()->getName() << ",";
+			if(tn->getLeft()) q_new.insert(tn->getLeft());
+			if(tn->getRight()) q_new.insert(tn->getRight());
+		}
+		outs() << "\n";
+		if(!q_new.empty()) q.push(q_new);
+	}
+//	assert(false);
+}
+
+void DFGTrig::annotateNodesBr() {
+	for(std::pair<std::set<dfgNode*>,std::vector<std::pair<BasicBlock*,CondVal>> > p1 : subPathDFGMap){
+		std::set<dfgNode*> subDFG = p1.first;
+		std::vector<std::pair<BasicBlock*,CondVal>> path = p1.second;
+		std::reverse(path.begin(),path.end());
+
+		if(path.size() > longestPath.size()) longestPath = path;
+
+		std::map<dfgNode*,std::pair<BasicBlock*,CondVal>> tempBelongBr;
+
+		for(std::pair<BasicBlock*,CondVal> p11 : path){
+			BasicBlock* ctrlBB = p11.first;
+			std::set<std::pair<dfgNode*,CondVal>> steps;
+			std::pair<dfgNode*,CondVal> step_pos = std::make_pair(BrParentMap[ctrlBB],p11.second);
+			steps.insert(step_pos);
+
+			if(pCMP2nCMP.find(BrParentMap[ctrlBB]) != pCMP2nCMP.end()){
+				if(pCMP2nCMP[BrParentMap[ctrlBB]]){
+					std::pair<dfgNode*,CondVal> step_neg = std::make_pair(pCMP2nCMP[BrParentMap[ctrlBB]],p11.second);
+					steps.insert(step_neg);
+				}
+			}
+
+			for(std::pair<dfgNode*,CondVal> p2 : steps){
+//			BasicBlock* ctrlBB = p2.first;
+			dfgNode* ctrlNode = p2.first;
+
+			std::queue<dfgNode*> q; q.push(ctrlNode);
+
+				while(!q.empty()){
+					dfgNode* node = q.front(); q.pop();
+
+					outs() << "annotateNodesBr :: Node=" << node->getIdx() << ',';
+					for(dfgNode* child : node->getChildren()){
+						bool isCondtional=false;
+						bool condition=true;
+
+						outs() << "\nChild=" << child->getIdx() << ',';
+						if(subDFG.find(child) == subDFG.end()) continue;
+						outs() << "inSUBDFG,";
+
+						isCondtional= node->childConditionalMap[child] != UNCOND;
+						condition = (node->childConditionalMap[child] == TRUE);
+
+						bool isBackEdge = node->childBackEdgeMap[child];
+
+						if(BrParentMapInv.find(node)!=BrParentMapInv.end()){
+							BasicBlock* BrBB = BrParentMapInv[node];
+							std::pair<BasicBlock*,CondVal> searchPair(BrBB,node->childConditionalMap[child]);
+
+							if(std::find(path.begin(),path.end(),searchPair) == path.end()){
+								continue;
+							}
+						}
+						outs() << "inPath,";
+
+
+						if(isBackEdge) continue;
+						outs() << "notBackEdge,BelongsTo=" << ctrlBB->getName() << "(" << dfgNode::getCondValStr(p2.second) << ")";
+//						tempBelongBr[child]=p2;
+						tempBelongBr[child]=std::make_pair(ctrlBB,p2.second);
+						q.push(child);
+					}
+					outs() << "\n";
+				}
+
+			}
+		}
+
+		for(std::pair<dfgNode*,std::pair<BasicBlock*,CondVal>> p3 : tempBelongBr){
+			dfgNode* node = p3.first;
+			node->BelongsToBr.insert(p3.second);
+		}
+
+	}
+}
+
+void DFGTrig::annotateCtrlFrontierAsCtrlParent() {
+
+	for(std::pair<BasicBlock*,CondVal> p1 : longestPath){
+		dfgNode* ctrlNode = BrParentMap[p1.first];
+//		for(dfgNode* child : ctrlNode->getChildren()){
+//			child->BelongsToBr = ctrlNode->BelongsToBr;
+//		}
+
+		std::map<std::set<dfgNode*>,std::vector<std::pair<BasicBlock*,CondVal>> > newsubPathDFGMap;
+		for(std::pair<std::set<dfgNode*>,std::vector<std::pair<BasicBlock*,CondVal>>> p1 : subPathDFGMap){
+			std::set<dfgNode*> subDFG = p1.first;
+			std::vector<std::pair<BasicBlock*,CondVal>> path = p1.second;
+
+			if(subDFG.find(ctrlNode)!=subDFG.end()){
+				for(dfgNode* child : ctrlNode->getChildren()){
+					subDFG.insert(child);
+				}
+			}
+			newsubPathDFGMap[subDFG]=path;
+		}
+		subPathDFGMap = newsubPathDFGMap;
+	}
+
+}
+
+void DFGTrig::DFSCtrlPath(std::map<BasicBlock*,std::set<std::pair<BasicBlock*,CondVal>>>& ctrlBBInfo, std::vector<std::pair<BasicBlock*,CondVal>> path){
+
+	std::pair<BasicBlock*,CondVal> lastbbVal = *path.rbegin();
+
+	if(ctrlBBInfo.find(lastbbVal.first)!=ctrlBBInfo.end()){
+		//path is not ended;
+		for(std::pair<BasicBlock*,CondVal> p1 : ctrlBBInfo[lastbbVal.first]){
+			std::vector<std::pair<BasicBlock*,CondVal>> nextPath = path; nextPath.push_back(p1);
+			DFSCtrlPath(ctrlBBInfo,nextPath);
+		}
+	}
+	else{ //path has ended
+		outs() << "PATH :: ";
+		path.erase(path.begin());
+		for(std::pair<BasicBlock*,CondVal> p1 : path){
+			outs() << p1.first->getName() << "(" << dfgNode::getCondValStr(p1.second) << "),";
+		}
+		outs() << "\n";
+
+		CreatSubDFGPath(path);
+		popCtrlTrees(path);
+	}
+
+}
+
+void DFGTrig::populateSubPathDFGs() {
+
+//	std::queue<dfgNode*> q;
+//	for(dfgNode* n : NodeList){
+//
+//		int parentCount=0;
+//		for(dfgNode* parent : n->getAncestors()){
+//			if(parent->childBackEdgeMap[n]) continue;
+//			parentCount++;
+//		}
+//		if(parentCount == 0){
+//			q.push(n);
+//		}
+//	}
+
+//	std::map<dfgNode*,std::set<dfgNode*>> visitedFrom;
+
+	std::map<BasicBlock*,std::set<std::pair<BasicBlock*,CondVal>>> ctrlBBInfo =  getCtrlInfoBBMorePaths();
+
+	std::set<BasicBlock*> roots;
+	for(std::pair<BasicBlock*,std::set<std::pair<BasicBlock*,CondVal>>> p1 : ctrlBBInfo){
+		BasicBlock* currBB = p1.first;
+
+		bool isRoot=true;
+		for(std::pair<BasicBlock*,std::set<std::pair<BasicBlock*,CondVal>>> p2 : ctrlBBInfo){
+			if(p1 == p2) continue;
+			std::set<std::pair<BasicBlock*,CondVal>> bbVals = p2.second;
+			for(std::pair<BasicBlock*,CondVal> bbVal : bbVals){
+				if(bbVal.first == currBB){
+					isRoot=false; break;
+				}
+			}
+			if(!isRoot) break;
+		}
+
+		if(isRoot){
+			outs() << "ROOT : " << currBB->getName() << "\n";
+			roots.insert(currBB);
+		}
+
+	}
+
+
+	for(BasicBlock* root : roots ){
+		std::vector<std::pair<BasicBlock*,CondVal>> path; path.push_back(std::make_pair(root,UNCOND));
+		DFSCtrlPath(ctrlBBInfo,path);
+	}
+	printCtrlTree();
+//	assert(false);
+
+
+
+//
+//	std::stack<dfgNode*> ctrlNodes;
+//
+//	for(dfgNode* n : NodeList){
+//		for(dfgNode* child : n->getChildren()){
+//			if(n->childBackEdgeMap[child]) continue;
+//			if(n->childConditionalMap[child]!=UNCOND){
+//				ctrlNodes.push(n);
+//				break;
+//			}
+//		}
+//	}
+//
+//	while(!ctrlNodes.empty()){
+//
+//
+//
+//	}
+//
+//
+//	while(!q.empty()){
+//
+//
+//
+//
+//	}
+
+
+
+
+}
+
+BasicBlock* DFGTrig::getBackEdgeParentBB() {
+
+		SmallVector<std::pair<const BasicBlock *, const BasicBlock *>,8> BackedgeBBs;
+		dfgNode firstNode = *NodeList[0];
+		FindFunctionBackedges(*(firstNode.getNode()->getFunction()),BackedgeBBs);
+
+		std::set<BasicBlock*> backedgeParents;
+		for(std::pair<const BasicBlock *, const BasicBlock *> p1 : BackedgeBBs){
+			BasicBlock* parent = (BasicBlock*)p1.first;
+			if(loopBB.find(parent)!=loopBB.end()){
+				backedgeParents.insert(parent);
+			}
+		}
+
+		assert(backedgeParents.size() == 1);
+		outs() << "END BB = " << (*backedgeParents.begin())->getName() << "\n";
+		return *backedgeParents.begin();
+}
+
+void DFGTrig::CreatSubDFGPath(
+		std::vector<std::pair<BasicBlock*, CondVal> > path) {
+
+
+	std::map<dfgNode*,CondVal> ctrlNodeVals;
+	for(std::pair<BasicBlock*,CondVal> p1 : path){
+		ctrlNodeVals[BrParentMap[p1.first]]=p1.second;
+		ctrlNodeVals[pCMP2nCMP[BrParentMap[p1.first]]]=p1.second;
+	}
+//
+//	for(std::pair<dfgNode*,dfgNode*> p1 : nCMP2pCMP){
+//		ctrlNodeVals[p1.first]=FALSE;
+//	}
+
+	std::set<dfgNode*> rootNodes = getRootNodes();
+	std::queue<dfgNode*> q;
+	for(dfgNode* node : rootNodes){
+		q.push(node);
+	}
+
+	std::map<dfgNode*,int> workingSet;
+	std::map<dfgNode*,int> nonBEParentCount;
+
+
+	for(dfgNode* node : NodeList){
+		int parentCount = 0;
+		bool CMERGEfound=false;
+		bool ctrlInputfound=false;
+		for(dfgNode* parent : node->getAncestors()){
+			if(parent->childBackEdgeMap[node]) continue;
+			if(parent->getNameType() == "CMERGE" || parent->getNameType() == "SELECTPHI"){
+				CMERGEfound=true;
+				continue;
+			}
+			if(parent->childConditionalMap[node]!=UNCOND){
+				ctrlInputfound=true;
+				continue;
+			}
+			parentCount++;
+		}
+
+		if(CMERGEfound) parentCount++;
+		if(ctrlInputfound) parentCount++;
+
+		assert(node->getAncestors().size() != 0 || node->getChildren().size() != 0);
+
+		nonBEParentCount[node]=parentCount;
+	}
+
+	std::set<dfgNode*> tempSet;
+
+	while(!q.empty()){
+		dfgNode* currNode = q.front(); q.pop();
+		tempSet.insert(currNode);
+
+		for(dfgNode* child : currNode->getChildren()){
+			if(currNode->childBackEdgeMap[child]) continue;
+			if(ctrlNodeVals.find(currNode)!=ctrlNodeVals.end()){
+				if(currNode->childConditionalMap[child] != ctrlNodeVals[currNode]) continue;
+			}
+
+			if(workingSet.find(child)!=workingSet.end()){
+				workingSet[child]++;
+			}
+			else{
+				workingSet[child]=1;
+			}
+
+			if(workingSet[child] > nonBEParentCount[child]){
+				outs() << "FATAL! : " << "child = " << child->getIdx();
+				outs() << ", parentCount = " << nonBEParentCount[child];
+				outs() << ", currNode = " << currNode->getIdx() << "\n";
+			}
+
+			assert(workingSet[child] <= nonBEParentCount[child]);
+			if(workingSet[child] == nonBEParentCount[child]){
+
+				q.push(child);
+			}
+		}
+	}
+
+	std::set<dfgNode*> subDFGNodes;
+
+	for(dfgNode* node : tempSet){
+		bool atleastOneChildFound=false;
+		bool atleastOneParentFound=false;
+
+		for(dfgNode* child : node->getChildren()){
+			if(tempSet.find(child)!=tempSet.end()){
+				atleastOneChildFound=true; break;
+			}
+		}
+		for(dfgNode* parent : node->getAncestors()){
+			if(tempSet.find(parent)!=tempSet.end()){
+				atleastOneParentFound=true; break;
+			}
+		}
+		if(atleastOneChildFound || atleastOneParentFound){
+//			outs() << "Node = " << node->getIdx() << "\n";
+			subDFGNodes.insert(node);
+		}
+	}
+//	subPathDFGs.push_back(subDFGNodes);
+	subPathDFGMap[subDFGNodes]=path;
+//	assert(false);
+}
+
+std::set<dfgNode*> DFGTrig::getRootNodes() {
+
+	std::set<dfgNode*> res;
+	for(dfgNode* node : NodeList){
+		int parentCount = 0;
+		for(dfgNode* parent : node->getAncestors()){
+			if(parent->childBackEdgeMap[node]) continue;
+			parentCount++;
+		}
+
+		if(parentCount == 0) res.insert(node);
+	}
+	return res;
 }
 
 dfgNode* DFGTrig::addLoadParent(Instruction* ins, dfgNode* child) {
@@ -654,7 +2730,7 @@ void DFGTrig::printDOT(std::string fileName) {
 //		        color=blue;
 //		    }
 
-		ofs << "subgraph cluster_" << cluster_idx << " {\n";
+//		ofs << "subgraph cluster_" << cluster_idx << " {\n";
 //		ofs << "node [style=filled]";
 		for(dfgNode* node : BBNodeSet.second){
 			ofs << "\""; //BEGIN NODE NAME
@@ -672,7 +2748,6 @@ void DFGTrig::printDOT(std::string fileName) {
 					ofs << " C=" << "0x" << std::hex << node->getGEPbaseAddr() << std::dec;
 				}
 
-				ofs << " BB" << node->getNode()->getParent()->getName().str();
 			}
 			else{
 				ofs << node->getNameType();
@@ -690,19 +2765,42 @@ void DFGTrig::printDOT(std::string fileName) {
 				}
 			}
 
+			ofs << "BB=" << node->BB->getName().str();
+
+			if(!mutexNodes[node].empty()){
+				ofs << ",mutex={";
+				for(dfgNode* m : mutexNodes[node]){
+					ofs << m->getIdx() << ",";
+				}
+				ofs << "}";
+			}
+
 			if(node->getFinalIns() != NOP){
 				ofs << " HyIns=" << HyCUBEInsStrings[node->getFinalIns()];
 			}
 			ofs << ",\n";
 			ofs << node->getIdx() << ", ASAP=" << node->getASAPnumber();
 			ofs << ", ALAP=" << node->getALAPnumber();
+			ofs << "\n";
 
-			ofs << "\"]\n"; //END NODE NAME
+
+			//BelongstoBR
+			if(node->BelongsToBr.empty()){
+				ofs << "Br = (EMPTY)";
+			}
+			else{
+				ofs << "Br = ";
+				for(std::pair<BasicBlock*,CondVal> p1 : node->BelongsToBr){
+					ofs << p1.first->getName().str() << "[" << dfgNode::getCondValStr(p1.second) << "]\n";
+				}
+			}
+			ofs << "\"]\n";
+			//END NODE NAME
 		}
 
-		ofs << "label = " << "\"" << BB->getName().str() << "\"" << ";\n";
-		ofs << "color = purple;\n";
-		ofs << "}\n";
+//		ofs << "label = " << "\"" << BB->getName().str() << "\"" << ";\n";
+//		ofs << "color = purple;\n";
+//		ofs << "}\n";
 		cluster_idx++;
 	}
 
@@ -761,4 +2859,676 @@ void DFGTrig::printDOT(std::string fileName) {
 
 	ofs << "}" << std::endl;
 	ofs.close();
+}
+
+
+void DFGTrig::printSubPathDOT(std::string fileNamePrefix) {
+
+	int pathIdx=0;
+	for(std::pair<std::set<dfgNode*>,std::vector<std::pair<BasicBlock*,CondVal>> > p1 : subPathDFGMap){
+
+		std::set<dfgNode*> subDFG = p1.first;
+		std::vector<std::pair<BasicBlock*,CondVal>> path = p1.second;
+		std::reverse(path.begin(),path.end());
+
+		std::stringstream pathName; pathName << "_PATH_";
+		for(std::pair<BasicBlock*,CondVal> pair : path){
+			dfgNode* ctrl = BrParentMap[pair.first];
+			pathName << ctrl->getIdx();
+			if(pair.second == TRUE){
+				pathName << "T_";
+			}
+			else{
+				assert(pair.second == FALSE);
+				pathName << "F_";
+			}
+		}
+
+
+		std::ofstream ofs;
+		ofs.open((fileNamePrefix + pathName.str() + ".dot").c_str());
+
+		//Write the initial info
+		ofs << "digraph Region_18 {\n";
+		ofs << "\tgraph [ nslimit = \"1000.0\",\n";
+		ofs <<	"\torientation = landscape,\n";
+		ofs <<	"\t\tcenter = true,\n";
+		ofs <<	"\tpage = \"8.5,11\",\n";
+		ofs << "\tcompound=true,\n";
+		ofs <<	"\tsize = \"10,7.5\" ] ;" << std::endl;
+
+		assert(NodeList.size() != 0);
+
+		std::map<const BasicBlock*,std::set<dfgNode*>> BBNodeList;
+
+		for(dfgNode* node : subDFG){
+			BBNodeList[node->BB].insert(node);
+		}
+
+		int cluster_idx=0;
+		for(std::pair<const BasicBlock*,std::set<dfgNode*>> BBNodeSet : BBNodeList){
+			const BasicBlock* BB = BBNodeSet.first;
+
+	//		  subgraph cluster_0 {
+	//		        node [style=filled];
+	//		        "Item 1" "Item 2";
+	//		        label = "Container A";
+	//		        color=blue;
+	//		    }
+
+	//		ofs << "subgraph cluster_" << cluster_idx << " {\n";
+	//		ofs << "node [style=filled]";
+			for(dfgNode* node : BBNodeSet.second){
+				ofs << "\""; //BEGIN NODE NAME
+				ofs << "Op_" << node->getIdx();
+				ofs << "\" [ fontname = \"Helvetica\" shape = box, label = \" ";
+				if(node->getNode() != NULL){
+					ofs << node->getNode()->getOpcodeName();
+					ofs << " " << node->getNode()->getName().str() << " ";
+
+					if(node->hasConstantVal()){
+						ofs << " C=" << "0x" << std::hex << node->getConstantVal() << std::dec;
+					}
+
+					if(node->isGEP()){
+						ofs << " C=" << "0x" << std::hex << node->getGEPbaseAddr() << std::dec;
+					}
+
+				}
+				else{
+					ofs << node->getNameType();
+
+					if(node->getNameType() == "OuterLoopLOAD"){
+						ofs << " " << OutLoopNodeMapReverse[node]->getName().str() << " ";
+					}
+
+					if(node->isOutLoop()){
+						ofs << " C=" << "0x" << node->getoutloopAddr() << std::dec;
+					}
+
+					if(node->hasConstantVal()){
+						ofs << " C=" << "0x" << node->getConstantVal() << std::dec;
+					}
+				}
+
+				ofs << "BB=" << node->BB->getName().str();
+
+				if(!mutexNodes[node].empty()){
+					ofs << ",mutex={";
+					for(dfgNode* m : mutexNodes[node]){
+						ofs << m->getIdx() << ",";
+					}
+					ofs << "}";
+				}
+
+				if(node->getFinalIns() != NOP){
+					ofs << " HyIns=" << HyCUBEInsStrings[node->getFinalIns()];
+				}
+				ofs << ",\n";
+				ofs << node->getIdx() << ", ASAP=" << node->getASAPnumber();
+				ofs << ", ALAP=" << node->getALAPnumber();
+				ofs << "\n";
+
+
+				//BelongstoBR
+				if(node->BelongsToBr.empty()){
+					ofs << "Br = (EMPTY)";
+				}
+				else{
+					ofs << "Br = ";
+					for(std::pair<BasicBlock*,CondVal> p1 : node->BelongsToBr){
+						ofs << p1.first->getName().str() << "[" << dfgNode::getCondValStr(p1.second) << "]\n";
+					}
+				}
+				ofs << "\"]\n";
+				//END NODE NAME
+			}
+
+	//		ofs << "label = " << "\"" << BB->getName().str() << "\"" << ";\n";
+	//		ofs << "color = purple;\n";
+	//		ofs << "}\n";
+			cluster_idx++;
+		}
+
+
+		//The EDGES
+
+		for(dfgNode* node : subDFG){
+
+			for(dfgNode* child : node->getChildren()){
+				bool isCondtional=false;
+				bool condition=true;
+
+				if(subDFG.find(child) == subDFG.end()) continue;
+
+				isCondtional= node->childConditionalMap[child] != UNCOND;
+				condition = (node->childConditionalMap[child] == TRUE);
+
+				bool isBackEdge = node->childBackEdgeMap[child];
+
+//				if(BrParentMapInv.find(node)!=BrParentMapInv.end()){
+//					BasicBlock* BrBB = BrParentMapInv[node];
+//					std::pair<BasicBlock*,CondVal> searchPair(BrBB,node->childConditionalMap[child]);
+//
+//					if(std::find(path.begin(),path.end(),searchPair) == path.end()){
+//						continue;
+//					}
+//				}
+
+				if(!node->BelongsToBr.empty()){
+					bool needToCont=true;
+					for(std::pair<BasicBlock*,CondVal> p1 : node->BelongsToBr){
+						if(std::find(path.begin(),path.end(),p1) != path.end()){
+							needToCont=false;
+							break;
+						}
+					}
+					if(needToCont) continue;
+				}
+
+
+				ofs << "\"" << "Op_" << node->getIdx() << "\"";
+				ofs << " -> ";
+				ofs << "\"" << "Op_" << child->getIdx() << "\"";
+				ofs << " [style = ";
+
+				if(isBackEdge){
+					ofs << "dashed";
+				}
+				else{
+					ofs << "bold";
+				}
+				ofs << ", ";
+
+				ofs << "color = ";
+				if(isCondtional){
+					if(condition==true){
+						ofs << "blue";
+					}
+					else{
+						ofs << "red";
+					}
+				}
+				else{
+					ofs << "black";
+				}
+
+	//			ofs << ", headport=n, tailport=s";
+				ofs << "];\n";
+			}
+
+			for(dfgNode* recChild : node->getRecChildren()){
+				if(subDFG.find(recChild) == subDFG.end()) continue;
+				ofs << "\"" << "Op_" << node->getIdx() << "\"";
+				ofs << " -> ";
+				ofs << "\"" << "Op_" << recChild->getIdx() << "\"";
+				ofs << "[style = bold, color = green];\n";
+			}
+		}
+
+		ofs << "}" << std::endl;
+		ofs.close();
+
+
+
+
+
+
+
+		pathIdx++;
+	}
+
+
+
+
+
+
+}
+
+void DFGTrig::ConnectBrCtrls() {
+
+//	Loop* lp = mappingUnitMap[this->mUnitName];
+	Value* v = this->currLoop->getCanonicalInductionVariable();
+	v->dump();
+
+	dfgNode* IndNode = findNode(cast<Instruction>(v)); assert(IndNode);
+	outs() << "Node = " << IndNode->getIdx() << "\n";
+
+
+	outs()  << "Longest Path = ";
+	for(std::pair<BasicBlock*,CondVal> p1 : longestPath){
+		dfgNode* ctrlNode = BrParentMap[p1.first];
+		outs()  << ctrlNode->getIdx();
+		if(p1.second == TRUE){
+			outs()  << "T_";
+		}
+		else{
+			assert(p1.second == FALSE);
+			outs()  << "F_";
+		}
+	}
+	outs()  << "\n";
+
+	assert(CtrlTrees.size() == 1);
+	TreeNode<BasicBlock*>* rootTree = CtrlTrees[0];
+
+	std::set<std::pair<TreeNode<BasicBlock*>*,bool>> leaves = rootTree->getLeafs();
+	outs()  << "Leaf of ctrl tree :: ";
+	for(std::pair<TreeNode<BasicBlock*>*,bool> p1 : leaves){
+		dfgNode* ctrlNode = BrParentMap[p1.first->getData()];
+		outs()  << ctrlNode->getIdx();
+		if(p1.second){
+			outs()  << "T,";
+			ctrlNode->addChildNode(IndNode,EDGE_TYPE_DATA,true,true,true);
+			IndNode->addAncestorNode(ctrlNode,EDGE_TYPE_DATA,true,true,true);
+			leafControlInputs[IndNode].insert(ctrlNode);
+		}
+		else{
+			outs()  << "F,";
+			dfgNode* neg_ctrlNode = pCMP2nCMP[ctrlNode];
+			if(neg_ctrlNode){
+				neg_ctrlNode->addChildNode(IndNode,EDGE_TYPE_DATA,true,true,false);
+				IndNode->addAncestorNode(neg_ctrlNode,EDGE_TYPE_DATA,true,true,false);
+				leafControlInputs[IndNode].insert(neg_ctrlNode);
+			}
+		}
+	}
+	outs()  << "\n";
+
+
+//	assert(false);
+
+}
+
+void DFGTrig::mirrorCtrlNodes() {
+
+	for(std::pair<BasicBlock*,dfgNode*> p1 : BrParentMap){
+		dfgNode* ctrlNode = p1.second;
+		pCMPNodes.insert(ctrlNode);
+
+		bool negativeChildFound=false;
+		for(dfgNode* child : ctrlNode->getChildren()){
+			if(ctrlNode->childConditionalMap[child]==FALSE){
+				negativeChildFound=true;
+				break;
+			}
+		}
+		if(!negativeChildFound) continue;
+
+		dfgNode* temp = new dfgNode(this);
+		temp->setIdx(2000 + NodeList.size());
+		temp->setNameType("N_CMP");
+		temp->BB = ctrlNode->BB;
+		NodeList.push_back(temp);
+		nCMP2pCMP[temp]=ctrlNode;
+		pCMP2nCMP[ctrlNode]=temp;
+
+		for(dfgNode* child : ctrlNode->getChildren()){
+			assert(ctrlNode->childConditionalMap[child]!=UNCOND);
+			if(ctrlNode->childConditionalMap[child]==FALSE){
+				bool isBackEdge = ctrlNode->childBackEdgeMap[child];
+
+				std::cout << "remove child=" << child->getIdx() << " of " << ctrlNode->getIdx() << "\n";
+				ctrlNode->removeChild(child);
+				child->removeAncestor(ctrlNode);
+
+				std::cout << "add child=" << child->getIdx() << " to " << temp->getIdx() << "\n";
+				temp->addChildNode(child,EDGE_TYPE_DATA,isBackEdge,true,false);
+				child->addAncestorNode(temp,EDGE_TYPE_DATA,isBackEdge,true,false);
+
+				if(child->getNameType() == "CMERGE"){
+					cmergeCtrlInputs[child]=temp;
+//					leafControlInputs[child].insert(temp);
+					continue;
+				}
+
+
+				assert(leafControlInputs.find(child) != leafControlInputs.end());
+				assert(leafControlInputs[child].find(ctrlNode) != leafControlInputs[child].end());
+				leafControlInputs[child].erase(ctrlNode);
+				leafControlInputs[child].insert(temp);
+
+
+			}
+		}
+
+		for(dfgNode* parent : ctrlNode->getAncestors()){
+			bool isBackedge = parent->childBackEdgeMap[ctrlNode];
+			CondVal cv = parent->childConditionalMap[ctrlNode];
+
+			std::cout << "add parent=" << parent->getIdx() << " to " << temp->getIdx() << "\n";
+			parent->addChildNode(temp,EDGE_TYPE_DATA,isBackedge,(cv!=UNCOND),(cv==TRUE));
+			temp->addAncestorNode(parent,EDGE_TYPE_DATA,isBackedge,(cv!=UNCOND),(cv==TRUE));
+
+			if(leafControlInputs.find(ctrlNode) != leafControlInputs.end()){
+				leafControlInputs[temp]=leafControlInputs[ctrlNode];
+			}
+
+		}
+	}
+
+
+
+
+
+
+}
+
+void DFGTrig::nameNodes() {
+
+	dfgNode* node;
+
+	for (int i = 0; i < NodeList.size(); ++i) {
+		node = NodeList[i];
+
+		if(node->getNode() != NULL){
+			switch(node->getNode()->getOpcode()){
+				case Instruction::Add:
+				case Instruction::FAdd:
+					node->setFinalIns(ADD);
+					break;
+				case Instruction::Sub:
+				case Instruction::FSub:
+					node->setFinalIns(SUB);
+					break;
+				case Instruction::Mul:
+				case Instruction::FMul:
+					node->setFinalIns(MUL);
+					break;
+				case Instruction::UDiv:
+				case Instruction::SDiv:
+				case Instruction::FDiv:
+					node->setFinalIns(DIV);
+					break;
+				case Instruction::URem:
+				case Instruction::SRem:
+				case Instruction::FRem:
+					errs() << "REM operations are not implemented\n";
+					assert(false);
+					break;
+				case Instruction::Shl:
+					node->setFinalIns(LS);
+					break;
+				case Instruction::LShr:
+					node->setFinalIns(RS);
+					break;
+				case Instruction::AShr:
+					node->setFinalIns(ARS);
+					break;
+				case Instruction::And:
+					node->setFinalIns(AND);
+					break;
+				case Instruction::Or:
+					node->setFinalIns(OR);
+					break;
+				case Instruction::Xor:
+					node->setFinalIns(XOR);
+					break;
+				case Instruction::Load:
+					if(node->getTypeSizeBytes()>=4){ //TODO : remove this, we dont support 8 byte data structs
+						node->setFinalIns(Hy_LOAD);
+					}
+					else if(node->getTypeSizeBytes()==2){
+						node->setFinalIns(Hy_LOADH);
+					}
+					else if(node->getTypeSizeBytes()==1){
+						node->setFinalIns(Hy_LOADB);
+					}
+					else if(node->getNode()->getType()->isPointerTy()){ //pointer is a 32 bit address
+						node->setFinalIns(Hy_LOAD);
+					}
+					else{
+						node->getNode()->dump();
+						outs() << "OutLoopLOAD size = " << node->getTypeSizeBytes() << "\n";
+						if(node->getNode()->getType()==Type::getDoubleTy(node->getNode()->getContext())){
+							node->setFinalIns(Hy_LOAD);
+						}
+						if(node->getNode()->getType()==Type::getDoublePtrTy(node->getNode()->getContext())){
+							node->setFinalIns(Hy_LOAD);
+						}
+						else{
+							assert(0);
+						}
+					}
+					break;
+				case Instruction::Store:
+					if(node->getTypeSizeBytes()>=4){ //TODO : remove this, we dont support 8 byte data structs
+						node->setFinalIns(Hy_STORE);
+					}
+					else if(node->getTypeSizeBytes()==2){
+						node->setFinalIns(Hy_STOREH);
+					}
+					else if(node->getTypeSizeBytes()==1){
+						node->setFinalIns(Hy_STOREB);
+					}
+					else if(node->getNode()->getType()->isPointerTy() || node->getNode()->getOperand(0)->getType()->isPointerTy()){ //pointer is a 32 bit address
+						node->setFinalIns(Hy_STORE);
+					}
+					else{
+						node->getNode()->dump();
+						outs() << "TypeSize : " << node->getTypeSizeBytes() << "\n";
+						assert(0);
+					}
+					break;
+				case Instruction::GetElementPtr:
+					node->setFinalIns(ADD);
+					node->setConstantVal(node->getGEPbaseAddr());
+					break;
+				case Instruction::Trunc:
+					{TruncInst* TI = cast<TruncInst>(node->getNode());
+//					node->setConstantVal(TI->getDestTy()->getIntegerBitWidth()/8);
+					double destBitWidthDbl = (double)(TI->getDestTy()->getIntegerBitWidth());
+					double bitMaskDbl = pow(2,destBitWidthDbl)-1;
+					uint32_t bitMask= ((uint32_t)bitMaskDbl);
+					node->setConstantVal(bitMask);
+					node->setFinalIns(AND);}
+					break;
+				case Instruction::SExt:
+					{SExtInst* SI = cast<SExtInst>(node->getNode());
+					uint32_t srcByteWidth = SI->getSrcTy()->getIntegerBitWidth()/8;
+					uint32_t destByteWidth = SI->getDestTy()->getIntegerBitWidth()/8;
+					uint32_t constOperand = (srcByteWidth << 16) | destByteWidth;
+					node->setConstantVal(constOperand);
+					node->setFinalIns(SEXT);}
+					break;
+				case Instruction::ZExt:
+					node->setFinalIns(OR);
+					node->setConstantVal(0);
+					break;
+				case Instruction::SIToFP:
+				case Instruction::FPExt:
+				case Instruction::FPTrunc:
+				case Instruction::FPToUI:
+				case Instruction::FPToSI:
+				case Instruction::UIToFP:
+				case Instruction::PtrToInt:
+				case Instruction::IntToPtr:
+				case Instruction::BitCast:
+				case Instruction::AddrSpaceCast:
+					node->getNode()->dump();
+//					assert(0);
+					//2019 work
+					node->setFinalIns(OR);
+					node->setConstantVal(0);
+					break;
+				case Instruction::PHI:
+				case Instruction::Select:
+					node->setFinalIns(SELECT);
+					break;
+				case Instruction::Br:
+					{BranchInst* BRI = cast<BranchInst>(node->getNode());
+					if(BRI->isUnconditional()){
+						node->setFinalIns(OR);
+						node->setConstantVal(1);
+					}
+					else{
+						node->setFinalIns(OR);
+						node->setConstantVal(0);
+					}}
+					break;
+				case Instruction::ICmp:
+					{
+						outs() << "NameNodes::Node=" << node->getIdx() << ",CMP=";
+						CmpInst* CI = cast<CmpInst>(node->getNode());
+						CI->dump();
+						switch(CI->getPredicate()){
+							case CmpInst::ICMP_SLT:
+							case CmpInst::ICMP_ULT:
+								outs() << "LT\n";
+								node->setFinalIns(CLT);
+								break;
+							case CmpInst::ICMP_SGT:
+							case CmpInst::ICMP_UGT:
+								outs() << "GT\n";
+								node->setFinalIns(CGT);
+								break;
+							case CmpInst::ICMP_EQ:
+								outs() << "EQ\n";
+								node->setFinalIns(CMP);
+								break;
+							default:
+								assert(false);
+								break;
+						}
+					}
+					break;
+				case Instruction::FCmp:
+					outs() << "NameNodes::Node=" << node->getIdx() << ",FCMP\n";
+					node->setFinalIns(CMP);
+					//2019 work
+//					assert(false);
+					break;
+				default :
+					errs() << "The Op :" << node->getNode()->getOpcodeName() << " that I thought would not be in the compiled code\n";
+					node->getNode()->dump();
+					assert(false);
+					break;
+			}
+		}
+		else{
+			if(node->getNameType().compare("LOAD") == 0){
+				if(node->getTypeSizeBytes()==4){
+					node->setFinalIns(Hy_LOAD);
+				}
+				else if(node->getTypeSizeBytes()==2){
+					node->setFinalIns(Hy_LOADH);
+				}
+				else if(node->getTypeSizeBytes()==1){
+					node->setFinalIns(Hy_LOADB);
+				}
+				else{
+					assert(0);
+				}
+			}
+			else if(node->getNameType().compare("STORE") == 0){
+				if(node->getTypeSizeBytes()==4){
+					node->setFinalIns(Hy_STORE);
+				}
+				else if(node->getTypeSizeBytes()==2){
+					node->setFinalIns(Hy_STOREH);
+				}
+				else if(node->getTypeSizeBytes()==1){
+					node->setFinalIns(Hy_STOREB);
+				}
+				else{
+					assert(0);
+				}
+			}
+			else if(node->getNameType().compare("NORMAL") == 0){
+				node->setFinalIns(ADD);
+			}
+			else if(node->getNameType().compare("CTRLBrOR") == 0){
+				node->setFinalIns(BR);
+			}
+			else if(node->getNameType().compare("SELECTPHI") == 0){
+				node->setFinalIns(SELECT);
+			}
+			else if(node->getNameType().compare("OutLoopSTORE") == 0){
+				if(node->getTypeSizeBytes()==4){
+					node->setFinalIns(Hy_STORE);
+				}
+				else if(node->getTypeSizeBytes()==2){
+					node->setFinalIns(Hy_STOREH);
+				}
+				else if(node->getTypeSizeBytes()==1){
+					node->setFinalIns(Hy_STOREB);
+				}
+				else{
+					assert(0);
+				}
+				node->setConstantVal(node->getoutloopAddr());
+			}
+			else if(node->getNameType().compare("OutLoopLOAD") == 0){
+				if(node->getTypeSizeBytes()==4){
+					node->setFinalIns(Hy_LOAD);
+				}
+				else if(node->getTypeSizeBytes()==2){
+					node->setFinalIns(Hy_LOADH);
+				}
+				else if(node->getTypeSizeBytes()==1){
+					node->setFinalIns(Hy_LOADB);
+				}
+				else{
+					OutLoopNodeMapReverse[node]->dump();
+					outs() << "OutLoopLOAD size = " << node->getTypeSizeBytes() << "\n";
+					assert(0);
+				}
+				node->setConstantVal(node->getoutloopAddr());
+			}
+			else if(node->getNameType().compare("CMERGE") == 0){
+				node->setFinalIns(CMERGE);
+			}
+			else if(node->getNameType().compare("LOOPSTART") == 0){
+//				node->setFinalIns(BR);
+				node->setFinalIns(Hy_LOADB);
+				node->setConstantVal(MEM_SIZE - 2);
+			}
+			else if(node->getNameType().compare("LOADSTART") == 0){
+				node->setFinalIns(Hy_LOADB);
+				node->setConstantVal(MEM_SIZE - 2);
+			}
+			else if(node->getNameType().compare("STORESTART") == 0){
+				node->setFinalIns(Hy_STOREB);
+				node->setConstantVal(MEM_SIZE - 2);
+			}
+			else if(node->getNameType().compare("LOOPEXIT") == 0){
+				node->setFinalIns(Hy_STOREB);
+				node->setConstantVal(MEM_SIZE/2 - 1);
+			}
+			else if(node->getNameType().compare("MOVC") == 0){
+				node->setFinalIns(MOVC);
+			}
+			else if(node->getNameType().compare("XORNOT") == 0){
+				node->setFinalIns(XOR);
+				node->setConstantVal(1);
+			}
+			else if(node->getNameType().compare("ORZERO") == 0){
+				node->setFinalIns(OR);
+				node->setConstantVal(0);
+			}
+			else if(node->getNameType().compare("GEPLEFTSHIFT") == 0){
+				node->setFinalIns(LS);
+			}
+			else if(node->getNameType().compare("GEPADD") == 0){
+				node->setFinalIns(ADD);
+			}
+			else if(node->getNameType().compare("MASKAND") == 0){
+				node->setFinalIns(AND);
+			}
+			else if(node->getNameType().compare("PREDAND") == 0){
+				node->setFinalIns(AND);
+			}
+			else if(node->getNameType().compare("N_CMP") == 0){
+				node->setFinalIns(NCMP);
+			}
+			else {
+				errs() << "Unknown custom node \n";
+				assert(false);
+			}
+		}
+
+		hyCUBEInsHist[node->getFinalIns()]++;
+	}
+
+
 }

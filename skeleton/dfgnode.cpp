@@ -90,7 +90,7 @@ void dfgNode::addChildNode(dfgNode* node, int type, bool isBackEdge,
 		bool isControlDependent, bool ControlValue) {
 
 	if(std::find(ChildNodes.begin(),ChildNodes.end(),node)!=ChildNodes.end()) { //already a child
-		outs() << "Src : " << this->getIdx() << "to " << "Dest : " << node->getIdx() << "\n";
+		outs() << "Src : " << this->getIdx() << " to " << "Dest : " << node->getIdx() << "\n";
 
 		if(childConditionalMap[node]!=UNCOND){
 			assert(isControlDependent);
@@ -842,4 +842,20 @@ void dfgNode::printName() {
 
 void dfgNode::setBackEdge(dfgNode* child, bool val) {
 	childBackEdgeMap[child]=val;
+}
+
+std::string dfgNode::getCondValStr(CondVal cv) {
+	if(cv == UNCOND){
+		return "UNCOND";
+	}
+	else if(cv == TRUE){
+		return "TRUE";
+	}
+	else if(cv == FALSE){
+		return "FALSE";
+	}
+	else{
+		assert(false);
+		return "WRONG CONDVAL!";
+	}
 }

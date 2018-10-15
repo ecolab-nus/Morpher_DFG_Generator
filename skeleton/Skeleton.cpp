@@ -2037,6 +2037,7 @@ namespace {
 			  ScalarEvolution* SE = &getAnalysis<ScalarEvolutionWrapperPass>().getSE();
 			 //DependenceAnalysis* DA = &getAnalysis<DependenceAnalysis>();
 			  DependenceInfo* DI = &getAnalysis<DependenceAnalysisWrapperPass>().getDI();
+			  DominatorTree *DT = &getAnalysis<DominatorTreeWrapperPass>().getDomTree();
 
 
 
@@ -2124,7 +2125,7 @@ namespace {
 			  // New Code for 2018 work
 			  //-----------------------------------
 	    {
-			  DFGPartPred LoopDFG(F.getName().str() + "_" + munitName,&loopNames);
+			  DFGTrig LoopDFG(F.getName().str() + "_" + munitName,&loopNames,DT,munitName,mappingUnitMap[munitName].lp);
 			  LoopDFG.setBBSuccBasicBlocks(BBSuccBasicBlocks);
 			  LoopDFG.sizeArrMap=sizeArrMap;
 			  outs() << "Currently mapping unit : " << munitName << "\n";
@@ -2471,6 +2472,9 @@ namespace {
 //		    AU.addRequired<DependenceAnalysis>();
 		    AU.addRequiredID(LoopSimplifyID);
 		    AU.addRequiredID(LCSSAID);
+
+		    AU.addRequired<DominatorTreeWrapperPass>();
+		    AU.addPreserved<DominatorTreeWrapperPass>();
 		}
 
 	};

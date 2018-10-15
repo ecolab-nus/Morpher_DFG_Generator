@@ -7,7 +7,7 @@ class CGRANode;
 class DFG;
 
 enum Port{NORTH,SOUTH,EAST,WEST,R0,R1,R2,R3,R4,R5,R6,R7,TILE,TREG,OP1,OP2,PRED,TILEIN,TILEOUT,INV};
-enum HyCUBEIns{NOP,ADD,SUB,MUL,SEXT,DIV,LS,RS,ARS,AND,OR,XOR,SELECT,CMERGE,CMP,CLT,BR,CGT,LOADCL,MOVCL,Hy_LOAD,Hy_LOADH,Hy_LOADB,Hy_STORE,Hy_STOREH,Hy_STOREB,JUMPL,MOVC};
+enum HyCUBEIns{NOP,ADD,SUB,MUL,SEXT,DIV,LS,RS,ARS,AND,OR,XOR,SELECT,CMERGE,CMP,PCMP,NCMP,CLT,BR,CGT,LOADCL,MOVCL,Hy_LOAD,Hy_LOADH,Hy_LOADB,Hy_STORE,Hy_STOREH,Hy_STOREB,JUMPL,MOVC};
 
 struct pathData{
 	CGRANode* cnode;
@@ -201,6 +201,7 @@ class dfgNode{
 			//Out of loop instructions
 			dfgNode* addStoreChild(Instruction * ins);
 			dfgNode* addLoadParent(Instruction * ins);
+			dfgNode* addLoadParentVal(Value * val);
 
 			//Memory Allocation
 			int getoutloopAddr();
@@ -244,6 +245,12 @@ class dfgNode{
 			std::map<dfgNode*,CondVal> ancestorConditionaMap;
 
 			void setBackEdge(dfgNode* child, bool val);
+
+			static std::string getCondValStr(CondVal cv);
+
+			//Ownership for branches
+			std::set<std::pair<BasicBlock*,CondVal>> BelongsToBr;
+
 
 
 };

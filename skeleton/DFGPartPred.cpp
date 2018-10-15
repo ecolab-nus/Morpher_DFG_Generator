@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <queue>
 #include <map>
+#include <set>
+#include <vector>
 
 void DFGPartPred::connectBB() {
 
@@ -633,6 +635,7 @@ void DFGPartPred::generateTrigDFGDOT() {
 	removeDisconnetedNodes();
 //	scheduleCleanBackedges();
 	fillCMergeMutexNodes();
+	constructCMERGETree();
 	scheduleASAP();
 	scheduleALAP();
 //	assignALAPasASAP();
@@ -742,6 +745,8 @@ void DFGPartPred::fillCMergeMutexNodes() {
 			}
 		}
 
+		if(!currMutexSet.empty()) mutexSets.insert(currMutexSet);
+
 		for(dfgNode* m1 : currMutexSet){
 			for(dfgNode* m2 : currMutexSet){
 				if(m1 == m2) continue;
@@ -750,6 +755,125 @@ void DFGPartPred::fillCMergeMutexNodes() {
 		}
 	}
 
+}
+
+void DFGPartPred::constructCMERGETree() {
+	assert(!mutexSets.empty());
+
+	for(std::set<dfgNode*> cmergeSet : mutexSets){
+		std::queue<dfgNode*> thisIterSet;
+		std::queue<dfgNode*> nextIterSet;
+
+		for(dfgNode* cmergeNode : cmergeSet){
+			bool isBackEdge=false;
+			for(dfgNode* child : cmergeNode->getChildren()){
+				if(isBackEdge) assert(cmergeNode->childBackEdgeMap[child] == true);
+				if(cmergeNode->childBackEdgeMap[child]){
+					isBackEdge = true;
+				}
+			}
+
+			if(isBackEdge){
+				selectPHIAncestorMap[cmergeNode]=cmergePHINodes[cmergeNode];
+				nextIterSet.push(cmergeNode);
+			}
+			else{
+				selectPHIAncestorMap[cmergeNode]=cmergePHINodes[cmergeNode];
+				thisIterSet.push(cmergeNode);
+			}
+		}
+
+		if(thisIterSet.size() + nextIterSet.size() <= 2) continue;
+
+		std::cout << "This ITER connections CMERGE Tree.\n";
+		while(!thisIterSet.empty()){
+			dfgNode* cmerge_left = thisIterSet.front(); thisIterSet.pop();
+			std::cout << "CMERGE LEFT : " << cmerge_left->getIdx() << ",";
+			if(thisIterSet.empty()){ //odd number of nodes
+
+			}
+			else{
+				dfgNode* cmerge_right = thisIterSet.front(); thisIterSet.pop();
+				if(thisIterSet.empty()){
+					std::cout << "\n";
+					continue; //no need to merge the last two;
+				}
+
+				std::cout << "CMERGE RIGHT : " << cmerge_right->getIdx() << ",";
+				dfgNode* temp = new dfgNode(this);
+				temp->setIdx(1000 + NodeList.size());
+				temp->setNameType("SELECTPHI");
+				temp->BB = cmerge_left->BB;
+				NodeList.push_back(temp);
+				selectPHIAncestorMap[temp] = selectPHIAncestorMap[cmerge_left];
+				std::cout << "CREATING NEW NODE = " << temp->getIdx() << ",";
+
+				assert(cmerge_left->getChildren().size() == cmerge_right->getChildren().size());
+				std::vector<dfgNode*> cmergeLeftChildrenOrig = cmerge_left->getChildren();
+				std::vector<dfgNode*> cmergeRightChildrenOrig = cmerge_right->getChildren();
+
+				temp->addAncestorNode(cmerge_left); cmerge_left->addChildNode(temp);
+				temp->addAncestorNode(cmerge_right); cmerge_right->addChildNode(temp);
+
+				for (int i = 0; i < cmergeLeftChildrenOrig.size(); ++i) {
+					dfgNode* left_child = cmergeLeftChildrenOrig[i];
+					dfgNode* right_child = cmergeRightChildrenOrig[i];
+					assert(left_child == right_child);
+
+					cmerge_left->removeChild(left_child); left_child->removeAncestor(cmerge_left);
+					cmerge_right->removeChild(right_child); right_child->removeAncestor(cmerge_right);
+					left_child->addAncestorNode(temp); temp->addChildNode(left_child);
+				}
+				thisIterSet.push(temp);
+			}
+			std::cout << "\n";
+		}
+
+		std::cout << "Next ITER connections CMERGE Tree.\n";
+		while(!nextIterSet.empty()){
+			dfgNode* cmerge_left = nextIterSet.front(); nextIterSet.pop();
+			std::cout << "CMERGE LEFT : " << cmerge_left->getIdx() << ",";
+			if(nextIterSet.empty()){ //odd number of nodes
+
+			}
+			else{
+				dfgNode* cmerge_right = nextIterSet.front(); nextIterSet.pop();
+				if(nextIterSet.empty()) {
+					std::cout << "\n";
+					continue; //no need to merge the last two;
+				}
+
+				std::cout << "CMERGE RIGHT : " << cmerge_right->getIdx() << ",";
+				dfgNode* temp = new dfgNode(this);
+				temp->setIdx(1000 + NodeList.size());
+				temp->setNameType("SELECTPHI");
+				temp->BB = cmerge_left->BB;
+				NodeList.push_back(temp);
+				std::cout << "CREATING NEW NODE = " << temp->getIdx() << ",";
+				selectPHIAncestorMap[temp] = selectPHIAncestorMap[cmerge_left];
+
+				assert(cmerge_left->getChildren().size() == cmerge_right->getChildren().size());
+				std::vector<dfgNode*> cmergeLeftChildrenOrig = cmerge_left->getChildren();
+				std::vector<dfgNode*> cmergeRightChildrenOrig = cmerge_right->getChildren();
+
+				temp->addAncestorNode(cmerge_left); cmerge_left->addChildNode(temp);
+				temp->addAncestorNode(cmerge_right); cmerge_right->addChildNode(temp);
+
+
+				for (int i = 0; i < cmergeLeftChildrenOrig.size(); ++i) {
+					dfgNode* left_child = cmergeLeftChildrenOrig[i];
+					dfgNode* right_child = cmergeRightChildrenOrig[i];
+					assert(left_child == right_child);
+
+					cmerge_left->removeChild(left_child); left_child->removeAncestor(cmerge_left);
+					cmerge_right->removeChild(right_child); right_child->removeAncestor(cmerge_right);
+					left_child->addAncestorNode(temp,EDGE_TYPE_DATA,true); temp->addChildNode(left_child,EDGE_TYPE_DATA,true);
+				}
+				nextIterSet.push(temp);
+			}
+			std::cout << "\n";
+		}
+	}
 }
 
 void DFGPartPred::scheduleASAP() {
@@ -921,7 +1045,7 @@ void DFGPartPred::printNewDFGXML() {
 		int cmergeParentCount=0;
 		std::set<std::string> mutexBBs;
 		for(dfgNode* parent: node->getAncestors()){
-			if(HyCUBEInsStrings[parent->getFinalIns()] == "CMERGE"){
+			if(HyCUBEInsStrings[parent->getFinalIns()] == "CMERGE" || parent->getNameType() == "SELECTPHI"){
 				nodeBBModified[parent]=nodeBBModified[parent]+ "_" + std::to_string(node->getIdx()) + "_" + std::to_string(cmergeParentCount);
 				mutexBBs.insert(nodeBBModified[parent]);
 				cmergeParentCount++;
@@ -1035,6 +1159,25 @@ void DFGPartPred::printNewDFGXML() {
 							else{
 								assert(false);
 							}
+						}
+					}
+				}
+
+				if(node->getNameType()=="SELECTPHI"){
+					if(child->getNode()){
+						written = true;
+						int operand_no = findOperandNumber(child,child->getNode(),selectPHIAncestorMap[node]->getNode());
+						if( operand_no == 0){
+							xmlFile << "type=\"P\"/>\n";
+						}
+						else if ( operand_no == 1){
+							xmlFile << "type=\"I1\"/>\n";
+						}
+						else if(( operand_no == 2)){
+							xmlFile << "type=\"I2\"/>\n";
+						}
+						else{
+							assert(false);
 						}
 					}
 				}
@@ -1155,6 +1298,16 @@ int DFGPartPred::classifyParents() {
 						continue;
 					}
 					if(node->getNameType().compare("CTRLBrOR")==0){
+						if(node->parentClassification.find(1) == node->parentClassification.end()){
+							node->parentClassification[1]=parent;
+						}
+						else{
+							assert(node->parentClassification.find(2) == node->parentClassification.end());
+							node->parentClassification[2]=parent;
+						}
+						continue;
+					}
+					if(node->getNameType().compare("SELECTPHI")==0){
 						if(node->parentClassification.find(1) == node->parentClassification.end()){
 							node->parentClassification[1]=parent;
 						}
@@ -1362,6 +1515,15 @@ int DFGPartPred::classifyParents() {
 
 						assert(parentIns);
 					}
+					if(parent->getNameType().compare("SELECTPHI")==0){
+						parentIns = selectPHIAncestorMap[parent]->getNode();
+						outs() << "SELECTPHI Parent" << parent->getIdx() << "to non-nametype child=" << node->getIdx() << ".\n";
+						outs() << "parentIns = "; parentIns->dump();
+						outs() << "node = "; node->getNode()->dump();
+						outs() << "OpNumber = " << findOperandNumber(node, ins,parentIns) << "\n";
+
+						assert(parentIns);
+					}
 				}
 				//Only ins!=NULL and non-PHI and non-BR will reach here
 				node->parentClassification[findOperandNumber(node, ins,parentIns)]=parent;
@@ -1377,6 +1539,8 @@ void DFGPartPred::assignALAPasASAP() {
 	}
 
 }
+
+
 
 dfgNode* DFGPartPred::addLoadParent(Instruction* ins, dfgNode* child) {
 	dfgNode* temp;
