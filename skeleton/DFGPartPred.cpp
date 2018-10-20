@@ -94,6 +94,31 @@ void DFGPartPred::connectBB() {
 
 }
 
+void DFGPartPred::removeOutLoopLoad() {
+
+	std::set<dfgNode*> removalNodes;
+	for(dfgNode* node : NodeList){
+
+		if(node->getNameType() == "OutLoopLOAD"){
+			removalNodes.insert(node);
+			assert(node->getAncestors().empty());
+
+			for(dfgNode* child : node->getChildren()){
+				node->removeChild(child);
+				child->removeAncestor(node);
+			}
+		}
+	}
+
+	for(dfgNode* rn : removalNodes){
+		std::cout << "Removing Node = " << rn->getIdx() << "\n";
+		NodeList.erase(std::remove(NodeList.begin(), NodeList.end(), rn), NodeList.end());
+	}
+
+	name = name + "_noOLOAD";
+}
+
+
 std::vector<dfgNode*> DFGPartPred::getStoreInstructions(BasicBlock* BB) {
 
 	std::vector<dfgNode*> res;
@@ -247,8 +272,8 @@ int DFGPartPred::handlePHINodes(std::set<BasicBlock*> LoopBB) {
 						else{
 							phiParent=addLoadParent(ins,node);
 							bool isBackEdge = checkBackEdge(previousCTRLNode,phiParent);
-							previousCTRLNode->addChildNode(phiParent,EDGE_TYPE_DATA,isBackEdge,true,incomingCTRLVal);
-							phiParent->addAncestorNode(previousCTRLNode,EDGE_TYPE_DATA,isBackEdge,true,incomingCTRLVal);
+//							previousCTRLNode->addChildNode(phiParent,EDGE_TYPE_DATA,isBackEdge,true,incomingCTRLVal);
+//							phiParent->addAncestorNode(previousCTRLNode,EDGE_TYPE_DATA,isBackEdge,true,incomingCTRLVal);
 						}
 					}
 					assert(phiParent!=NULL);
@@ -311,7 +336,10 @@ int DFGPartPred::handlePHINodes(std::set<BasicBlock*> LoopBB) {
 //			assert(!backedgeChildMergeNodes.empty());
 
 			//This is hack for keep phinodes being removed
-//			recursivePhiNodes=true;
+			// UPDATE : i just keep the induction variable
+			if(PHI == currLoop->getCanonicalInductionVariable()){
+				recursivePhiNodes=true;
+			}
 
 			if(recursivePhiNodes){
 				for(dfgNode* mergeNode : mergeNodes){
@@ -640,7 +668,8 @@ void DFGPartPred::generateTrigDFGDOT() {
 	scheduleALAP();
 //	assignALAPasASAP();
 //	balanceSched();
-	printDOT(this->name + "_TrigDFG.dot");
+	removeOutLoopLoad();
+	printDOT(this->name + "_PartPredDFG.dot");
 	printNewDFGXML();
 }
 
@@ -783,7 +812,7 @@ void DFGPartPred::constructCMERGETree() {
 			}
 		}
 
-		if(thisIterSet.size() + nextIterSet.size() <= 2) continue;
+		if(thisIterSet.size() + nextIterSet.size() <= 1) continue;
 
 		std::cout << "This ITER connections CMERGE Tree.\n";
 		while(!thisIterSet.empty()){
@@ -794,10 +823,10 @@ void DFGPartPred::constructCMERGETree() {
 			}
 			else{
 				dfgNode* cmerge_right = thisIterSet.front(); thisIterSet.pop();
-				if(thisIterSet.empty()){
-					std::cout << "\n";
-					continue; //no need to merge the last two;
-				}
+//				if(thisIterSet.empty()){
+//					std::cout << "\n";
+//					continue; //no need to merge the last two;
+//				}
 
 				std::cout << "CMERGE RIGHT : " << cmerge_right->getIdx() << ",";
 				dfgNode* temp = new dfgNode(this);
@@ -838,10 +867,10 @@ void DFGPartPred::constructCMERGETree() {
 			}
 			else{
 				dfgNode* cmerge_right = nextIterSet.front(); nextIterSet.pop();
-				if(nextIterSet.empty()) {
-					std::cout << "\n";
-					continue; //no need to merge the last two;
-				}
+//				if(nextIterSet.empty()) {
+//					std::cout << "\n";
+//					continue; //no need to merge the last two;
+//				}
 
 				std::cout << "CMERGE RIGHT : " << cmerge_right->getIdx() << ",";
 				dfgNode* temp = new dfgNode(this);
@@ -1166,6 +1195,10 @@ void DFGPartPred::printNewDFGXML() {
 				if(node->getNameType()=="SELECTPHI"){
 					if(child->getNode()){
 						written = true;
+						std::cout << "SELECTPHI :: " << node->getIdx();
+						std::cout << ",child = " << child->getIdx() << " | "; child->getNode()->dump();
+						std::cout << ",phiancestor = " << selectPHIAncestorMap[node]->getIdx() << " | "; selectPHIAncestorMap[node]->getNode()->dump();
+
 						int operand_no = findOperandNumber(child,child->getNode(),selectPHIAncestorMap[node]->getNode());
 						if( operand_no == 0){
 							xmlFile << "type=\"P\"/>\n";
@@ -1425,7 +1458,7 @@ int DFGPartPred::classifyParents() {
 						}
 					}
 
-					assert(parent->getNameType().compare("CMERGE")==0);
+					assert(parent->getNameType().compare("CMERGE")==0 || parent->getNameType().compare("SELECTPHI")==0);
 					if(node->parentClassification.find(1) == node->parentClassification.end()){
 						node->parentClassification[1]=parent;
 					}

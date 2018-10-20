@@ -273,6 +273,11 @@ public :
 
 	void nameNodes();
 
+	void removeOutLoopLoad();
+	void removeCMERGEData();
+
+	void printConstHist();
+
 
 
 

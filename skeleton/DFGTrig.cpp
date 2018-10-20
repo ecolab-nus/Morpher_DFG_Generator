@@ -704,6 +704,8 @@ void DFGTrig::generateTrigDFGDOT() {
 	printCtrlTree();
 	nameNodes();
 //	ConnectBrCtrls();
+	printConstHist();
+	removeOutLoopLoad();
 
 	printSubPathDOT(this->name + "_TrigFullPredDFG");
 	printDOT(this->name + "_TrigFullPredDFG.dot");
@@ -2394,6 +2396,85 @@ void DFGTrig::annotateCtrlFrontierAsCtrlParent() {
 			newsubPathDFGMap[subDFG]=path;
 		}
 		subPathDFGMap = newsubPathDFGMap;
+	}
+
+}
+
+void DFGTrig::removeOutLoopLoad() {
+
+	std::set<dfgNode*> removalNodes;
+	for(dfgNode* node : NodeList){
+
+		if(node->getNameType() == "OutLoopLOAD"){
+			removalNodes.insert(node);
+			assert(node->getAncestors().empty());
+
+			for(dfgNode* child : node->getChildren()){
+				node->removeChild(child);
+				child->removeAncestor(node);
+			}
+		}
+
+	}
+
+	name = name + "_noOLOAD";
+}
+
+void DFGTrig::printConstHist() {
+
+	std::map<int,std::set<dfgNode*>> byteConstHist;
+	for(dfgNode* node : NodeList){
+		if(node->hasConstantVal()){
+			int val = node->getConstantVal();
+			if(node->getNode()){
+				if(dyn_cast<GetElementPtrInst>(node->getNode())){
+					byteConstHist[2].insert(node);
+					continue;
+				}
+			}
+			else if(val < 128 && val >= -127){
+				byteConstHist[1].insert(node);
+			}
+			else if(val < 32768 && val >= -32768){
+				byteConstHist[2].insert(node);
+			}
+			else{
+				byteConstHist[4].insert(node);
+			}
+		}
+		else{
+			if(node->getNameType() == "OutLoopLOAD"){
+				byteConstHist[4].insert(node);
+			}
+		}
+
+	}
+
+	for(std::pair<int,std::set<dfgNode*>> p1 : byteConstHist){
+		int byteCount = p1.first;
+		int nodeCount = p1.second.size();
+		std::cout << "BYTE=" << byteCount << ",NODES=" << nodeCount << "\n";
+	}
+
+	std::cout << "TOTAL NODES = " << NodeList.size() << "\n";
+	assert(false);
+}
+
+void DFGTrig::removeCMERGEData() {
+
+	std::set<dfgNode*> nodeToRemove;
+
+	for(dfgNode* node : NodeList){
+		if(node->getNameType() == "CMERGE"){
+			if(!node->hasConstantVal()){
+				assert(node->getAncestors().size() == 2);
+				assert(cmergeDataInputs.find(node)!=cmergeDataInputs.end());
+
+				if(cmergeDataInputs[node]->BelongsToBr == node->BelongsToBr){
+					// Data Input is in the same control domain
+				}
+			}
+		}
 	}
 
 }

@@ -2,7 +2,7 @@
 
 class DFGPartPred : public DFG{
 	public :
-		DFGPartPred(std::string name,std::map<Loop*,std::string>* lnPtr) : DFG(name,lnPtr){}
+		DFGPartPred(std::string name,std::map<Loop*,std::string>* lnPtr, Loop* l) : DFG(name,lnPtr), currLoop(l){}
 		void connectBB();
 		int handlePHINodes(std::set<BasicBlock*> LoopBB);
 		int handleSELECTNodes();
@@ -34,6 +34,8 @@ class DFGPartPred : public DFG{
 		void printNewDFGXML();
 		int classifyParents();
 
+		void removeOutLoopLoad();
+
 
 
 	private :
@@ -59,6 +61,8 @@ class DFGPartPred : public DFG{
 
 		std::set<std::set<dfgNode*>> mutexSets;
 		std::map<dfgNode*,dfgNode*> selectPHIAncestorMap;
+
+		Loop* currLoop;
 
 
 
