@@ -707,6 +707,11 @@ void DFGTrig::generateTrigDFGDOT() {
 	printConstHist();
 	removeOutLoopLoad();
 
+	nameNodes();
+	classifyParents();
+
+	addPseudoParentsRec();
+
 	printSubPathDOT(this->name + "_TrigFullPredDFG");
 	printDOT(this->name + "_TrigFullPredDFG.dot");
 
@@ -1082,12 +1087,11 @@ void DFGTrig::balanceSched() {
 void DFGTrig::printNewDFGXML() {
 
 
-	std::string fileName = name + "_DFG.xml";
+	std::string fileName = name + "_TrigFullPred_DFG.xml";
 	std::ofstream xmlFile;
 	xmlFile.open(fileName.c_str());
 
-	nameNodes();
-	classifyParents();
+
 
 //    insertMOVC();
 //	scheduleASAP();
@@ -1356,8 +1360,11 @@ void DFGTrig::printNewDFGXML() {
 					xmlFile << "type=\"P\"/>\n";
 				}
 
-
-				if(node->getNameType()=="CMERGE"){
+				if(findEdge(node,child)->getType() == EDGE_TYPE_PS){
+					xmlFile << "type=\"PS\"/>\n";
+					written=true;
+				}
+				else if(node->getNameType()=="CMERGE"){
 					if(child->getNode()){
 						if(dyn_cast<PHINode>(child->getNode())){
 
@@ -1380,8 +1387,7 @@ void DFGTrig::printNewDFGXML() {
 						}
 					}
 				}
-
-				if(node->getNameType()=="SELECTPHI"){
+				else if(node->getNameType()=="SELECTPHI"){
 					if(child->getNode()){
 						written = true;
 						int operand_no = findOperandNumber(child,child->getNode(),selectPHIAncestorMap[node]->getNode());
@@ -2457,7 +2463,7 @@ void DFGTrig::printConstHist() {
 	}
 
 	std::cout << "TOTAL NODES = " << NodeList.size() << "\n";
-	assert(false);
+//	assert(false);
 }
 
 void DFGTrig::removeCMERGEData() {
@@ -2476,6 +2482,137 @@ void DFGTrig::removeCMERGEData() {
 			}
 		}
 	}
+
+}
+
+void DFGTrig::addPseudoParentsRec() {
+
+
+
+	std::set<dfgNode*> RecParents;
+
+	for(dfgNode* node : NodeList){
+		for(dfgNode* recParent : node->getRecAncestors()){
+			RecParents.insert(recParent);
+		}
+	}
+
+	for(dfgNode* node : RecParents){
+
+		outs() << "Searching for recParent=" << node->getIdx() << "\n";
+
+//		for(dfgNode* parCand : NodeList){
+//			if(parCand->getASAPnumber() == node->getALAPnumber()-1 && parCand->getALAPnumber() == node->getALAPnumber()-1){
+//				outs() << "Adding Pseudo Connection :: parent=" << parCand->getIdx() << ",to" << node->getIdx() << "\n";
+//				parCand->addChildNode(node,EDGE_TYPE_PS,false,true,true);
+//				node->addAncestorNode(parCand,EDGE_TYPE_PS,false,true,true);
+//				node->parentClassification[0]=parCand;
+//				break;
+//			}
+//		}
+
+		std::queue<std::set<dfgNode*>> q;
+		std::set<dfgNode*> q_init;
+		for(dfgNode* child : node->getChildren()){
+			if(node->childBackEdgeMap[child]) continue;
+			q_init.insert(child);
+		}
+		q.push(q_init);
+
+		dfgNode* criticalChild = NULL;
+		while(!q.empty()){
+			std::set<dfgNode*> curr = q.front(); q.pop();
+			std::set<dfgNode*> q_next;
+			bool critChildFound=false;
+			for(dfgNode* n : curr){
+				if(n->getASAPnumber() == n->getALAPnumber()){
+					criticalChild=n;
+					critChildFound=true;
+					break;
+				}
+				for(dfgNode* child : n->getChildren()){
+					if(n->childBackEdgeMap[child]) continue;
+					q_next.insert(child);
+				}
+			}
+			if(critChildFound) break;
+
+			if(!q_next.empty()) q.push(q_next);
+		}
+
+		while(!q.empty()) q.pop();
+
+		assert(criticalChild);
+		q_init.clear();
+		q_init.insert(criticalChild);
+		q.push(q_init);
+
+		dfgNode* pseduoParent = NULL;
+		while(!q.empty()){
+			std::set<dfgNode*> curr = q.front(); q.pop();
+			std::set<dfgNode*> q_next;
+			bool pseudoParentFound=false;
+			for(dfgNode* n : curr){
+//				if(n->getASAPnumber() == n->getALAPnumber()){
+					if(n->getALAPnumber() == node->getALAPnumber()){
+						pseduoParent=n;
+						outs() << "Adding Pseudo Connection :: parent=" << pseduoParent->getIdx() << ",to" << node->getIdx() << "\n";
+						pseduoParent->addChildNode(node,EDGE_TYPE_PS,false,true,true);
+						node->addAncestorNode(pseduoParent,EDGE_TYPE_PS,false,true,true);
+						pseudoParentFound=true;
+//						break;
+					}
+//				}
+				for(dfgNode* parent : n->getAncestors()){
+					if(parent->childBackEdgeMap[n]) continue;
+					if(parent == node) continue;
+					q_next.insert(parent);
+				}
+			}
+//			if(pseudoParentFound) break;
+
+			if(!q_next.empty()) q.push(q_next);
+		}
+
+		assert(pseduoParent);
+
+//		outs() << "Adding Pseudo Connection :: parent=" << pseduoParent->getIdx() << ",to" << node->getIdx() << "\n";
+//		pseduoParent->addChildNode(node,EDGE_TYPE_PS,false,true,true);
+//		node->addAncestorNode(pseduoParent,EDGE_TYPE_PS,false,true,true);
+
+
+//		std::map<int,dfgNode*> asapchild;
+//		for(dfgNode* child : node->getChildren()){
+//			if(node->childBackEdgeMap[child]) continue;
+//			asapchild[child->getASAPnumber()]=child;
+//		}
+//
+//		assert(!asapchild.empty());
+//		dfgNode* earliestChild = (*asapchild.begin()).second;
+//
+//		std::map<int,dfgNode*> asapcousin;
+//		for(dfgNode* parent : earliestChild->getAncestors()){
+//			if(parent == node) continue;
+//			if(parent->childBackEdgeMap[earliestChild]) continue;
+//			asapcousin[parent->getASAPnumber()]=parent;
+//		}
+//
+//		if(!asapcousin.empty()){
+//			dfgNode* latestCousin = (*asapcousin.rbegin()).second;
+//
+//			outs() << "Adding Pseudo Connection :: parent=" << latestCousin->getIdx() << ",to" << node->getIdx() << "\n";
+//			latestCousin->addChildNode(node,EDGE_TYPE_PS,false,true,true);
+//			node->addAncestorNode(latestCousin,EDGE_TYPE_PS,false,true,true);
+//			node->parentClassification[0]=latestCousin;
+//		}
+
+
+	}
+//	assert(false);
+	scheduleASAP();
+	scheduleALAP();
+
+
 
 }
 
@@ -2915,7 +3052,10 @@ void DFGTrig::printDOT(std::string fileName) {
 
 			ofs << "color = ";
 			if(isCondtional){
-				if(condition==true){
+				if(findEdge(node,child)->getType() == EDGE_TYPE_PS){
+					ofs << "cyan";
+				}
+				else if(condition==true){
 					ofs << "blue";
 				}
 				else{
@@ -3123,7 +3263,10 @@ void DFGTrig::printSubPathDOT(std::string fileNamePrefix) {
 
 				ofs << "color = ";
 				if(isCondtional){
-					if(condition==true){
+					if(findEdge(node,child)->getType() == EDGE_TYPE_PS){
+						ofs << "cyan";
+					}
+					else if(condition==true){
 						ofs << "blue";
 					}
 					else{

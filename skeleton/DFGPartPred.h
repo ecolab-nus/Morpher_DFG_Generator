@@ -35,6 +35,7 @@ class DFGPartPred : public DFG{
 		int classifyParents();
 
 		void removeOutLoopLoad();
+		void addOrphanPseudoEdges();
 
 
 

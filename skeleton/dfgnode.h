@@ -40,8 +40,12 @@ class dfgNode{
 			Instruction* Node = NULL;
 			std::vector<Instruction*> Children;
 			std::vector<Instruction*> Ancestors;
+
 			std::vector<Instruction*> RecChildren;
 			std::vector<Instruction*> RecAncestors;
+
+
+
 //			std::vector<Instruction*> PHIchildren;
 			std::vector<Instruction*> PHIAncestors;
 
@@ -100,6 +104,9 @@ class dfgNode{
 			std::vector<int> InEdgesIdx;
 			std::vector<int> OutEdgesIdx;
 
+			std::map<Instruction*,std::string> RecAncestorType;
+			std::map<Instruction*,std::string> RecChildrenType;
+
 			std::vector<Instruction*> PHIchildren;
 			const BasicBlock* BB;
 
@@ -150,8 +157,11 @@ class dfgNode{
 			void addAncestor(Instruction *anc, int type=EDGE_TYPE_DATA);
 
 
-			void addRecChild(Instruction *child, int type=EDGE_TYPE_LDST);
-			void addRecAncestor(Instruction *anc, int type=EDGE_TYPE_LDST);
+			void addRecChild(Instruction *child, std::string depType, int type=EDGE_TYPE_LDST);
+			void addRecAncestor(Instruction *anc,std::string depType, int type=EDGE_TYPE_LDST);
+
+
+
 			void addPHIchild(Instruction *child, int type=EDGE_TYPE_PHI);
 			void addPHIancestor(Instruction *anc, int type=EDGE_TYPE_PHI);
 

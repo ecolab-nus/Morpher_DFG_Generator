@@ -861,25 +861,52 @@ void DFG::addMemRecDepEdgesNew(DependenceInfo *DI) {
 
 				  if (auto D = DI->depends(Src, Des, true)) {
 					  log << "addMemRecDepEdges :" << "Found Dependency between Src=" << memNodes[i]->getIdx() << " Des=" << memNodes[j]->getIdx() << "\n";
+					  outs() << "addMemRecDepEdges :" << "Found Dependency between Src=" << memNodes[i]->getIdx() << " Des=" << memNodes[j]->getIdx() << "\n";
 
 
-					  if (D->isFlow()) {
-					// TODO: Handle Flow dependence.Check if it is sufficient to populate
+					  if(D->isLoopIndependent()){
+						  outs() << "Loop Independent.\n";
+					  }
+					  else{
+						  outs() << "Loop Dependent.\n";
+					  }
+
+					  outs() << "Levels = " <<  D->getLevels() << "\n";
+					  D->dump(outs());
+
+
+					  if (D->isAnti()) {
+					// TODO: Handle Anit dependence.Check if it is sufficient to populate
 					// the Dependence Matrix with the direction reversed.
-						  log << "addMemRecDepEdges :" << "Flow dependence not handled\n";
+						  log << "addMemRecDepEdges :" << "Anti dependence not handled\n";
 						  continue;
 	//					  return;
 					  }
-					  if (D->isAnti()) {
-						  log << "Found Anti dependence \n";
+
+
+					  if (D->isFlow()) {
+						  log << "Found Flow dependence \n";
 
 
 							 if(std::find(BBSuccBasicBlocks[Src->getParent()].begin(),BBSuccBasicBlocks[Src->getParent()].end(),Des->getParent())==BBSuccBasicBlocks[Src->getParent()].end()){
 								 continue;
 							 }
 
-							this->findNode(Src)->addRecChild(Des,EDGE_TYPE_LDST);
-							this->findNode(Des)->addRecAncestor(Src);
+//							this->findNode(Src)->addRecChild(Des,EDGE_TYPE_LDST);
+//							this->findNode(Des)->addRecAncestor(Src);
+							std::string depType;
+							if(D->isFlow()){
+								depType = "FLOW";
+							}
+							else{
+								assert(D->isAnti());
+								depType = "ANTI";
+							}
+
+							if(D->isConfused()) continue;
+
+							this->findNode(Des)->addRecChild(Src,depType,EDGE_TYPE_LDST);
+							this->findNode(Src)->addRecAncestor(Des,depType);
 
 //							RecDist = this->findNode(Des)->getASAPnumber() - this->findNode(Src)->getASAPnumber();
 //							if(maxRecDist < RecDist){
@@ -888,6 +915,8 @@ void DFG::addMemRecDepEdgesNew(DependenceInfo *DI) {
 
 						  unsigned Levels = D->getLevels();
 						  char Direction;
+
+
 						  for (unsigned II = 1; II <= Levels; ++II) {
 							  const SCEV *Distance = D->getDistance(II);
 
@@ -943,6 +972,7 @@ void DFG::addMemRecDepEdgesNew(DependenceInfo *DI) {
 
 
 		log.close();
+//		assert(false);
 		errs() << "&&&&&&&&&&&&&&&&&&&&Recurrence search done.....!\n";
 }
 
@@ -8687,7 +8717,9 @@ void DFG::printNewDFGXML() {
 
 			xmlFile << "<RecParents>\n";
 			for(dfgNode* recParent : node->getRecAncestors()){
-				xmlFile << "\t<RecParent idx=\"" << recParent->getIdx() << "\"/>\n";
+				xmlFile << "\t<RecParent idx=\"" << recParent->getIdx() << "\"";
+				xmlFile << " type=\"" << node->RecAncestorType[recParent->getNode()] << "\"";
+				xmlFile << "/>\n";
 			}
 			xmlFile << "</RecParents>\n";
 

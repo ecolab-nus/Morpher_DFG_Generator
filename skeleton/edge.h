@@ -51,6 +51,7 @@
 #define EDGE_TYPE_CTRL 1
 #define EDGE_TYPE_LDST 2
 #define EDGE_TYPE_PHI 3
+#define EDGE_TYPE_PS 4
 
 
 using namespace llvm;

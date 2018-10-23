@@ -278,6 +278,8 @@ public :
 
 	void printConstHist();
 
+	void addPseudoParentsRec();
+
 
 
 

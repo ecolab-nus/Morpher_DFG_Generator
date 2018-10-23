@@ -287,7 +287,7 @@ CGRANode* dfgNode::getMappedLoc() {
 	return mappedLoc;
 }
 
-void dfgNode::addRecChild(Instruction* child, int type) {
+void dfgNode::addRecChild(Instruction* child, std::string depType, int type) {
 	for (int i = 0; i < RecChildren.size(); ++i) {
 		if(child == RecChildren[i]){
 			return;
@@ -295,6 +295,7 @@ void dfgNode::addRecChild(Instruction* child, int type) {
 	}
 
 	RecChildren.push_back(child);
+	RecChildrenType[child]=depType;
 
 //	Edge temp;
 //	temp.setID(Parent->getEdges().size());
@@ -309,18 +310,23 @@ void dfgNode::addRecChild(Instruction* child, int type) {
 //	Parent->InsertEdge(temp);
 }
 
-void dfgNode::addRecAncestor(Instruction* anc, int type) {
+void dfgNode::addRecAncestor(Instruction* anc, std::string depType, int type) {
 	for (int i = 0; i < RecAncestors.size(); ++i) {
 		if(anc == RecAncestors[i]){
 			return;
 		}
 	}
 
+
+
 	RecAncestors.push_back(anc);
+	RecAncestorType[anc]=depType;
 
 	dfgNode* recAncNode = Parent->findNode(anc);
 	recAncNode->addRecChildNode(this);
 	RecAncestorNodes.push_back(recAncNode);
+
+	std::cout << "Adding Rec Ancestor=" << recAncNode->getIdx() <<", to=" << this->idx << "\n";
 
 	Edge temp;
 	temp.setID(Parent->getEdges().size());
