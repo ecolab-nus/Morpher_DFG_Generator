@@ -112,6 +112,7 @@ class dfgNode{
 
 			//Parent Nodes
 			std::map<int,dfgNode*> parentClassification;
+			std::map<int,dfgNode*> childClassification;
 
 
 			dfgNode(Instruction *ins, DFG* parent);

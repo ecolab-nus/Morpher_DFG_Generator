@@ -19,6 +19,44 @@ public:
 //		return this->data == other.data;
 //	}
 
+	bool belongsToParent(T d1, T& P, bool& P_bool){
+		std::queue<std::pair<TreeNode*,bool>> q;
+		q.push(std::make_pair(this,true));
+
+
+		while(!q.empty()){
+			std::pair<TreeNode*,bool> currPair = q.front(); q.pop();
+			TreeNode* tn = currPair.first;
+			bool currBool = currPair.second;
+
+			if(tn->getLeft()){
+				TreeNode* left = tn->getLeft();
+
+				if(left->getData() == d1){
+					P=tn->getData();
+					P_bool = true;
+					return true;
+				}
+			}
+			if(tn->getRight()){
+				TreeNode* right = tn->getRight();
+				if(right->getData() == d1){
+					P=tn->getData();
+					P_bool = false;
+					return true;
+				}
+			}
+
+			if(tn->getLeft()){
+				q.push(std::make_pair(tn->getLeft(),true));
+			}
+			if(tn->getRight()){
+				q.push(std::make_pair(tn->getRight(),false));
+			}
+		}
+		return false;
+	}
+
 	std::set<std::pair<TreeNode*,bool>> getAllNodes(){
 		std::set<std::pair<TreeNode*,bool>> res;
 		std::queue<TreeNode*> q;
@@ -266,6 +304,8 @@ public :
 	void popCtrlTrees(std::vector<std::pair<BasicBlock*,CondVal>> path);
 	void printCtrlTree();
 	void annotateNodesBr();
+	void mergeAnnotatedNodesBr();
+
 	void annotateCtrlFrontierAsCtrlParent();
 
 	void mirrorCtrlNodes();
@@ -279,6 +319,12 @@ public :
 	void printConstHist();
 
 	void addPseudoParentsRec();
+
+	void removeRedudantCtrl();
+	void removeCMERGEChildrenOpposingCtrl();
+
+
+	std::map<dfgNode*,std::map<dfgNode*,int>> edgeClassification;
 
 
 

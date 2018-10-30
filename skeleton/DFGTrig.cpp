@@ -699,6 +699,7 @@ void DFGTrig::generateTrigDFGDOT() {
 
 	populateSubPathDFGs();
 	annotateNodesBr();
+	mergeAnnotatedNodesBr();
 //	annotateCtrlFrontierAsCtrlParent();
 
 	printCtrlTree();
@@ -711,6 +712,8 @@ void DFGTrig::generateTrigDFGDOT() {
 	classifyParents();
 
 	addPseudoParentsRec();
+	removeRedudantCtrl();
+	removeCMERGEChildrenOpposingCtrl();
 
 	printSubPathDOT(this->name + "_TrigFullPredDFG");
 	printDOT(this->name + "_TrigFullPredDFG.dot");
@@ -1113,6 +1116,15 @@ void DFGTrig::printNewDFGXML() {
 		nodeBBModified[node]=node->BB->getName().str();
 	}
 
+	std::map<dfgNode*,std::string> originalBBModified = nodeBBModified;
+
+	for(std::pair<BasicBlock*,std::set<BasicBlock*>> pair : mBBs){
+		BasicBlock* first = pair.first;
+		for(BasicBlock* second : pair.second){
+			mBBs_str[first->getName().str()].insert(second->getName().str());
+			mBBs_str[second->getName().str()].insert(first->getName().str());
+		}
+	}
 
 	for(dfgNode* node : NodeList){
 		int cmergeParentCount=0;
@@ -1121,18 +1133,36 @@ void DFGTrig::printNewDFGXML() {
 			if(HyCUBEInsStrings[parent->getFinalIns()] == "CMERGE" || parent->getNameType() == "SELECTPHI"){
 				nodeBBModified[parent]=nodeBBModified[parent]+ "_" + std::to_string(node->getIdx()) + "_" + std::to_string(cmergeParentCount);
 				mutexBBs.insert(nodeBBModified[parent]);
+				mBBs_str[nodeBBModified[parent]]=mBBs_str[originalBBModified[parent]];
 				cmergeParentCount++;
 			}
 		}
+//		std::cout << "mutex BBs :: begin \n";
 		for(std::string bb_str1 : mutexBBs){
+//			std::cout << bb_str1 << "=";
 			for(std::string bb_str2 : mutexBBs){
 				if(bb_str2==bb_str1) continue;
+				std::cout << bb_str2 << ",";
 				mBBs_str[bb_str1].insert(bb_str2);
+				mBBs_str[bb_str2].insert(bb_str1);
 			}
+			std::cout << "\n";
 		}
+//		std::cout << "mutex BBs :: end \n";
 	}
 
+
+
 	std::map<std::string,std::pair<std::string,std::string>> sameControlDomainBBs;
+
+
+	for(std::pair<dfgNode*,dfgNode*> p1 : nCMP2pCMP){
+		dfgNode* negNode = p1.first;
+		dfgNode* posNode = p1.second;
+		std::cout << "POSNODE BB=" << nodeBBModified[posNode] << ",NEGNODE BB=" << nodeBBModified[negNode] << "\n";
+		mBBs_str[nodeBBModified[posNode] + "_P"]=mBBs_str[nodeBBModified[posNode]];
+		mBBs_str[nodeBBModified[negNode] + "_N"]=mBBs_str[nodeBBModified[negNode]];
+	}
 
 	for(dfgNode* pn : pCMPNodes){
 		nodeBBModified[pn]=nodeBBModified[pn] + "_P";
@@ -1236,18 +1266,19 @@ void DFGTrig::printNewDFGXML() {
 
 
 	xmlFile << "<MutexBB>\n";
-	for(std::pair<BasicBlock*,std::set<BasicBlock*>> pair : mBBs){
-		BasicBlock* first = pair.first;
-		xmlFile << "<BB1 name=\"" << first->getName().str() << "\">\n";
-		for(BasicBlock* second : pair.second){
-			if(sameControlDomainBBs.find(second->getName().str()) != sameControlDomainBBs.end()){
-				xmlFile << "\t<BB2 name=\"" << sameControlDomainBBs[second->getName().str()].first << "\"/>\n";
-				xmlFile << "\t<BB2 name=\"" << sameControlDomainBBs[second->getName().str()].second << "\"/>\n";
-			}
-			xmlFile << "\t<BB2 name=\"" << second->getName().str() << "\"/>\n";
-		}
-		xmlFile << "</BB1>\n";
-	}
+//	for(std::pair<BasicBlock*,std::set<BasicBlock*>> pair : mBBs){
+//		BasicBlock* first = pair.first;
+//		xmlFile << "<BB1 name=\"" << first->getName().str() << "\">\n";
+//		for(BasicBlock* second : pair.second){
+//			if(sameControlDomainBBs.find(second->getName().str()) != sameControlDomainBBs.end()){
+//				assert(false);
+//				xmlFile << "\t<BB2 name=\"" << sameControlDomainBBs[second->getName().str()].first << "\"/>\n";
+//				xmlFile << "\t<BB2 name=\"" << sameControlDomainBBs[second->getName().str()].second << "\"/>\n";
+//			}
+//			xmlFile << "\t<BB2 name=\"" << second->getName().str() << "\"/>\n";
+//		}
+//		xmlFile << "</BB1>\n";
+//	}
 	for(std::pair<std::string,std::set<std::string>> pair : mBBs_str){
 		std::string first = pair.first;
 		xmlFile << "<BB1 name=\"" << first << "\">\n";
@@ -1405,6 +1436,25 @@ void DFGTrig::printNewDFGXML() {
 						}
 					}
 				}
+
+				if(edgeClassification.find(node)!=edgeClassification.end()){
+					if(edgeClassification[node].find(child)!=edgeClassification[node].end()){
+						if(edgeClassification[node][child]==0){
+							xmlFile << "type=\"P\"/>\n";
+							written=true;
+						}
+						else if(edgeClassification[node][child]==1){
+							xmlFile << "type=\"I1\"/>\n";
+							written=true;
+						}
+						else if(edgeClassification[node][child]==2){
+							xmlFile << "type=\"I2\"/>\n";
+							written=true;
+						}
+					}
+				}
+
+
 
 				if(written){
 				}
@@ -2423,6 +2473,11 @@ void DFGTrig::removeOutLoopLoad() {
 
 	}
 
+	for(dfgNode* rn : removalNodes){
+		std::cout << "Removing Node = " << rn->getIdx() << "\n";
+		NodeList.erase(std::remove(NodeList.begin(), NodeList.end(), rn), NodeList.end());
+	}
+
 	name = name + "_noOLOAD";
 }
 
@@ -2614,6 +2669,254 @@ void DFGTrig::addPseudoParentsRec() {
 
 
 
+}
+
+void DFGTrig::mergeAnnotatedNodesBr() {
+	assert(CtrlTrees.size()==1);
+	TreeNode<BasicBlock*>* root = CtrlTrees[0];
+
+	outs() << "mergeAnnotatedNodesBr begin...\n";
+
+	for(dfgNode* node : NodeList){
+
+		outs() << "node=" << node->getIdx() << ",";
+
+		std::map<BasicBlock*,std::set<CondVal>> branchInfo;
+		for(std::pair<BasicBlock*,CondVal> brVal : node->BelongsToBr){
+			branchInfo[brVal.first].insert(brVal.second);
+		}
+
+		while(true){
+			std::map<BasicBlock*,std::set<CondVal>> nextbranchInfo;
+			bool changed=false;
+			for(std::pair<BasicBlock*,std::set<CondVal>> p1 : branchInfo){
+				if(p1.second.size() == 2){
+					BasicBlock* parentBB;
+					bool parentVal;
+
+					outs() << "oldBB=" << p1.first->getName() << ",";
+					bool retVal = root->belongsToParent(p1.first,parentBB,parentVal);
+
+					if(!retVal){
+						outs() << "BB=" << p1.first->getName() << "\n";
+					}
+					assert(retVal);
+
+					CondVal cv;
+					if(parentVal == true){
+						cv = TRUE;
+					}else{
+						cv = FALSE;
+					}
+					outs() << "newBB=" << parentBB->getName() << ",";
+					nextbranchInfo[parentBB].insert(cv);
+					changed=true;
+				}
+				else{
+					nextbranchInfo[p1.first] = p1.second;
+					assert(!p1.second.empty());
+				}
+			}
+			if(!changed) break;
+			branchInfo = nextbranchInfo;
+		}
+
+		node->BelongsToBr.clear();
+		outs() << "\nAssigning new belongs :: ";
+		for(std::pair<BasicBlock*,std::set<CondVal>> p1 : branchInfo){
+			for(CondVal cv : p1.second){
+				outs() << p1.first->getName() << "," << dfgNode::getCondValStr(cv) << ",";
+				node->BelongsToBr.insert(std::make_pair(p1.first,cv));
+			}
+		}
+
+		outs() << "\n";
+	}
+
+	outs() << "mergeAnnotatedNodesBr end...\n";
+//	assert(false);
+}
+
+void DFGTrig::removeRedudantCtrl() {
+
+	std::set<dfgNode*> removeNodes;
+
+	for(dfgNode* node : NodeList){
+		bool canRemoveCtrl=false;
+		if(node->BelongsToBr.empty()) continue;
+		for(dfgNode* par : node->getAncestors()){
+
+			if(par->childConditionalMap[node]!=UNCOND) continue;
+			if(par->BelongsToBr == node->BelongsToBr){
+				canRemoveCtrl=true;
+				break;
+			}
+		}
+
+		for(dfgNode* par : node->getAncestors()){
+			if(canRemoveCtrl){
+				if(par->childConditionalMap[node]!=UNCOND){
+					std::cout << "Remove Redundant ctrl from=" << par->getIdx() << " to " << node->getIdx() << "\n";
+					par->removeChild(node);
+					node->removeAncestor(par);
+
+					if(node->getNameType() == "CMERGE"){
+						std::cout << "\tAlso removing CMERGE...\n";
+						assert(node->getAncestors().size()==1);
+						dfgNode* dataParent = node->getAncestors()[0];
+
+						dataParent->removeChild(node);
+						node->removeAncestor(dataParent);
+
+						for(dfgNode* child : node->getChildren()){
+							node->removeChild(child);
+							child->removeAncestor(node);
+
+							dataParent->addChildNode(child,EDGE_TYPE_DATA);
+							child->addAncestorNode(dataParent,EDGE_TYPE_DATA);
+
+							if(dyn_cast<PHINode>(child->getNode())){
+								for(std::pair<int,dfgNode*> p1 : child->parentClassification){
+									if(p1.second == node){
+										child->parentClassification[p1.first]=dataParent;
+										break;
+									}
+								}
+							}
+							else{ // if not phi
+								int operand_no = findOperandNumber(child,child->getNode(),cmergePHINodes[node]->getNode());
+								std::cout << "\t data_parent=" << dataParent->getIdx() << ",child=" << child->getIdx() << ",opno=" << operand_no << "\n";
+//								child->parentClassification[operand_no]=dataParent;
+								edgeClassification[dataParent][child]=operand_no;
+							}
+
+						}
+						removeNodes.insert(node);
+					}
+
+					break;
+				}
+			}
+		}
+	}
+
+	for(dfgNode* rn : removeNodes){
+		NodeList.erase(std::remove(NodeList.begin(), NodeList.end(), rn), NodeList.end());
+	}
+
+//	assert(false);
+}
+
+void DFGTrig::removeCMERGEChildrenOpposingCtrl() {
+
+	std::set<dfgNode*> removeNodes;
+
+	for(dfgNode* node : NodeList){
+
+
+		std::set<dfgNode*> cmergeChildren;
+		for(dfgNode* child : node->getChildren()){
+			if(node->childConditionalMap[child]!=UNCOND) continue;
+			if(child->getNameType()=="CMERGE"){
+				cmergeChildren.insert(child);
+			}
+		}
+
+		if(cmergeChildren.size() != 2) continue;
+
+		bool allhavesinglechild=true;
+		for(dfgNode* cmergeChild : cmergeChildren){
+			if(cmergeChild->getChildren().size() != 1){
+				allhavesinglechild=false;
+				break;
+			}
+		}
+
+		bool isSameChild=true;
+		if(allhavesinglechild){
+			for(dfgNode* cmergeChild : cmergeChildren){
+				if(cmergeChild->getChildren()[0] != (*cmergeChildren.begin())->getChildren()[0]){
+					isSameChild=false;
+					break;
+				}
+			}
+		}
+
+
+		if(isSameChild){
+			dfgNode* sameChild = (*cmergeChildren.begin())->getChildren()[0];
+			dfgNode* cmerge1 = (*cmergeChildren.begin());
+			dfgNode* cmerge2 = (*cmergeChildren.rbegin());
+			assert(cmerge1->BelongsToBr.size()==1);
+			assert(cmerge2->BelongsToBr.size()==1);
+
+			std::pair<BasicBlock*,CondVal> cmerge1ci = *cmerge1->BelongsToBr.begin();
+			std::pair<BasicBlock*,CondVal> cmerge2ci = *cmerge2->BelongsToBr.begin();
+
+			std::set<std::pair<BasicBlock*,CondVal>> cmerge1Parentci = BrParentMap[cmerge1ci.first]->BelongsToBr;
+			std::set<std::pair<BasicBlock*,CondVal>> nodeci = node->BelongsToBr;
+
+			if(cmerge1ci.first == cmerge2ci.first && cmerge1Parentci == nodeci){
+
+				std::cout << "node=" << node->getIdx();
+				std::cout << ",cmerge1=" << cmerge1->getIdx();
+				std::cout << ",cmerge2=" << cmerge2->getIdx();
+				std::cout << ",sameChild=" << sameChild->getIdx() << "\n";
+
+				node->removeChild(cmerge1);
+				cmerge1->removeAncestor(node);
+
+				node->removeChild(cmerge2);
+				cmerge2->removeChild(node);
+
+				node->addChildNode(sameChild,EDGE_TYPE_DATA);
+				sameChild->addAncestorNode(node,EDGE_TYPE_DATA);
+
+				if(dyn_cast<PHINode>(sameChild->getNode())){
+					for(std::pair<int,dfgNode*> p1 : sameChild->parentClassification){
+						if(p1.second == node){
+							sameChild->parentClassification[p1.first]=cmerge1;
+							break;
+						}
+					}
+				}
+				else{ // if not phi
+					int operand_no = findOperandNumber(sameChild,sameChild->getNode(),cmergePHINodes[cmerge1]->getNode());
+					std::cout << "\t data_parent=" << node->getIdx() << ",child=" << sameChild->getIdx() << ",opno=" << operand_no << "\n";
+//								child->parentClassification[operand_no]=dataParent;
+					edgeClassification[node][sameChild]=operand_no;
+				}
+
+				for(dfgNode* par : cmerge1->getAncestors()){
+					par->removeChild(cmerge1);
+					cmerge1->removeAncestor(par);
+				}
+
+				for(dfgNode* par : cmerge2->getAncestors()){
+					par->removeChild(cmerge2);
+					cmerge2->removeAncestor(par);
+				}
+
+
+				cmerge1->removeChild(sameChild);
+				sameChild->removeAncestor(cmerge1);
+
+				cmerge2->removeChild(sameChild);
+				sameChild->removeAncestor(cmerge2);
+
+				removeNodes.insert(cmerge1);
+				removeNodes.insert(cmerge2);
+			}
+		}
+
+
+	}
+
+//	assert(false);
+
+	for(dfgNode* rn : removeNodes){
+		NodeList.erase(std::remove(NodeList.begin(), NodeList.end(), rn), NodeList.end());
+	}
 }
 
 void DFGTrig::DFSCtrlPath(std::map<BasicBlock*,std::set<std::pair<BasicBlock*,CondVal>>>& ctrlBBInfo, std::vector<std::pair<BasicBlock*,CondVal>> path){

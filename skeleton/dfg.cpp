@@ -7600,8 +7600,8 @@ int DFG::classifyParents() {
 }
 
 int DFG::findOperandNumber(dfgNode* node, Instruction* child, Instruction* parent) {
-	parent->dump();
-	child->dump();
+//	parent->dump();
+//	child->dump();
 
 	if(LoadInst* LDI = dyn_cast<LoadInst>(child)){
 		assert(parent == LDI->getPointerOperand());
@@ -7620,13 +7620,13 @@ int DFG::findOperandNumber(dfgNode* node, Instruction* child, Instruction* paren
 	}
 	else if(GetElementPtrInst* GEP = dyn_cast<GetElementPtrInst>(child)){
 		if(node->getAncestors().size() > 1){
-			outs() << "node :"; child->dump();
+//			outs() << "node :"; child->dump();
 			for(dfgNode* parentNode : node->getAncestors()){
 				if(parentNode->getNode()){
-					outs() << "parent :"; parentNode->getNode()->dump();
+//					outs() << "parent :"; parentNode->getNode()->dump();
 				}
 				else{
-					outs() << "parent :" << parentNode->getDFSIdx() << "," << parentNode->getNameType() << "\n";
+//					outs() << "parent :" << parentNode->getDFSIdx() << "," << parentNode->getNameType() << "\n";
 				}
 			}
 
@@ -7650,11 +7650,11 @@ int DFG::findOperandNumber(dfgNode* node, Instruction* child, Instruction* paren
 					}
 				}
 				else{
-					outs() << "child :\n";
+//					outs() << "child :\n";
 					child->dump();
-					outs() << "parent :\n";
+//					outs() << "parent :\n";
 					parent->dump();
-					outs() << child->getOperand(i)->getName() << "\n";
+//					outs() << child->getOperand(i)->getName() << "\n";
 					assert(i!=0);
 					ConstantInt* CI = cast<ConstantInt>(child->getOperand(i));
 					if(i==1){

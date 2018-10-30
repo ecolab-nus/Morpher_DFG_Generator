@@ -1157,6 +1157,24 @@ std::vector<munitTransition> munitTransitionsALL;
 					}
 				}
 
+				outs() << "Allocas ::\n";
+				for(BasicBlock &BB : F){
+					 const DataLayout DL = F.getParent()->getDataLayout();
+					for(Instruction& I : BB){
+						if(AllocaInst* ALI = dyn_cast<AllocaInst>(&I)){
+							ALI->dump();
+							if(ALI->isStaticAlloca()){
+								outs() << "Size=" << DL.getTypeAllocSize(ALI->getAllocatedType()) << "\n";
+								(*sizeArrMap)[ALI->getName().str()]=(int)DL.getTypeAllocSize(ALI->getAllocatedType());
+								usesQ.insert(std::make_pair(&I,ALI->getName().str()));
+							}
+							else{
+								assert(false);
+							}
+						}
+					}
+				}
+
 				std::map<std::string,std::string> truePointers;
 
 				outs() << "Collecting True Pointers...\n";
@@ -2125,8 +2143,8 @@ namespace {
 			  // New Code for 2018 work
 			  //-----------------------------------
 	    {
-//			  DFGTrig LoopDFG(F.getName().str() + "_" + munitName,&loopNames,DT,munitName,mappingUnitMap[munitName].lp);
-			  DFGPartPred LoopDFG(F.getName().str() + "_" + munitName,&loopNames,mappingUnitMap[munitName].lp);
+			  DFGTrig LoopDFG(F.getName().str() + "_" + munitName,&loopNames,DT,munitName,mappingUnitMap[munitName].lp);
+//			  DFGPartPred LoopDFG(F.getName().str() + "_" + munitName,&loopNames,mappingUnitMap[munitName].lp);
 			  LoopDFG.setBBSuccBasicBlocks(BBSuccBasicBlocks);
 			  LoopDFG.sizeArrMap=sizeArrMap;
 			  outs() << "Currently mapping unit : " << munitName << "\n";
