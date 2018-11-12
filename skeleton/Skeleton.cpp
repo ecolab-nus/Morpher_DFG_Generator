@@ -167,12 +167,14 @@ std::vector<munitTransition> munitTransitionsALL;
 
 				  for (User *U : I->users()) {
 
-					if (Instruction *Inst = dyn_cast<Instruction>(U)) {
-
 						errs() << "I :";
 						I->dump();
 						errs() << "Inst : ";
-						Inst->dump();
+						U->dump();
+
+					if (Instruction *Inst = dyn_cast<Instruction>(U)) {
+						errs() << "#####TRAVDEFTREE :: Inst Valid!\n";
+
 
 						//Searching inside basicblocks of the loop
 						if(validBB.find(Inst->getParent()) == validBB.end()){
@@ -232,6 +234,7 @@ std::vector<munitTransition> munitTransitionsALL;
 						 }
 
 						currBBDFG->findNode(I)->addChild(Inst);
+
 					    //errs() << "\t" <<*Inst << "\n";
 
 					  if(insMapIn->find(Inst) == insMapIn->end()){
@@ -1446,6 +1449,59 @@ std::vector<munitTransition> munitTransitionsALL;
 					}
 	    	}
 
+	    	void RemoveSelectLeafs(Function &F){
+	    		for(BasicBlock& BB : F){
+	    			for(Instruction &I : BB){
+	    				Instruction* ins = &I;
+	    				if(SelectInst* SLI = dyn_cast<SelectInst>(ins)){
+	    					IRBuilder<> builder(SLI);
+	    					if(Instruction* Cond = dyn_cast<Instruction>(SLI->getCondition())){
+	    						if(Cond->getParent() == SLI->getParent()) continue;
+	    						outs() << "Found Alone Select="; SLI->dump();
+	    						outs() << "Condition="; Cond->dump();
+	    						builder.SetInsertPoint(BB.getFirstNonPHI());
+	    						Value* OR0 = builder.CreateXor(Cond,(uint64_t)0);
+	    						assert(OR0 != Cond);
+	    						Instruction* ORIns = cast<Instruction>(OR0);
+	    						outs() << "OR = "; ORIns->dump();
+
+	    						SLI->setOperand(0,OR0);
+	    						BB.dump();
+	    					}
+
+	    				}
+	    			}
+	    		}
+	    	}
+
+	    	void InsertORtoSingularConditionalBB(Function &F){
+	    		for(BasicBlock& BB : F){
+	    			for(Instruction &I : BB){
+	    				Instruction* ins = &I;
+	    				if(BranchInst* BRI = dyn_cast<BranchInst>(ins)){
+	    					if(!BRI->isConditional()) continue;
+	    					IRBuilder<> builder(BRI);
+	    					if(Instruction* Cond = dyn_cast<Instruction>(BRI->getCondition())){
+	    						if(Cond->getParent() == BRI->getParent()) continue;
+	    						//Coming here if the condition is from a another basicblock;
+	    						outs() << "Found Alone Branch="; BRI->dump();
+	    						outs() << "Pointer="; Cond->dump();
+	    						builder.SetInsertPoint(BB.getFirstNonPHI());
+	    						Value* OR0 = builder.CreateXor(Cond,(uint64_t)0);
+	    						assert(OR0 != Cond);
+	    						Instruction* ORIns = cast<Instruction>(OR0);
+	    						outs() << "OR = "; ORIns->dump();
+
+	    						BRI->setOperand(0,OR0);
+	    						BB.dump();
+
+	    					}
+	    				}
+	    			}
+	    		}
+//	    		assert(false);
+	    	}
+
 	    	void ReplaceCMPs(Function &F) {
 	    		dfgNode* node;
 	    		std::vector<Instruction*> instructions;
@@ -1474,8 +1530,6 @@ std::vector<munitTransition> munitTransitionsALL;
 												break;
 											case CmpInst::ICMP_NE:
 											//TODO : DAC18
-											case CmpInst::FCMP_ONE:
-											case CmpInst::FCMP_UNE:
 											{
 												CmpInst* cmpEqNew=cast<CmpInst>(builder.CreateICmpEQ(CI->getOperand(0),CI->getOperand(1)));
 												Instruction* notIns=cast<Instruction>(builder.CreateNot(cmpEqNew));
@@ -1484,6 +1538,17 @@ std::vector<munitTransition> munitTransitionsALL;
 												ReplaceInstWithInst(CI->getParent()->getInstList(),ii,notIns);
 												break;
 											}
+											case CmpInst::FCMP_ONE:
+											case CmpInst::FCMP_UNE:
+											{
+												CmpInst* cmpEqNew=cast<CmpInst>(builder.CreateFCmpOEQ(CI->getOperand(0),CI->getOperand(1)));
+												Instruction* notIns=cast<Instruction>(builder.CreateNot(cmpEqNew));
+												BasicBlock::iterator ii(CI);
+												notIns->removeFromParent();
+												ReplaceInstWithInst(CI->getParent()->getInstList(),ii,notIns);
+												break;
+											}
+
 											case CmpInst::ICMP_SGE:
 											case CmpInst::ICMP_UGE:
 											//TODO : DAC18
@@ -2032,6 +2097,8 @@ namespace {
 
 			  //TODO : DAC18
 			  ReplaceCMPs(F);
+			  RemoveSelectLeafs(F);
+			  InsertORtoSingularConditionalBB(F);
 			  ParseSizeAttr(F,&sizeArrMap);
 
 			  std::string Filename = ("cfg." + F.getName() + ".dot").str();

@@ -1,58 +1,80 @@
 #include "dfg.h"
 #include <queue>
+#include <set>
 #include <unordered_set>
 
 template <typename T>
 class TreeNode{
 
 private:
-	TreeNode* left=NULL;
-	TreeNode* right=NULL;
+//	TreeNode* left=NULL;
+//	TreeNode* right=NULL;
+	std::set<TreeNode*> lefts;
+	std::set<TreeNode*> rights;
 	T data;
 
 public:
 	T getData(){return data;}
-	TreeNode* getLeft(){return left;}
-	TreeNode* getRight(){return right;}
+//	TreeNode* getLeft(){return left;}
+//	TreeNode* getRight(){return right;}
+	std::set<TreeNode*> getLefts(){return lefts;}
+	std::set<TreeNode*> getRights(){return rights;}
 
-//	bool operator=(const TreeNode& other) const{
-//		return this->data == other.data;
-//	}
+	bool operator<(const TreeNode& other) const{
+		return this->data < other.data;
+	}
 
 	bool belongsToParent(T d1, T& P, bool& P_bool){
 		std::queue<std::pair<TreeNode*,bool>> q;
 		q.push(std::make_pair(this,true));
-
 
 		while(!q.empty()){
 			std::pair<TreeNode*,bool> currPair = q.front(); q.pop();
 			TreeNode* tn = currPair.first;
 			bool currBool = currPair.second;
 
-			if(tn->getLeft()){
-				TreeNode* left = tn->getLeft();
+			if(!tn->getLefts().empty()){
+				std::set<TreeNode*> lefts = tn->getLefts();
+				bool isLeftNode=false;
+				for(TreeNode* left_tn : lefts){
+					if(left_tn->getData() == d1){
+						isLeftNode=true;
+						break;
+					}
+					q.push(std::make_pair(left_tn,true));
+				}
 
-				if(left->getData() == d1){
+				if(isLeftNode){
 					P=tn->getData();
 					P_bool = true;
 					return true;
 				}
 			}
-			if(tn->getRight()){
-				TreeNode* right = tn->getRight();
-				if(right->getData() == d1){
+
+			if(!tn->getRights().empty()){
+				std::set<TreeNode*> rights = tn->getRights();
+				bool isRightNode=false;
+				for(TreeNode* right_tn : rights){
+					if(right_tn->getData() == d1){
+						isRightNode=true;
+						break;
+					}
+					q.push(std::make_pair(right_tn,false));
+				}
+
+				if(isRightNode){
 					P=tn->getData();
 					P_bool = false;
 					return true;
 				}
 			}
-
-			if(tn->getLeft()){
-				q.push(std::make_pair(tn->getLeft(),true));
-			}
-			if(tn->getRight()){
-				q.push(std::make_pair(tn->getRight(),false));
-			}
+//
+//			if(tn->getLeft()){
+//				q.push(std::make_pair(tn->getLeft(),true));
+//			}
+//			if(tn->getRight()){
+//				q.push(std::make_pair(tn->getRight(),false));
+//			}
 		}
 		return false;
 	}
@@ -70,12 +92,22 @@ public:
 			res.insert(std::make_pair(tn,false));
 
 
-			if(tn->getLeft()){
-				q.push(tn->getLeft());
+			std::set<TreeNode*> lefts = tn->getLefts();
+			for(TreeNode* left_tn : lefts){
+				q.push(left_tn);
 			}
-			if(tn->getRight()){
-				q.push(tn->getRight());
+
+			std::set<TreeNode*> rights = tn->getRights();
+			for(TreeNode* right_tn : rights){
+				q.push(right_tn);
 			}
+
+//			if(tn->getLeft()){
+//				q.push(tn->getLeft());
+//			}
+//			if(tn->getRight()){
+//				q.push(tn->getRight());
+//			}
 		}
 		return res;
 	}
@@ -97,14 +129,26 @@ public:
 					break;
 				}
 				else{
-					if(tn->getLeft()){
-						q.push(tn->getLeft());
-						cameFrom[tn->getLeft()]=std::make_pair(tn,true);
+					std::set<TreeNode*> lefts = tn->getLefts();
+					for(TreeNode* left_tn : lefts){
+						q.push(left_tn);
+						cameFrom[left_tn]=std::make_pair(tn,true);
 					}
-					if(tn->getRight()){
-						q.push(tn->getRight());
-						cameFrom[tn->getRight()]=std::make_pair(tn,false);
+
+					std::set<TreeNode*> rights = tn->getRights();
+					for(TreeNode* right_tn : rights){
+						q.push(right_tn);
+						cameFrom[right_tn]=std::make_pair(tn,true);
 					}
+
+//					if(tn->getLeft()){
+//						q.push(tn->getLeft());
+//						cameFrom[tn->getLeft()]=std::make_pair(tn,true);
+//					}
+//					if(tn->getRight()){
+//						q.push(tn->getRight());
+//						cameFrom[tn->getRight()]=std::make_pair(tn,false);
+//					}
 				}
 			}
 		}
@@ -132,18 +176,29 @@ public:
 						if(nonMutexSet.find(test)==nonMutexSet.end()){
 							MutexSet.insert(test);
 						}
-						if(tn->getRight()){
-							q.push(tn->getRight());
+
+						std::set<TreeNode*> rights = tn->getRights();
+						for(TreeNode* right_tn : rights){
+							q.push(right_tn);
 						}
+//						if(tn->getRight()){
+//							q.push(tn->getRight());
+//						}
 					}
 					else{
 						std::pair<TreeNode*,bool> test = std::make_pair(tn,true);
 						if(nonMutexSet.find(test)==nonMutexSet.end()){
 							MutexSet.insert(test);
 						}
-						if(tn->getLeft()){
-							q.push(tn->getLeft());
+
+						std::set<TreeNode*> lefts = tn->getLefts();
+						for(TreeNode* left_tn : lefts){
+							q.push(left_tn);
 						}
+
+//						if(tn->getLeft()){
+//							q.push(tn->getLeft());
+//						}
 					}
 				}
 				else{
@@ -152,9 +207,15 @@ public:
 						if(nonMutexSet.find(test)==nonMutexSet.end()){
 							MutexSet.insert(test);
 						}
-						if(tn->getLeft()){
-							q.push(tn->getLeft());
+
+						std::set<TreeNode*> lefts = tn->getLefts();
+						for(TreeNode* left_tn : lefts){
+							q.push(left_tn);
 						}
+
+//						if(tn->getLeft()){
+//							q.push(tn->getLeft());
+//						}
 					}
 
 					{
@@ -162,9 +223,15 @@ public:
 						if(nonMutexSet.find(test)==nonMutexSet.end()){
 							MutexSet.insert(test);
 						}
-						if(tn->getRight()){
-							q.push(tn->getRight());
+
+						std::set<TreeNode*> rights = tn->getRights();
+						for(TreeNode* right_tn : rights){
+							q.push(right_tn);
 						}
+
+//						if(tn->getRight()){
+//							q.push(tn->getRight());
+//						}
 					}
 				}
 			}
@@ -182,15 +249,21 @@ public:
 		while(!q.empty()){
 			TreeNode* tn = q.front(); q.pop();
 
-			if(tn->getLeft()){
-				q.push(tn->getLeft());
+			if(!tn->getLefts().empty()){
+				std::set<TreeNode*> lefts = tn->getLefts();
+				for(TreeNode* left_tn : lefts){
+					q.push(left_tn);
+				}
 			}
 			else{
 				res.insert(std::make_pair(tn,true));
 			}
 
-			if(tn->getRight()){
-				q.push(tn->getRight());
+			if(!tn->getRights().empty()){
+				std::set<TreeNode*> rights = tn->getRights();
+				for(TreeNode* right_tn : rights){
+					q.push(right_tn);
+				}
 			}
 			else{
 				res.insert(std::make_pair(tn,false));
@@ -205,15 +278,19 @@ public:
 			return true;
 		}
 
-		if(left){
-			if(left->insertChild(child,parent,dir)){
-				return true;
+		if(!lefts.empty()){
+			for(TreeNode* left_tn : lefts){
+				if(left_tn->insertChild(child,parent,dir)){
+					return true;
+				}
 			}
 		}
 
-		if(right){
-			if(right->insertChild(child,parent,dir)){
-				return true;
+		if(!rights.empty()){
+			for(TreeNode* right_tn : rights){
+				if(right_tn->insertChild(child,parent,dir)){
+					return true;
+				}
 			}
 		}
 
@@ -222,27 +299,45 @@ public:
 
 	void insertChild(T data, bool dir){
 		if(dir == true){
-			if(left){
-				if(left->getData() == data) return;
-				assert(false);
+//			if(left){
+//				if(left->getData() == data) return;
+//				assert(false);
+//			}
+//			left = new TreeNode(data);
+			bool alreadyFound=false;
+			for(TreeNode* tn : lefts){
+				if(tn->getData() == data){
+					alreadyFound=true;
+					return;
+				}
 			}
-			left = new TreeNode(data);
+
+			lefts.insert(new TreeNode(data));
 			return;
 		}
 		else{
-			if(right){
-				if(right->getData() == data) return;
-				assert(false);
+//			if(right){
+//				if(right->getData() == data) return;
+//				assert(false);
+//			}
+//			right = new TreeNode(data);
+			bool alreadyFound=false;
+			for(TreeNode* tn : rights){
+				if(tn->getData() == data){
+					alreadyFound=true;
+					return;
+				}
 			}
-			right = new TreeNode(data);
+
+			rights.insert(new TreeNode(data));
 			return;
 		}
 	}
 
 	TreeNode(T data) : data(data){}
 	~TreeNode(){
-		if(left)  delete left;
-		if(right) delete right;
+//		if(left)  delete left;
+//		if(right) delete right;
 	}
 };
 
@@ -323,8 +418,12 @@ public :
 	void removeRedudantCtrl();
 	void removeCMERGEChildrenOpposingCtrl();
 
+	void removeNotCtrlConns();
+	void addRecConnsAsPseudo();
 
+	std::set<std::vector<std::pair<BasicBlock*,CondVal>>> getPaths();
 	std::map<dfgNode*,std::map<dfgNode*,int>> edgeClassification;
+
 
 
 

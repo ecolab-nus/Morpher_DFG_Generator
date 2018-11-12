@@ -61,17 +61,23 @@ void dfgNode::addChild(Instruction *child, int type){
 
 void dfgNode::addAncestor(Instruction *anc, int type){
 	assert(anc != NULL);
-	errs() << "Ancestor Size = " << this->Ancestors.empty() << "\n";
+	errs() << "Ancestor Size = " << this->Ancestors.size() << "\n";
 	for (int i = 0; i < Ancestors.size(); ++i) {
 		if(anc == Ancestors[i]){
 			return;
 		}
 	}
 
+
 	Ancestors.push_back(anc);
 	dfgNode* ancNode = Parent->findNode(anc);
 	ancNode->addChildNode(this);
 	AncestorNodes.push_back(ancNode);
+
+	errs() << "Adding ::  idx=" << ancNode->getIdx() << ",from=" ; anc->dump();
+	if(this->getNode()) {
+		errs() << "\t idx=" << this->idx << ",to="; this->getNode()->dump();
+	}
 
 	Edge temp;
 	temp.setID(Parent->getEdges().size());

@@ -100,6 +100,15 @@ void DFGPartPred::removeOutLoopLoad() {
 	for(dfgNode* node : NodeList){
 
 		if(node->getNameType() == "OutLoopLOAD"){
+			bool oloadonlyparent=false;
+			for(dfgNode* child : node->getChildren()){
+				if(child->getAncestors().size() == 1){
+					oloadonlyparent=true;
+					break;
+				}
+			}
+			if(oloadonlyparent) continue;
+
 			removalNodes.insert(node);
 			assert(node->getAncestors().empty());
 
@@ -108,6 +117,7 @@ void DFGPartPred::removeOutLoopLoad() {
 				child->removeAncestor(node);
 			}
 		}
+
 	}
 
 	for(dfgNode* rn : removalNodes){
@@ -115,7 +125,11 @@ void DFGPartPred::removeOutLoopLoad() {
 		NodeList.erase(std::remove(NodeList.begin(), NodeList.end(), rn), NodeList.end());
 	}
 
-	name = name + "_noOLOAD";
+	name = name + "_noSemiOLOAD";
+
+	scheduleASAP();
+	scheduleALAP();
+
 }
 
 
@@ -127,9 +141,9 @@ std::vector<dfgNode*> DFGPartPred::getStoreInstructions(BasicBlock* BB) {
 		if(node->getNode()){
 			if(StoreInst* STI = dyn_cast<StoreInst>(node->getNode())){
 				bool parentInThisBB = false;
-				for(dfgNode* parent : node->getAncestors()){
-					if(parent->BB == BB) parentInThisBB = true; break;
-				}
+//				for(dfgNode* parent : node->getAncestors()){
+//					if(parent->BB == BB) parentInThisBB = true; break;
+//				}
 				if(!parentInThisBB) res.push_back(node);
 			}
 			else if(BranchInst* BRI = dyn_cast<BranchInst>(node->getNode())){
@@ -143,9 +157,9 @@ std::vector<dfgNode*> DFGPartPred::getStoreInstructions(BasicBlock* BB) {
 		}
 		else if(node->getNameType() == "OutLoopSTORE"){
 			bool parentInThisBB = false;
-			for(dfgNode* parent : node->getAncestors()){
-				if(parent->BB == BB) parentInThisBB = true; break;
-			}
+//			for(dfgNode* parent : node->getAncestors()){
+//				if(parent->BB == BB) parentInThisBB = true; break;
+//			}
 			if(!parentInThisBB) res.push_back(node);
 		}
 	}
@@ -182,124 +196,149 @@ int DFGPartPred::handlePHINodes(std::set<BasicBlock*> LoopBB) {
 				BasicBlock* bb = PHI->getIncomingBlock(i);
 				Value* V = PHI->getIncomingValue(i);
 				outs() << "V :: "; V->dump();
-				bool incomingCTRLVal;
+//				bool incomingCTRLVal;
+				std::map<dfgNode*,bool> cnodectrlvalmap;
 
-				dfgNode* previousCTRLNode;
+//				dfgNode* previousCTRLNode;
+				std::vector<dfgNode*> previousCtrlNodes;
+
 				if(LoopBB.find(bb) == LoopBB.end()){
 					//Not found
 					std::pair<BasicBlock*,BasicBlock*> bbPair = std::make_pair(bb,(BasicBlock*)node->BB);
 					assert(loopentryBB.find(bbPair)!=loopentryBB.end());
-					previousCTRLNode = getStartNode(bb,node);
-					incomingCTRLVal=true; // all start nodes are assumed to be true
+//					previousCTRLNode = getStartNode(bb,node);
+					previousCtrlNodes.push_back(getStartNode(bb,node));
+//					incomingCTRLVal=true; // all start nodes are assumed to be true
+					cnodectrlvalmap[getStartNode(bb,node)]=true;
 				}
 				else{ // within the loop
 					BranchInst* BRI = cast<BranchInst>(bb->getTerminator());
-					previousCTRLNode = findNode(BRI);
+					dfgNode* BRNode = findNode(BRI);
 					bool isConditional = BRI->isConditional();
 
-					BRI->dump();
-					assert(previousCTRLNode->getAncestors().size()==1);
-					previousCTRLNode = previousCTRLNode->getAncestors()[0];
-					const BasicBlock* currBB = BRI->getParent();
+//					BRI->dump();
+//					assert(BRNode->getAncestors().size()==1);
+//					previousCTRLNode = BRNode->getAncestors()[0];
+
 
 					if(!isConditional){
-						const BasicBlock* BRParentBB = previousCTRLNode->BB;
-						const BranchInst* BRParentBRI = cast<BranchInst>(BRParentBB->getTerminator());
-						assert(BRParentBRI->isConditional());
-//						if(BRParentBRI->getSuccessor(0)==currBB){
-//							incomingCTRLVal=true;
-//						}
-//						else if(BRParentBRI->getSuccessor(1)==currBB){
-//							incomingCTRLVal=false;
-//						}
-//						else{
-//							BRParentBRI->dump();
-//							outs() << BRParentBRI->getSuccessor(0)->getName() << "\n";
-//							outs() << BRParentBRI->getSuccessor(1)->getName() << "\n";
-//							outs() << currBB->getName() << "\n";
-//							outs() << previousCTRLNode->getIdx() << "\n";
-//							assert(false);
-//						}
-						std::set<const BasicBlock*> searchSoFar;
-						assert(checkBRPath(BRParentBRI,currBB,incomingCTRLVal,searchSoFar));
-						isConditional=true; //this is always true. coz there is no backtoback unconditional branches.
+						const BasicBlock* currBB = BRI->getParent();
+						previousCtrlNodes = BRNode->getAncestors();
+
+						for(dfgNode* pcn : previousCtrlNodes){
+							const BasicBlock* BRParentBB = pcn->BB;
+							const BranchInst* BRParentBRI = cast<BranchInst>(BRParentBB->getTerminator());
+							assert(BRParentBRI->isConditional());
+	//						if(BRParentBRI->getSuccessor(0)==currBB){
+	//							incomingCTRLVal=true;
+	//						}
+	//						else if(BRParentBRI->getSuccessor(1)==currBB){
+	//							incomingCTRLVal=false;
+	//						}
+	//						else{
+	//							BRParentBRI->dump();
+	//							outs() << BRParentBRI->getSuccessor(0)->getName() << "\n";
+	//							outs() << BRParentBRI->getSuccessor(1)->getName() << "\n";
+	//							outs() << currBB->getName() << "\n";
+	//							outs() << previousCTRLNode->getIdx() << "\n";
+	//							assert(false);
+	//						}
+							std::set<const BasicBlock*> searchSoFar;
+							bool incomingCTRLVal;
+							assert(checkBRPath(BRParentBRI,currBB,incomingCTRLVal,searchSoFar));
+							cnodectrlvalmap[pcn]=incomingCTRLVal;
+							isConditional=true; //this is always true. coz there is no backtoback unconditional branches.
+
+						}
+
 					}
 					else{
+						assert(BRNode->getAncestors().size()==1);
+//						previousCTRLNode = BRNode->getAncestors()[0];
+						previousCtrlNodes.push_back(BRNode->getAncestors()[0]);
 						if(BRI->getSuccessor(0) == node->BB){
-							incomingCTRLVal = true;
+//							incomingCTRLVal = true;
+							cnodectrlvalmap[BRNode->getAncestors()[0]]=true;
 						}
 						else{
-							incomingCTRLVal = false;
+//							incomingCTRLVal = false;
+							cnodectrlvalmap[BRNode->getAncestors()[0]]=false;
 							assert(BRI->getSuccessor(1) == node->BB);
 						}
 					}
 
-					outs() << "previousCTRLNode : "; previousCTRLNode->getNode()->dump();
-					outs() << "CTRL VAL : " << incomingCTRLVal << "\n";
-				}
-				assert(previousCTRLNode!=NULL);
-
-
-				dfgNode* mergeNode;
-				if(ConstantInt* CI = dyn_cast<ConstantInt>(V)){
-					int constant = CI->getSExtValue();
-					mergeNode = insertMergeNode(node,previousCTRLNode,incomingCTRLVal,constant);
-
-				}
-				else if(ConstantFP* FP = dyn_cast<ConstantFP>(V)){
-					int constant = (int)FP->getValueAPF().convertToFloat();
-					mergeNode = insertMergeNode(node,previousCTRLNode,incomingCTRLVal,constant);
-
-				}
-				else if(UndefValue *UND = dyn_cast<UndefValue>(V)){
-					int constant = 0;
-					mergeNode = insertMergeNode(node,previousCTRLNode,incomingCTRLVal,constant);
-				}
-				else if(sizeArrMap.find(V->getName().str())!=sizeArrMap.end()){
-					int constant = sizeArrMap[V->getName().str()];
-					mergeNode = insertMergeNode(node,previousCTRLNode,incomingCTRLVal,constant);
-				}
-				else{
-
-					Instruction* ins = cast<Instruction>(V);
-					dfgNode* phiParent = findNode(ins);
-					bool isPhiParentOutLoopLoad=false;
-					if(phiParent == NULL){ //not found
-						isPhiParentOutLoopLoad=true;
-						if(OutLoopNodeMap.find(ins)!=OutLoopNodeMap.end()){
-							phiParent=OutLoopNodeMap[ins];
-						}
-						else{
-							phiParent=addLoadParent(ins,node);
-							bool isBackEdge = checkBackEdge(previousCTRLNode,phiParent);
-//							previousCTRLNode->addChildNode(phiParent,EDGE_TYPE_DATA,isBackEdge,true,incomingCTRLVal);
-//							phiParent->addAncestorNode(previousCTRLNode,EDGE_TYPE_DATA,isBackEdge,true,incomingCTRLVal);
-						}
+					for(dfgNode* pcn : previousCtrlNodes) {
+						outs() << "previousCTRLNode : "; pcn->getNode()->dump();
+						outs() << "CTRL VAL : " << cnodectrlvalmap[pcn] << "\n";
 					}
-					assert(phiParent!=NULL);
 
+				}
+//				assert(previousCTRLNode!=NULL);
+				assert(!previousCtrlNodes.empty());
 
-					bool isPhiParentSuccCTRL=false;
-//					for (int succ = 0; succ < previousCTRLNode->BB->getTerminator()->getNumSuccessors(); ++succ) {
-//						if(previousCTRLNode->BB->getTerminator()->getSuccessor(succ)==phiParent->BB){
-//							isPhiParentSuccCTRL=true;
-//							break;
-//						}
-//					}
+				for(dfgNode* previousCTRLNode : previousCtrlNodes){
+					bool incomingCTRLVal = cnodectrlvalmap[previousCTRLNode];
+					dfgNode* mergeNode;
+					if(ConstantInt* CI = dyn_cast<ConstantInt>(V)){
+						int constant = CI->getSExtValue();
+						mergeNode = insertMergeNode(node,previousCTRLNode,incomingCTRLVal,constant);
 
-//					if(previousCTRLNode->BB != phiParent->BB){
-					if(!isPhiParentSuccCTRL){
-						mergeNode = insertMergeNode(node,previousCTRLNode,incomingCTRLVal,phiParent);
+					}
+					else if(ConstantFP* FP = dyn_cast<ConstantFP>(V)){
+						int constant = (int)FP->getValueAPF().convertToFloat();
+						mergeNode = insertMergeNode(node,previousCTRLNode,incomingCTRLVal,constant);
+
+					}
+					else if(UndefValue *UND = dyn_cast<UndefValue>(V)){
+						int constant = 0;
+						mergeNode = insertMergeNode(node,previousCTRLNode,incomingCTRLVal,constant);
+					}
+					else if(sizeArrMap.find(V->getName().str())!=sizeArrMap.end()){
+						int constant = sizeArrMap[V->getName().str()];
+						mergeNode = insertMergeNode(node,previousCTRLNode,incomingCTRLVal,constant);
 					}
 					else{
-						outs() << "mergeNode and control are from the same BB\n";
-						mergeNode = phiParent;
-//						if(!isPhiParentOutLoopLoad){
-//							mergeNodeControl[mergeNode]=std::make_pair(previousCTRLNode,incomingCTRLVal);
-//						}
+
+						Instruction* ins = cast<Instruction>(V);
+						dfgNode* phiParent = findNode(ins);
+						bool isPhiParentOutLoopLoad=false;
+						if(phiParent == NULL){ //not found
+							isPhiParentOutLoopLoad=true;
+							if(OutLoopNodeMap.find(ins)!=OutLoopNodeMap.end()){
+								phiParent=OutLoopNodeMap[ins];
+							}
+							else{
+								phiParent=addLoadParent(ins,node);
+								bool isBackEdge = checkBackEdge(previousCTRLNode,phiParent);
+	//							previousCTRLNode->addChildNode(phiParent,EDGE_TYPE_DATA,isBackEdge,true,incomingCTRLVal);
+	//							phiParent->addAncestorNode(previousCTRLNode,EDGE_TYPE_DATA,isBackEdge,true,incomingCTRLVal);
+							}
+						}
+						assert(phiParent!=NULL);
+
+
+						bool isPhiParentSuccCTRL=false;
+	//					for (int succ = 0; succ < previousCTRLNode->BB->getTerminator()->getNumSuccessors(); ++succ) {
+	//						if(previousCTRLNode->BB->getTerminator()->getSuccessor(succ)==phiParent->BB){
+	//							isPhiParentSuccCTRL=true;
+	//							break;
+	//						}
+	//					}
+
+	//					if(previousCTRLNode->BB != phiParent->BB){
+						if(!isPhiParentSuccCTRL){
+							mergeNode = insertMergeNode(node,previousCTRLNode,incomingCTRLVal,phiParent);
+						}
+						else{
+							outs() << "mergeNode and control are from the same BB\n";
+							mergeNode = phiParent;
+	//						if(!isPhiParentOutLoopLoad){
+	//							mergeNodeControl[mergeNode]=std::make_pair(previousCTRLNode,incomingCTRLVal);
+	//						}
+						}
 					}
+					mergeNodes.push_back(mergeNode);
 				}
-				mergeNodes.push_back(mergeNode);
 			}
 			outs() << "DEBUG........... end\n";
 			bool recursivePhiNodes=false;
@@ -337,8 +376,17 @@ int DFGPartPred::handlePHINodes(std::set<BasicBlock*> LoopBB) {
 
 			//This is hack for keep phinodes being removed
 			// UPDATE : i just keep the induction variable
+			bool isInductionVar=false;
 			if(PHI == currLoop->getCanonicalInductionVariable()){
 				recursivePhiNodes=true;
+				isInductionVar=true;
+			}
+
+			//cmerge node has backedges, its better to keep the phi node
+			for(dfgNode* mergeNode : mergeNodes){
+				if(backedgeChildMergeNodes.find(mergeNode)!=backedgeChildMergeNodes.end()){
+					recursivePhiNodes=true;
+				}
 			}
 
 			if(recursivePhiNodes){
@@ -363,8 +411,10 @@ int DFGPartPred::handlePHINodes(std::set<BasicBlock*> LoopBB) {
 //					isBackEdge = false;
 
 //					bool isBackEdge = checkBackEdge(actPHI,node);
-					node->addAncestorNode(mergeNode,EDGE_TYPE_DATA,isBackEdge);
-					mergeNode->addChildNode(node,EDGE_TYPE_DATA,isBackEdge);
+					if(!isInductionVar || !isBackEdge ){
+						node->addAncestorNode(mergeNode,EDGE_TYPE_DATA,isBackEdge);
+						mergeNode->addChildNode(node,EDGE_TYPE_DATA,isBackEdge);
+					}
 				}
 			}
 			else{
@@ -656,14 +706,22 @@ bool DFGPartPred::checkBackEdge(dfgNode* src, dfgNode* dest) {
 
 void DFGPartPred::generateTrigDFGDOT() {
 
-	connectBB();
+//	connectBB();
+	connectBBTrig();
+	createCtrlBROrTree();
+
 	handlePHINodes(this->loopBB);
 //	insertshiftGEPs();
 	addMaskLowBitInstructions();
 	removeDisconnetedNodes();
 //	scheduleCleanBackedges();
 	fillCMergeMutexNodes();
+
+
 	constructCMERGETree();
+
+//	printDOT(this->name + "_PartPredDFG.dot"); return;
+
 	scheduleASAP();
 	scheduleALAP();
 //	assignALAPasASAP();
@@ -780,6 +838,7 @@ void DFGPartPred::fillCMergeMutexNodes() {
 		}
 
 		if(!currMutexSet.empty()) mutexSets.insert(currMutexSet);
+		mutexSetCommonChildren[currMutexSet].insert(node);
 
 		for(dfgNode* m1 : currMutexSet){
 			for(dfgNode* m2 : currMutexSet){
@@ -798,9 +857,10 @@ void DFGPartPred::constructCMERGETree() {
 		std::queue<dfgNode*> thisIterSet;
 		std::queue<dfgNode*> nextIterSet;
 
+		outs() << "CMERGE(ThisIter) set =";
 		for(dfgNode* cmergeNode : cmergeSet){
 			bool isBackEdge=false;
-			for(dfgNode* child : cmergeNode->getChildren()){
+			for(dfgNode* child : mutexSetCommonChildren[cmergeSet]){
 				if(isBackEdge) assert(cmergeNode->childBackEdgeMap[child] == true);
 				if(cmergeNode->childBackEdgeMap[child]){
 					isBackEdge = true;
@@ -812,10 +872,12 @@ void DFGPartPred::constructCMERGETree() {
 				nextIterSet.push(cmergeNode);
 			}
 			else{
+				outs() << cmergeNode->getIdx() << ",";
 				selectPHIAncestorMap[cmergeNode]=cmergePHINodes[cmergeNode];
 				thisIterSet.push(cmergeNode);
 			}
 		}
+		outs() << "\n";
 
 		if(thisIterSet.size() + nextIterSet.size() <= 1) continue;
 
@@ -842,16 +904,17 @@ void DFGPartPred::constructCMERGETree() {
 				selectPHIAncestorMap[temp] = selectPHIAncestorMap[cmerge_left];
 				std::cout << "CREATING NEW NODE = " << temp->getIdx() << ",";
 
-				assert(cmerge_left->getChildren().size() == cmerge_right->getChildren().size());
-				std::vector<dfgNode*> cmergeLeftChildrenOrig = cmerge_left->getChildren();
-				std::vector<dfgNode*> cmergeRightChildrenOrig = cmerge_right->getChildren();
+//				assert(cmerge_left->getChildren().size() == cmerge_right->getChildren().size());
+				std::set<dfgNode*> cmergeLeftChildrenOrig = mutexSetCommonChildren[cmergeSet];
+				std::set<dfgNode*> cmergeRightChildrenOrig = mutexSetCommonChildren[cmergeSet];
 
 				temp->addAncestorNode(cmerge_left); cmerge_left->addChildNode(temp);
 				temp->addAncestorNode(cmerge_right); cmerge_right->addChildNode(temp);
 
-				for (int i = 0; i < cmergeLeftChildrenOrig.size(); ++i) {
-					dfgNode* left_child = cmergeLeftChildrenOrig[i];
-					dfgNode* right_child = cmergeRightChildrenOrig[i];
+//				for (int i = 0; i < cmergeLeftChildrenOrig.size(); ++i) {
+				for(dfgNode* child : cmergeLeftChildrenOrig){
+					dfgNode* left_child = child;
+					dfgNode* right_child = child;
 					assert(left_child == right_child);
 
 					cmerge_left->removeChild(left_child); left_child->removeAncestor(cmerge_left);
@@ -886,18 +949,18 @@ void DFGPartPred::constructCMERGETree() {
 				std::cout << "CREATING NEW NODE = " << temp->getIdx() << ",";
 				selectPHIAncestorMap[temp] = selectPHIAncestorMap[cmerge_left];
 
-				assert(cmerge_left->getChildren().size() == cmerge_right->getChildren().size());
-				std::vector<dfgNode*> cmergeLeftChildrenOrig = cmerge_left->getChildren();
-				std::vector<dfgNode*> cmergeRightChildrenOrig = cmerge_right->getChildren();
+//				assert(cmerge_left->getChildren().size() == cmerge_right->getChildren().size());
+				std::set<dfgNode*> cmergeLeftChildrenOrig = mutexSetCommonChildren[cmergeSet];
+				std::set<dfgNode*> cmergeRightChildrenOrig = mutexSetCommonChildren[cmergeSet];
 
 				temp->addAncestorNode(cmerge_left); cmerge_left->addChildNode(temp);
 				temp->addAncestorNode(cmerge_right); cmerge_right->addChildNode(temp);
 
-
-				for (int i = 0; i < cmergeLeftChildrenOrig.size(); ++i) {
-					dfgNode* left_child = cmergeLeftChildrenOrig[i];
-					dfgNode* right_child = cmergeRightChildrenOrig[i];
-					assert(left_child == right_child);
+	//				for (int i = 0; i < cmergeLeftChildrenOrig.size(); ++i) {
+					for(dfgNode* child : cmergeLeftChildrenOrig){
+						dfgNode* left_child = child;
+						dfgNode* right_child = child;
+						assert(left_child == right_child);
 
 					cmerge_left->removeChild(left_child); left_child->removeAncestor(cmerge_left);
 					cmerge_right->removeChild(right_child); right_child->removeAncestor(cmerge_right);
@@ -1194,6 +1257,7 @@ void DFGPartPred::printNewDFGXML() {
 								xmlFile << "type=\"I2\"/>\n";
 							}
 							else{
+								outs() << "node=" << node->getIdx() << ",child=" << child->getIdx() << "\n";
 								assert(false);
 							}
 						}
@@ -1202,9 +1266,9 @@ void DFGPartPred::printNewDFGXML() {
 				else if(node->getNameType()=="SELECTPHI"){
 					if(child->getNode()){
 						written = true;
-						std::cout << "SELECTPHI :: " << node->getIdx();
-						std::cout << ",child = " << child->getIdx() << " | "; child->getNode()->dump();
-						std::cout << ",phiancestor = " << selectPHIAncestorMap[node]->getIdx() << " | "; selectPHIAncestorMap[node]->getNode()->dump();
+						outs() << "SELECTPHI :: " << node->getIdx();
+						outs() << ",child = " << child->getIdx() << " | "; child->getNode()->dump();
+						outs() << ",phiancestor = " << selectPHIAncestorMap[node]->getIdx() << " | "; selectPHIAncestorMap[node]->getNode()->dump();
 
 						int operand_no = findOperandNumber(child,child->getNode(),selectPHIAncestorMap[node]->getNode());
 						if( operand_no == 0){
@@ -1217,6 +1281,7 @@ void DFGPartPred::printNewDFGXML() {
 							xmlFile << "type=\"I2\"/>\n";
 						}
 						else{
+							outs() << "node = " << node->getIdx() << ", child = " << child->getIdx() << "\n";
 							assert(false);
 						}
 					}
@@ -1615,6 +1680,9 @@ void DFGPartPred::addOrphanPseudoEdges() {
 		q.push(q_init);
 
 		dfgNode* criticalChild = NULL;
+		int startdiff = node->getALAPnumber() - node->getASAPnumber();
+		dfgNode* critCand = NULL;
+
 		while(!q.empty()){
 			std::set<dfgNode*> curr = q.front(); q.pop();
 			std::set<dfgNode*> q_next;
@@ -1623,8 +1691,16 @@ void DFGPartPred::addOrphanPseudoEdges() {
 				if(n->getASAPnumber() == n->getALAPnumber()){
 					criticalChild=n;
 					critChildFound=true;
+					startdiff=0;
 					break;
 				}
+
+				int currDiff = n->getALAPnumber() - n->getASAPnumber();
+				if(currDiff < startdiff){
+					startdiff = currDiff;
+					critCand = n;
+				}
+
 				for(dfgNode* child : n->getChildren()){
 					if(n->childBackEdgeMap[child]) continue;
 					q_next.insert(child);
@@ -1636,6 +1712,26 @@ void DFGPartPred::addOrphanPseudoEdges() {
 		}
 
 		while(!q.empty()) q.pop();
+
+		if(!criticalChild){
+			if(!critCand){
+				outs() << "NO critChild and NO critCand! continue...\n";
+				continue;
+			}
+			outs() << "No critChild , but critCand = " << critCand->getIdx()  << ",with startDiff = " << startdiff << "\n";
+			criticalChild = critCand;
+//			for(dfgNode* n : NodeList){
+//				if(n == node) continue;
+//				if(n->getALAPnumber() == node->getALAPnumber() - 1){
+//
+//					dfgNode* pseduoParent = n;
+//					outs() << "Adding Pseudo Connection :: parent=" << pseduoParent->getIdx() << ",to" << node->getIdx() << "\n";
+//					pseduoParent->addChildNode(node,EDGE_TYPE_PS,false);
+//					node->addAncestorNode(pseduoParent,EDGE_TYPE_PS,false);
+//				}
+//			}
+//			continue;
+		}
 
 		assert(criticalChild);
 		q_init.clear();
@@ -1649,7 +1745,8 @@ void DFGPartPred::addOrphanPseudoEdges() {
 			bool pseudoParentFound=false;
 			for(dfgNode* n : curr){
 //				if(n->getASAPnumber() == n->getALAPnumber()){
-					if(n->getALAPnumber() == node->getALAPnumber()){
+//					if(n->getALAPnumber() == node->getALAPnumber()){
+					if(node->getALAPnumber() - n->getALAPnumber() == startdiff){
 						pseduoParent=n;
 						outs() << "Adding Pseudo Connection :: parent=" << pseduoParent->getIdx() << ",to" << node->getIdx() << "\n";
 						pseduoParent->addChildNode(node,EDGE_TYPE_PS,false,true,true);
@@ -1912,4 +2009,323 @@ void DFGPartPred::printDOT(std::string fileName) {
 
 	ofs << "}" << std::endl;
 	ofs.close();
+}
+
+void DFGPartPred::connectBBTrig() {
+
+
+	std::map<BasicBlock*,std::set<std::pair<BasicBlock*,CondVal>>> CtrlBBInfo = getCtrlInfoBBMorePaths();
+
+	for(std::pair<BasicBlock*,std::set<std::pair<BasicBlock*,CondVal>>> p1 : CtrlBBInfo){
+		BasicBlock* childBB = p1.first;
+//		std::vector<dfgNode*> leaves = getLeafs(childBB);
+		std::vector<dfgNode*> leaves = getStoreInstructions(childBB);
+
+		for(std::pair<BasicBlock*,CondVal> p2 : p1.second){
+			BasicBlock* parentBB = p2.first;
+			CondVal parentVal = p2.second;
+
+			BranchInst* BRI = cast<BranchInst>(parentBB->getTerminator());
+			bool isConditional = BRI->isConditional();
+			assert(isConditional);
+
+			dfgNode* BR = findNode(BRI); assert(BR);
+
+//			dfgNode* mergeNode;
+			if(BR->getAncestors().size() != 1){
+				assert(BR->getAncestors().size() == 2);
+				outs() << "Br=" << BR->getIdx() << ",Ins=";
+				BRI->dump();
+				outs() << "Ancestor Count=" << BR->getAncestors().size() << "\n";
+				outs() << "Ancestors=";
+				for(dfgNode* par : BR->getAncestors()){
+					outs() << par->getIdx() << ",BB=" << par->BB->getName() <<":";
+					if(par->getNode()) par->getNode()->dump();
+				}
+			}
+			assert(BR->getAncestors().size() == 1);
+			BrParentMap[parentBB]=BR->getAncestors()[0];
+			BrParentMapInv[BR->getAncestors()[0]]=parentBB;
+
+			outs() << "ConnectBB :: From=" << BrParentMap[parentBB]->getIdx() << "(" << parentBB->getName() << ")" << ",To=";
+			for(dfgNode* succNode : leaves){
+				outs() << succNode->getIdx() << ",";
+				assert(succNode->getNameType() != "OutLoopLOAD");
+			}
+			outs() << ",destBB = " << childBB->getName();
+			outs() << "\n";
+
+			for(dfgNode* BRParent : BR->getAncestors()){
+				for(dfgNode* succNode : leaves){
+					leafControlInputs[succNode].insert(BRParent);
+	//				isBackEdge = checkBackEdge(node,succNode); //getCtrlInfoBB does not return backedges
+//					if(!succNode->isParent(BRParent)){
+						BRParent->addChildNode(succNode,EDGE_TYPE_DATA,false,isConditional,(parentVal==TRUE));
+						succNode->addAncestorNode(BRParent,EDGE_TYPE_DATA,false,isConditional,(parentVal==TRUE));
+//					}
+				}
+			}
+		}
+	}
+}
+
+void DFGPartPred::createCtrlBROrTree() {
+
+	outs() << "createCtrlBROrTree STARTED!\n";
+
+	for(dfgNode* node : NodeList){
+		std::set<dfgNode*> predicateParents;
+		for(dfgNode* par : node->getAncestors()){
+			if(par->childConditionalMap[node] != UNCOND){
+				predicateParents.insert(par);
+			}
+		}
+
+		if(predicateParents.size() > 1){
+			std::queue<dfgNode*> q;
+			for(dfgNode* pp : predicateParents){
+				q.push(pp);
+			}
+			while(!q.empty()){
+				dfgNode* pp1 = q.front(); q.pop();
+				if(!q.empty()){
+					dfgNode* pp2 = q.front(); q.pop();
+
+					outs() << "Connecting pp1 = " << pp1->getIdx() << ",";
+					outs() << "pp2 = " << pp2->getIdx() << ",";
+
+
+					dfgNode* temp = new dfgNode(this);
+					temp->setIdx(5000 + NodeList.size());
+					temp->setNameType("CTRLBrOR");
+					temp->BB = pp1->BB;
+					NodeList.push_back(temp);
+
+					outs() << "newNode = " << temp->getIdx() << "\n";
+
+					bool isPP1BackEdge = pp1->childBackEdgeMap[node];
+					bool isPP2BackEdge = pp2->childBackEdgeMap[node];
+
+					pp1->addChildNode(temp);
+					temp->addAncestorNode(pp1);
+
+					pp2->addChildNode(temp);
+					temp->addAncestorNode(pp2);
+
+					temp->addChildNode(node,EDGE_TYPE_DATA,isPP1BackEdge,true,pp1->childConditionalMap[node]);
+					node->addAncestorNode(temp,EDGE_TYPE_DATA,isPP1BackEdge,true,pp1->childConditionalMap[node]);
+
+					pp1->removeChild(node);
+					node->removeAncestor(pp1);
+					pp2->removeChild(node);
+					node->removeAncestor(pp2);
+					q.push(temp);
+				}
+				else{
+					outs() << "Alone node = " << pp1->getIdx() << "\n";
+				}
+
+			}
+		}
+	}
+
+	outs() << "createCtrlBROrTree ENDED!\n";
+
+}
+
+std::map<BasicBlock*, std::set<std::pair<BasicBlock*, CondVal> > > DFGPartPred::getCtrlInfoBBMorePaths() {
+
+
+	//This function will return a map of basicblocks to their control dependent parents with the
+	// respective control value
+
+	SmallVector<std::pair<const BasicBlock *, const BasicBlock *>,8> BackedgeBBs;
+	dfgNode firstNode = *NodeList[0];
+	FindFunctionBackedges(*(firstNode.getNode()->getFunction()),BackedgeBBs);
+
+	std::map<BasicBlock*,std::set<std::pair<BasicBlock*,CondVal>>> res;
+
+	for(BasicBlock* BB : loopBB){
+
+		std::queue<BasicBlock*> q;
+		q.push(BB);
+
+		std::map<BasicBlock*,std::set<CondVal>> visited;
+
+		while(!q.empty()){
+			BasicBlock* curr = q.front(); q.pop();
+//			outs() << "curr=" << curr->getName() << "\n";
+
+			for (auto it = pred_begin(curr), et = pred_end(curr); it != et; ++it)
+			{
+			  BasicBlock* predecessor = *it;
+		      if(loopBB.find(predecessor)==loopBB.end()){
+		    	  continue; // no need to care for out of loop BBs.
+		      }
+
+//		      if(predecessor == BB) continue;
+
+		      std::pair<const BasicBlock*,const BasicBlock*> bbPair = std::make_pair((const BasicBlock*)predecessor,(const BasicBlock*)curr);
+		      if(std::find(BackedgeBBs.begin(),BackedgeBBs.end(),bbPair)!=BackedgeBBs.end()){
+		    	  continue; // no need to traverse backedges;
+		      }
+
+			  CondVal cv;
+			  BranchInst* BRI = cast<BranchInst>(predecessor->getTerminator());
+//			  BRI->dump();
+
+			  if(!BRI->isConditional()){
+//				  outs() << "\t0 :: ";
+				  cv = UNCOND;
+			  }
+			  else{
+				  for (int i = 0; i < BRI->getNumSuccessors(); ++i) {
+					  if(BRI->getSuccessor(i) == curr){
+						  if(i==0){
+//							  outs() << "\t1 :: ";
+							  cv = TRUE;
+						  }
+						  else if(i==1){
+//							  outs() << "\t2 :: ";
+							  cv = FALSE;
+						  }
+						  else{
+							  assert(false);
+						  }
+					  }
+				  }
+			  }
+
+//			  outs() << "\tPred=" << predecessor->getName() << "(" << dfgNode::getCondValStr(cv) << ")\n";
+
+			  visited[predecessor].insert(cv);
+			  q.push(predecessor);
+			}
+		}
+
+		outs() << "BasicBlock : " << BB->getName() << " :: DependentCtrlBBs = ";
+		res[BB];
+		for(std::pair<BasicBlock*,std::set<CondVal>> pair : visited){
+			BasicBlock* bb = pair.first;
+			std::set<CondVal> brOuts = pair.second;
+
+
+//			if(brOuts.size() == 1){
+//				if(brOuts.find(UNCOND) == brOuts.end()){
+					outs() << bb->getName();
+//					if(brOuts.find(UNCOND) != brOuts.end()){
+//						res[BB].insert(std::make_pair(bb,UNCOND));
+//						outs() << "(UNCOND),";
+//					}
+					if(brOuts.find(TRUE) != brOuts.end()){
+						res[BB].insert(std::make_pair(bb,TRUE));
+						outs() << "(TRUE),";
+					}
+					if(brOuts.find(FALSE) != brOuts.end()){
+						res[BB].insert(std::make_pair(bb,FALSE));
+						outs() << "(FALSE),";
+					}
+//					res[BB].insert(std::make_pair(bb,cv));
+//				}
+//			}
+		}
+		outs() << "\n";
+	}
+
+	outs() << "###########################################################################\n";
+
+	std::map<BasicBlock*,std::set<std::pair<BasicBlock*,CondVal>>> temp1;
+
+	for(std::pair<BasicBlock*,std::set<std::pair<BasicBlock*,CondVal>>> pair : res){
+		std::set<std::pair<BasicBlock*,CondVal>> tobeRemoved;
+		BasicBlock* currBB = pair.first;
+		outs() << "BasicBlock : " << currBB->getName() << " :: DependentCtrlBBs = ";
+
+		temp1[currBB];
+		for(std::pair<BasicBlock*,CondVal> bbVal : pair.second){
+			BasicBlock* depBB = bbVal.first;
+			for(std::pair<BasicBlock*,CondVal> p2 : res[depBB]){
+				tobeRemoved.insert(p2);
+			}
+		}
+
+		for(std::pair<BasicBlock*,CondVal> bbVal : pair.second){
+			if(tobeRemoved.find(bbVal)==tobeRemoved.end()){
+				outs() << bbVal.first->getName();
+				outs() << "(" << dfgNode::getCondValStr(bbVal.second) << "),";
+				temp1[currBB].insert(bbVal);
+			}
+		}
+		outs() << "\n";
+	}
+//	return temp1;
+
+	std::map<BasicBlock*,std::set<std::pair<BasicBlock*,CondVal>>> temp2;
+
+	outs() << "Order=";
+	for(std::pair<BasicBlock*,std::set<std::pair<BasicBlock*,CondVal>>> pair : temp1){
+		BasicBlock* currBB = pair.first;
+		outs() << currBB->getName() << ",";
+		std::set<std::pair<BasicBlock*,CondVal>> bbValPairs = pair.second;
+
+		std::queue<std::pair<BasicBlock*,CondVal>> bbValQ;
+		for(std::pair<BasicBlock*,CondVal> bbVal: bbValPairs){
+			bbValQ.push(bbVal);
+		}
+
+		bbValPairs.clear();
+		int rounds = 0;
+		while(!bbValQ.empty()){
+			if(rounds == bbValQ.size()*2) break;
+			std::pair<BasicBlock*,CondVal> topBBVal1 = bbValQ.front(); bbValQ.pop();
+			if(!bbValQ.empty()){
+				std::pair<BasicBlock*,CondVal> topBBVal2 = bbValQ.front();
+				if(topBBVal1.first == topBBVal2.first){
+					rounds=0;
+					bbValQ.pop();
+					if(!temp2[topBBVal1.first].empty()){
+						bbValQ.push(*temp2[topBBVal1.first].rbegin());
+					}
+				}
+				else{
+					bbValQ.push(topBBVal1);
+					rounds++;
+//					break;
+				}
+			}else{
+				bbValPairs.insert(topBBVal1);
+			}
+		}
+
+		while(!bbValQ.empty()){
+			bbValPairs.insert(bbValQ.front()); bbValQ.pop();
+		}
+
+		if(!bbValPairs.empty()) temp2[currBB]=bbValPairs;
+	}
+	outs() << "\n";
+
+	outs() << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n";
+
+	temp1.clear();
+	for(std::pair<BasicBlock*,std::set<std::pair<BasicBlock*,CondVal>>> pair : temp2){
+		BasicBlock* currBB = pair.first;
+		std::set<std::pair<BasicBlock*,CondVal>> bbValPairs = pair.second;
+		outs() << "BasicBlock : " << currBB->getName() << " :: DependentCtrlBBs = ";
+		for(std::pair<BasicBlock*,CondVal> bbVal: bbValPairs){
+			outs() << bbVal.first->getName();
+			outs() << "(" << dfgNode::getCondValStr(bbVal.second) << "),";
+		}
+
+		if(!bbValPairs.empty()){
+			temp1[currBB] = temp2[currBB];
+		}
+		else{
+			outs() << "Not added!";
+		}
+		outs() << "\n";
+	}
+//	assert(false);
+	return temp1;
+
 }

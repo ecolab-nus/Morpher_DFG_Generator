@@ -4,6 +4,7 @@ class DFGPartPred : public DFG{
 	public :
 		DFGPartPred(std::string name,std::map<Loop*,std::string>* lnPtr, Loop* l) : DFG(name,lnPtr), currLoop(l){}
 		void connectBB();
+		void connectBBTrig();
 		int handlePHINodes(std::set<BasicBlock*> LoopBB);
 		int handleSELECTNodes();
 		void removeDisconnetedNodes();
@@ -37,6 +38,8 @@ class DFGPartPred : public DFG{
 		void removeOutLoopLoad();
 		void addOrphanPseudoEdges();
 
+		void createCtrlBROrTree();
+
 
 
 	private :
@@ -61,7 +64,16 @@ class DFGPartPred : public DFG{
 		std::map<dfgNode*,dfgNode*> cmergePHINodes;
 
 		std::set<std::set<dfgNode*>> mutexSets;
+		std::map<std::set<dfgNode*>,std::set<dfgNode*>> mutexSetCommonChildren;
+
 		std::map<dfgNode*,dfgNode*> selectPHIAncestorMap;
+
+		//Inherited from DFGTrig
+		std::map<BasicBlock*,dfgNode*> BrParentMap;
+		std::map<dfgNode*,BasicBlock*> BrParentMapInv;
+		std::map<dfgNode*,std::set<dfgNode*>> leafControlInputs;
+		std::map<BasicBlock*,std::set<std::pair<BasicBlock*,CondVal>>> getCtrlInfoBBMorePaths();
+
 
 		Loop* currLoop;
 

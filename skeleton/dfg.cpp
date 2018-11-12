@@ -5731,7 +5731,7 @@ int DFG::nameNodes() {
 				node->setFinalIns(ADD);
 			}
 			else if(node->getNameType().compare("CTRLBrOR") == 0){
-				node->setFinalIns(BR);
+				node->setFinalIns(OR);
 			}
 			else if(node->getNameType().compare("SELECTPHI") == 0){
 				node->setFinalIns(SELECT);
