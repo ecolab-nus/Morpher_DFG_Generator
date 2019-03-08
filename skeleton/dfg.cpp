@@ -5811,6 +5811,9 @@ int DFG::nameNodes() {
 			else if(node->getNameType().compare("PREDAND") == 0){
 				node->setFinalIns(AND);
 			}
+			else if(node->getNameType().compare("TRIGMERGE") == 0){
+				node->setFinalIns(SELECT);
+			}
 			else {
 				errs() << "Unknown custom node \n";
 				assert(false);

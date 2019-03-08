@@ -71,6 +71,7 @@
 #include "dfg.h"
 #include "DFGTrig.h"
 #include "DFGPartPred.h"
+#include "DFGDISE.h"
 
 //#define CDFG
 
@@ -2210,8 +2211,10 @@ namespace {
 			  // New Code for 2018 work
 			  //-----------------------------------
 	    {
-			  DFGTrig LoopDFG(F.getName().str() + "_" + munitName,&loopNames,DT,munitName,mappingUnitMap[munitName].lp);
+//			  DFGTrig LoopDFG(F.getName().str() + "_" + munitName,&loopNames,DT,munitName,mappingUnitMap[munitName].lp);
 //			  DFGPartPred LoopDFG(F.getName().str() + "_" + munitName,&loopNames,mappingUnitMap[munitName].lp);
+			  DFGDISE LoopDFG(F.getName().str() + "_" + munitName,&loopNames,mappingUnitMap[munitName].lp);
+
 			  LoopDFG.setBBSuccBasicBlocks(BBSuccBasicBlocks);
 			  LoopDFG.sizeArrMap=sizeArrMap;
 			  outs() << "Currently mapping unit : " << munitName << "\n";
