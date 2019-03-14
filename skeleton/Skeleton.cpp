@@ -72,6 +72,8 @@
 #include "DFGTrig.h"
 #include "DFGPartPred.h"
 #include "DFGDISE.h"
+#include "DFGTrMap.h"
+#include "DFGBrMap.h"
 
 //#define CDFG
 
@@ -97,6 +99,7 @@ static cl::opt<bool> noName("nn", cl::desc("map all functions and loops"));
 static cl::opt<unsigned> initMII("ii", cl::init(0), cl::desc("The starting II for the mapping"));
 static cl::opt<unsigned> dimX("dx", cl::init(4), cl::desc("DimX"));
 static cl::opt<unsigned> dimY("dy", cl::init(4), cl::desc("DimY"));
+static cl::opt<std::string> dfgType("type", cl::init("PartPred"), cl::desc("The type of the dfg, valid types = PartPred, Trig, TrMap, BrMap, DFGDISE"));
 
 static std::map<std::string,int> sizeArrMap;
 
@@ -2211,19 +2214,41 @@ namespace {
 			  // New Code for 2018 work
 			  //-----------------------------------
 	    {
-//			  DFGTrig LoopDFG(F.getName().str() + "_" + munitName,&loopNames,DT,munitName,mappingUnitMap[munitName].lp);
-//			  DFGPartPred LoopDFG(F.getName().str() + "_" + munitName,&loopNames,mappingUnitMap[munitName].lp);
-			  DFGDISE LoopDFG(F.getName().str() + "_" + munitName,&loopNames,mappingUnitMap[munitName].lp);
+				DFG* LoopDFG;
+				if(dfgType == "PartPred"){
+					LoopDFG = new DFGPartPred(F.getName().str() + "_" + munitName,&loopNames,mappingUnitMap[munitName].lp);
+				}
+				else if(dfgType == "Trig"){
+					LoopDFG = new DFGTrig(F.getName().str() + "_" + munitName,&loopNames,DT,munitName,mappingUnitMap[munitName].lp);
+				}
+				else if(dfgType == "TrMap"){
+					LoopDFG = new DFGTrMap(F.getName().str() + "_" + munitName,&loopNames,mappingUnitMap[munitName].lp);
+				}
+				else if(dfgType == "BrMap"){
+					LoopDFG = new DFGBrMap(F.getName().str() + "_" + munitName,&loopNames,mappingUnitMap[munitName].lp);
+				}
+				else if(dfgType == "DFGDISE"){
+					LoopDFG = new DFGDISE(F.getName().str() + "_" + munitName,&loopNames,mappingUnitMap[munitName].lp);
+				}
+				else{
+					outs() << "Invalid DFG Type=" << dfgType << "\n";
+					assert(false);
+				}
+			  // DFGTrig LoopDFG(F.getName().str() + "_" + munitName,&loopNames,DT,munitName,mappingUnitMap[munitName].lp);
+			  // DFGPartPred LoopDFG(F.getName().str() + "_" + munitName,&loopNames,mappingUnitMap[munitName].lp);
+			  // DFGDISE LoopDFG(F.getName().str() + "_" + munitName,&loopNames,mappingUnitMap[munitName].lp);
+				// DFGTrMap LoopDFG(F.getName().str() + "_" + munitName,&loopNames,mappingUnitMap[munitName].lp);
+					// DFGBrMap LoopDFG(F.getName().str() + "_" + munitName,&loopNames,mappingUnitMap[munitName].lp);
 
-			  LoopDFG.setBBSuccBasicBlocks(BBSuccBasicBlocks);
-			  LoopDFG.sizeArrMap=sizeArrMap;
+			  LoopDFG->setBBSuccBasicBlocks(BBSuccBasicBlocks);
+			  LoopDFG->sizeArrMap=sizeArrMap;
 			  outs() << "Currently mapping unit : " << munitName << "\n";
 			  assert(!mappingUnitMap[munitName].allBlocks.empty());
-			  LoopDFG.setLoopBB(mappingUnitMap[munitName].allBlocks,
+			  LoopDFG->setLoopBB(mappingUnitMap[munitName].allBlocks,
 					  	  	    mappingUnitMap[munitName].entryBlocks,
 								mappingUnitMap[munitName].exitBlocks);
 			  insMap.clear();
-			  for (BasicBlock* B : *LoopDFG.getLoopBB()){
+			  for (BasicBlock* B : *LoopDFG->getLoopBB()){
 				 int Icount = 0;
 				 for (auto &I : *B) {
 
@@ -2232,12 +2257,14 @@ namespace {
 					 }
 
 					  int depth = 0;
-					  traverseDefTree(&I, depth, &LoopDFG, &insMap,BBSuccBasicBlocks,*LoopDFG.getLoopBB());
+					  traverseDefTree(&I, depth, LoopDFG, &insMap,BBSuccBasicBlocks,*LoopDFG->getLoopBB());
 				 }
 			  }
 
-			  LoopDFG.addMemRecDepEdgesNew(DI);
-			  LoopDFG.generateTrigDFGDOT();
+			  LoopDFG->addMemRecDepEdgesNew(DI);
+			  LoopDFG->generateTrigDFGDOT();
+				delete(LoopDFG);
+				outs() << "dfgType=" << dfgType << "\n";
 			  return false;
     	}
 	    return false;

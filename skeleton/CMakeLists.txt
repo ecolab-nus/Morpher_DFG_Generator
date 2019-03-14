@@ -23,6 +23,10 @@ add_library(SkeletonPass MODULE
     DFGPartPred.cpp
     DFGDISE.h
     DFGDISE.cpp
+    DFGBrMap.h
+    DFGBrMap.cpp
+    DFGTrMap.h
+    DFGTrMap.cpp
 )
 
 

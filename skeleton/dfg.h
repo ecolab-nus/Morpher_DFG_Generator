@@ -474,6 +474,7 @@ class DFG{
 			void MergeCMerge();
 
 			void insertMOVC();
+			virtual void generateTrigDFGDOT(){outs() << "Please override me!\n";};
 
 	};
 
