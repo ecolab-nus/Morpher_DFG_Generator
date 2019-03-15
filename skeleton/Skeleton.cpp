@@ -2213,7 +2213,7 @@ namespace {
 			  printLoopTree(rootLoop,&loopNames);
 			  printMappableUnitMap();
 			  populateBBTrans();
-			  printFileOutMappingUnitVars(F,&sizeArrMap,loopNames);
+			  // printFileOutMappingUnitVars(F,&sizeArrMap,loopNames);
 //			  loopTrace(loopNames,F,rootLoop);
 //			  analyzeAllMappingUnits(F,loopNames);
 //			  return 0;

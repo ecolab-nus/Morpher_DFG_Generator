@@ -229,20 +229,20 @@ int DFGPartPred::handlePHINodes(std::set<BasicBlock*> LoopBB) {
 							const BasicBlock* BRParentBB = pcn->BB;
 							const BranchInst* BRParentBRI = cast<BranchInst>(BRParentBB->getTerminator());
 							assert(BRParentBRI->isConditional());
-	//						if(BRParentBRI->getSuccessor(0)==currBB){
-	//							incomingCTRLVal=true;
-	//						}
-	//						else if(BRParentBRI->getSuccessor(1)==currBB){
-	//							incomingCTRLVal=false;
-	//						}
-	//						else{
-	//							BRParentBRI->dump();
-	//							outs() << BRParentBRI->getSuccessor(0)->getName() << "\n";
-	//							outs() << BRParentBRI->getSuccessor(1)->getName() << "\n";
-	//							outs() << currBB->getName() << "\n";
-	//							outs() << previousCTRLNode->getIdx() << "\n";
-	//							assert(false);
-	//						}
+							// if(BRParentBRI->getSuccessor(0)==currBB){
+							// 	incomingCTRLVal=true;
+							// }
+							// else if(BRParentBRI->getSuccessor(1)==currBB){
+							// 	incomingCTRLVal=false;
+							// }
+							// else{
+							// 	BRParentBRI->dump();
+							// 	outs() << BRParentBRI->getSuccessor(0)->getName() << "\n";
+							// 	outs() << BRParentBRI->getSuccessor(1)->getName() << "\n";
+							// 	outs() << currBB->getName() << "\n";
+							// 	outs() << previousCTRLNode->getIdx() << "\n";
+							// 	assert(false);
+							// }
 							std::set<const BasicBlock*> searchSoFar;
 							bool incomingCTRLVal;
 							assert(checkBRPath(BRParentBRI,currBB,incomingCTRLVal,searchSoFar));
@@ -268,7 +268,13 @@ int DFGPartPred::handlePHINodes(std::set<BasicBlock*> LoopBB) {
 					}
 
 					for(dfgNode* pcn : previousCtrlNodes) {
-						outs() << "previousCTRLNode : "; pcn->getNode()->dump();
+						outs() << "pcn idx=" << pcn->getIdx() << ",";
+						if(pcn->getNode()){
+							outs() << "previousCTRLNode : "; pcn->getNode()->dump();
+						}
+						else{
+							outs() << "\n";
+						}
 						outs() << "CTRL VAL : " << cnodectrlvalmap[pcn] << "\n";
 					}
 
@@ -862,10 +868,23 @@ void DFGPartPred::constructCMERGETree() {
 		outs() << "CMERGE(ThisIter) set =";
 		for(dfgNode* cmergeNode : cmergeSet){
 			bool isBackEdge=false;
+			outs() << "CMERGE Tree children = "; 
 			for(dfgNode* child : mutexSetCommonChildren[cmergeSet]){
+				outs() << child->getIdx();
 				if(isBackEdge) assert(cmergeNode->childBackEdgeMap[child] == true);
 				if(cmergeNode->childBackEdgeMap[child]){
 					isBackEdge = true;
+					outs() << "[BE]";
+				}
+				outs() << ",";
+			}
+			outs() << "\n";
+
+			if(mutexSetCommonChildren[cmergeSet].size() == 1){
+				dfgNode* singleChild = *mutexSetCommonChildren[cmergeSet].begin();
+				if(singleChild->getNode() && dyn_cast<PHINode>(singleChild->getNode())){
+					realphi_as_selectphi.insert(singleChild);
+					outs() << "Only single child is a phi node, hence marking it as a SELECTPHI\n";
 				}
 			}
 
@@ -1265,7 +1284,7 @@ void DFGPartPred::printNewDFGXML() {
 						}
 					}
 				}
-				else if(node->getNameType()=="SELECTPHI"){
+				else if(node->getNameType()=="SELECTPHI" && (child != selectPHIAncestorMap[node])){
 					if(child->getNode()){
 						written = true;
 						outs() << "SELECTPHI :: " << node->getIdx();
@@ -1414,7 +1433,7 @@ int DFGPartPred::classifyParents() {
 						}
 						continue;
 					}
-					if(node->getNameType().compare("SELECTPHI")==0){
+					if(node->getNameType().compare("SELECTPHI")==0 || (realphi_as_selectphi.find(node) != realphi_as_selectphi.end())){
 						if(node->parentClassification.find(1) == node->parentClassification.end()){
 							node->parentClassification[1]=parent;
 						}

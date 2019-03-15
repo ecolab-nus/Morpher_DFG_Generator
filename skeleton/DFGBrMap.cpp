@@ -272,7 +272,13 @@ int DFGBrMap::handlePHINodes(std::set<BasicBlock*> LoopBB) {
 					assert(!previousCtrlNodes.empty());
 
 					for(dfgNode* pcn : previousCtrlNodes) {
-						outs() << "previousCTRLNode : "; pcn->getNode()->dump();
+						outs() << "pcn idx=" << pcn->getIdx() << ",";
+						if(pcn->getNode()){
+							outs() << "previousCTRLNode : "; pcn->getNode()->dump();
+						}
+						else{
+							outs() << "\n";
+						}
 						outs() << "CTRL VAL : " << cnodectrlvalmap[pcn] << "\n";
 					}
 
@@ -1335,7 +1341,10 @@ void DFGBrMap::printNewDFGXML() {
 								xmlFile << "type=\"I2\"/>\n";
 							}
 							else{
-								assert(false);
+								assert(child->getNode() && dyn_cast<PHINode>(child->getNode()));
+								xmlFile << "type=\"I1\"/>\n";
+								outs() << "since child is phi assigning I1 for node = " << node->getIdx() << ", child = " << child->getIdx() << "\n";
+								// assert(false);
 							}
 						}
 					}

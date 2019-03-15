@@ -435,7 +435,7 @@ private :
 	dfgNode* insertMergeNode(dfgNode* PHINode, dfgNode* ctrl, bool controlVal, dfgNode* data);
 	dfgNode* insertMergeNode(dfgNode* PHINode, dfgNode* ctrl, bool controlVal, int val);
 
-	dfgNode* addLoadParent(Instruction* ins, dfgNode* child);
+	dfgNode* addLoadParent(Value* ins, dfgNode* child);
 
 	void DFSCtrlPath(std::map<BasicBlock*,std::set<std::pair<BasicBlock*,CondVal>>>& ctrlBBInfo, std::vector<std::pair<BasicBlock*,CondVal>> path);
 

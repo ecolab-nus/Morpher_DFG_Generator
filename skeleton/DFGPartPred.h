@@ -77,6 +77,8 @@ class DFGPartPred : public DFG{
 
 		Loop* currLoop;
 
+		std::set<dfgNode*> realphi_as_selectphi;
+
 
 
 };

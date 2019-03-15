@@ -322,16 +322,18 @@ int DFGTrig::handlePHINodes(std::set<BasicBlock*> LoopBB) {
 					}
 					else{
 
-						Instruction* ins = cast<Instruction>(V);
-						dfgNode* phiParent = findNode(ins);
+						dfgNode* phiParent = NULL;
+						if(Instruction* ins = dyn_cast<Instruction>(V)){
+							dfgNode* phiParent = findNode(ins);
+						}
 						bool isPhiParentOutLoopLoad=false;
 						if(phiParent == NULL){ //not found
 							isPhiParentOutLoopLoad=true;
-							if(OutLoopNodeMap.find(ins)!=OutLoopNodeMap.end()){
-								phiParent=OutLoopNodeMap[ins];
+							if(OutLoopNodeMap.find(V)!=OutLoopNodeMap.end()){
+								phiParent=OutLoopNodeMap[V];
 							}
 							else{
-								phiParent=addLoadParent(ins,node);
+								phiParent=addLoadParent(V,node);
 								bool isBackEdge = checkBackEdge(previousCTRLNode,phiParent);
 	//							previousCTRLNode->addChildNode(phiParent,EDGE_TYPE_DATA,isBackEdge,true,incomingCTRLVal);
 	//							phiParent->addAncestorNode(previousCTRLNode,EDGE_TYPE_DATA,isBackEdge,true,incomingCTRLVal);
@@ -3521,7 +3523,7 @@ std::set<dfgNode*> DFGTrig::getRootNodes() {
 	return res;
 }
 
-dfgNode* DFGTrig::addLoadParent(Instruction* ins, dfgNode* child) {
+dfgNode* DFGTrig::addLoadParent(Value* ins, dfgNode* child) {
 	dfgNode* temp;
 	if(OutLoopNodeMap.find(ins) == OutLoopNodeMap.end()){
 		temp = new dfgNode(this);
@@ -3532,8 +3534,10 @@ dfgNode* DFGTrig::addLoadParent(Instruction* ins, dfgNode* child) {
 		OutLoopNodeMap[ins] = temp;
 		OutLoopNodeMapReverse[temp]=ins;
 
-		if(accumulatedBBs.find(ins->getParent())==accumulatedBBs.end()){
-			temp->setTransferedByHost(true);
+	  if(Instruction* real_ins = dyn_cast<Instruction>(ins)){		
+			if(accumulatedBBs.find(real_ins->getParent())==accumulatedBBs.end()){
+				temp->setTransferedByHost(true);
+			}	
 		}
 	}
 	else{
