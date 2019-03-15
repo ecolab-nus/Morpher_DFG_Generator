@@ -211,7 +211,7 @@ class dfgNode{
 
 			//Out of loop instructions
 			dfgNode* addStoreChild(Instruction * ins);
-			dfgNode* addLoadParent(Instruction * ins);
+			dfgNode* addLoadParent(Value * ins);
 			dfgNode* addLoadParentVal(Value * val);
 
 			//Memory Allocation

@@ -210,8 +210,8 @@ class DFG{
 		public :
 			std::ofstream mappingOutFile;
 			AStar* astar;
-			std::map<Instruction*,dfgNode*> OutLoopNodeMap;
-			std::map<dfgNode*,Instruction*> OutLoopNodeMapReverse;
+			std::map<Value*,dfgNode*> OutLoopNodeMap;
+			std::map<dfgNode*,Value*> OutLoopNodeMapReverse;
 			std::map<Instruction*,dfgNode*> LoopStartMap;
 
 			std::map<HyCUBEIns,int> hyCUBEInsHist;
@@ -422,7 +422,7 @@ class DFG{
 
 			// parent classification as operand1, operand2 or predicate
 			int classifyParents();
-			int findOperandNumber(dfgNode* node, Instruction* child, Instruction* parent);
+			int findOperandNumber(dfgNode* node, Instruction* child, Value* parent);
 
 			// add not instructions for ctrlbr instructions
 			int treatFalsePaths();

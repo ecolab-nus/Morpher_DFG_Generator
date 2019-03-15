@@ -1605,7 +1605,7 @@ int DFGTrig::classifyParents() {
 
 			for (dfgNode* parent : node->getAncestors()) {
 				Instruction* ins;
-				Instruction* parentIns;
+				Value* parentIns;
 
 
 				if(leafControlInputs[node].find(parent) != leafControlInputs[node].end()){

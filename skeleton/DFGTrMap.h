@@ -50,7 +50,7 @@ class DFGTrMap : public DFG{
 		dfgNode* insertMergeNode(dfgNode* PHINode, dfgNode* ctrl, bool controlVal, dfgNode* data);
 		dfgNode* insertMergeNode(dfgNode* PHINode, dfgNode* ctrl, bool controlVal, int val);
 
-		dfgNode* addLoadParent(Instruction* ins, dfgNode* child);
+		dfgNode* addLoadParent(Value* ins, dfgNode* child);
 
 		std::map<BasicBlock*,int> startNodeConsts;
 		std::map<BasicBlock*,dfgNode*> startNodes;

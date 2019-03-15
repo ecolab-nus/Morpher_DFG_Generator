@@ -166,6 +166,15 @@ std::vector<munitTransition> munitTransitionsALL;
 								 currBBDFG->findNode(I)->addLoadParent(ParIns);
 							 }
 						 }
+
+						 if(Argument* arg = dyn_cast<Argument>(V)){
+							 outs() << "Argument adding load parent : ";
+							 V->dump();
+							 if(!V->getType()->isPointerTy()){
+								 currBBDFG->findNode(I)->addLoadParent(arg);
+							 }
+//							 assert(false);
+						 }
 					 }
 				 }
 
@@ -1143,7 +1152,7 @@ std::vector<munitTransition> munitTransitionsALL;
 					for(BasicBlock &BB : F){
 						for(Instruction& I : BB){
 							if(StoreInst* STI = dyn_cast<StoreInst>(&I)) continue;
-							if(LoadInst* LDI = dyn_cast<LoadInst>(&I)) continue;
+							if(dyn_cast<LoadInst>(&I) && (!dyn_cast<LoadInst>(&I)->getType()->isPointerTy()) ) continue;
 
 							for (int i = 0; i < I.getNumOperands(); ++i) {
 								if(I.getOperand(i)->getName().str().compare(pair1.first) == 0){
@@ -1182,7 +1191,8 @@ std::vector<munitTransition> munitTransitionsALL;
 					}
 				}
 
-				std::map<std::string,std::string> truePointers;
+				std::map<Value*,std::string> truePointers;
+				std::map<std::string,std::string> truePointersStr;
 
 				outs() << "Collecting True Pointers...\n";
 				while(!usesQ.empty()){
@@ -1191,24 +1201,27 @@ std::vector<munitTransition> munitTransitionsALL;
 					I->dump();
 					std::string ptrName = head.second;
 					usesQ.erase(head);
-					truePointers[I->getName().str()]=ptrName;
+					truePointers[I]=ptrName;
+					truePointersStr[I->getName().str()]=ptrName;
 
-					for (int i = 0; i < I->getNumOperands(); ++i) {
-						for(User *U : I->users()){
-							if(StoreInst* STI = dyn_cast<StoreInst>(U)) continue;
-							if(LoadInst* LDI = dyn_cast<LoadInst>(U)) continue;
-							if(Instruction* childIns = dyn_cast<Instruction>(U)){
-								if(truePointers.find(childIns->getName().str())==truePointers.end()){
-									usesQ.insert(std::make_pair(childIns,ptrName));
-								}
+					for(User *U : I->users()){
+						if(StoreInst* STI = dyn_cast<StoreInst>(U)) continue;
+						if(dyn_cast<LoadInst>(U) && (!dyn_cast<LoadInst>(U)->getType()->isPointerTy()) ) continue;
+						if(Instruction* childIns = dyn_cast<Instruction>(U)){
+							outs() << "\tchild=" ; childIns->dump();
+							if(truePointers.find(childIns)==truePointers.end()){
+								usesQ.insert(std::make_pair(childIns,ptrName));
+							}
+							else{
+								outs() << "\t\tnot inserted\n";
 							}
 						}
 					}
 				}
 
 				outs() << "TRUE_POINTERS :: \n";
-				for(std::pair<std::string,std::string> tppair : truePointers){
-					outs() << tppair.first << "-->" << tppair.second << "\n";
+				for(std::pair<Value*,std::string> tppair : truePointers){
+					outs() << tppair.second << "<--"; tppair.first->dump();
 				}
 
 
@@ -1235,7 +1248,7 @@ std::vector<munitTransition> munitTransitionsALL;
 						 if(sizeArrMap->find(ptrName)!=sizeArrMap->end()){
 							 size = (*sizeArrMap)[ptrName];
 						 }
-						 else if(sizeArrMap->find(truePointers[ptrName])!=sizeArrMap->end()){
+						 else if(sizeArrMap->find(truePointersStr[ptrName])!=sizeArrMap->end()){
 							 size = (*sizeArrMap)[ptrName];
 						 }
 						 else{
@@ -2100,7 +2113,7 @@ namespace {
 			  }
 
 			  //TODO : DAC18
-			  ReplaceCMPs(F);
+			  // ReplaceCMPs(F);
 			  RemoveSelectLeafs(F);
 			  InsertORtoSingularConditionalBB(F);
 			  ParseSizeAttr(F,&sizeArrMap);

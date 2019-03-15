@@ -49,7 +49,7 @@ dfgNode* DFG::findNode(Instruction* I){
 		}
 	}
 
-	for(std::pair<Instruction*,dfgNode*> pair : OutLoopNodeMap){
+	for(std::pair<Value*,dfgNode*> pair : OutLoopNodeMap){
 		if(pair.first == I){
 			return pair.second;
 		}
@@ -7300,7 +7300,7 @@ int DFG::classifyParents() {
 
 			for (dfgNode* parent : node->getAncestors()) {
 				Instruction* ins;
-				Instruction* parentIns;
+				Value* parentIns;
 
 
 
@@ -7432,7 +7432,7 @@ int DFG::classifyParents() {
 					}
 					if(node->getNameType().compare("CMERGE")==0){
 
-						Instruction* parentIns = NULL;
+						Value* parentIns = NULL;
 						if(parent->getNameType().compare("OutLoopLOAD")==0){
 							parentIns = OutLoopNodeMapReverse[parent];
 						}
@@ -7602,7 +7602,7 @@ int DFG::classifyParents() {
 	}
 }
 
-int DFG::findOperandNumber(dfgNode* node, Instruction* child, Instruction* parent) {
+int DFG::findOperandNumber(dfgNode* node, Instruction* child, Value* parent) {
 //	parent->dump();
 //	child->dump();
 

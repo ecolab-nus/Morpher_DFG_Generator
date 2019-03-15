@@ -115,6 +115,7 @@ void dfgNode::addChildNode(dfgNode* node, int type, bool isBackEdge,
 	}
 
 	ChildNodes.push_back(node);
+	outs() << "node idx = " << node->getIdx() << "\n";
 	childBackEdgeMap[node]=isBackEdge;
 
 	if(isControlDependent){
@@ -523,7 +524,7 @@ dfgNode* dfgNode::addStoreChild(Instruction * ins) {
 	return temp;
 }
 
-dfgNode* dfgNode::addLoadParent(Instruction * ins) {
+dfgNode* dfgNode::addLoadParent(Value* ins) {
 	dfgNode* temp;
 
 
@@ -535,8 +536,16 @@ dfgNode* dfgNode::addLoadParent(Instruction * ins) {
 		Parent->OutLoopNodeMap[ins] = temp;
 		Parent->OutLoopNodeMapReverse[temp]=ins;
 
-		if(Parent->accumulatedBBs.find(ins->getParent())==Parent->accumulatedBBs.end()){
+		if(Instruction* realIns = dyn_cast<Instruction>(ins)){
+			if(Parent->accumulatedBBs.find(realIns->getParent())==Parent->accumulatedBBs.end()){
+				temp->setTransferedByHost(true);
+			}
+		}
+		else if(dyn_cast<Argument>(ins)){
 			temp->setTransferedByHost(true);
+		}
+		else{
+			assert(false);
 		}
 	}
 	else{

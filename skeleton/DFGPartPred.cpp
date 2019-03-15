@@ -299,16 +299,18 @@ int DFGPartPred::handlePHINodes(std::set<BasicBlock*> LoopBB) {
 					}
 					else{
 
-						Instruction* ins = cast<Instruction>(V);
-						dfgNode* phiParent = findNode(ins);
+						dfgNode* phiParent = NULL;
+						if(Instruction* ins = dyn_cast<Instruction>(V)){
+							dfgNode* phiParent = findNode(ins);
+						}
 						bool isPhiParentOutLoopLoad=false;
 						if(phiParent == NULL){ //not found
 							isPhiParentOutLoopLoad=true;
-							if(OutLoopNodeMap.find(ins)!=OutLoopNodeMap.end()){
-								phiParent=OutLoopNodeMap[ins];
+							if(OutLoopNodeMap.find(V)!=OutLoopNodeMap.end()){
+								phiParent=OutLoopNodeMap[V];
 							}
 							else{
-								phiParent=addLoadParent(ins,node);
+								phiParent=addLoadParent(V,node);
 								bool isBackEdge = checkBackEdge(previousCTRLNode,phiParent);
 	//							previousCTRLNode->addChildNode(phiParent,EDGE_TYPE_DATA,isBackEdge,true,incomingCTRLVal);
 	//							phiParent->addAncestorNode(previousCTRLNode,EDGE_TYPE_DATA,isBackEdge,true,incomingCTRLVal);
@@ -730,7 +732,7 @@ void DFGPartPred::generateTrigDFGDOT() {
 	nameNodes();
 	classifyParents();
 
-	addOrphanPseudoEdges();
+	// addOrphanPseudoEdges();
 
 	printDOT(this->name + "_PartPredDFG.dot");
 	printNewDFGXML();
@@ -1358,7 +1360,7 @@ int DFGPartPred::classifyParents() {
 
 			for (dfgNode* parent : node->getAncestors()) {
 				Instruction* ins;
-				Instruction* parentIns;
+				Value* parentIns;
 
 
 
@@ -1808,7 +1810,7 @@ void DFGPartPred::addOrphanPseudoEdges() {
 
 }
 
-dfgNode* DFGPartPred::addLoadParent(Instruction* ins, dfgNode* child) {
+dfgNode* DFGPartPred::addLoadParent(Value* ins, dfgNode* child) {
 	dfgNode* temp;
 	if(OutLoopNodeMap.find(ins) == OutLoopNodeMap.end()){
 		temp = new dfgNode(this);
@@ -1819,9 +1821,12 @@ dfgNode* DFGPartPred::addLoadParent(Instruction* ins, dfgNode* child) {
 		OutLoopNodeMap[ins] = temp;
 		OutLoopNodeMapReverse[temp]=ins;
 
-		if(accumulatedBBs.find(ins->getParent())==accumulatedBBs.end()){
-			temp->setTransferedByHost(true);
+	  if(Instruction* real_ins = dyn_cast<Instruction>(ins)){		
+			if(accumulatedBBs.find(real_ins->getParent())==accumulatedBBs.end()){
+				temp->setTransferedByHost(true);
+			}	
 		}
+
 	}
 	else{
 		temp = OutLoopNodeMap[ins];
