@@ -307,7 +307,7 @@ int DFGPartPred::handlePHINodes(std::set<BasicBlock*> LoopBB) {
 
 						dfgNode* phiParent = NULL;
 						if(Instruction* ins = dyn_cast<Instruction>(V)){
-							dfgNode* phiParent = findNode(ins);
+							phiParent = findNode(ins);
 						}
 						bool isPhiParentOutLoopLoad=false;
 						if(phiParent == NULL){ //not found
@@ -734,11 +734,11 @@ void DFGPartPred::generateTrigDFGDOT() {
 	scheduleALAP();
 //	assignALAPasASAP();
 //	balanceSched();
-	removeOutLoopLoad();
+// removeOutLoopLoad();
 	nameNodes();
 	classifyParents();
 
-	// addOrphanPseudoEdges();
+	addOrphanPseudoEdges();
 
 	printDOT(this->name + "_PartPredDFG.dot");
 	printNewDFGXML();
@@ -859,7 +859,10 @@ void DFGPartPred::fillCMergeMutexNodes() {
 }
 
 void DFGPartPred::constructCMERGETree() {
-	assert(!mutexSets.empty());
+	// assert(!mutexSets.empty());
+
+	//if there are no mutex sets no point creating the cmerge tree
+	if(mutexSets.empty()) return;
 
 	for(std::set<dfgNode*> cmergeSet : mutexSets){
 		std::queue<dfgNode*> thisIterSet;
@@ -996,6 +999,10 @@ void DFGPartPred::constructCMERGETree() {
 
 void DFGPartPred::scheduleASAP() {
 
+	for(dfgNode* n : NodeList){
+		n->setASAPnumber(-1);
+	}
+
 	std::queue<std::vector<dfgNode*>> q;
 	std::vector<dfgNode*> qv;
 	for(std::pair<BasicBlock*,dfgNode*> p : startNodes){
@@ -1053,6 +1060,10 @@ void DFGPartPred::scheduleASAP() {
 }
 
 void DFGPartPred::scheduleALAP() {
+
+	for(dfgNode* n : NodeList){
+		n->setALAPnumber(-1);
+	}
 
 	std::queue<std::vector<dfgNode*>> q;
 	std::vector<dfgNode*> qv;
@@ -1668,12 +1679,14 @@ void DFGPartPred::assignALAPasASAP() {
 
 void DFGPartPred::addOrphanPseudoEdges() {
 
-
+	scheduleASAP();
+	scheduleALAP();
 
 	std::set<dfgNode*> RecParents;
 
 	for(dfgNode* node : NodeList){
 		for(dfgNode* recParent : node->getRecAncestors()){
+			outs() << "child = " << node->getIdx() << ", recparent = " << recParent->getIdx() << "\n";
 			RecParents.insert(recParent);
 		}
 	}
@@ -1769,9 +1782,14 @@ void DFGPartPred::addOrphanPseudoEdges() {
 //					if(n->getALAPnumber() == node->getALAPnumber()){
 					if(node->getALAPnumber() - n->getALAPnumber() == startdiff){
 						pseduoParent=n;
-						outs() << "Adding Pseudo Connection :: parent=" << pseduoParent->getIdx() << ",to" << node->getIdx() << "\n";
-						pseduoParent->addChildNode(node,EDGE_TYPE_PS,false,true,true);
-						node->addAncestorNode(pseduoParent,EDGE_TYPE_PS,false,true,true);
+						
+						std::vector<dfgNode*> node_childs = node->getChildren();
+						if(std::find(node_childs.begin(),node_childs.end(),pseduoParent) == node_childs.end()){
+							//pseudoparent is not a child of the node
+							outs() << "Adding Pseudo Connection :: parent=" << pseduoParent->getIdx() << ",to" << node->getIdx() << "\n";
+							pseduoParent->addChildNode(node,EDGE_TYPE_PS,false,true,true);
+							node->addAncestorNode(pseduoParent,EDGE_TYPE_PS,false,true,true);
+						}
 						pseudoParentFound=true;
 //						break;
 					}

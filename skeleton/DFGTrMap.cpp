@@ -311,7 +311,7 @@ int DFGTrMap::handlePHINodes(std::set<BasicBlock*> LoopBB) {
 
 						dfgNode* phiParent = NULL;
 						if(Instruction* ins = dyn_cast<Instruction>(V)){
-							dfgNode* phiParent = findNode(ins);
+							phiParent = findNode(ins);
 						}
 						bool isPhiParentOutLoopLoad=false;
 						if(phiParent == NULL){ //not found
@@ -746,7 +746,7 @@ void DFGTrMap::generateTrigDFGDOT() {
 	nameNodes();
 	classifyParents();
 
-	// addOrphanPseudoEdges();
+	addOrphanPseudoEdges();
 
 //	createDualInsNodes();
 	mergePHIParents();
@@ -994,6 +994,10 @@ void DFGTrMap::constructCMERGETree() {
 
 void DFGTrMap::scheduleASAP() {
 
+	for(dfgNode* n : NodeList){
+		n->setASAPnumber(-1);
+	}
+
 	std::queue<std::vector<dfgNode*>> q;
 	std::vector<dfgNode*> qv;
 	for(std::pair<BasicBlock*,dfgNode*> p : startNodes){
@@ -1051,6 +1055,10 @@ void DFGTrMap::scheduleASAP() {
 }
 
 void DFGTrMap::scheduleALAP() {
+
+	for(dfgNode* n : NodeList){
+		n->setALAPnumber(-1);
+	}
 
 	std::queue<std::vector<dfgNode*>> q;
 	std::vector<dfgNode*> qv;
@@ -2290,6 +2298,12 @@ void DFGTrMap::mergePHIParents() {
 	outs() << "BasicBlock control domains end :: \n";
 
 	std::set<dfgNode*> remNodes;
+	std::map<dfgNode*,std::set<dfgNode*>> mergeNodesGlobal;
+	std::map<dfgNode*,dfgNode*> cmerges_with_data_nodes_global;
+	std::map<dfgNode*,std::set<dfgNode*>> connectedTo;
+	std::map<std::pair<dfgNode*,dfgNode*>,CondVal> connectedToCond;
+	std::map<std::pair<dfgNode*,dfgNode*>,bool> connectedToBEdge;
+	std::map<dfgNode*,std::set<dfgNode*>> connectedFrom;
 
 	for(std::pair<dfgNode*,std::set<dfgNode*>> pair : cmergeNodesPHI){
 		dfgNode* phi = pair.first;
@@ -2384,10 +2398,6 @@ void DFGTrMap::mergePHIParents() {
 
 		}
 
-		std::map<dfgNode*,std::set<dfgNode*>> connectedTo;
-		std::map<std::pair<dfgNode*,dfgNode*>,CondVal> connectedToCond;
-		std::map<std::pair<dfgNode*,dfgNode*>,bool> connectedToBEdge;
-		std::map<dfgNode*,std::set<dfgNode*>> connectedFrom;
 		std::map<dfgNode*,std::set<dfgNode*>> mergeNodes;
 		std::map<dfgNode*,dfgNode*> reverseTrigMergeMap;
 		std::map<int,dfgNode*> alap2merge;
@@ -2654,223 +2664,17 @@ void DFGTrMap::mergePHIParents() {
 
 		outs() << "\n";
 
-
-//		assert(false);
-//
-//
-//		//this is section is being modified to support multiple nodes in the diferrent ALAP levels
-//
-////		for(std::map<int,std::map<BasicBlock*,std::set<dfgNode*>>>::reverse_iterator rit = mergeCandidateSets.rbegin() ; rit != mergeCandidateSets.rend() ; rit++){
-//		for(std::map<int,std::map<dfgNode*,std::map<CondVal,std::set<dfgNode*>>>>::reverse_iterator rit = mergeCandidateSets.rbegin() ; rit != mergeCandidateSets.rend() ; rit++){
-//			int ALAPNumber = rit->first;
-//			dfgNode* temp = new dfgNode(this);
-//			temp->setIdx(8000 + NodeList.size()); NodeList.push_back(temp);
-//			temp->setNameType("TRIGMERGE");
-//			temp->BB = phi->BB;
-//			alap2merge[ALAPNumber]=temp;
-//
-//
-////			for(std::pair<BasicBlock*,std::set<dfgNode*>> p1 : rit->second){
-//			for(std::pair<dfgNode*,std::map<CondVal,std::set<dfgNode*>>> p1 : rit->second){
-//
-//				dfgNode* ctrlNode = p1.first;
-//				for(std::pair<CondVal,std::set<dfgNode*>> p2 : p1.second){
-//					CondVal ctrlOutcome = p2.first;
-//
-//					if(p2.second.size() != 1){
-//						outs() << "more than one node!\n";
-//						for(dfgNode* n : p2.second){
-//							outs() << "node=" << n->getIdx() << ",AS=" << n->getASAPnumber() << ",AL=" << n->getALAPnumber() << ",BB=" << n->BB->getName() << "\n";
-//						}
-//					}
-//					assert(p2.second.size() == 1);
-//					mergeNodes[temp].insert(*p2.second.begin());
-//					reverseTrigMergeMap[*p2.second.begin()]=temp;
-//
-//					earliestMergeNodeMap[ctrlNode]=std::make_pair(temp,ctrlOutcome);
-//				}
-//
-//			}
-//		}
-//
-//
-//		nextNode = phi;
-//		for(std::map<int,dfgNode*>::reverse_iterator rit = alap2merge.rbegin(); rit != alap2merge.rend(); rit++){
-//			int alap = rit->first;
-//			dfgNode* trigmergenode = rit->second;
-//
-//			for(dfgNode* mn : mergeNodes[trigmergenode]){
-//				for(dfgNode* anc : mn->getAncestors()){
-//
-//					int operand_idx = -1;
-//					for(std::pair<int,dfgNode*> p1 : mn->parentClassification){
-//						if(anc == p1.second){
-//							operand_idx = p1.first;
-//							break;
-//						}
-//					}
-//					assert(operand_idx!=-1);
-//
-//
-//					if(reverseTrigMergeMap[anc]){
-//						connectedTo[reverseTrigMergeMap[anc]].insert(trigmergenode);
-//						connectedFrom[trigmergenode].insert(reverseTrigMergeMap[anc]);
-//						Edge2OperandIdxMap[reverseTrigMergeMap[anc]][trigmergenode] = operand_idx;
-//						connectedToBEdge[std::make_pair(reverseTrigMergeMap[anc],trigmergenode)] = anc->childBackEdgeMap[mn];
-//					}
-//					else{
-//						connectedTo[anc].insert(trigmergenode);
-//						connectedFrom[trigmergenode].insert(anc);
-//						Edge2OperandIdxMap[anc][trigmergenode] = operand_idx;
-//						connectedToBEdge[std::make_pair(anc,trigmergenode)] = anc->childBackEdgeMap[mn];
-//					}
-//				}
-//			}
-//
-//			connectedTo[trigmergenode].insert(nextNode);
-//			connectedFrom[nextNode].insert(trigmergenode);
-//
-//			nextNode = trigmergenode;
-//		}
-//
-//
-//		for(std::pair<dfgNode*,std::pair<dfgNode*,CondVal>> p3 : earliestMergeNodeMap){
-//			dfgNode* ctrlNode = p3.first;
-//			dfgNode* trigmergenode = p3.second.first;
-//			CondVal cv = p3.second.second;
-//			connectedTo[ctrlNode].insert(trigmergenode);
-//			connectedFrom[trigmergenode].insert(ctrlNode);
-//			Edge2OperandIdxMap[ctrlNode][trigmergenode] = 0;
-//
-//			connectedToCond[std::make_pair(ctrlNode,trigmergenode)]=cv;
-//		}
-//
-//
-//		//eliminate PHI node
-//		std::set<dfgNode*> removeNodes;
-//
-//		std::set<dfgNode*> cmergechildren;
-//		std::map<dfgNode*,int> cmergeChildOpIdx;
-//		std::map<dfgNode*,bool> cmergeChildBackEdgeMap;
-//
-//		for(dfgNode* cmerge : cmergeNodes){
-//			for(dfgNode* child : cmerge->getChildren()){
-//				cmergechildren.insert(child);
-//				if(child->getNode()){
-//					outs() << "cmerge=" << cmerge->getIdx() << ",child=" << child->getIdx() << ",BE=" << cmerge->childBackEdgeMap[child] << "\n";
-//					cmergeChildBackEdgeMap[child] = cmerge->childBackEdgeMap[child];
-//					if(dyn_cast<PHINode>(child->getNode())){
-//
-//					}
-//					else{
-//						int operand_no = findOperandNumber(child,child->getNode(),cmergePHINodes[cmerge]->getNode());
-//						cmergeChildOpIdx[child]=operand_no;
-//					}
-//				}
-//			}
-//		}
-//
-//		for(dfgNode* fromNode : connectedFrom[phi]){
-////			assert(!phi->getChildren().empty());
-//			outs() << "phiFromNode=" << fromNode->getIdx() << "\n";
-//
-//			bool isChildPHI = false;
-//			for(dfgNode* child : cmergechildren){
-//				outs() << "cmergeChild = " << child->getIdx() << "\n";
-//
-//				if(child == phi) isChildPHI = true;
-//
-//				connectedTo[fromNode].insert(child);
-//				connectedFrom[child].insert(fromNode);
-//				Edge2OperandIdxMap[fromNode][child]=cmergeChildOpIdx[child];
-//				connectedToBEdge[std::make_pair(fromNode,child)] = cmergeChildBackEdgeMap[child];
-//			}
-//
-//			if(!isChildPHI){
-//				connectedTo[fromNode].erase(phi);
-//				removeNodes.insert(fromNode);
-//			}
-//		}
-//
-//		for(dfgNode* rn : removeNodes){
-//			connectedFrom[phi].erase(rn);
-//		}
-//
-//
-//		for(std::pair<dfgNode*,std::set<dfgNode*>> p2 : connectedTo){
-//			outs() << "src=" << p2.first->getIdx() << "|| dests=";
-//			for(dfgNode* dest : p2.second){
-//				outs() << dest->getIdx() << ",";
-//			}
-//			outs() << "\n";
-//		}
-//
-//		outs() << "\n";
-
-
-		//add real connections based on the trigmerge
-		for(std::pair<dfgNode*,std::set<dfgNode*>> p1 : connectedTo){
-			dfgNode* srcNode = p1.first;
-			for(dfgNode* dest : p1.second){
-				std::pair<dfgNode*,dfgNode*> edge = std::make_pair(srcNode,dest);
-				if(connectedToCond.find(edge) != connectedToCond.end()){
-
-					if(connectedToBEdge.find(edge) != connectedToBEdge.end()){
-						srcNode->addChildNode(dest,EDGE_TYPE_DATA,connectedToBEdge[edge],true,connectedToCond[edge]);
-						dest->addAncestorNode(srcNode,EDGE_TYPE_DATA,connectedToBEdge[edge],true,connectedToCond[edge]);
-					}
-					else{
-						srcNode->addChildNode(dest,EDGE_TYPE_DATA,false,true,connectedToCond[edge]);
-						dest->addAncestorNode(srcNode,EDGE_TYPE_DATA,false,true,connectedToCond[edge]);
-					}
-
-				}
-				else{
-					if(connectedToBEdge.find(edge) != connectedToBEdge.end()){
-						srcNode->addChildNode(dest,EDGE_TYPE_DATA,connectedToBEdge[edge],false);
-						dest->addAncestorNode(srcNode,EDGE_TYPE_DATA,connectedToBEdge[edge],false);
-					}
-					else{
-						srcNode->addChildNode(dest,EDGE_TYPE_DATA,false,false);
-						dest->addAncestorNode(srcNode,EDGE_TYPE_DATA,false,false);
-					}
-				}
-			}
-		}
-
-		//remove connections from old
-
 		for(std::pair<dfgNode*,std::set<dfgNode*>> mp : mergeNodes){
-			std::set<dfgNode*> oldNodes = mp.second;
-
-			for(dfgNode* on : oldNodes){
-				remNodes.insert(on);
-				for(dfgNode* anc : on->getAncestors()){
-					anc->removeChild(on);
-					on->removeAncestor(anc);
-				}
-				for(dfgNode* child : on->getChildren()){
-					on->removeChild(child);
-					child->removeAncestor(on);
-				}
+			for(dfgNode* repNode : mp.second){
+				mergeNodesGlobal[mp.first].insert(repNode);
 			}
 		}
 
-		//removing cmergedata nodes that have cmerge as the only child
-		for(std::pair<dfgNode*,dfgNode*> cmd : cmerges_with_data_nodes){
-			  dfgNode* on = cmd.second;
-				if(on){
-					remNodes.insert(on);
-					for(dfgNode* anc : on->getAncestors()){
-						anc->removeChild(on);
-						on->removeAncestor(anc);
-					}
-					for(dfgNode* child : on->getChildren()){
-						on->removeChild(child);
-						child->removeAncestor(on);
-					}
-				}
+		for(std::pair<dfgNode*,dfgNode*> pr : cmerges_with_data_nodes){
+			cmerges_with_data_nodes_global[pr.first] = pr.second;
 		}
+
+		
 
 		//remove cmerge nodes
 //		for(dfgNode* on : cmergeNodes){
@@ -2884,6 +2688,70 @@ void DFGTrMap::mergePHIParents() {
 //			}
 //		}
 
+	}
+
+// add real connections based on the trigmerge
+	for(std::pair<dfgNode*,std::set<dfgNode*>> p1 : connectedTo){
+		dfgNode* srcNode = p1.first;
+		for(dfgNode* dest : p1.second){
+			std::pair<dfgNode*,dfgNode*> edge = std::make_pair(srcNode,dest);
+			if(connectedToCond.find(edge) != connectedToCond.end()){
+
+				if(connectedToBEdge.find(edge) != connectedToBEdge.end()){
+					srcNode->addChildNode(dest,EDGE_TYPE_DATA,connectedToBEdge[edge],true,connectedToCond[edge]);
+					dest->addAncestorNode(srcNode,EDGE_TYPE_DATA,connectedToBEdge[edge],true,connectedToCond[edge]);
+				}
+				else{
+					srcNode->addChildNode(dest,EDGE_TYPE_DATA,false,true,connectedToCond[edge]);
+					dest->addAncestorNode(srcNode,EDGE_TYPE_DATA,false,true,connectedToCond[edge]);
+				}
+
+			}
+			else{
+				if(connectedToBEdge.find(edge) != connectedToBEdge.end()){
+					srcNode->addChildNode(dest,EDGE_TYPE_DATA,connectedToBEdge[edge],false);
+					dest->addAncestorNode(srcNode,EDGE_TYPE_DATA,connectedToBEdge[edge],false);
+				}
+				else{
+					srcNode->addChildNode(dest,EDGE_TYPE_DATA,false,false);
+					dest->addAncestorNode(srcNode,EDGE_TYPE_DATA,false,false);
+				}
+			}
+		}
+	}
+
+	//remove connections from old
+
+	for(std::pair<dfgNode*,std::set<dfgNode*>> mp : mergeNodesGlobal){
+		std::set<dfgNode*> oldNodes = mp.second;
+
+		for(dfgNode* on : oldNodes){
+			remNodes.insert(on);
+			for(dfgNode* anc : on->getAncestors()){
+				anc->removeChild(on);
+				on->removeAncestor(anc);
+			}
+			for(dfgNode* child : on->getChildren()){
+				on->removeChild(child);
+				child->removeAncestor(on);
+			}
+		}
+	}
+
+	//removing cmergedata nodes that have cmerge as the only child
+	for(std::pair<dfgNode*,dfgNode*> cmd : cmerges_with_data_nodes_global){
+			dfgNode* on = cmd.second;
+			if(on){
+				remNodes.insert(on);
+				for(dfgNode* anc : on->getAncestors()){
+					anc->removeChild(on);
+					on->removeAncestor(anc);
+				}
+				for(dfgNode* child : on->getChildren()){
+					on->removeChild(child);
+					child->removeAncestor(on);
+				}
+			}
 	}
 
 	for(dfgNode* rn : remNodes){

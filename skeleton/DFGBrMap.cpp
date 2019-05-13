@@ -311,7 +311,7 @@ int DFGBrMap::handlePHINodes(std::set<BasicBlock*> LoopBB) {
 
 						dfgNode* phiParent = NULL;
 						if(Instruction* ins = dyn_cast<Instruction>(V)){
-							dfgNode* phiParent = findNode(ins);
+							phiParent = findNode(ins);
 						}
 						bool isPhiParentOutLoopLoad=false;
 						if(phiParent == NULL){ //not found
@@ -747,7 +747,7 @@ void DFGBrMap::generateTrigDFGDOT() {
 	nameNodes();
 	classifyParents();
 
-	// addOrphanPseudoEdges();
+	addOrphanPseudoEdges();
 
 //	createDualInsNodes();
 	mergePHIParents();
@@ -995,6 +995,10 @@ void DFGBrMap::constructCMERGETree() {
 
 void DFGBrMap::scheduleASAP() {
 
+	for(dfgNode* n : NodeList){
+		n->setASAPnumber(-1);
+	}
+
 	std::queue<std::vector<dfgNode*>> q;
 	std::vector<dfgNode*> qv;
 	for(std::pair<BasicBlock*,dfgNode*> p : startNodes){
@@ -1052,6 +1056,10 @@ void DFGBrMap::scheduleASAP() {
 }
 
 void DFGBrMap::scheduleALAP() {
+
+	for(dfgNode* n : NodeList){
+		n->setALAPnumber(-1);
+	}
 
 	std::queue<std::vector<dfgNode*>> q;
 	std::vector<dfgNode*> qv;

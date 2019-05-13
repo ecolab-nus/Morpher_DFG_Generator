@@ -2113,7 +2113,7 @@ namespace {
 			  }
 
 			  //TODO : DAC18
-			  // ReplaceCMPs(F);
+			  ReplaceCMPs(F);
 			  RemoveSelectLeafs(F);
 			  InsertORtoSingularConditionalBB(F);
 			  ParseSizeAttr(F,&sizeArrMap);

@@ -11,9 +11,19 @@ void DFGTrig::connectBB() {
 
 	std::map<BasicBlock*,std::set<std::pair<BasicBlock*,CondVal>>> CtrlBBInfo = getCtrlInfoBBMorePaths();
 
+	std::map<BasicBlock*,std::set<BasicBlock*>> mBBs = checkMutexBBs();
+
 	for(std::pair<BasicBlock*,std::set<std::pair<BasicBlock*,CondVal>>> p1 : CtrlBBInfo){
 		BasicBlock* childBB = p1.first;
-		std::vector<dfgNode*> leaves = getLeafs(childBB);
+
+		std::vector<dfgNode*> leaves;
+		if(mBBs.find(childBB) != mBBs.end() && !mBBs[childBB].empty()){
+			leaves = getLeafs(childBB);
+		}
+		else{
+			leaves = getStoreInstructions(childBB);
+		}
+
 
 		for(std::pair<BasicBlock*,CondVal> p2 : p1.second){
 			BasicBlock* parentBB = p2.first;
@@ -324,7 +334,7 @@ int DFGTrig::handlePHINodes(std::set<BasicBlock*> LoopBB) {
 
 						dfgNode* phiParent = NULL;
 						if(Instruction* ins = dyn_cast<Instruction>(V)){
-							dfgNode* phiParent = findNode(ins);
+							phiParent = findNode(ins);
 						}
 						bool isPhiParentOutLoopLoad=false;
 						if(phiParent == NULL){ //not found
@@ -515,6 +525,7 @@ dfgNode* DFGTrig::getStartNode(BasicBlock* BB, dfgNode* PHINode) {
 }
 
 dfgNode* DFGTrig::insertMergeNode(dfgNode* PHINode, dfgNode* ctrl, bool controlVal, dfgNode* data) {
+	outs() << "inserting mergenode with non-constant data input\n";
 	dfgNode* temp = new dfgNode(this);
 
 	SmallVector<std::pair<const BasicBlock *, const BasicBlock *>,8> BackedgeBBs;
@@ -565,12 +576,14 @@ dfgNode* DFGTrig::insertMergeNode(dfgNode* PHINode, dfgNode* ctrl, bool controlV
 
 	temp->addAncestorNode(data,EDGE_TYPE_DATA,isDATA2PHIBackEdge,false);
 	data->addChildNode(temp,EDGE_TYPE_DATA,isDATA2PHIBackEdge,false);
+	outs() << "cmerge=" << temp->getIdx() << ",ctrl=" << ctrl->getIdx() << ",data=" << data->getIdx() << "\n";
 	return temp;
 }
 
 dfgNode* DFGTrig::insertMergeNode(dfgNode* PHINode, dfgNode* ctrl,
 		bool controlVal, int val) {
 
+	outs() << "inserting mergenode with constant data input\n";
 	dfgNode* temp = new dfgNode(this);
 
 	SmallVector<std::pair<const BasicBlock *, const BasicBlock *>,8> BackedgeBBs;
@@ -770,17 +783,16 @@ void DFGTrig::generateTrigDFGDOT() {
 	printConstHist();
 	removeOutLoopLoad();
 
-
-
 	nameNodes();
 	classifyParents();
-
-	addPseudoParentsRec();
 
 	removeRedudantCtrl();
 	removeCMERGEChildrenOpposingCtrl();
 
+	removeCMERGEwithoutData();
+
 	addRecConnsAsPseudo();
+	addPseudoParentsRec();
 
 	printSubPathDOT(this->name + "_TrigFullPredDFG");
 	printDOT(this->name + "_TrigFullPredDFG.dot");
@@ -1022,6 +1034,10 @@ void DFGTrig::constructCMERGETree() {
 
 void DFGTrig::scheduleASAP() {
 
+	for(dfgNode* n : NodeList){
+		n->setASAPnumber(-1);
+	}
+
 	std::queue<std::vector<dfgNode*>> q;
 	std::vector<dfgNode*> qv;
 	for(std::pair<BasicBlock*,dfgNode*> p : startNodes){
@@ -1080,12 +1096,17 @@ void DFGTrig::scheduleASAP() {
 
 void DFGTrig::scheduleALAP() {
 
+	for(dfgNode* n : NodeList){
+		n->setALAPnumber(-1);
+	}
+
 	std::queue<std::vector<dfgNode*>> q;
 	std::vector<dfgNode*> qv;
 
 	assert(maxASAPLevel != 0);
 
 	//initially fill this with childless nodes
+	// outs() << "adding last level nodes : ";
 	for(dfgNode* node : NodeList){
 		int childCount = 0;
 		for(dfgNode* child : node->getChildren()){
@@ -1093,15 +1114,18 @@ void DFGTrig::scheduleALAP() {
 			childCount++;
 		}
 		if(childCount == 0){
+			// outs() << node->getIdx() << ",";
 			qv.push_back(node);
 		}
 	}
+	// outs() << "\n";
 	q.push(qv);
 
 	int level = maxASAPLevel;
 	std::set<dfgNode*> visitedNodes;
 
-	outs() << "Schedule ALAP ..... \n";
+	// outs() << "Schedule ALAP ..... \n";
+	// outs() << "maxASAP = " << maxASAPLevel << "\n";
 
 	while(!q.empty()){
 		assert(level >= 0);
@@ -1113,6 +1137,7 @@ void DFGTrig::scheduleALAP() {
 
 			if(node->getALAPnumber() > level || node->getALAPnumber() == -1){
 				node->setALAPnumber(level);
+				// outs() << "node=" << node->getIdx() << ",ALAP=" << level << "\n";
 			}
 
 			for(dfgNode* parent : node->getAncestors()){
@@ -1126,6 +1151,22 @@ void DFGTrig::scheduleALAP() {
 		level--;
 	}
 
+	// outs() << "Cannot reach nodes = ";
+	std::set<dfgNode*> doubles_count;
+	if(visitedNodes.size() != NodeList.size()){
+		for(dfgNode* n : NodeList){
+			if(doubles_count.find(n) != doubles_count.end()){
+				// outs() << "double node = " << n->getIdx() << "\n";
+			}
+			doubles_count.insert(n);
+
+			if(visitedNodes.find(n) == visitedNodes.end()){
+				// outs() << n->getIdx() << ",";
+			}
+		}
+	}
+	// outs() << ", over\n";
+	// outs() << "visitied nodes size = " << visitedNodes.size() << ", NodeList size = " << NodeList.size() << "\n";
 
 	assert(visitedNodes.size() == NodeList.size());
 }
@@ -1798,6 +1839,7 @@ int DFGTrig::classifyParents() {
 					else{
 						outs() << "Extra parent : " << parent->getIdx() << ",Nametype = " << parent->getNameType() << ",par_idx = " << node->parentClassification.size()+1 << "\n";
 						node->parentClassification[node->parentClassification.size()+1]=parent;
+						edgeClassification[parent][node]=1;
 					}
 					continue;
 				}
@@ -1874,10 +1916,17 @@ int DFGTrig::classifyParents() {
 //						continue;
 
 						parentIns = cmergePHINodes[parent]->getNode();
+						dfgNode* repNode = node;
+						if(nCMP2pCMP[node]){
+							repNode = nCMP2pCMP[node];
+						}
+
 						outs() << "CMERGE Parent" << parent->getIdx() << "to non-nametype child=" << node->getIdx() << ".\n";
 						outs() << "parentIns = "; parentIns->dump();
-						outs() << "node = "; node->getNode()->dump();
-						outs() << "OpNumber = " << findOperandNumber(node, ins,parentIns) << "\n";
+						outs() << "node = "; repNode->getNode()->dump();
+
+						assert(repNode->getNode()); assert(repNode->getNode() == ins);
+						outs() << "OpNumber = " << findOperandNumber(repNode, ins,parentIns) << "\n";
 
 						assert(parentIns);
 					}
@@ -1892,10 +1941,16 @@ int DFGTrig::classifyParents() {
 					}
 				}
 				//Only ins!=NULL and non-PHI and non-BR will reach here
-				int op_no = findOperandNumber(node, ins,parentIns);
+
+				dfgNode* repNode = node;
+				if(nCMP2pCMP[node]){
+					repNode = nCMP2pCMP[node];
+				}
+
+				int op_no = findOperandNumber(repNode, ins,parentIns);
 				node->parentClassification[op_no]=parent;
 
-//				edgeClassification[parent][node] = op_no;
+				edgeClassification[parent][node] = op_no;
 
 				outs() << "CLASSIFY PARENTS :: node=" << node->getIdx();
 				outs() << ",parent=" << parent->getIdx();
@@ -2658,7 +2713,8 @@ void DFGTrig::removeCMERGEData() {
 
 void DFGTrig::addPseudoParentsRec() {
 
-
+	scheduleASAP();
+	scheduleALAP();
 
 	std::set<std::pair<dfgNode*,dfgNode*>> RecParents;
 
@@ -2668,6 +2724,13 @@ void DFGTrig::addPseudoParentsRec() {
 //			node->addAncestorNode(recParent,EDGE_TYPE_PS,false,true,true);
 			RecParents.insert(std::make_pair(recParent,node));
 		}
+
+		for(dfgNode* child : node->getChildren()){
+			if(node->childBackEdgeMap[child]){
+				RecParents.insert(std::make_pair(child,node));
+			}
+		}
+
 	}
 
 	for(std::pair<dfgNode*,dfgNode*> p1 : RecParents){
@@ -2959,7 +3022,12 @@ void DFGTrig::removeRedudantCtrl() {
 							dataParent->addChildNode(child,EDGE_TYPE_DATA,isBackedge);
 							child->addAncestorNode(dataParent,EDGE_TYPE_DATA,isBackedge);
 
-							if(dyn_cast<PHINode>(child->getNode())){
+							dfgNode* repChildNode = child;
+							if(nCMP2pCMP[child]){
+								repChildNode = nCMP2pCMP[child];
+							}
+
+							if(dyn_cast<PHINode>(repChildNode->getNode())){
 								for(std::pair<int,dfgNode*> p1 : child->parentClassification){
 									if(p1.second == node){
 										child->parentClassification[p1.first]=dataParent;
@@ -2968,7 +3036,7 @@ void DFGTrig::removeRedudantCtrl() {
 								}
 							}
 							else{ // if not phi
-								int operand_no = findOperandNumber(child,child->getNode(),cmergePHINodes[node]->getNode());
+								int operand_no = findOperandNumber(repChildNode,repChildNode->getNode(),cmergePHINodes[node]->getNode());
 								std::cout << "\t data_parent=" << dataParent->getIdx() << ",child=" << child->getIdx() << ",opno=" << operand_no << "\n";
 //								child->parentClassification[operand_no]=dataParent;
 								edgeClassification[dataParent][child]=operand_no;
@@ -3027,7 +3095,7 @@ void DFGTrig::removeCMERGEChildrenOpposingCtrl() {
 		}
 
 
-		if(isSameChild){
+		if(isSameChild && allhavesinglechild){
 			dfgNode* sameChild = (*cmergeChildren.begin())->getChildren()[0];
 			dfgNode* cmerge1 = (*cmergeChildren.begin());
 			dfgNode* cmerge2 = (*cmergeChildren.rbegin());
@@ -3099,6 +3167,8 @@ void DFGTrig::removeCMERGEChildrenOpposingCtrl() {
 //	assert(false);
 
 	for(dfgNode* rn : removeNodes){
+		assert(rn->getAncestors().empty());
+		assert(rn->getChildren().empty());
 		NodeList.erase(std::remove(NodeList.begin(), NodeList.end(), rn), NodeList.end());
 	}
 }
@@ -3217,6 +3287,9 @@ std::set<std::vector<std::pair<BasicBlock*, CondVal> > > DFGTrig::getPaths() {
 }
 
 void DFGTrig::addRecConnsAsPseudo() {
+
+	scheduleASAP();
+	scheduleALAP();
 
 	for(dfgNode* node : NodeList){
 		for(dfgNode* recParent : node->getRecAncestors()){
@@ -3418,10 +3491,20 @@ void DFGTrig::CreatSubDFGPath(
 					operand_no = 1;
 				}
 				else if(parent->getNameType() == "CMERGE"){
-					operand_no = findOperandNumber(node,node->getNode(),cmergePHINodes[parent]->getNode());
+					dfgNode* repNode = node;
+					if(nCMP2pCMP[node]){
+						repNode = nCMP2pCMP[node];
+					}
+					assert(repNode->getNode()); assert(cmergePHINodes[parent]->getNode());
+					operand_no = findOperandNumber(repNode,repNode->getNode(),cmergePHINodes[parent]->getNode());
 				}
 				else if(parent->getNameType() == "SELECTPHI"){
-					operand_no = findOperandNumber(node,node->getNode(),selectPHIAncestorMap[parent]->getNode());
+					dfgNode* repNode = node;
+					if(nCMP2pCMP[node]){
+						repNode = nCMP2pCMP[node];
+					}
+					assert(repNode->getNode()); assert(selectPHIAncestorMap[parent]->getNode());
+					operand_no = findOperandNumber(repNode,repNode->getNode(),selectPHIAncestorMap[parent]->getNode());
 				}
 				cmerge_operands.insert(operand_no);
 				CMERGEfound=true;
@@ -3525,6 +3608,7 @@ std::set<dfgNode*> DFGTrig::getRootNodes() {
 
 dfgNode* DFGTrig::addLoadParent(Value* ins, dfgNode* child) {
 	dfgNode* temp;
+	outs() << "adding load parent.\n";
 	if(OutLoopNodeMap.find(ins) == OutLoopNodeMap.end()){
 		temp = new dfgNode(this);
 		temp->setNameType("OutLoopLOAD");
@@ -4099,6 +4183,102 @@ void DFGTrig::mirrorCtrlNodes() {
 
 }
 
+void DFGTrig::removeCMERGEwithoutData() {
+
+	scheduleASAP();
+	scheduleALAP();
+
+	std::set<dfgNode*> rn;
+
+	std::set<std::pair<dfgNode*,dfgNode*>> already_added_edges;
+
+	for(dfgNode* node : NodeList){
+		if(node->getNameType() == "CMERGE"){
+			for(dfgNode* anc : node->getAncestors()){
+				for(dfgNode* child : node->getChildren()){
+					if(already_added_edges.find(std::make_pair(anc,child)) != already_added_edges.end()){
+						continue;
+					}
+
+					int operand_no=-1;
+					if( ( child->getNode() && (dyn_cast<PHINode>(child->getNode())) ) ||
+					      (!child->getNode()) ){
+							if(child->parentClassification[0]==node){
+								operand_no = 0;
+							}
+							else if(child->parentClassification[1]==node){
+								operand_no = 1;
+							}
+							else if(child->parentClassification[2]==node){
+								operand_no = 2;
+							}
+							else if(edgeClassification.find(node)!=edgeClassification.end() && edgeClassification[node].find(child)!=edgeClassification[node].end()){
+								operand_no = edgeClassification[node][child];
+							}
+							else{
+								bool found=false;
+								for(int p = 3; p < child->parentClassification.size(); p++){
+									if(child->parentClassification[p]==node){
+										found=true;
+										break;
+									}
+								}
+								assert(found);
+								outs() << "node=" << node->getIdx() << ",child=" << child->getIdx() << "\n";
+								// operand_no = 1;
+								assert(false);
+							}
+					}
+					else{ // if not phi
+						assert(child->getNode());
+						operand_no = findOperandNumber(child,child->getNode(),cmergePHINodes[node]->getNode());
+					}
+
+
+					assert(operand_no != -1);
+					if(anc == cmergeCtrlInputs[node]){
+						edgeClassification[anc][child] = 0;
+					}
+					else if(anc == cmergeDataInputs[node]){
+						edgeClassification[anc][child] = operand_no;
+					}
+					else{
+						assert(false);
+					}
+
+					CondVal cond = anc->ancestorConditionaMap[node];
+					bool isConditional = (cond != UNCOND);
+					bool isBackEdge = anc->childBackEdgeMap[node] || node->childBackEdgeMap[child];
+
+					// if(isBackEdge){
+					// 	continue;
+					// }
+					rn.insert(node);
+					anc->addChildNode(child,EDGE_TYPE_DATA,isBackEdge,isConditional,cond);
+					child->addAncestorNode(anc,EDGE_TYPE_DATA,isBackEdge,isConditional,cond);
+					already_added_edges.insert(std::make_pair(anc,child));
+				}
+			}
+		}
+	}
+
+	for(dfgNode* node : rn){
+		for(dfgNode* anc : node->getAncestors()){
+			anc->removeChild(node);
+			node->removeAncestor(anc);
+		}
+		for(dfgNode* child : node->getChildren()){
+			node->removeChild(child);
+			child->removeAncestor(node);
+		}
+		NodeList.erase(std::remove(NodeList.begin(), NodeList.end(), node), NodeList.end());
+	}
+
+	scheduleASAP();
+	scheduleALAP();
+
+}
+
 void DFGTrig::nameNodes() {
 
 	dfgNode* node;
@@ -4352,6 +4532,9 @@ void DFGTrig::nameNodes() {
 				}
 				else if(node->getTypeSizeBytes()==1){
 					node->setFinalIns(Hy_LOADB);
+				}
+				else if(node->getTypeSizeBytes()==8){
+					node->setFinalIns(Hy_LOAD);
 				}
 				else{
 					OutLoopNodeMapReverse[node]->dump();

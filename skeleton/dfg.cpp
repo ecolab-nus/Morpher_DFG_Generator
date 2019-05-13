@@ -873,7 +873,7 @@ void DFG::addMemRecDepEdgesNew(DependenceInfo *DI) {
 
 					  outs() << "Levels = " <<  D->getLevels() << "\n";
 					  D->dump(outs());
-
+						// outs() << "Distance = "; D->getDistance()->
 
 					  if (D->isAnti()) {
 					// TODO: Handle Anit dependence.Check if it is sufficient to populate
@@ -905,6 +905,7 @@ void DFG::addMemRecDepEdgesNew(DependenceInfo *DI) {
 
 							if(D->isConfused()) continue;
 
+							outs() << "adding recurrence relation!\n";
 							this->findNode(Des)->addRecChild(Src,depType,EDGE_TYPE_LDST);
 							this->findNode(Src)->addRecAncestor(Des,depType);
 

@@ -421,6 +421,8 @@ public :
 	void removeNotCtrlConns();
 	void addRecConnsAsPseudo();
 
+	void removeCMERGEwithoutData();
+
 	std::set<std::vector<std::pair<BasicBlock*,CondVal>>> getPaths();
 	std::map<dfgNode*,std::map<dfgNode*,int>> edgeClassification;
 
