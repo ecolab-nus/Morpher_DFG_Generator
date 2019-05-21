@@ -36,6 +36,8 @@ class DFGPartPred : public DFG{
 		int classifyParents();
 
 		void removeOutLoopLoad();
+
+		void addRecConnsAsPseudo();
 		void addOrphanPseudoEdges();
 
 		void createCtrlBROrTree();

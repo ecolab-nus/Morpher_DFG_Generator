@@ -419,7 +419,12 @@ int DFGPartPred::handlePHINodes(std::set<BasicBlock*> LoopBB) {
 //					isBackEdge = false;
 
 //					bool isBackEdge = checkBackEdge(actPHI,node);
-					if(!isInductionVar || !isBackEdge ){
+
+					if(!(isInductionVar && isBackEdge)){
+						if(isInductionVar) {
+							outs() << "this is induction variable, node=" << node->getIdx() << ",mergeNode=" << mergeNode->getIdx() << "\n";
+							assert(isBackEdge == false);
+						}
 						node->addAncestorNode(mergeNode,EDGE_TYPE_DATA,isBackEdge);
 						mergeNode->addChildNode(node,EDGE_TYPE_DATA,isBackEdge);
 					}
@@ -719,7 +724,7 @@ void DFGPartPred::generateTrigDFGDOT() {
 	createCtrlBROrTree();
 
 	handlePHINodes(this->loopBB);
-//	insertshiftGEPs();
+	// insertshiftGEPs();
 	addMaskLowBitInstructions();
 	removeDisconnetedNodes();
 //	scheduleCleanBackedges();
@@ -732,13 +737,14 @@ void DFGPartPred::generateTrigDFGDOT() {
 
 	scheduleASAP();
 	scheduleALAP();
-//	assignALAPasASAP();
+	// assignALAPasASAP();
 //	balanceSched();
 // removeOutLoopLoad();
 	nameNodes();
 	classifyParents();
 
 	addOrphanPseudoEdges();
+	addRecConnsAsPseudo();
 
 	printDOT(this->name + "_PartPredDFG.dot");
 	printNewDFGXML();
@@ -1677,17 +1683,55 @@ void DFGPartPred::assignALAPasASAP() {
 
 }
 
+void DFGPartPred::addRecConnsAsPseudo() {
+
+	scheduleASAP();
+	scheduleALAP();
+
+	for(dfgNode* node : NodeList){
+		for(dfgNode* recParent : node->getRecAncestors()){
+			outs() << "Adding rec Pseudo Connection :: parent=" << recParent->getIdx() << ",to" << node->getIdx() << "\n";
+			removeEdge(findEdge(recParent,node));
+			recParent->addChildNode(node,EDGE_TYPE_PS,false,true,true);
+			node->addAncestorNode(recParent,EDGE_TYPE_PS,false,true,true);
+		}
+	}
+
+	scheduleASAP();
+	scheduleALAP();
+
+}
+
 void DFGPartPred::addOrphanPseudoEdges() {
 
 	scheduleASAP();
 	scheduleALAP();
 
 	std::set<dfgNode*> RecParents;
+	std::map<dfgNode*,int> maxDelayASAP;
 
 	for(dfgNode* node : NodeList){
 		for(dfgNode* recParent : node->getRecAncestors()){
 			outs() << "child = " << node->getIdx() << ", recparent = " << recParent->getIdx() << "\n";
+			if(recParent->getALAPnumber() == recParent->getASAPnumber()) continue;
 			RecParents.insert(recParent);
+		}
+
+		for(dfgNode* child : node->getChildren()){
+			if(node->childBackEdgeMap[child]){
+				if(child->getALAPnumber() == child->getASAPnumber()) continue;
+				RecParents.insert(child);
+			}
+		}
+	}
+
+	for(dfgNode* n : RecParents){
+		maxDelayASAP[n]=10000000;
+		for(dfgNode* child : n->getChildren()){
+			if(n->childBackEdgeMap[child]) continue;
+			if(child->getASAPnumber() < maxDelayASAP[n]){
+				maxDelayASAP[n] = child->getASAPnumber();
+			}
 		}
 	}
 
@@ -1780,7 +1824,11 @@ void DFGPartPred::addOrphanPseudoEdges() {
 			for(dfgNode* n : curr){
 //				if(n->getASAPnumber() == n->getALAPnumber()){
 //					if(n->getALAPnumber() == node->getALAPnumber()){
-					if(node->getALAPnumber() - n->getALAPnumber() == startdiff){
+					outs() << "n=" << n->getIdx() << ",diff=" << n->getALAPnumber() - n->getASAPnumber() << "\n";
+					if(n->getALAPnumber() - n->getASAPnumber() <= startdiff && 
+					   n->getALAPnumber() < node->getALAPnumber() &&
+						 (n->getASAPnumber() < maxDelayASAP[node] - 1)
+						){
 						pseduoParent=n;
 						
 						std::vector<dfgNode*> node_childs = node->getChildren();
@@ -1789,9 +1837,10 @@ void DFGPartPred::addOrphanPseudoEdges() {
 							outs() << "Adding Pseudo Connection :: parent=" << pseduoParent->getIdx() << ",to" << node->getIdx() << "\n";
 							pseduoParent->addChildNode(node,EDGE_TYPE_PS,false,true,true);
 							node->addAncestorNode(pseduoParent,EDGE_TYPE_PS,false,true,true);
+
+							pseudoParentFound=true;
+							break;
 						}
-						pseudoParentFound=true;
-//						break;
 					}
 //				}
 				for(dfgNode* parent : n->getAncestors()){
@@ -1800,7 +1849,7 @@ void DFGPartPred::addOrphanPseudoEdges() {
 					q_next.insert(parent);
 				}
 			}
-//			if(pseudoParentFound) break;
+			if(pseudoParentFound) break;
 
 			if(!q_next.empty()) q.push(q_next);
 		}

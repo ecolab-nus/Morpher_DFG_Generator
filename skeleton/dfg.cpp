@@ -873,7 +873,30 @@ void DFG::addMemRecDepEdgesNew(DependenceInfo *DI) {
 
 					  outs() << "Levels = " <<  D->getLevels() << "\n";
 					  D->dump(outs());
-						// outs() << "Distance = "; D->getDistance()->
+
+						char Direction;
+						for (int i = 1; i <= D->getLevels() ; i++)
+						{
+							const SCEV *Distance = D->getDistance(i);
+          		const SCEVConstant *SCEVConst =  dyn_cast_or_null<SCEVConstant>(Distance);
+         			if (SCEVConst) {
+            		const ConstantInt *CI = SCEVConst->getValue();
+            		if (CI->isNegative()) Direction = '<';
+            		else if (CI->isZero()) Direction = '=';
+								else Direction = '>';
+          		} else if (D->isScalar(i)) {
+            		Direction = 'S';
+          		} else {
+            		unsigned Dir = D->getDirection(i);
+            		if (Dir == Dependence::DVEntry::LT || Dir == Dependence::DVEntry::LE) Direction = '<';
+            		else if (Dir == Dependence::DVEntry::GT || Dir == Dependence::DVEntry::GE) Direction = '>';
+            		else if (Dir == Dependence::DVEntry::EQ) Direction = '=';
+            		else Direction = '*';
+          		}
+
+							outs() << "\tlevel=" << i << ",dir=" << Direction << "\n";
+						}
+					
 
 					  if (D->isAnti()) {
 					// TODO: Handle Anit dependence.Check if it is sufficient to populate
