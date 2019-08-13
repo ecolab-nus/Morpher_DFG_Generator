@@ -42,6 +42,8 @@ class DFGPartPred : public DFG{
 
 		void createCtrlBROrTree();
 
+		void RemoveInductionControlLogic();
+
 
 
 	private :
@@ -80,6 +82,7 @@ class DFGPartPred : public DFG{
 		Loop* currLoop;
 
 		std::set<dfgNode*> realphi_as_selectphi;
+		std::map<dfgNode*,std::map<Value*,dfgNode*>> PHIArgMap;
 
 
 

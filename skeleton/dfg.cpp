@@ -5771,7 +5771,14 @@ int DFG::nameNodes() {
 					node->setFinalIns(Hy_STOREB);
 				}
 				else{
-					assert(0);
+					OutLoopNodeMapReverse[node]->dump();
+					if(OutLoopNodeMapReverse[node]->getType()->isDoubleTy()){
+						//TODO : to make it compatible with double
+						node->setFinalIns(Hy_STORE);
+					}
+					else{
+						assert(0);
+					}
 				}
 				node->setConstantVal(node->getoutloopAddr());
 			}
@@ -5788,7 +5795,13 @@ int DFG::nameNodes() {
 				else{
 					OutLoopNodeMapReverse[node]->dump();
 					outs() << "OutLoopLOAD size = " << node->getTypeSizeBytes() << "\n";
-					assert(0);
+					if(OutLoopNodeMapReverse[node]->getType()->isDoubleTy()){
+						//TODO : to make it compatible with double
+						node->setFinalIns(Hy_LOAD);
+					}
+					else{
+						assert(0);
+					}
 				}
 				node->setConstantVal(node->getoutloopAddr());
 			}
@@ -7671,7 +7684,7 @@ int DFG::findOperandNumber(dfgNode* node, Instruction* child, Value* parent) {
 	else{
 		if(child->getNumOperands()==3){
 			for (int i = 0; i < 3; ++i) {
-				if(Instruction* chkIns = dyn_cast<Instruction>(child->getOperand(i))){
+				if(Value* chkIns = (child->getOperand(i))){
 					if(parent == chkIns){
 						return i;
 					}
@@ -7685,11 +7698,11 @@ int DFG::findOperandNumber(dfgNode* node, Instruction* child, Value* parent) {
 					assert(i!=0);
 					ConstantInt* CI = cast<ConstantInt>(child->getOperand(i));
 					if(i==1){
-						assert(parent==cast<Instruction>(child->getOperand(2)));
+						assert(parent==(child->getOperand(2)));
 						return 2;
 					}
 					else{ // i==2
-						assert(parent==cast<Instruction>(child->getOperand(1)));
+						assert(parent==(child->getOperand(1)));
 						return 1;
 					}
 				}
@@ -7697,7 +7710,7 @@ int DFG::findOperandNumber(dfgNode* node, Instruction* child, Value* parent) {
 		}
 		else if(child->getNumOperands()==2){
 			for (int i = 0; i < 2; ++i) {
-				if(Instruction* chkIns = dyn_cast<Instruction>(child->getOperand(i))){
+				if(Value* chkIns = (child->getOperand(i))){
 					if(parent == chkIns){
 						return i+1;
 					}
@@ -7706,18 +7719,18 @@ int DFG::findOperandNumber(dfgNode* node, Instruction* child, Value* parent) {
 //					ConstantInt* CI = cast<ConstantInt>(child->getOperand(i));
 //					assert(node->hasConstantVal());
 					if(i==0){
-						assert(parent==cast<Instruction>(child->getOperand(1)));
+						assert(parent==(child->getOperand(1)));
 						return 1;
 					}
 					else{ // i==1
-						assert(parent==cast<Instruction>(child->getOperand(0)));
+						assert(parent==(child->getOperand(0)));
 						return 0;
 					}
 				}
 			}
 		}
 		else if(child->getNumOperands()==1){
-			assert(parent==cast<Instruction>(child->getOperand(0)) );
+			assert(parent==(child->getOperand(0)) );
 			return 1;
 		}
 		else{

@@ -607,6 +607,7 @@ void dfgNode::setoutloopAddr(int addr) {
 	assert((this->getNameType().compare("OutLoopLOAD") == 0)||(this->getNameType().compare("OutLoopSTORE") == 0));
 	outloopAddr = addr;
 	constValFlag = true;
+	constVal = addr;
 }
 
 int dfgNode::getGEPbaseAddr() {
@@ -620,6 +621,7 @@ void dfgNode::setGEPbaseAddr(int addr) {
 	assert(dyn_cast<GetElementPtrInst>(this->getNode()));
 	GEPbaseAddr = addr;
 	constValFlag = true;
+	constVal = addr;
 }
 
 dfgNode* dfgNode::addCMergeParent(dfgNode* phiBRAncestor,dfgNode* phiDataAncestor,int32_t constVal,bool selectOp) {

@@ -6,6 +6,8 @@
 #include <set>
 #include <vector>
 
+// #include "llvm/Analysis/IVUsers.h"
+
 void DFGPartPred::connectBB() {
 
 	SmallVector<std::pair<const BasicBlock *, const BasicBlock *>,8> BackedgeBBs;
@@ -299,10 +301,16 @@ int DFGPartPred::handlePHINodes(std::set<BasicBlock*> LoopBB) {
 						int constant = 0;
 						mergeNode = insertMergeNode(node,previousCTRLNode,incomingCTRLVal,constant);
 					}
-					else if(sizeArrMap.find(V->getName().str())!=sizeArrMap.end()){
-						int constant = sizeArrMap[V->getName().str()];
+//					else if(sizeArrMap.find(V->getName().str())!=sizeArrMap.end()){
+//						int constant = sizeArrMap[V->getName().str()];
+//						mergeNode = insertMergeNode(node,previousCTRLNode,incomingCTRLVal,constant);
+//					}
+					else if(Argument *ARG = dyn_cast<Argument>(V)){
+						//FIXME : need cleaner way link the argument value when implementing the backend
+						int constant = 0;
 						mergeNode = insertMergeNode(node,previousCTRLNode,incomingCTRLVal,constant);
-					}
+						PHIArgMap[node][V]=mergeNode;
+ 					}
 					else{
 
 						dfgNode* phiParent = NULL;
@@ -740,7 +748,11 @@ void DFGPartPred::generateTrigDFGDOT() {
 	// assignALAPasASAP();
 //	balanceSched();
 // removeOutLoopLoad();
+
 	nameNodes();
+	RemoveInductionControlLogic();
+
+
 	classifyParents();
 
 	addOrphanPseudoEdges();
@@ -2420,3 +2432,78 @@ std::map<BasicBlock*, std::set<std::pair<BasicBlock*, CondVal> > > DFGPartPred::
 	return temp1;
 
 }
+
+
+// void DFGPartPred::RemoveInductionControlLogic() {
+	
+
+// 	// PHINode* ind_phi = currLoop->getInductionVar
+// 	if(!ind_phi){
+// 		// 'cannot find the induction variable, probably the increments in loop induction variables are not 1'
+// 		assert(false);
+// 	}
+
+// 	dfgNode* ind_phi_node = findNode(ind_phi);
+// 	assert(ind_phi_node);
+
+// 	std::vector<dfgNode*> phiChildren = ind_phi_node->getChildren();
+
+// 	//Ind phi node should have two parents
+// 	assert(ind_phi_node->getAncestors().size() == 2);
+// 	dfgNode* ind_phi_init_par = NULL;
+// 	dfgNode* ctrlNode = NULL;
+// 	dfgNode* dataNode = NULL;
+// 	dfgNode* cmerge = NULL;
+
+// 	for(dfgNode* par : ind_phi_node->getAncestors()){
+// 		if(ind_phi_node->ancestorBackEdgeMap[par]){
+			
+// 			//backedge cmerge
+// 			assert(par->getNameType() == "CMERGE");
+// 			cmerge = par;
+			
+// 			ctrlNode = cmergeCtrlInputs[par];  assert(ctrlNode);
+// 			dataNode = cmergeDataInputs[par];	 assert(dataNode);
+
+// 			std::vector<dfgNode*> dParents = dataNode->getAncestors();
+
+// 			//Parent of the data of cmerge should be phi
+// 			assert(std::find(dParents.begin(),dParents.end(),ind_phi_node) != dParents.end());
+
+// 			//removing parents of ctrl
+// 			for(dfgNode* cPar : ctrlNode->getAncestors()){
+// 				cPar->removeChild(ctrlNode);
+// 				ctrlNode->removeAncestor(cPar);
+// 			}
+
+// 			//removing parents of cmerge
+// 			for(dfgNode* cmPar : par->getAncestors()){
+// 				cmPar->removeChild(par);
+// 				par->removeAncestor(cmPar);
+// 			}
+// 		}
+// 		else{
+// 			ind_phi_init_par = par;
+// 			ind_phi_init_par->removeChild(ind_phi_node);
+// 			ind_phi_node->removeAncestor(ind_phi_init_par);
+// 		}
+// 	}
+
+// 	assert(ctrlNode);
+// 	assert(dataNode);
+// 	assert(ind_phi_init_par);
+// 	assert(cmerge);
+
+// 		//remove nodes
+// 	NodeList.erase(std::remove(NodeList.begin(), NodeList.end(), cmerge), NodeList.end());
+// 	NodeList.erase(std::remove(NodeList.begin(), NodeList.end(), ind_phi_node), NodeList.end());
+
+// 	//Adding new connections
+// 	ind_phi_init_par->addChildNode(dataNode,EDGE_TYPE_DATA);
+// 	dataNode->addAncestorNode(ind_phi_init_par,EDGE_TYPE_DATA);
+
+// 	for(dfgNode* phiChild : phiChildren){
+// 		dataNode->addChildNode(phiChild,EDGE_TYPE_DATA);
+// 		phiChild->addAncestorNode(dataNode,EDGE_TYPE_DATA);
+// 	}
+// }
