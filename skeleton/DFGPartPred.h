@@ -42,7 +42,7 @@ class DFGPartPred : public DFG{
 
 		void createCtrlBROrTree();
 
-		void RemoveInductionControlLogic();
+		// void RemoveInductionControlLogic();
 
 
 

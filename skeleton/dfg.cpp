@@ -6262,7 +6262,7 @@ void DFG::GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeAr
 //					  Type::getInt8PtrTy(Ctx),
 //					  NULL);
 
-	Constant* loopStartFn = F.getParent()->getOrInsertFunction(
+	auto loopStartFn = F.getParent()->getOrInsertFunction(
 							"loopStart",
 							FunctionType::getVoidTy(Ctx),
 							Type::getInt8PtrTy(Ctx));
@@ -6300,7 +6300,7 @@ void DFG::GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeAr
 //	IRBuilder<> builder(loopStartIns);
 //	builder.SetInsertPoint(loopStartIns);
 	builder.SetInsertPoint(loopHeader,loopHeader->getFirstInsertionPt());
-	Constant* clearPrintedArrs = F.getParent()->getOrInsertFunction(
+	auto clearPrintedArrs = F.getParent()->getOrInsertFunction(
 	  "clearPrintedArrs", FunctionType::getVoidTy(Ctx));
 
 //	for (int i = 0; i < loopExitInsVec.size(); ++i) {
@@ -6340,7 +6340,7 @@ void DFG::GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeAr
 //							  Type::getInt32Ty(Ctx),
 //							  NULL);
 
-			Constant* outloopReportFn = F.getParent()->getOrInsertFunction(
+			auto outloopReportFn = F.getParent()->getOrInsertFunction(
 									  "outloopValueReport",
 									  FunctionType::getVoidTy(Ctx),
 									  Type::getInt32Ty(Ctx), //nodeIdx
@@ -6390,7 +6390,7 @@ void DFG::GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeAr
 //							  Type::getInt32Ty(Ctx),
 //							  NULL);
 
-			Constant* outloopReportFn = F.getParent()->getOrInsertFunction(
+			auto outloopReportFn = F.getParent()->getOrInsertFunction(
 									  "outloopValueReport",
 									  FunctionType::getVoidTy(Ctx),
 									  Type::getInt32Ty(Ctx), //nodeIdx
@@ -6492,7 +6492,7 @@ void DFG::GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeAr
 					outs() << "NodeIdx:" << node->getIdx() << ",addr=" << allocatedArraysMap[GEP->getPointerOperand()->getName().str()] << ",size=" << size <<  "\n";
 				}
 
-				Constant* printArrFunc = F.getParent()->getOrInsertFunction(
+				auto printArrFunc = F.getParent()->getOrInsertFunction(
 				  "printArr",
 				  FunctionType::getVoidTy(Ctx),
 				  Type::getInt8PtrTy(Ctx),
@@ -6567,7 +6567,7 @@ void DFG::GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeAr
 						arrayAddrPtrRight += size;
 					}
 
-					Constant* printArrFunc = F.getParent()->getOrInsertFunction(
+					auto printArrFunc = F.getParent()->getOrInsertFunction(
 					  "printArr",
 					  FunctionType::getVoidTy(Ctx),
 					  Type::getInt8PtrTy(Ctx),
@@ -6618,7 +6618,7 @@ void DFG::GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeAr
 					Value* bitcastedPtr = builder.CreateBitCast(old,Type::getInt8PtrTy(Ctx));
 					int size = DL.getTypeAllocSize(IT);
 
-					Constant* reportDynArrSize = F.getParent()->getOrInsertFunction(
+					auto reportDynArrSize = F.getParent()->getOrInsertFunction(
 					"reportDynArrSize", FunctionType::getVoidTy(Ctx),
 										Type::getInt8PtrTy(Ctx),
 										Type::getInt8PtrTy(Ctx),
@@ -6664,7 +6664,7 @@ void DFG::GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeAr
 						}
 
 
-						Constant* printArrFunc = F.getParent()->getOrInsertFunction(
+						auto printArrFunc = F.getParent()->getOrInsertFunction(
 						  "printArr",
 						  FunctionType::getVoidTy(Ctx),
 						  Type::getInt8PtrTy(Ctx),
@@ -6717,10 +6717,10 @@ void DFG::GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeAr
 
 	} //Nodelist
 
-	Constant* printDynArrSize = F.getParent()->getOrInsertFunction(
+	auto printDynArrSize = F.getParent()->getOrInsertFunction(
 	  "printDynArrSize", FunctionType::getVoidTy(Ctx));
 
-	Constant* loopEndFn = F.getParent()->getOrInsertFunction(
+	auto loopEndFn = F.getParent()->getOrInsertFunction(
 			  "loopEnd", FunctionType::getVoidTy(Ctx),Type::getInt8PtrTy(Ctx));
 
 //	for (int i = 0; i < loopExitInsVec.size(); ++i) {
@@ -6766,7 +6766,7 @@ void DFG::GEPInvestigate(Function &F, std::map<std::string,int>* sizeArrMap) {
 //					  Type::getInt8PtrTy(Ctx),
 //					  NULL);
 
-	Constant* loopStartFn = F.getParent()->getOrInsertFunction(
+	auto loopStartFn = F.getParent()->getOrInsertFunction(
 							"loopStart",
 							FunctionType::getVoidTy(Ctx),
 							Type::getInt8PtrTy(Ctx)
@@ -6805,7 +6805,7 @@ void DFG::GEPInvestigate(Function &F, std::map<std::string,int>* sizeArrMap) {
 //	IRBuilder<> builder(loopStartIns);
 //	builder.SetInsertPoint(loopStartIns);
 	builder.SetInsertPoint(loopHeader,loopHeader->getFirstInsertionPt());
-	Constant* clearPrintedArrs = F.getParent()->getOrInsertFunction(
+	auto clearPrintedArrs = F.getParent()->getOrInsertFunction(
 	  "clearPrintedArrs", FunctionType::getVoidTy(Ctx));
 
 //	for (int i = 0; i < loopExitInsVec.size(); ++i) {
@@ -6845,7 +6845,7 @@ void DFG::GEPInvestigate(Function &F, std::map<std::string,int>* sizeArrMap) {
 //							  Type::getInt32Ty(Ctx),
 //							  NULL);
 
-			Constant* outloopReportFn = F.getParent()->getOrInsertFunction(
+			auto outloopReportFn = F.getParent()->getOrInsertFunction(
 									  "outloopValueReport",
 									  FunctionType::getVoidTy(Ctx),
 									  Type::getInt32Ty(Ctx), //nodeIdx
@@ -6895,7 +6895,7 @@ void DFG::GEPInvestigate(Function &F, std::map<std::string,int>* sizeArrMap) {
 //							  Type::getInt32Ty(Ctx),
 //							  NULL);
 
-			Constant* outloopReportFn = F.getParent()->getOrInsertFunction(
+			auto outloopReportFn = F.getParent()->getOrInsertFunction(
 									  "outloopValueReport",
 									  FunctionType::getVoidTy(Ctx),
 									  Type::getInt32Ty(Ctx), //nodeIdx
@@ -6997,7 +6997,7 @@ void DFG::GEPInvestigate(Function &F, std::map<std::string,int>* sizeArrMap) {
 					outs() << "NodeIdx:" << node->getIdx() << ",addr=" << allocatedArraysMap[GEP->getPointerOperand()->getName().str()] << ",size=" << size <<  "\n";
 				}
 
-				Constant* printArrFunc = F.getParent()->getOrInsertFunction(
+				auto printArrFunc = F.getParent()->getOrInsertFunction(
 				  "printArr",
 				  FunctionType::getVoidTy(Ctx),
 				  Type::getInt8PtrTy(Ctx),
@@ -7072,7 +7072,7 @@ void DFG::GEPInvestigate(Function &F, std::map<std::string,int>* sizeArrMap) {
 						arrayAddrPtrRight += size;
 					}
 
-					Constant* printArrFunc = F.getParent()->getOrInsertFunction(
+					auto printArrFunc = F.getParent()->getOrInsertFunction(
 					  "printArr",
 					  FunctionType::getVoidTy(Ctx),
 					  Type::getInt8PtrTy(Ctx),
@@ -7123,7 +7123,7 @@ void DFG::GEPInvestigate(Function &F, std::map<std::string,int>* sizeArrMap) {
 					Value* bitcastedPtr = builder.CreateBitCast(old,Type::getInt8PtrTy(Ctx));
 					int size = DL.getTypeAllocSize(IT);
 
-					Constant* reportDynArrSize = F.getParent()->getOrInsertFunction(
+					auto reportDynArrSize = F.getParent()->getOrInsertFunction(
 					"reportDynArrSize", FunctionType::getVoidTy(Ctx),
 										Type::getInt8PtrTy(Ctx),
 										Type::getInt8PtrTy(Ctx),
@@ -7169,7 +7169,7 @@ void DFG::GEPInvestigate(Function &F, std::map<std::string,int>* sizeArrMap) {
 						}
 
 
-						Constant* printArrFunc = F.getParent()->getOrInsertFunction(
+						auto printArrFunc = F.getParent()->getOrInsertFunction(
 						  "printArr",
 						  FunctionType::getVoidTy(Ctx),
 						  Type::getInt8PtrTy(Ctx),
@@ -7222,10 +7222,10 @@ void DFG::GEPInvestigate(Function &F, std::map<std::string,int>* sizeArrMap) {
 
 	} //Nodelist
 
-	Constant* printDynArrSize = F.getParent()->getOrInsertFunction(
+	auto printDynArrSize = F.getParent()->getOrInsertFunction(
 	  "printDynArrSize", FunctionType::getVoidTy(Ctx));
 
-	Constant* loopEndFn = F.getParent()->getOrInsertFunction(
+	auto loopEndFn = F.getParent()->getOrInsertFunction(
 			  "loopEnd", FunctionType::getVoidTy(Ctx),Type::getInt8PtrTy(Ctx));
 
 //	for (int i = 0; i < loopExitInsVec.size(); ++i) {

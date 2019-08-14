@@ -750,7 +750,7 @@ void DFGPartPred::generateTrigDFGDOT() {
 // removeOutLoopLoad();
 
 	nameNodes();
-	RemoveInductionControlLogic();
+	// RemoveInductionControlLogic();
 
 
 	classifyParents();

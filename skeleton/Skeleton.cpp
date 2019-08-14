@@ -12,6 +12,8 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Analysis/MemoryDependenceAnalysis.h"
 
+#include "llvm/Transforms/Utils.h"
+
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SetVector.h"
@@ -1882,71 +1884,71 @@ std::vector<munitTransition> munitTransitionsALL;
 	    		//Function Calls
 
 
-	    		Constant* traceStartFn = F.getParent()->getOrInsertFunction(
+	    		auto traceStartFn = F.getParent()->getOrInsertFunction(
 	    								"loopTraceOpen",
 	    								FunctionType::getVoidTy(Ctx),
 										Type::getInt8PtrTy(Ctx));
 
-	    		Constant* traceEndFn = F.getParent()->getOrInsertFunction(
+	    		auto traceEndFn = F.getParent()->getOrInsertFunction(
 	    								"loopTraceClose",
 	    								FunctionType::getVoidTy(Ctx));
 
-	    		Constant* loopInvFn = F.getParent()->getOrInsertFunction(
+	    		auto loopInvFn = F.getParent()->getOrInsertFunction(
 	    								"loopInvoke",
 	    								FunctionType::getVoidTy(Ctx),
 										Type::getInt8PtrTy(Ctx));
 
-	    		Constant* loopInsUpdateFn = F.getParent()->getOrInsertFunction(
+	    		auto loopInsUpdateFn = F.getParent()->getOrInsertFunction(
 	    								"loopInsUpdate",
 	    								FunctionType::getVoidTy(Ctx),
 										Type::getInt8PtrTy(Ctx),
 										Type::getInt32Ty(Ctx));
 
-	    		Constant* loopBBInsUpdateFn = F.getParent()->getOrInsertFunction(
+	    		auto loopBBInsUpdateFn = F.getParent()->getOrInsertFunction(
 	    								"loopBBInsUpdate",
 	    								FunctionType::getVoidTy(Ctx),
 										Type::getInt8PtrTy(Ctx),
 										Type::getInt8PtrTy(Ctx),
 										Type::getInt32Ty(Ctx));
 
-	    		Constant* loopInsClearFn = F.getParent()->getOrInsertFunction(
+	    		auto loopInsClearFn = F.getParent()->getOrInsertFunction(
 	    								"loopInsClear",
 	    								FunctionType::getVoidTy(Ctx),
 										Type::getInt8PtrTy(Ctx));
 
-	    		Constant* loopBBInsClearFn = F.getParent()->getOrInsertFunction(
+	    		auto loopBBInsClearFn = F.getParent()->getOrInsertFunction(
 	    								"loopBBInsClear",
 	    								FunctionType::getVoidTy(Ctx));
 
-	    		Constant* loopInvokeEndFn = F.getParent()->getOrInsertFunction(
+	    		auto loopInvokeEndFn = F.getParent()->getOrInsertFunction(
 	    								"loopInvokeEnd",
 	    								FunctionType::getVoidTy(Ctx),
 										Type::getInt8PtrTy(Ctx));
 
-	    		Constant* reportExecInsCountFn = F.getParent()->getOrInsertFunction(
+	    		auto reportExecInsCountFn = F.getParent()->getOrInsertFunction(
 	    								"reportExecInsCount",
 	    								FunctionType::getVoidTy(Ctx),
 										Type::getInt32Ty(Ctx));
 
-	    		Constant* updateLoopPreHeaderFn = F.getParent()->getOrInsertFunction(
+	    		auto updateLoopPreHeaderFn = F.getParent()->getOrInsertFunction(
 	    								"updateLoopPreHeader",
 	    								FunctionType::getVoidTy(Ctx),
 										Type::getInt8PtrTy(Ctx),
 										Type::getInt8PtrTy(Ctx));
 
-	    		Constant* loopBBMappingUnitUpdate = F.getParent()->getOrInsertFunction(
+	    		auto loopBBMappingUnitUpdate = F.getParent()->getOrInsertFunction(
 	    								"loopBBMappingUnitUpdate",
 	    								FunctionType::getVoidTy(Ctx),
 										Type::getInt8PtrTy(Ctx),
 										Type::getInt8PtrTy(Ctx));
 
-	    		Constant* recordUncondMunitTransition = F.getParent()->getOrInsertFunction(
+	    		auto recordUncondMunitTransition = F.getParent()->getOrInsertFunction(
 	    								"recordUncondMunitTransition",
 	    								FunctionType::getVoidTy(Ctx),
 										Type::getInt8PtrTy(Ctx),
 										Type::getInt8PtrTy(Ctx));
 
-	    		Constant* recordCondMunitTransition = F.getParent()->getOrInsertFunction(
+	    		auto recordCondMunitTransition = F.getParent()->getOrInsertFunction(
 	    								"recordCondMunitTransition",
 	    								FunctionType::getVoidTy(Ctx),
 										Type::getInt8PtrTy(Ctx),
