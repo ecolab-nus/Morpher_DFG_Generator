@@ -95,6 +95,20 @@ void dfgNode::addAncestor(Instruction *anc, int type){
 void dfgNode::addChildNode(dfgNode* node, int type, bool isBackEdge,
 		bool isControlDependent, bool ControlValue) {
 
+	outs() << "adding child node:" << node->getIdx() <<  " to:" << this->getIdx();
+	outs() << " of type =";
+	if(type==EDGE_TYPE_DATA){
+		outs() << " data";
+	}
+	else if(type==EDGE_TYPE_PS){
+		outs() << " psuedo";
+	}
+	else if(type==EDGE_TYPE_CTRL){
+		outs() << " control";
+	}
+	if(isBackEdge) outs() << " :: also is backedge";
+	outs() << "\n";
+
 	if(std::find(ChildNodes.begin(),ChildNodes.end(),node)!=ChildNodes.end()) { //already a child
 		outs() << "Src : " << this->getIdx() << " to " << "Dest : " << node->getIdx() << "\n";
 

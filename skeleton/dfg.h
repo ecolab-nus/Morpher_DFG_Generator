@@ -15,6 +15,8 @@
 #include <iostream>
 #include <fstream>
 
+#include <unordered_set>
+
 
 #define REGS_PER_NODE 4
 
@@ -475,6 +477,9 @@ class DFG{
 
 			void insertMOVC();
 			virtual void generateTrigDFGDOT(){outs() << "Please override me!\n";};
+
+			void removeDisconnectedNodes();
+			std::unordered_set<dfgNode*> getLineage(dfgNode* n);
 
 	};
 

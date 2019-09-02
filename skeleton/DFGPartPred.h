@@ -1,4 +1,5 @@
 #include "dfg.h"
+#include <unordered_set>
 
 class DFGPartPred : public DFG{
 	public :
@@ -42,7 +43,11 @@ class DFGPartPred : public DFG{
 
 		void createCtrlBROrTree();
 
-		// void RemoveInductionControlLogic();
+		void RemoveInductionControlLogic();
+		void RemoveBackEdgePHIs();
+		void RemoveConstantCMERGEs();
+
+		ScalarEvolution* SE;
 
 
 
@@ -83,6 +88,8 @@ class DFGPartPred : public DFG{
 
 		std::set<dfgNode*> realphi_as_selectphi;
 		std::map<dfgNode*,std::map<Value*,dfgNode*>> PHIArgMap;
+
+		std::map<dfgNode*,std::map<dfgNode*,int>> Edge2OperandIdxMap;
 
 
 

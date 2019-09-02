@@ -61,17 +61,17 @@ dfgNode* DFG::findNode(Instruction* I){
 Edge* DFG::findEdge(dfgNode* src, dfgNode* dest, CGRANode* goal){
 
 
-	if(src == dest){
-//		assert(src->getPHIchildren().size()==1);
-		assert(goal!=NULL);
-		for(dfgNode* phiChild : src->getPHIchildren()){
-			if(phiChild->getMappedLoc() == goal){
-				dest = phiChild;
-			}
-		}
-		assert(dest!=src);
-//		dest = src->getPHIchildren()[0];
-	}
+// 	if(src == dest){
+// //		assert(src->getPHIchildren().size()==1);
+// 		assert(goal!=NULL);
+// 		for(dfgNode* phiChild : src->getPHIchildren()){
+// 			if(phiChild->getMappedLoc() == goal){
+// 				dest = phiChild;
+// 			}
+// 		}
+// 		assert(dest!=src);
+// //		dest = src->getPHIchildren()[0];
+// 	}
 
 	for (int i = 0; i < edgeList.size(); ++i) {
 		if(edgeList[i].getSrc() == src && edgeList[i].getDest() == dest) {
@@ -7660,13 +7660,13 @@ int DFG::findOperandNumber(dfgNode* node, Instruction* child, Value* parent) {
 	}
 	else if(GetElementPtrInst* GEP = dyn_cast<GetElementPtrInst>(child)){
 		if(node->getAncestors().size() > 1){
-//			outs() << "node :"; child->dump();
+			outs() << "node :"; child->dump();
 			for(dfgNode* parentNode : node->getAncestors()){
 				if(parentNode->getNode()){
-//					outs() << "parent :"; parentNode->getNode()->dump();
+					outs() << "parent :"; parentNode->getNode()->dump();
 				}
 				else{
-//					outs() << "parent :" << parentNode->getDFSIdx() << "," << parentNode->getNameType() << "\n";
+					outs() << "parent :" << parentNode->getDFSIdx() << "," << parentNode->getNameType() << "\n";
 				}
 			}
 
@@ -8956,4 +8956,69 @@ void DFG::insertMOVC() {
 	}
 
 	outs() << "NodeList Size was increased : from=" << beforeNodeListSize << ", to=" << NodeList.size() << "\n";
+}
+
+
+void DFG::removeDisconnectedNodes() {
+
+	std::set<dfgNode*> rn;
+
+	for(dfgNode* n : NodeList){
+		bool noAncestors = true;
+		bool ps_edges_found = false;
+
+		std::vector<dfgNode*> ancestors = n->getAncestors();
+		for(dfgNode* anc : ancestors){
+			if(findEdge(anc,n)->getType() == EDGE_TYPE_PS){
+				ps_edges_found = true;
+			}
+			else{
+				noAncestors = false;
+			}
+		}
+
+		if(ps_edges_found && noAncestors){
+			for(dfgNode* anc : ancestors){
+				anc->removeChild(n);
+				n->removeAncestor(anc);
+			}
+		}
+
+		if(noAncestors && n->getChildren().size() == 0){
+			rn.insert(n);
+		}
+	}
+
+	for(dfgNode* n : rn){
+		std::cout << "Removing Node = " << n->getIdx() << "\n";
+		NodeList.erase(std::remove(NodeList.begin(), NodeList.end(), n), NodeList.end());
+	}
+
+}
+
+std::unordered_set<dfgNode*> DFG::getLineage(dfgNode* n){
+
+	std::unordered_set<dfgNode*> lin;
+
+	std::queue<dfgNode*> q;
+	q.push(n);
+	lin.insert(n);
+
+	while(!q.empty()){
+		dfgNode* head = q.front(); q.pop();
+		for(dfgNode* anc : head->getAncestors()){
+			if(head->ancestorBackEdgeMap[anc]) continue;
+			if(lin.find(anc) == lin.end()){
+				q.push(anc);
+				lin.insert(anc);
+			}
+		}
+	}
+
+	std::cout << "lineage = ";
+	for(dfgNode* n : lin) std::cout << n->getIdx() << ",";
+	std::cout << "\n";
+
+	return lin;
+
 }

@@ -2232,6 +2232,8 @@ namespace {
 				DFG* LoopDFG;
 				if(dfgType == "PartPred"){
 					LoopDFG = new DFGPartPred(F.getName().str() + "_" + munitName,&loopNames,mappingUnitMap[munitName].lp);
+					DFGPartPred* LoopDFG_PP = static_cast<DFGPartPred*>(LoopDFG);
+					LoopDFG_PP->SE = SE;
 				}
 				else if(dfgType == "Trig"){
 					LoopDFG = new DFGTrig(F.getName().str() + "_" + munitName,&loopNames,DT,munitName,mappingUnitMap[munitName].lp);

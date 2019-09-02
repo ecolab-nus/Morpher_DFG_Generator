@@ -6,7 +6,10 @@
 #include <set>
 #include <vector>
 
+
 // #include "llvm/Analysis/IVUsers.h"
+
+using namespace std;
 
 void DFGPartPred::connectBB() {
 
@@ -97,7 +100,7 @@ void DFGPartPred::connectBB() {
 }
 
 void DFGPartPred::removeOutLoopLoad() {
-
+	outs() << "Removing outloop loads begin...\n";
 	std::set<dfgNode*> removalNodes;
 	for(dfgNode* node : NodeList){
 
@@ -132,6 +135,7 @@ void DFGPartPred::removeOutLoopLoad() {
 	scheduleASAP();
 	scheduleALAP();
 
+	outs() << "Removing outloop loads end...\n";
 }
 
 
@@ -393,10 +397,10 @@ int DFGPartPred::handlePHINodes(std::set<BasicBlock*> LoopBB) {
 			//This is hack for keep phinodes being removed
 			// UPDATE : i just keep the induction variable
 			bool isInductionVar=false;
-			if(PHI == currLoop->getCanonicalInductionVariable()){
-				recursivePhiNodes=true;
-				isInductionVar=true;
-			}
+			// if(PHI == currLoop->getCanonicalInductionVariable()){
+			// 	recursivePhiNodes=true;
+			// 	isInductionVar=true;
+			// }
 
 			//cmerge node has backedges, its better to keep the phi node
 			for(dfgNode* mergeNode : mergeNodes){
@@ -747,13 +751,15 @@ void DFGPartPred::generateTrigDFGDOT() {
 	scheduleALAP();
 	// assignALAPasASAP();
 //	balanceSched();
-// removeOutLoopLoad();
 
 	nameNodes();
+	classifyParents();
 	// RemoveInductionControlLogic();
 
-
-	classifyParents();
+	RemoveBackEdgePHIs();
+	removeOutLoopLoad();
+	RemoveConstantCMERGEs();
+	removeDisconnectedNodes();
 
 	addOrphanPseudoEdges();
 	addRecConnsAsPseudo();
@@ -1298,12 +1304,15 @@ void DFGPartPred::printNewDFGXML() {
 							written = true;
 							int operand_no = findOperandNumber(child,child->getNode(),cmergePHINodes[node]->getNode());
 							if( operand_no == 0){
+								child->parentClassification[0]=node;
 								xmlFile << "type=\"P\"/>\n";
 							}
 							else if ( operand_no == 1){
+								child->parentClassification[1]=node;
 								xmlFile << "type=\"I1\"/>\n";
 							}
 							else if(( operand_no == 2)){
+								child->parentClassification[2]=node;
 								xmlFile << "type=\"I2\"/>\n";
 							}
 							else{
@@ -1322,12 +1331,15 @@ void DFGPartPred::printNewDFGXML() {
 
 						int operand_no = findOperandNumber(child,child->getNode(),selectPHIAncestorMap[node]->getNode());
 						if( operand_no == 0){
+							child->parentClassification[0]=node;
 							xmlFile << "type=\"P\"/>\n";
 						}
 						else if ( operand_no == 1){
+							child->parentClassification[1]=node;
 							xmlFile << "type=\"I1\"/>\n";
 						}
 						else if(( operand_no == 2)){
+							child->parentClassification[2]=node;
 							xmlFile << "type=\"I2\"/>\n";
 						}
 						else{
@@ -1335,6 +1347,24 @@ void DFGPartPred::printNewDFGXML() {
 							assert(false);
 						}
 					}
+				}
+
+				if(Edge2OperandIdxMap.find(node) != Edge2OperandIdxMap.end() 
+					 && Edge2OperandIdxMap[node].find(child) != Edge2OperandIdxMap[node].end()){
+						int operand_no = Edge2OperandIdxMap[node][child];
+						if( operand_no == 0){
+							child->parentClassification[0]=node;
+							xmlFile << "type=\"P\"/>\n";
+						}
+						else if ( operand_no == 1){
+							child->parentClassification[1]=node;
+							xmlFile << "type=\"I1\"/>\n";
+						}
+						else if(( operand_no == 2)){
+							child->parentClassification[2]=node;
+							xmlFile << "type=\"I2\"/>\n";
+						}
+						written = true;
 				}
 
 				if(written){
@@ -1844,7 +1874,9 @@ void DFGPartPred::addOrphanPseudoEdges() {
 						pseduoParent=n;
 						
 						std::vector<dfgNode*> node_childs = node->getChildren();
-						if(std::find(node_childs.begin(),node_childs.end(),pseduoParent) == node_childs.end()){
+
+						if(std::find(node_childs.begin(),node_childs.end(),pseduoParent) == node_childs.end()
+						   && !node->isParent(pseduoParent)){
 							//pseudoparent is not a child of the node
 							outs() << "Adding Pseudo Connection :: parent=" << pseduoParent->getIdx() << ",to" << node->getIdx() << "\n";
 							pseduoParent->addChildNode(node,EDGE_TYPE_PS,false,true,true);
@@ -2433,77 +2465,362 @@ std::map<BasicBlock*, std::set<std::pair<BasicBlock*, CondVal> > > DFGPartPred::
 
 }
 
+int findParentClassification(dfgNode* par, dfgNode* child){
 
-// void DFGPartPred::RemoveInductionControlLogic() {
+	if(child->parentClassification[0]==par){
+		return 0;
+	}
+	else if(child->parentClassification[1]==par){
+		return 1;
+	}
+	else if(child->parentClassification[2]==par){
+		return 2;
+	}
+
+	return -1;
+}
+
+
+
+void DFGPartPred::RemoveInductionControlLogic() {
 	
+	// ScalarEvolution* SE = &getAnalysis<ScalarEvolutionWrapperPass>().getSE();
 
-// 	// PHINode* ind_phi = currLoop->getInductionVar
-// 	if(!ind_phi){
-// 		// 'cannot find the induction variable, probably the increments in loop induction variables are not 1'
-// 		assert(false);
-// 	}
+	PHINode* ind_phi = currLoop->getInductionVariable(*SE);
+	if(!ind_phi){
+		// 'cannot find the induction variable, probably the increments in loop induction variables are not 1'
+		assert(false);
+	}
 
-// 	dfgNode* ind_phi_node = findNode(ind_phi);
-// 	assert(ind_phi_node);
+	dfgNode* ind_phi_node = findNode(ind_phi);
+	assert(ind_phi_node);
 
-// 	std::vector<dfgNode*> phiChildren = ind_phi_node->getChildren();
+	std::vector<dfgNode*> phiChildren = ind_phi_node->getChildren();
+	std::map<dfgNode*,int> phiChildParIdxMap;
 
-// 	//Ind phi node should have two parents
-// 	assert(ind_phi_node->getAncestors().size() == 2);
-// 	dfgNode* ind_phi_init_par = NULL;
-// 	dfgNode* ctrlNode = NULL;
-// 	dfgNode* dataNode = NULL;
-// 	dfgNode* cmerge = NULL;
+	//Ind phi node should have two parents
+	// assert(ind_phi_node->getAncestors().size() == 2);
+	int anc_count = 0;
+	for(dfgNode* par : ind_phi_node->getAncestors()){
+		Edge* e = findEdge(par,ind_phi_node);
+		if(e->getType() == EDGE_TYPE_PS){
+			continue;
+		}
+		std::cout << "induction phi parents :: \n";
+		std::cout << par->getIdx() << ",";
+		anc_count++;
+	}
+	assert(anc_count == 2);
 
-// 	for(dfgNode* par : ind_phi_node->getAncestors()){
-// 		if(ind_phi_node->ancestorBackEdgeMap[par]){
+
+	dfgNode* ind_phi_init_par = NULL;
+	dfgNode* ctrlNode = NULL;
+	dfgNode* dataNode = NULL;
+	dfgNode* cmerge = NULL;
+
+	for(dfgNode* par : ind_phi_node->getAncestors()){
+		if(ind_phi_node->ancestorBackEdgeMap[par]){
 			
-// 			//backedge cmerge
-// 			assert(par->getNameType() == "CMERGE");
-// 			cmerge = par;
+			//backedge cmerge
+			assert(par->getNameType() == "CMERGE");
+			cmerge = par;
 			
-// 			ctrlNode = cmergeCtrlInputs[par];  assert(ctrlNode);
-// 			dataNode = cmergeDataInputs[par];	 assert(dataNode);
+			ctrlNode = cmergeCtrlInputs[par];  assert(ctrlNode);
+			dataNode = cmergeDataInputs[par];	 assert(dataNode);
 
-// 			std::vector<dfgNode*> dParents = dataNode->getAncestors();
+			std::vector<dfgNode*> dParents = dataNode->getAncestors();
 
-// 			//Parent of the data of cmerge should be phi
-// 			assert(std::find(dParents.begin(),dParents.end(),ind_phi_node) != dParents.end());
+			//Parent of the data of cmerge should be phi
+			assert(std::find(dParents.begin(),dParents.end(),ind_phi_node) != dParents.end());
 
-// 			//removing parents of ctrl
-// 			for(dfgNode* cPar : ctrlNode->getAncestors()){
-// 				cPar->removeChild(ctrlNode);
-// 				ctrlNode->removeAncestor(cPar);
-// 			}
+			//removing parents of ctrl
+			for(dfgNode* cPar : ctrlNode->getAncestors()){
+				cPar->removeChild(ctrlNode);
+				ctrlNode->removeAncestor(cPar);
+			}
 
-// 			//removing parents of cmerge
-// 			for(dfgNode* cmPar : par->getAncestors()){
-// 				cmPar->removeChild(par);
-// 				par->removeAncestor(cmPar);
-// 			}
-// 		}
-// 		else{
-// 			ind_phi_init_par = par;
-// 			ind_phi_init_par->removeChild(ind_phi_node);
-// 			ind_phi_node->removeAncestor(ind_phi_init_par);
-// 		}
-// 	}
+			//removing parents of cmerge
+			for(dfgNode* cmPar : par->getAncestors()){
+				cmPar->removeChild(par);
+				par->removeAncestor(cmPar);
+			}
+		}
+		else{
+			ind_phi_init_par = par;
+			ind_phi_init_par->removeChild(ind_phi_node);
+			ind_phi_node->removeAncestor(ind_phi_init_par);
+		}
+	}
 
-// 	assert(ctrlNode);
-// 	assert(dataNode);
-// 	assert(ind_phi_init_par);
-// 	assert(cmerge);
+	for(dfgNode* phiC : ind_phi_node->getChildren()){
+			int par_class = findParentClassification(ind_phi_node,phiC);
+			assert(par_class!=-1);
+			phiChildParIdxMap[phiC]=par_class;
 
-// 		//remove nodes
-// 	NodeList.erase(std::remove(NodeList.begin(), NodeList.end(), cmerge), NodeList.end());
-// 	NodeList.erase(std::remove(NodeList.begin(), NodeList.end(), ind_phi_node), NodeList.end());
+			ind_phi_node->removeChild(phiC);
+			phiC->removeAncestor(ind_phi_node);
+	}
 
-// 	//Adding new connections
-// 	ind_phi_init_par->addChildNode(dataNode,EDGE_TYPE_DATA);
-// 	dataNode->addAncestorNode(ind_phi_init_par,EDGE_TYPE_DATA);
+	assert(ctrlNode);
+	assert(dataNode);
+	assert(ind_phi_init_par);
+	assert(cmerge);
 
-// 	for(dfgNode* phiChild : phiChildren){
-// 		dataNode->addChildNode(phiChild,EDGE_TYPE_DATA);
-// 		phiChild->addAncestorNode(dataNode,EDGE_TYPE_DATA);
-// 	}
-// }
+	//Adding new connections
+	ind_phi_init_par->addChildNode(dataNode,EDGE_TYPE_DATA);
+	dataNode->addAncestorNode(ind_phi_init_par,EDGE_TYPE_DATA);
+
+	int phi_init_class = findParentClassification(ind_phi_init_par,ind_phi_node);
+	assert(phi_init_class != -1);
+	dataNode->parentClassification[phi_init_class]=ind_phi_init_par;
+
+	//add its own self as a recurrent edge
+	//FIXME : hardcoding the recurrent edge as parent 2
+	dataNode->addChildNode(dataNode,EDGE_TYPE_DATA,true);
+	dataNode->addAncestorNode(dataNode,EDGE_TYPE_DATA,true);
+	Edge2OperandIdxMap[dataNode][dataNode]=phi_init_class;
+
+	for(dfgNode* phiChild : phiChildren){
+		if(phiChild == dataNode) continue;
+		dataNode->addChildNode(phiChild,EDGE_TYPE_DATA);
+		phiChild->addAncestorNode(dataNode,EDGE_TYPE_DATA);
+		phiChild->parentClassification[phiChildParIdxMap[phiChild]]=dataNode;
+	}
+
+
+
+	//remove nodes
+	NodeList.erase(std::remove(NodeList.begin(), NodeList.end(), cmerge), NodeList.end());
+	NodeList.erase(std::remove(NodeList.begin(), NodeList.end(), ind_phi_node), NodeList.end());
+}
+
+
+void DFGPartPred::RemoveBackEdgePHIs() {
+	cout << "removebackedge phis begin...\n";
+
+	for(dfgNode* n : NodeList){
+		if(n->getNode()){
+			if(PHINode* phiNode = dyn_cast<PHINode>(n->getNode())){
+				
+				if(n->getAncestors().size() != 2) continue;
+
+				cout << "processing phi node = " << n->getIdx();
+
+				dfgNode* normal_anc = NULL;
+				dfgNode* backedge_anc = NULL;
+
+				for(dfgNode* anc : n->getAncestors()){
+					if(n->ancestorBackEdgeMap[anc]){
+						assert(backedge_anc == NULL);
+						backedge_anc = anc;
+					}
+					else{
+						assert(normal_anc == NULL);
+						normal_anc = anc;
+					}
+				}
+
+				cout << ",BE_anc = " << backedge_anc->getIdx() << ",normal_anc = " << normal_anc->getIdx() << "\n";
+
+				//process non-back edge node
+				assert(normal_anc->getNameType() == "CMERGE");
+				if(normal_anc->hasConstantVal()){
+					for(dfgNode* phiC : n->getChildren()){
+
+						cout << "adding child:" << phiC->getIdx() << ",to:" << normal_anc->getIdx() << "\n";
+						normal_anc->addChildNode(phiC,EDGE_TYPE_DATA);
+						phiC->addAncestorNode(normal_anc,EDGE_TYPE_DATA);
+						Edge2OperandIdxMap[normal_anc][phiC] = findParentClassification(n,phiC);
+
+						if(phiC->getNameType() == "CMERGE") cmergeDataInputs[phiC]=normal_anc;
+
+						// phiC->parentClassification[findParentClassification(n,phiC)]=normal_anc;
+					}
+					normal_anc->removeChild(n);
+					n->removeAncestor(normal_anc);
+				}
+				else{
+					dfgNode* ctrlNode = cmergeCtrlInputs[normal_anc]; assert(ctrlNode);
+					// dfgNode* dataNode = cmergeDataInputs[normal_anc]; assert(dataNode);
+
+					// dfgNode* ctrlNode = normal_anc->parentClassification[0]; assert(ctrlNode);
+					// dfgNode* dataNode = dataNode->parentClassification[1]; assert(dataNode);
+
+					vector<dfgNode*> dataParents = normal_anc->getAncestors();
+					for(dfgNode* dataParent : dataParents){
+							if(dataParent == ctrlNode) continue;
+							if(findEdge(dataParent,normal_anc)->getType() == EDGE_TYPE_PS) continue;
+							bool isBackEdge = dataParent->childBackEdgeMap[normal_anc];
+
+							for(dfgNode* phiC : n->getChildren()){
+								cout << "adding child:" << phiC->getIdx() << ",to:" << dataParent->getIdx() << "\n";
+								dataParent->addChildNode(phiC,EDGE_TYPE_DATA,isBackEdge);
+								phiC->addAncestorNode(dataParent,EDGE_TYPE_DATA,isBackEdge);
+								Edge2OperandIdxMap[dataParent][phiC] = findParentClassification(n,phiC);
+
+								if(phiC->getNameType() == "CMERGE") cmergeDataInputs[phiC]=dataParent;
+
+								dataParent->removeChild(normal_anc);
+								normal_anc->removeAncestor(dataParent);
+
+								// phiC->parentClassification[findParentClassification(n,phiC)]=dataNode;
+							}
+					}
+
+
+
+					// dataNode->removeChild(normal_anc);
+					// normal_anc->removeAncestor(dataNode);
+
+					ctrlNode->removeChild(normal_anc);
+					normal_anc->removeAncestor(ctrlNode);
+
+					normal_anc->removeChild(n);
+					n->removeAncestor(normal_anc);
+				}
+
+				//process backedge
+				if(backedge_anc->hasConstantVal()){
+					for(dfgNode* phiC : n->getChildren()){
+
+						cout << "adding (with backedge) child:" << phiC->getIdx() << ",to:" << backedge_anc->getIdx() << "\n";
+						backedge_anc->addChildNode(phiC,EDGE_TYPE_DATA,true);
+						phiC->addAncestorNode(backedge_anc,EDGE_TYPE_DATA,true);
+						Edge2OperandIdxMap[backedge_anc][phiC] = findParentClassification(n,phiC);
+
+						if(phiC->getNameType() == "CMERGE") cmergeDataInputs[phiC]=backedge_anc;
+						// phiC->parentClassification[findParentClassification(n,phiC)]=backedge_anc;
+
+						std::unordered_set<dfgNode*> lineage = getLineage(backedge_anc);
+						if(lineage.find(phiC) == lineage.end() && !backedge_anc->getChildren().empty()){
+							std::vector<dfgNode*> dChlds = backedge_anc->getChildren();
+							dfgNode* nonbedge_child = NULL;
+							for(dfgNode* chld : dChlds){
+								std::vector<dfgNode*> next_childs = chld->getChildren();
+								if(!backedge_anc->childBackEdgeMap[chld] &&
+								    std::find(next_childs.begin(),next_childs.end(),phiC) == next_childs.end()){
+										nonbedge_child = chld; break;
+								}
+							}
+							
+								if(nonbedge_child){
+									cout << "adding (with pseudo) child:" << phiC->getIdx() << ",to:" << nonbedge_child->getIdx() << "\n";
+									nonbedge_child->addChildNode(phiC,EDGE_TYPE_PS,false,true,true);
+									phiC->addAncestorNode(nonbedge_child,EDGE_TYPE_PS,false,true,true);
+								}
+							
+						}
+
+					}
+					backedge_anc->removeChild(n);
+					n->removeAncestor(backedge_anc);
+				}
+				else{
+					dfgNode* ctrlNode = cmergeCtrlInputs[backedge_anc]; assert(ctrlNode);
+					// dfgNode* dataNode = cmergeDataInputs[backedge_anc]; assert(dataNode);
+
+					vector<dfgNode*> dataParents = backedge_anc->getAncestors();
+					for(dfgNode* dataParent : dataParents){
+						if(dataParent == ctrlNode) continue;
+						if(findEdge(dataParent,backedge_anc)->getType() == EDGE_TYPE_PS) continue;
+
+						bool isBackEdge = dataParent->childBackEdgeMap[normal_anc];
+						for(dfgNode* phiC : n->getChildren()){
+							cout << "adding (with backedge) child:" << phiC->getIdx() << ",to:" << dataParent->getIdx() << "\n";
+							dataParent->addChildNode(phiC,EDGE_TYPE_DATA,true);
+							phiC->addAncestorNode(dataParent,EDGE_TYPE_DATA,true);
+							Edge2OperandIdxMap[dataParent][phiC] = findParentClassification(n,phiC);
+
+							if(phiC->getNameType() == "CMERGE") cmergeDataInputs[phiC]=dataParent;
+							// phiC->parentClassification[findParentClassification(n,phiC)]=dataNode;
+
+							std::unordered_set<dfgNode*> lineage = getLineage(dataParent);
+							if(lineage.find(phiC) == lineage.end() && !dataParent->getChildren().empty()){
+								std::vector<dfgNode*> dChlds = dataParent->getChildren();
+								dfgNode* nonbedge_child = NULL;
+								for(dfgNode* chld : dChlds){
+									std::vector<dfgNode*> next_childs = chld->getChildren();
+									if(!dataParent->childBackEdgeMap[chld] &&
+											std::find(next_childs.begin(),next_childs.end(),phiC) == next_childs.end()){
+											nonbedge_child = chld; break;
+									}
+								}
+
+								if(nonbedge_child){
+									cout << "adding (with pseudo) child:" << phiC->getIdx() << ",to:" << nonbedge_child->getIdx() << "\n";
+									nonbedge_child->addChildNode(phiC,EDGE_TYPE_PS,false,true,true);
+									phiC->addAncestorNode(nonbedge_child,EDGE_TYPE_PS,false,true,true);
+								}
+
+							}
+						}
+
+						dataParent->removeChild(backedge_anc);
+						backedge_anc->removeAncestor(dataParent);
+
+					}
+
+
+					// dfgNode* ctrlNode = normal_anc->parentClassification[0]; assert(ctrlNode);
+					// dfgNode* dataNode = dataNode->parentClassification[1]; assert(dataNode);
+
+					
+
+					// dataNode->removeChild(backedge_anc);
+					// backedge_anc->removeAncestor(dataNode);
+
+					ctrlNode->removeChild(backedge_anc);
+					backedge_anc->removeAncestor(ctrlNode);
+
+					backedge_anc->removeChild(n);
+					n->removeAncestor(backedge_anc);
+				}
+
+				for(dfgNode* phiC : n->getChildren()){
+					n->removeChild(phiC);
+					phiC->removeAncestor(n);
+				}
+
+
+			}
+		}
+	}
+
+	cout << "removebackedge phis done.!\n";
+}
+
+void DFGPartPred::RemoveConstantCMERGEs(){
+
+	for(dfgNode* n : NodeList){
+		if(n->getNameType() == "CMERGE" && n->hasConstantVal()){
+			dfgNode* ctrlNode = cmergeCtrlInputs[n];
+			bool ctrlVal = n->ancestorConditionaMap[ctrlNode];
+
+			vector<dfgNode*> cmChilds = n->getChildren();
+
+			for(dfgNode* c : cmChilds){
+
+				bool onlyParentCMERGE=true;
+				for(dfgNode* par : c->getAncestors()){
+					if(par != n && !c->ancestorBackEdgeMap[par]){
+						onlyParentCMERGE=false;
+					}
+				}
+
+				if(onlyParentCMERGE){
+					ctrlNode->addChildNode(c,EDGE_TYPE_CTRL,false,true,ctrlVal);
+					c->addAncestorNode(ctrlNode,EDGE_TYPE_CTRL,false,true,ctrlVal);
+					Edge2OperandIdxMap[ctrlNode][c]=0;
+				}
+
+				n->removeChild(c);
+				c->removeAncestor(n);
+			}
+
+			ctrlNode->removeChild(n);
+			n->removeAncestor(ctrlNode);
+		}
+	}
+
+
+}
