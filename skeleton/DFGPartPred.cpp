@@ -756,7 +756,7 @@ void DFGPartPred::generateTrigDFGDOT() {
 	classifyParents();
 	// RemoveInductionControlLogic();
 
-	RemoveBackEdgePHIs();
+	// RemoveBackEdgePHIs();
 	removeOutLoopLoad();
 	RemoveConstantCMERGEs();
 	removeDisconnectedNodes();

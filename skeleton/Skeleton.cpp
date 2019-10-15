@@ -95,12 +95,12 @@ using namespace llvm;
 #define DEBUG_TYPE LV_NAME
 
 //static cl::opt<unsigned> loopNumber("ln", cl::init(0), cl::desc("The loop number to map"));
-static cl::opt<std::string> munitName("munit", cl::init("na"), cl::desc("the mapping unit name, e.g. : PRE_LN11, INNERMOST_LN11"));
+// static cl::opt<std::string> munitName("munit", cl::init("na"), cl::desc("the mapping unit name, e.g. : PRE_LN11, INNERMOST_LN11"));
 static cl::opt<std::string> fName("fn", cl::init("na"), cl::desc("the function name"));
-static cl::opt<bool> noName("nn", cl::desc("map all functions and loops"));
-static cl::opt<unsigned> initMII("ii", cl::init(0), cl::desc("The starting II for the mapping"));
-static cl::opt<unsigned> dimX("dx", cl::init(4), cl::desc("DimX"));
-static cl::opt<unsigned> dimY("dy", cl::init(4), cl::desc("DimY"));
+// static cl::opt<bool> noName("nn", cl::desc("map all functions and loops"));
+// static cl::opt<unsigned> initMII("ii", cl::init(0), cl::desc("The starting II for the mapping"));
+// static cl::opt<unsigned> dimX("dx", cl::init(4), cl::desc("DimX"));
+// static cl::opt<unsigned> dimY("dy", cl::init(4), cl::desc("DimY"));
 static cl::opt<std::string> dfgType("type", cl::init("PartPred"), cl::desc("The type of the dfg, valid types = PartPred, Trig, TrMap, BrMap, DFGDISE"));
 
 STATISTIC(LoopsAnalyzed, "Number of loops analyzed for vectorization");
@@ -1876,6 +1876,41 @@ void loopTrace(std::map<Loop *, std::string> loopNames, Function &F, LoopTree ro
 	}
 }
 
+std::string getMappingUnitNameUsingTokenFunction(Function &F){
+		BasicBlock *MUBB;
+		Instruction* checker_ins;
+		for (auto &BB : F)
+		{
+			// BB.dump();
+			for (auto &I : BB)
+			{
+				if (CallInst *CI = dyn_cast<CallInst>(&I))
+				{
+					std::string op_str;
+					raw_string_ostream rs (op_str);
+					CI->print(rs);
+					outs() << "op : " << rs.str() << "\n";
+					if(op_str.find("please_map_me") != std::string::npos){
+						outs() << "token found in BB = " << BB.getName() << "\n";
+						MUBB = &BB;
+						checker_ins = CI;
+					}
+				}
+			}
+		}
+		assert(MUBB);
+		assert(checker_ins);
+		checker_ins->eraseFromParent();
+
+		for(auto it = mappingUnitMap.begin(); it != mappingUnitMap.end(); it++){
+			std::set<BasicBlock*> bbs = it->second.allBlocks;
+			if(bbs.find(MUBB) != bbs.end()){
+				return it->first;
+			}
+		}
+		assert(false);
+}
+
 
 namespace
 {
@@ -1902,17 +1937,16 @@ struct SkeletonFunctionPass : public FunctionPass
 		clock_t end;
 		std::string loopCFGFileName;
 
-		if (noName == false)
+
+		if (fName != "na")
 		{
-			if (fName != "na")
+			if (F.getName() != fName)
 			{
-				if (F.getName() != fName)
-				{
-					errs() << "Function Name : " << F.getName() << "\n";
-					return false;
-				}
+				errs() << "Function Name : " << F.getName() << "\n";
+				return false;
 			}
 		}
+
 
 		//TODO : DAC18
 		ReplaceCMPs(F);
@@ -1992,11 +2026,10 @@ struct SkeletonFunctionPass : public FunctionPass
 		printMappableUnitMap();
 		populateBBTrans();
 
-		if (munitName == "na")
-		{
-			//exit here if a mapping unit name is not given
-			return 0;
-		}
+		std::string munitName = getMappingUnitNameUsingTokenFunction(F);
+		outs() << "--------------------------------------------------------------\n";
+		outs() << "--------MAPPING-------" << munitName << " of " << F.getName() << "---------------\n";
+		outs() << "--------------------------------------------------------------\n";
 
 		//-----------------------------------
 		// New Code for 2018 work
