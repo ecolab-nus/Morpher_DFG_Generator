@@ -3630,6 +3630,10 @@ dfgNode* DFGTrig::addLoadParent(Value* ins, dfgNode* child) {
 		OutLoopNodeMap[ins] = temp;
 		OutLoopNodeMapReverse[temp]=ins;
 
+		temp->setArrBasePtr(ins->getName());
+		DataLayout DL = temp->BB->getParent()->getParent()->getDataLayout();
+		array_pointer_sizes[ins->getName()] = DL.getTypeAllocSize(ins->getType());
+
 	  if(Instruction* real_ins = dyn_cast<Instruction>(ins)){		
 			if(accumulatedBBs.find(real_ins->getParent())==accumulatedBBs.end()){
 				temp->setTransferedByHost(true);

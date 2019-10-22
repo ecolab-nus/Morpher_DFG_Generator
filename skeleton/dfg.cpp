@@ -10298,12 +10298,16 @@ void DFG::getTransferVariables(std::unordered_set<Value *> &outer_vals,
 void DFG::SetBasePointers(std::unordered_set<Value*>& outer_vals, 
 			              std::unordered_map<Value*,GetElementPtrInst*>& mem_ptrs, Function &F){
 
+	outs() << "Outer LOOP 1 nodes = " << OutLoopNodeMapReverse.size() << "\n";
+	outs() << "Outer LOOP 2 nodes = " << OutLoopNodeMap.size() << "\n";
+
 	for(dfgNode* node : NodeList){
 
 		if(OutLoopNodeMapReverse.find(node) != OutLoopNodeMapReverse.end()){
 			assert(outer_vals.find(OutLoopNodeMapReverse[node]) != outer_vals.end());
 			outs() << "Outer LOOP value :: "; OutLoopNodeMapReverse[node]->dump();
 			outs() << "Outer LOOP name = " << OutLoopNodeMapReverse[node]->getName() << "\n";
+			outs() << "Outer LOOP node idx = " << node->getIdx() << "\n";
 			node->setArrBasePtr(OutLoopNodeMapReverse[node]->getName());
 
 			DataLayout DL = F.getParent()->getDataLayout();
@@ -10347,6 +10351,20 @@ void DFG::SetBasePointers(std::unordered_set<Value*>& outer_vals,
 				//if the instruction could read or write memory it should be a load
 				// or a store instruction.
 				assert(false);
+			}
+		}
+		else if(node->getNode() && isa<GetElementPtrInst>(node->getNode())){
+			GetElementPtrInst* GEP = cast<GetElementPtrInst>(node->getNode());
+			std::string base_ptr_name = GEP->getPointerOperand()->getName();
+			node->setArrBasePtr(base_ptr_name);
+
+			if(sizeArrMap.find(base_ptr_name) != sizeArrMap.end()){
+				array_pointer_sizes[base_ptr_name] = sizeArrMap[base_ptr_name];
+			}
+			else{
+				DataLayout DL = GEP->getParent()->getParent()->getParent()->getDataLayout();
+				PointerType* PT = cast<PointerType>(GEP->getPointerOperand()->getType());
+				array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(PT->getElementType());
 			}
 		}
 	}
