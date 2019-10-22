@@ -93,6 +93,7 @@ class dfgNode{
 			bool npb=false;
 
 			//served phi index
+			std::string array_base_pointer = "NOT_A_MEM_OP";
 
 
 
@@ -262,7 +263,8 @@ class dfgNode{
 			//Ownership for branches
 			std::set<std::pair<BasicBlock*,CondVal>> BelongsToBr;
 
-
+			void setArrBasePtr(std::string abp){array_base_pointer = abp;}
+			std::string getArrBasePtr(){return array_base_pointer;}
 
 };
 

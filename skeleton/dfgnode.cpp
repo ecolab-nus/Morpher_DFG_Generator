@@ -625,8 +625,8 @@ void dfgNode::setoutloopAddr(int addr) {
 }
 
 int dfgNode::getGEPbaseAddr() {
-	assert(this->getNode());
-	assert(dyn_cast<GetElementPtrInst>(this->getNode()));
+	// assert(this->getNode());
+	// assert(dyn_cast<GetElementPtrInst>(this->getNode()));
 	return GEPbaseAddr;
 }
 

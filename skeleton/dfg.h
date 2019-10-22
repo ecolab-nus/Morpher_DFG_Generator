@@ -16,6 +16,7 @@
 #include <fstream>
 
 #include <unordered_set>
+#include <unordered_map>
 
 
 #define REGS_PER_NODE 4
@@ -207,6 +208,9 @@ class DFG{
 								 std::map<dfgNode*,std::vector< std::pair<CGRANode*,int> > >::iterator it,
 								 std::map<CGRANode*,std::vector<CGRAEdge> > cgraEdges,
 								 int index);
+
+			int CalculateGEPBaseAddr(GetElementPtrInst *GEP);
+			std::unordered_map<GetElementPtrInst*,int> GEPOffsetMap;
 
 
 		public :
@@ -467,6 +471,7 @@ class DFG{
 
 			//setting sizeArrMap accesible for the DFG class
 			std::map<std::string,int> sizeArrMap;
+			std::unordered_map<std::string,int> array_pointer_sizes;
 
 			void printNewDFGXML();
 			void printREGIMapfiles();
@@ -476,10 +481,19 @@ class DFG{
 			void MergeCMerge();
 
 			void insertMOVC();
-			virtual void generateTrigDFGDOT(){outs() << "Please override me!\n";};
+			virtual void generateTrigDFGDOT(Function &F){assert(false);}
 
 			void removeDisconnectedNodes();
 			std::unordered_set<dfgNode*> getLineage(dfgNode* n);
+
+			void getTransferVariables(std::unordered_set<Value*>& outer_vals, 
+							std::unordered_map<Value*,GetElementPtrInst*>& mem_ptrs, 
+							std::unordered_map<Value*,int>& acc,
+							Function& F);
+
+			void GEPBaseAddrCheck(Function &F);
+			void SetBasePointers(std::unordered_set<Value*>& outer_vals, 
+			                     std::unordered_map<Value*,GetElementPtrInst*>& mem_ptrs, Function &F);
 
 	};
 

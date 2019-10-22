@@ -742,7 +742,7 @@ bool DFGTrig::checkBackEdge(dfgNode* src, dfgNode* dest) {
 
 }
 
-void DFGTrig::generateTrigDFGDOT() {
+void DFGTrig::generateTrigDFGDOT(Function &F) {
 
 //	printDomTree();
 //	getCtrlInfoBB();
@@ -778,6 +778,7 @@ void DFGTrig::generateTrigDFGDOT() {
 	printCtrlTree();
 	removeNotCtrlConns();
 
+	GEPBaseAddrCheck(F);
 	nameNodes();
 //	ConnectBrCtrls();
 	printConstHist();
@@ -1456,6 +1457,17 @@ void DFGTrig::printNewDFGXML() {
 			}
 			else{
 				xmlFile << HyCUBEInsStrings[node->getFinalIns()] << "</OP>\n";
+			}
+
+
+			if(node->getArrBasePtr() != "NOT_A_MEM_OP"){
+				xmlFile << "<BasePointerName>";	
+				xmlFile << node->getArrBasePtr();
+				xmlFile << "</BasePointerName>\n";
+
+				xmlFile << "<BasePointerSize>";	
+				xmlFile << array_pointer_sizes[node->getArrBasePtr()];
+				xmlFile << "</BasePointerSize>\n";
 			}
 
 //			xmlFile << "<OP>" << HyCUBEInsStrings[node->getFinalIns()] << "</OP>\n";

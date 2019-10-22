@@ -10,24 +10,28 @@
 #include <bitset>
 #include <set>
 
-
-dfgNode* DFG::getEntryNode(){
-	if(NodeList.size() > 0){
+dfgNode *DFG::getEntryNode()
+{
+	if (NodeList.size() > 0)
+	{
 		return NodeList[0];
 	}
 	return NULL;
 }
 
-std::vector<dfgNode*> DFG::getNodes(){
+std::vector<dfgNode *> DFG::getNodes()
+{
 	return NodeList;
 }
 
-std::vector<Edge> DFG::getEdges(){
+std::vector<Edge> DFG::getEdges()
+{
 	return edgeList;
 }
 
-void DFG::InsertNode(Instruction* Node){
-	dfgNode* temp = new dfgNode(Node, this);
+void DFG::InsertNode(Instruction *Node)
+{
+	dfgNode *temp = new dfgNode(Node, this);
 	temp->setIdx(NodeList.size());
 	NodeList.push_back(temp);
 }
@@ -38,19 +42,25 @@ void DFG::InsertNode(Instruction* Node){
 //	NodeList.push_back(Node);
 //}
 
-void DFG::InsertEdge(Edge e){
+void DFG::InsertEdge(Edge e)
+{
 	edgeList.push_back(e);
 }
 
-dfgNode* DFG::findNode(Instruction* I){
-	for(int i = 0 ; i < NodeList.size() ; i++){
-		if (I == NodeList[i]->getNode()){
+dfgNode *DFG::findNode(Instruction *I)
+{
+	for (int i = 0; i < NodeList.size(); i++)
+	{
+		if (I == NodeList[i]->getNode())
+		{
 			return NodeList[i];
 		}
 	}
 
-	for(std::pair<Value*,dfgNode*> pair : OutLoopNodeMap){
-		if(pair.first == I){
+	for (std::pair<Value *, dfgNode *> pair : OutLoopNodeMap)
+	{
+		if (pair.first == I)
+		{
 			return pair.second;
 		}
 	}
@@ -58,23 +68,25 @@ dfgNode* DFG::findNode(Instruction* I){
 	return NULL;
 }
 
-Edge* DFG::findEdge(dfgNode* src, dfgNode* dest, CGRANode* goal){
+Edge *DFG::findEdge(dfgNode *src, dfgNode *dest, CGRANode *goal)
+{
 
+	// 	if(src == dest){
+	// //		assert(src->getPHIchildren().size()==1);
+	// 		assert(goal!=NULL);
+	// 		for(dfgNode* phiChild : src->getPHIchildren()){
+	// 			if(phiChild->getMappedLoc() == goal){
+	// 				dest = phiChild;
+	// 			}
+	// 		}
+	// 		assert(dest!=src);
+	// //		dest = src->getPHIchildren()[0];
+	// 	}
 
-// 	if(src == dest){
-// //		assert(src->getPHIchildren().size()==1);
-// 		assert(goal!=NULL);
-// 		for(dfgNode* phiChild : src->getPHIchildren()){
-// 			if(phiChild->getMappedLoc() == goal){
-// 				dest = phiChild;
-// 			}
-// 		}
-// 		assert(dest!=src);
-// //		dest = src->getPHIchildren()[0];
-// 	}
-
-	for (int i = 0; i < edgeList.size(); ++i) {
-		if(edgeList[i].getSrc() == src && edgeList[i].getDest() == dest) {
+	for (int i = 0; i < edgeList.size(); ++i)
+	{
+		if (edgeList[i].getSrc() == src && edgeList[i].getDest() == dest)
+		{
 			return &(edgeList[i]);
 		}
 	}
@@ -85,62 +97,78 @@ Edge* DFG::findEdge(dfgNode* src, dfgNode* dest, CGRANode* goal){
 	return NULL;
 }
 
-std::vector<dfgNode*> DFG::getRoots(){
-	std::vector<dfgNode*> rootNodes;
-	for (int i = 0 ; i < NodeList.size() ; i++) {
-		if(NodeList[i]->getChildren().size() == 0){
+std::vector<dfgNode *> DFG::getRoots()
+{
+	std::vector<dfgNode *> rootNodes;
+	for (int i = 0; i < NodeList.size(); i++)
+	{
+		if (NodeList[i]->getChildren().size() == 0)
+		{
 			rootNodes.push_back(NodeList[i]);
 		}
 	}
 	return rootNodes;
 }
 
-std::vector<dfgNode*> DFG::getLeafs(BasicBlock* BB){
+std::vector<dfgNode *> DFG::getLeafs(BasicBlock *BB)
+{
 	errs() << "start getting the LeafNodes...!\n";
-	std::vector<dfgNode*> leafNodes;
-	for (int i = 0 ; i < NodeList.size() ; i++) {
-//		if(NodeList[i]->getNode()->getParent() == BB){
-		if(NodeList[i]->BB == BB){
+	std::vector<dfgNode *> leafNodes;
+	for (int i = 0; i < NodeList.size(); i++)
+	{
+		//		if(NodeList[i]->getNode()->getParent() == BB){
+		if (NodeList[i]->BB == BB)
+		{
 
-			if(NodeList[i]->getNode()!=NULL){
-				if(dyn_cast<PHINode>(NodeList[i]->getNode())){
+			if (NodeList[i]->getNode() != NULL)
+			{
+				if (dyn_cast<PHINode>(NodeList[i]->getNode()))
+				{
 					continue;
 				}
 			}
 
-			if(NodeList[i]->getNameType().compare("OutLoopLOAD")==0){
-
+			if (NodeList[i]->getNameType().compare("OutLoopLOAD") == 0)
+			{
 			}
-			else{
+			else
+			{
 				leafNodes.push_back(NodeList[i]);
 			}
-
 		}
 	}
 	errs() << "LeafNodes init done...!\n";
 
-	for (int i = 0 ; i < NodeList.size() ; i++) {
-//		if(NodeList[i]->getNode()->getParent() == BB){
-		if(NodeList[i]->BB == BB){
+	for (int i = 0; i < NodeList.size(); i++)
+	{
+		//		if(NodeList[i]->getNode()->getParent() == BB){
+		if (NodeList[i]->BB == BB)
+		{
 
-			if(NodeList[i]->getNameType().compare("OutLoopLOAD")==0){
+			if (NodeList[i]->getNameType().compare("OutLoopLOAD") == 0)
+			{
 				continue;
 			}
 
-			for(int j = 0; j < NodeList[i]->getChildren().size(); j++){
-				dfgNode* nodeToBeRemoved = NodeList[i]->getChildren()[j];
-				if(nodeToBeRemoved != NULL){
-//					errs() << "LeafNodes : nodeToBeRemoved found...! : ";
-					if(nodeToBeRemoved->getNode() == NULL){
-//						errs() << "NodeIdx:" << nodeToBeRemoved->getIdx() << "," << nodeToBeRemoved->getNameType() << "\n";
+			for (int j = 0; j < NodeList[i]->getChildren().size(); j++)
+			{
+				dfgNode *nodeToBeRemoved = NodeList[i]->getChildren()[j];
+				if (nodeToBeRemoved != NULL)
+				{
+					//					errs() << "LeafNodes : nodeToBeRemoved found...! : ";
+					if (nodeToBeRemoved->getNode() == NULL)
+					{
+						//						errs() << "NodeIdx:" << nodeToBeRemoved->getIdx() << "," << nodeToBeRemoved->getNameType() << "\n";
 					}
-					else{
-//						errs() << "NodeIdx:" << nodeToBeRemoved->getIdx() << ",";
+					else
+					{
+						//						errs() << "NodeIdx:" << nodeToBeRemoved->getIdx() << ",";
 						nodeToBeRemoved->getNode()->dump();
 					}
 
-					if (std::find(leafNodes.begin(), leafNodes.end(), nodeToBeRemoved) != leafNodes.end()){
-						leafNodes.erase(std::remove(leafNodes.begin(),leafNodes.end(), nodeToBeRemoved));
+					if (std::find(leafNodes.begin(), leafNodes.end(), nodeToBeRemoved) != leafNodes.end())
+					{
+						leafNodes.erase(std::remove(leafNodes.begin(), leafNodes.end(), nodeToBeRemoved));
 					}
 				}
 			}
@@ -150,103 +178,115 @@ std::vector<dfgNode*> DFG::getLeafs(BasicBlock* BB){
 	return leafNodes;
 }
 
-void DFG::connectBB(){
+void DFG::connectBB()
+{
 	errs() << "ConnectBB called!\n";
 
-	std::map<dfgNode*,std::vector<dfgNode*> > BrSuccesors;
-	std::map<dfgNode*,std::set<dfgNode*>> BrBackEdgeSuccessors;
-	std::map<const BasicBlock*,dfgNode*> BBPredicate;
-	dfgNode* temp;
-	dfgNode* node;
+	std::map<dfgNode *, std::vector<dfgNode *>> BrSuccesors;
+	std::map<dfgNode *, std::set<dfgNode *>> BrBackEdgeSuccessors;
+	std::map<const BasicBlock *, dfgNode *> BBPredicate;
+	dfgNode *temp;
+	dfgNode *node;
 
 	assert(NodeList.size() > 0);
 	dfgNode firstNode = *NodeList[0];
-	SmallVector<std::pair<const BasicBlock *, const BasicBlock *>,8> Result;
-	FindFunctionBackedges(*(firstNode.getNode()->getFunction()),Result);
+	SmallVector<std::pair<const BasicBlock *, const BasicBlock *>, 8> Result;
+	FindFunctionBackedges(*(firstNode.getNode()->getFunction()), Result);
 	outs() << "Number of Backedges = " << Result.size() << "\n";
 
-	for (int i = 0; i < Result.size(); ++i) {
+	for (int i = 0; i < Result.size(); ++i)
+	{
 		errs() << "Backedges .... :: \n";
 		outs() << "From : " << Result[i].first->getName();
-		outs() << ",To : " <<  Result[i].second->getName();
+		outs() << ",To : " << Result[i].second->getName();
 		errs() << "\n";
 	}
 
-
-	std::vector<BasicBlock*> analysedBB;
-	for (int i = 0 ; i < NodeList.size() ; i++) {
-		if(NodeList[i]->getNode() != NULL){
-//			if(NodeList[i]->getNode()->getOpcode() == Instruction::Br){
-			if(BranchInst* BI = dyn_cast<BranchInst>(NodeList[i]->getNode())){
+	std::vector<BasicBlock *> analysedBB;
+	for (int i = 0; i < NodeList.size(); i++)
+	{
+		if (NodeList[i]->getNode() != NULL)
+		{
+			//			if(NodeList[i]->getNode()->getOpcode() == Instruction::Br){
+			if (BranchInst *BI = dyn_cast<BranchInst>(NodeList[i]->getNode()))
+			{
 				errs() << "$$$$$ This belongs to BB=" << NodeList[i]->getNode()->getParent()->getName() << "\n";
 
-				BasicBlock* BB = NodeList[i]->getNode()->getParent();
+				BasicBlock *BB = NodeList[i]->getNode()->getParent();
 				succ_iterator SI(succ_begin(BB)), SE(succ_end(BB));
-				 for (; SI != SE; ++SI){
-					 BasicBlock* succ = *SI;
-					 errs() << "$%$%$%$%$ successor Basic Blocks\n";
-					 errs() << "Name=" << succ->getName() << "\n";
-					 errs() << "$%$%$%$%$\n";
+				for (; SI != SE; ++SI)
+				{
+					BasicBlock *succ = *SI;
+					errs() << "$%$%$%$%$ successor Basic Blocks\n";
+					errs() << "Name=" << succ->getName() << "\n";
+					errs() << "$%$%$%$%$\n";
 
-					 std::vector<dfgNode*> succLeafs = this->getLeafs(succ);
-					 errs() << "succLeafs.size = " << succLeafs.size() << "\n";
+					std::vector<dfgNode *> succLeafs = this->getLeafs(succ);
+					errs() << "succLeafs.size = " << succLeafs.size() << "\n";
 
-					 std::pair <const BasicBlock*,const BasicBlock*> bbCouple(BB,succ);
-					 if(std::find(Result.begin(),Result.end(),bbCouple)!=Result.end()){
-						 for (int j = 0; j < succLeafs.size(); j++){
-							 errs() << "Backedge from : " << NodeList[i]->getIdx() << ",To :" << succLeafs[j]->getIdx() << "\n";
-							 BrBackEdgeSuccessors[succLeafs[j]].insert(NodeList[i]);
-						 }
-//						 continue;
-					 }
+					std::pair<const BasicBlock *, const BasicBlock *> bbCouple(BB, succ);
+					if (std::find(Result.begin(), Result.end(), bbCouple) != Result.end())
+					{
+						for (int j = 0; j < succLeafs.size(); j++)
+						{
+							errs() << "Backedge from : " << NodeList[i]->getIdx() << ",To :" << succLeafs[j]->getIdx() << "\n";
+							BrBackEdgeSuccessors[succLeafs[j]].insert(NodeList[i]);
+						}
+						//						 continue;
+					}
 
-
-					 for (int j = 0; j < succLeafs.size(); j++){
-						 BrSuccesors[succLeafs[j]].push_back(NodeList[i]);
-					 }
-
-				 }
-
-
+					for (int j = 0; j < succLeafs.size(); j++)
+					{
+						BrSuccesors[succLeafs[j]].push_back(NodeList[i]);
+					}
+				}
 			}
 		}
 	}
 
-
 	//Connect the BBs here using the BrSuccesors Map
-	std::map<dfgNode*,std::vector<dfgNode*> >::iterator it;
-	std::vector<dfgNode*> workingSet;
-	std::vector<dfgNode*> nextWorkingSet;
+	std::map<dfgNode *, std::vector<dfgNode *>>::iterator it;
+	std::vector<dfgNode *> workingSet;
+	std::vector<dfgNode *> nextWorkingSet;
 	int numberofbrs = 0;
-	for(it = BrSuccesors.begin(); it != BrSuccesors.end(); it++){
+	for (it = BrSuccesors.begin(); it != BrSuccesors.end(); it++)
+	{
 		numberofbrs = it->second.size();
 		node = it->first;
 		workingSet.clear();
 		nextWorkingSet.clear();
-		errs() << "ConnectBB :: " << "Init Round\n";
+		errs() << "ConnectBB :: "
+			   << "Init Round\n";
 
-		if(BBPredicate.find(it->first->BB) != BBPredicate.end()){
-			if(BrBackEdgeSuccessors[node].find(BBPredicate[node->BB]) ==
-			   BrBackEdgeSuccessors[node].end()){
+		if (BBPredicate.find(it->first->BB) != BBPredicate.end())
+		{
+			if (BrBackEdgeSuccessors[node].find(BBPredicate[node->BB]) ==
+				BrBackEdgeSuccessors[node].end())
+			{
 				BBPredicate[node->BB]->addChildNode(node);
 				node->addAncestorNode(BBPredicate[node->BB]);
 			}
-			else{
+			else
+			{
 				BBPredicate[node->BB]->addPHIChildNode(node);
 				node->addPHIAncestorNode(BBPredicate[node->BB]);
 			}
-			errs() << "ConnectBB :: " << "BB already done\n";
+			errs() << "ConnectBB :: "
+				   << "BB already done\n";
 			continue;
 		}
 
-		if(numberofbrs == 1){
+		if (numberofbrs == 1)
+		{
 
-			if(BrBackEdgeSuccessors[node].find(BrSuccesors[node][0]) ==
-			   BrBackEdgeSuccessors[node].end()){
+			if (BrBackEdgeSuccessors[node].find(BrSuccesors[node][0]) ==
+				BrBackEdgeSuccessors[node].end())
+			{
 				BrSuccesors[node][0]->addChildNode(node);
 				node->addAncestorNode(BrSuccesors[node][0]);
 			}
-			else{
+			else
+			{
 				BrSuccesors[node][0]->addPHIChildNode(node);
 				node->addPHIAncestorNode(BrSuccesors[node][0]);
 			}
@@ -255,94 +295,112 @@ void DFG::connectBB(){
 			continue;
 		}
 
-		for (int i = 0; i < numberofbrs-1; i = i+2) {
+		for (int i = 0; i < numberofbrs - 1; i = i + 2)
+		{
 			temp = new dfgNode(this);
 			temp->setNameType("CTRLBrOR");
 			temp->setIdx(NodeList.size());
-			temp->BB=node->BB;
+			temp->BB = node->BB;
 			NodeList.push_back(temp);
 
-			if(BrBackEdgeSuccessors[node].find(BrSuccesors[node][i]) ==
-			   BrBackEdgeSuccessors[node].end()){
+			if (BrBackEdgeSuccessors[node].find(BrSuccesors[node][i]) ==
+				BrBackEdgeSuccessors[node].end())
+			{
 				temp->addAncestorNode(BrSuccesors[node][i]);
 				BrSuccesors[node][i]->addChildNode(temp);
 			}
-			else{
+			else
+			{
 				temp->addPHIAncestorNode(BrSuccesors[node][i]);
 				BrSuccesors[node][i]->addPHIChildNode(temp);
 			}
 
-			if(BrBackEdgeSuccessors[node].find(BrSuccesors[node][i+1]) ==
-			   BrBackEdgeSuccessors[node].end()){
-				temp->addAncestorNode(BrSuccesors[node][i+1]);
-				BrSuccesors[node][i+1]->addChildNode(temp);
+			if (BrBackEdgeSuccessors[node].find(BrSuccesors[node][i + 1]) ==
+				BrBackEdgeSuccessors[node].end())
+			{
+				temp->addAncestorNode(BrSuccesors[node][i + 1]);
+				BrSuccesors[node][i + 1]->addChildNode(temp);
 			}
-			else{
-				temp->addPHIAncestorNode(BrSuccesors[node][i+1]);
-				BrSuccesors[node][i+1]->addPHIChildNode(temp);
+			else
+			{
+				temp->addPHIAncestorNode(BrSuccesors[node][i + 1]);
+				BrSuccesors[node][i + 1]->addPHIChildNode(temp);
 			}
 			workingSet.push_back(temp);
 		}
 
-		if(numberofbrs%2==1){
-			workingSet.push_back(BrSuccesors[node][numberofbrs-1]);
+		if (numberofbrs % 2 == 1)
+		{
+			workingSet.push_back(BrSuccesors[node][numberofbrs - 1]);
 		}
-		errs() << "ConnectBB :: " << "Rest Rounds\n";
-		while(workingSet.size() > 1){
-			errs() << "ConnectBB :: " << "workingSet.size() = " << workingSet.size() << "\n";
-			for (int i = 0; i < workingSet.size()-1; i=i+2) {
+		errs() << "ConnectBB :: "
+			   << "Rest Rounds\n";
+		while (workingSet.size() > 1)
+		{
+			errs() << "ConnectBB :: "
+				   << "workingSet.size() = " << workingSet.size() << "\n";
+			for (int i = 0; i < workingSet.size() - 1; i = i + 2)
+			{
 				temp = new dfgNode(this);
 				temp->setIdx(NodeList.size());
 				NodeList.push_back(temp);
 				temp->setNameType("CTRLBrOR");
-				temp->BB=node->BB;
-				errs() << "ConnectBB :: " << "workingSet[i+1] = " << workingSet[i+1]->getIdx() << "\n";
+				temp->BB = node->BB;
+				errs() << "ConnectBB :: "
+					   << "workingSet[i+1] = " << workingSet[i + 1]->getIdx() << "\n";
 
-				if(BrBackEdgeSuccessors[node].find(workingSet[i]) ==
-				   BrBackEdgeSuccessors[node].end()){
+				if (BrBackEdgeSuccessors[node].find(workingSet[i]) ==
+					BrBackEdgeSuccessors[node].end())
+				{
 					workingSet[i]->addChildNode(temp);
 					temp->addAncestorNode(workingSet[i]);
 				}
-				else{
+				else
+				{
 					workingSet[i]->addPHIChildNode(temp);
 					temp->addPHIAncestorNode(workingSet[i]);
 				}
 
-				if(BrBackEdgeSuccessors[node].find(workingSet[i+1]) ==
-				   BrBackEdgeSuccessors[node].end()){
-					workingSet[i+1]->addChildNode(temp);
-					temp->addAncestorNode(workingSet[i+1]);
+				if (BrBackEdgeSuccessors[node].find(workingSet[i + 1]) ==
+					BrBackEdgeSuccessors[node].end())
+				{
+					workingSet[i + 1]->addChildNode(temp);
+					temp->addAncestorNode(workingSet[i + 1]);
 				}
-				else{
-					workingSet[i+1]->addPHIChildNode(temp);
-					temp->addPHIAncestorNode(workingSet[i+1]);
+				else
+				{
+					workingSet[i + 1]->addPHIChildNode(temp);
+					temp->addPHIAncestorNode(workingSet[i + 1]);
 				}
 
 				nextWorkingSet.push_back(temp);
 			}
-			if(workingSet.size()%2==1){
-				nextWorkingSet.push_back(workingSet[workingSet.size()-1]);
+			if (workingSet.size() % 2 == 1)
+			{
+				nextWorkingSet.push_back(workingSet[workingSet.size() - 1]);
 			}
 
 			workingSet.clear();
-			for (int i = 0; i < nextWorkingSet.size(); ++i) {
+			for (int i = 0; i < nextWorkingSet.size(); ++i)
+			{
 				workingSet.push_back(nextWorkingSet[i]);
 			}
 			nextWorkingSet.clear();
 		}
 
-		assert(workingSet.size()==1);
+		assert(workingSet.size() == 1);
 
-		if(BrBackEdgeSuccessors[node].find(workingSet[0]) ==
-		   BrBackEdgeSuccessors[node].end()){
+		if (BrBackEdgeSuccessors[node].find(workingSet[0]) ==
+			BrBackEdgeSuccessors[node].end())
+		{
 			workingSet[0]->addChildNode(node);
 			node->addAncestorNode(workingSet[0]);
 		}
-		else{
+		else
+		{
 			workingSet[0]->addPHIChildNode(node);
 			node->addAncestorNode(workingSet[0]);
 		}
-
 
 		BBPredicate[node->BB] = workingSet[0];
 	}
@@ -350,76 +408,90 @@ void DFG::connectBB(){
 }
 
 //WIP
-int DFG::handlePHINodeFanIn() {
-	dfgNode* node;
-	dfgNode* ancestor;
-	dfgNode* temp;
-	std::vector<dfgNode*> phiNodes;
-	std::vector<dfgNode*> workingSet;
-	std::vector<dfgNode*> nextWorkingSet;
+int DFG::handlePHINodeFanIn()
+{
+	dfgNode *node;
+	dfgNode *ancestor;
+	dfgNode *temp;
+	std::vector<dfgNode *> phiNodes;
+	std::vector<dfgNode *> workingSet;
+	std::vector<dfgNode *> nextWorkingSet;
 
-	for (int i = 0; i < NodeList.size(); ++i) {
+	for (int i = 0; i < NodeList.size(); ++i)
+	{
 		node = NodeList[i];
-		if(node->getNode() != NULL){
-			if(node->getNode()->getOpcode() == Instruction::PHI){
+		if (node->getNode() != NULL)
+		{
+			if (node->getNode()->getOpcode() == Instruction::PHI)
+			{
 				phiNodes.push_back(node);
 			}
 		}
 	}
 
-	if(phiNodes.empty()){
+	if (phiNodes.empty())
+	{
 		return 0;
 	}
 
 	//Remove the current connection
-	for (int i = 0; i < phiNodes.size(); ++i) {
+	for (int i = 0; i < phiNodes.size(); ++i)
+	{
 		node = phiNodes[i];
 
-		if(node->getAncestors().size() <= 2){
+		if (node->getAncestors().size() <= 2)
+		{
 			continue;
 		}
 
-		for (int j = 0; j < node->getAncestors().size(); ++j) {
+		for (int j = 0; j < node->getAncestors().size(); ++j)
+		{
 			ancestor = node->getAncestors()[j];
 			workingSet.push_back(node->getAncestors()[j]);
 
 			ancestor->removeChild(node);
 			node->removeAncestor(ancestor);
-			removeEdge(findEdge(ancestor,node));
+			removeEdge(findEdge(ancestor, node));
 		}
 
-		while(workingSet.size() > 1){
-			errs() << "handlePHINodeFanIn :: " << "workingSet.size() = " << workingSet.size() << "\n";
-			for (int i = 0; i < workingSet.size()-1; i=i+2) {
+		while (workingSet.size() > 1)
+		{
+			errs() << "handlePHINodeFanIn :: "
+				   << "workingSet.size() = " << workingSet.size() << "\n";
+			for (int i = 0; i < workingSet.size() - 1; i = i + 2)
+			{
 				temp = new dfgNode(this);
 				temp->setIdx(NodeList.size());
 				NodeList.push_back(temp);
 				temp->setNameType("SELECTPHI");
 				workingSet[i]->addChildNode(temp);
-				errs() << "handlePHINodeFanIn :: " << "workingSet[i+1] = " << workingSet[i+1]->getIdx() << "\n";
-				workingSet[i+1]->addChildNode(temp);
+				errs() << "handlePHINodeFanIn :: "
+					   << "workingSet[i+1] = " << workingSet[i + 1]->getIdx() << "\n";
+				workingSet[i + 1]->addChildNode(temp);
 				temp->addAncestorNode(workingSet[i]);
-				temp->addAncestorNode(workingSet[i+1]);
+				temp->addAncestorNode(workingSet[i + 1]);
 				nextWorkingSet.push_back(temp);
 			}
-			if(workingSet.size()%2==1){
-				nextWorkingSet.push_back(workingSet[workingSet.size()-1]);
+			if (workingSet.size() % 2 == 1)
+			{
+				nextWorkingSet.push_back(workingSet[workingSet.size() - 1]);
 			}
 
 			workingSet.clear();
-			for (int i = 0; i < nextWorkingSet.size(); ++i) {
+			for (int i = 0; i < nextWorkingSet.size(); ++i)
+			{
 				workingSet.push_back(nextWorkingSet[i]);
 			}
 			nextWorkingSet.clear();
 		}
-		assert(workingSet.size()==1);
+		assert(workingSet.size() == 1);
 		workingSet[0]->addChildNode(node);
 		node->addAncestorNode(workingSet[0]);
 	}
-
 }
 
-void DFG::printXML(){
+void DFG::printXML()
+{
 	std::string fileName = name + "_dfg.xml";
 	xmlFile.open(fileName.c_str());
 	printDFGInfo();
@@ -430,225 +502,251 @@ void DFG::printXML(){
 	xmlFile.close();
 }
 
-void DFG::printInEdges(dfgNode* node, int depth){
-	printHeaderTag("In-edge-number",depth);
-	xmlFile << node->getAncestors().size() ;
-	printFooterTag("In-edge-number",depth);
+void DFG::printInEdges(dfgNode *node, int depth)
+{
+	printHeaderTag("In-edge-number", depth);
+	xmlFile << node->getAncestors().size();
+	printFooterTag("In-edge-number", depth);
 
-	printHeaderTag("In-edges",depth);
-	for (int i = 0; i < node->getAncestors().size() ; ++i) {
-		printHeaderTag("Edge",depth+1);
+	printHeaderTag("In-edges", depth);
+	for (int i = 0; i < node->getAncestors().size(); ++i)
+	{
+		printHeaderTag("Edge", depth + 1);
 
-		printHeaderTag("ID",depth+2);
-//		xmlFile << node->getAncestors()[i] << "to" << node->getNode();
-		Edge* e = findEdge(node->getAncestors()[i],node);
+		printHeaderTag("ID", depth + 2);
+		//		xmlFile << node->getAncestors()[i] << "to" << node->getNode();
+		Edge *e = findEdge(node->getAncestors()[i], node);
 		assert(e);
 
-		if(xmlEdgeIdxMap.find(e)==xmlEdgeIdxMap.end()){
-			xmlEdgeIdxMap[e]=xmlEdgeCount;
+		if (xmlEdgeIdxMap.find(e) == xmlEdgeIdxMap.end())
+		{
+			xmlEdgeIdxMap[e] = xmlEdgeCount;
 			xmlEdgeCount++;
 		}
 
 		xmlFile << xmlEdgeIdxMap[e];
-		printFooterTag("ID",depth+2);
+		printFooterTag("ID", depth + 2);
 
-		printFooterTag("Edge",depth+1);
+		printFooterTag("Edge", depth + 1);
 	}
 
-	printFooterTag("In-edges",depth);
+	printFooterTag("In-edges", depth);
 }
 
-void DFG::printOutEdges(dfgNode* node, int depth){
-	printHeaderTag("Out-edge-number",depth);
-	xmlFile << node->getChildren().size() ;
-	printFooterTag("Out-edge-number",depth);
+void DFG::printOutEdges(dfgNode *node, int depth)
+{
+	printHeaderTag("Out-edge-number", depth);
+	xmlFile << node->getChildren().size();
+	printFooterTag("Out-edge-number", depth);
 
-	printHeaderTag("Out-edges",depth);
+	printHeaderTag("Out-edges", depth);
 
+	for (int i = 0; i < node->getChildren().size(); ++i)
+	{
+		printHeaderTag("Edge", depth + 1);
 
-	for (int i = 0; i < node->getChildren().size() ; ++i) {
-		printHeaderTag("Edge",depth+1);
-
-		printHeaderTag("ID",depth+2);
-//		xmlFile << node->getNode() << "to" << node->getChildren()[i];
-//		xmlFile << findEdge(node,node->getChildren()[i])->getID() ;
-		Edge* e = findEdge(node,node->getChildren()[i]);
+		printHeaderTag("ID", depth + 2);
+		//		xmlFile << node->getNode() << "to" << node->getChildren()[i];
+		//		xmlFile << findEdge(node,node->getChildren()[i])->getID() ;
+		Edge *e = findEdge(node, node->getChildren()[i]);
 		assert(e);
-		if(xmlEdgeIdxMap.find(e)==xmlEdgeIdxMap.end()){
-			xmlEdgeIdxMap[e]=xmlEdgeCount;
+		if (xmlEdgeIdxMap.find(e) == xmlEdgeIdxMap.end())
+		{
+			xmlEdgeIdxMap[e] = xmlEdgeCount;
 			xmlEdgeCount++;
 		}
 		xmlFile << xmlEdgeIdxMap[e];
-		printFooterTag("ID",depth+2);
+		printFooterTag("ID", depth + 2);
 
-		printFooterTag("Edge",depth+1);
+		printFooterTag("Edge", depth + 1);
 	}
 
-	printFooterTag("Out-edges",depth);
+	printFooterTag("Out-edges", depth);
 }
 
-void DFG::printOP(dfgNode* node, int depth){
+void DFG::printOP(dfgNode *node, int depth)
+{
 	assert(xmlFile.is_open());
-	printHeaderTag("OP",depth);
+	printHeaderTag("OP", depth);
 
-	printHeaderTag("ID",depth+1);
-//	xmlFile << (node->getNode());
+	printHeaderTag("ID", depth + 1);
+	//	xmlFile << (node->getNode());
 	xmlFile << node->getIdx();
-	printFooterTag("ID",depth+1);
+	printFooterTag("ID", depth + 1);
 
-	printHeaderTag("OP-type",depth+1);
-//	xmlFile << "NORMAL"; //TODO :: Hardcoded to be Normal, fix the hardcoding
+	printHeaderTag("OP-type", depth + 1);
+	//	xmlFile << "NORMAL"; //TODO :: Hardcoded to be Normal, fix the hardcoding
 
-	if(node->getNode() != NULL){
-		switch(isMemoryOp(node)){
-			case LOAD :
-				xmlFile << "LOAD";
-				break;
-			case STORE :
-				xmlFile << "STORE";
-				break;
-			default :
-				xmlFile << "NORMAL";
-				break;
+	if (node->getNode() != NULL)
+	{
+		switch (isMemoryOp(node))
+		{
+		case LOAD:
+			xmlFile << "LOAD";
+			break;
+		case STORE:
+			xmlFile << "STORE";
+			break;
+		default:
+			xmlFile << "NORMAL";
+			break;
 		}
 	}
-	else{
-		if(node->getNameType().compare("OutLoopLOAD")==0){
+	else
+	{
+		if (node->getNameType().compare("OutLoopLOAD") == 0)
+		{
 			xmlFile << "LOAD";
 		}
-		else if(node->getNameType().compare("OutLoopSTORE")==0){
+		else if (node->getNameType().compare("OutLoopSTORE") == 0)
+		{
 			xmlFile << "STORE";
 		}
-		else{
+		else
+		{
 			xmlFile << "NORMAL";
 		}
 		//xmlFile << node->getNameType();
 	}
 
-	printFooterTag("OP-type",depth+1);
+	printFooterTag("OP-type", depth + 1);
 
-	printHeaderTag("Cycles",depth+1);
+	printHeaderTag("Cycles", depth + 1);
 	xmlFile << 1; //TODO :: Remove the hardcoding
-	printFooterTag("Cycles",depth+1);
+	printFooterTag("Cycles", depth + 1);
 
-	printInEdges(node, depth+1);
-	printOutEdges(node,depth+1);
+	printInEdges(node, depth + 1);
+	printOutEdges(node, depth + 1);
 
-	printFooterTag("OP",depth);
+	printFooterTag("OP", depth);
 }
 
-void DFG::printOPs(int depth){
+void DFG::printOPs(int depth)
+{
 	assert(xmlFile.is_open());
-	printHeaderTag("OPs",depth);
+	printHeaderTag("OPs", depth);
 
-	printHeaderTag("OP-number",depth+1);
+	printHeaderTag("OP-number", depth + 1);
 	xmlFile << NodeList.size();
-	printFooterTag("OP-number",depth+1);
+	printFooterTag("OP-number", depth + 1);
 
-	for (int i = 0; i < NodeList.size(); ++i) {
-		printOP(NodeList[i],depth+1);
+	for (int i = 0; i < NodeList.size(); ++i)
+	{
+		printOP(NodeList[i], depth + 1);
 	}
-	printFooterTag("OPs",depth);
+	printFooterTag("OPs", depth);
 }
 
-void DFG::printDFGInfo(){
+void DFG::printDFGInfo()
+{
 	assert(xmlFile.is_open());
 	xmlFile << "<?xml version=\"1.0\" encoding=\"utf-8\"?>" << std::endl;
 }
 
-void DFG::printHeaderTag(std::string tagName, int depth){
+void DFG::printHeaderTag(std::string tagName, int depth)
+{
 	assert(xmlFile.is_open());
 	xmlFile << std::endl;
-	for (int i = 0; i < depth; ++i) {
+	for (int i = 0; i < depth; ++i)
+	{
 		xmlFile << "\t";
 	}
-	xmlFile << "<" << tagName << ">" ;
+	xmlFile << "<" << tagName << ">";
 }
 
-void DFG::printFooterTag(std::string tagName, int depth){
+void DFG::printFooterTag(std::string tagName, int depth)
+{
 	assert(xmlFile.is_open());
 	xmlFile << std::endl;
-	for (int i = 0; i < depth; ++i) {
+	for (int i = 0; i < depth; ++i)
+	{
 		xmlFile << "\t";
 	}
 	xmlFile << "</" << tagName << ">";
 }
 
-void DFG::printEdges(int depth) {
-	Edge* e;
+void DFG::printEdges(int depth)
+{
+	Edge *e;
 	int edgeCount = 0;
 	std::vector<Edge> localEdgeList;
 
 	assert(xmlFile.is_open());
-	printHeaderTag("EDGEs",depth);
+	printHeaderTag("EDGEs", depth);
 
-	printHeaderTag("Edge-number",depth);
+	printHeaderTag("Edge-number", depth);
 
-//	for (int i = 0; i < edgeList.size(); ++i) {
-//		e = &(edgeList[i]);
-//		if(e->getType() == EDGE_TYPE_DATA){
-//			edgeCount++;
-//		}
-//	}
-//	xmlFile << edgeCount;
-	assert(xmlEdgeIdxMap.size()==xmlEdgeCount);
+	//	for (int i = 0; i < edgeList.size(); ++i) {
+	//		e = &(edgeList[i]);
+	//		if(e->getType() == EDGE_TYPE_DATA){
+	//			edgeCount++;
+	//		}
+	//	}
+	//	xmlFile << edgeCount;
+	assert(xmlEdgeIdxMap.size() == xmlEdgeCount);
 	xmlFile << xmlEdgeIdxMap.size();
 
-	printFooterTag("Edge-number",depth);
+	printFooterTag("Edge-number", depth);
 
 	// Currently only printing DATA dependency edges only
-//	for (int i = 0; i < edgeList.size(); ++i) {
-//		e = &(edgeList[i]);
-//		if(e->getType() == EDGE_TYPE_DATA){
-//			printEdge(e,depth);
-//		}
-//	}
+	//	for (int i = 0; i < edgeList.size(); ++i) {
+	//		e = &(edgeList[i]);
+	//		if(e->getType() == EDGE_TYPE_DATA){
+	//			printEdge(e,depth);
+	//		}
+	//	}
 
-	for (std::pair<Edge*,int> pair : xmlEdgeIdxMap){
-		printEdge(pair.first,depth);
+	for (std::pair<Edge *, int> pair : xmlEdgeIdxMap)
+	{
+		printEdge(pair.first, depth);
 	}
 
-	printFooterTag("EDGEs",depth);
+	printFooterTag("EDGEs", depth);
 }
 
-void DFG::renumber() {
-	for (int i = 0; i < NodeList.size(); ++i) {
+void DFG::renumber()
+{
+	for (int i = 0; i < NodeList.size(); ++i)
+	{
 		NodeList[i]->setIdx(i);
 	}
 
-	for (int i = 0; i < edgeList.size(); ++i) {
+	for (int i = 0; i < edgeList.size(); ++i)
+	{
 		edgeList[i].setID(i);
 	}
 }
 
-void DFG::printEdge(Edge* e, int depth) {
+void DFG::printEdge(Edge *e, int depth)
+{
 	assert(xmlFile.is_open());
-	printHeaderTag("EDGE",depth);
+	printHeaderTag("EDGE", depth);
 
-	printHeaderTag("ID",depth+1);
+	printHeaderTag("ID", depth + 1);
 	xmlFile << xmlEdgeIdxMap[e];
-	printFooterTag("ID",depth+1);
+	printFooterTag("ID", depth + 1);
 
-	printHeaderTag("Attribute",depth+1);
+	printHeaderTag("Attribute", depth + 1);
 	xmlFile << 1; //God knows what this is
-	printFooterTag("Attribute",depth+1);
+	printFooterTag("Attribute", depth + 1);
 
-	printHeaderTag("Start-OP",depth+1);
-//	xmlFile << e->getSrc();
+	printHeaderTag("Start-OP", depth + 1);
+	//	xmlFile << e->getSrc();
 	xmlFile << e->getSrc()->getIdx();
-	printFooterTag("Start-OP",depth+1);
+	printFooterTag("Start-OP", depth + 1);
 
-	printHeaderTag("End-OP",depth+1);
-//	xmlFile << e->getDest();
+	printHeaderTag("End-OP", depth + 1);
+	//	xmlFile << e->getDest();
 	xmlFile << e->getDest()->getIdx();
-	printFooterTag("End-OP",depth+1);
+	printFooterTag("End-OP", depth + 1);
 
-	printFooterTag("EDGE",depth);
+	printFooterTag("EDGE", depth);
 }
 
-void DFG::addMemRecDepEdges(DependenceInfo* DI) {
-	std::vector<dfgNode*> memNodes;
-	dfgNode* nodePtr;
+void DFG::addMemRecDepEdges(DependenceInfo *DI)
+{
+	std::vector<dfgNode *> memNodes;
+	dfgNode *nodePtr;
 	Instruction *Ins;
 	std::ofstream log;
 
@@ -660,21 +758,22 @@ void DFG::addMemRecDepEdges(DependenceInfo* DI) {
 	errs() << "&&&&&&&&&&&&&&&&&&&&Recurrence search started.....!\n";
 
 	//Create a list of memory instructions
-	for (int i = 0; i < NodeList.size(); ++i) {
+	for (int i = 0; i < NodeList.size(); ++i)
+	{
 		nodePtr = NodeList[i];
 		Ins = dyn_cast<Instruction>(nodePtr->getNode());
 		if (!Ins)
-		return;
+			return;
 
 		LoadInst *Ld = dyn_cast<LoadInst>(nodePtr->getNode());
 		StoreInst *St = dyn_cast<StoreInst>(nodePtr->getNode());
 
 		if (!St && !Ld)
-		continue;
+			continue;
 		if (Ld && !Ld->isSimple())
-		return;
+			return;
 		if (St && !St->isSimple())
-		return;
+			return;
 		errs() << "ID=" << nodePtr->getIdx() << " ,";
 		nodePtr->getNode()->dump();
 		memNodes.push_back(nodePtr);
@@ -682,386 +781,446 @@ void DFG::addMemRecDepEdges(DependenceInfo* DI) {
 
 	log << "addMemRecDepEdges : Found " << memNodes.size() << "Loads and Stores to analyze\n";
 
-	for (int i = 0; i < memNodes.size(); ++i) {
-		for (int j = i; j < memNodes.size(); ++j) {
-			  std::vector<char> Dep;
-		      Instruction *Src = dyn_cast<Instruction>(memNodes[i]->getNode());
-		      Instruction *Des = dyn_cast<Instruction>(memNodes[j]->getNode());
+	for (int i = 0; i < memNodes.size(); ++i)
+	{
+		for (int j = i; j < memNodes.size(); ++j)
+		{
+			std::vector<char> Dep;
+			Instruction *Src = dyn_cast<Instruction>(memNodes[i]->getNode());
+			Instruction *Des = dyn_cast<Instruction>(memNodes[j]->getNode());
 
-			  if (Src == Des)
-				  continue;
+			if (Src == Des)
+				continue;
 
-			  if (isa<LoadInst>(Src) && isa<LoadInst>(Des))
-				  continue;
+			if (isa<LoadInst>(Src) && isa<LoadInst>(Des))
+				continue;
 
-			  if (auto D = DI->depends(Src, Des, true)) {
-				  log << "addMemRecDepEdges :" << "Found Dependency between Src=" << memNodes[i]->getIdx() << " Des=" << memNodes[j]->getIdx() << "\n";
+			if (auto D = DI->depends(Src, Des, true))
+			{
+				log << "addMemRecDepEdges :"
+					<< "Found Dependency between Src=" << memNodes[i]->getIdx() << " Des=" << memNodes[j]->getIdx() << "\n";
 
+				if (D->isFlow())
+				{
+					// TODO: Handle Flow dependence.Check if it is sufficient to populate
+					// the Dependence Matrix with the direction reversed.
+					log << "addMemRecDepEdges :"
+						<< "Flow dependence not handled\n";
+					continue;
+					//					  return;
+				}
+				if (D->isAnti())
+				{
+					log << "Found Anti dependence \n";
 
-				  if (D->isFlow()) {
-				// TODO: Handle Flow dependence.Check if it is sufficient to populate
-				// the Dependence Matrix with the direction reversed.
-					  log << "addMemRecDepEdges :" << "Flow dependence not handled\n";
-					  continue;
-//					  return;
-				  }
-				  if (D->isAnti()) {
-					  log << "Found Anti dependence \n";
+					this->findNode(Src)->addChild(Des, EDGE_TYPE_LDST);
+					this->findNode(Des)->addAncestor(Src);
 
-						this->findNode(Src)->addChild(Des,EDGE_TYPE_LDST);
-						this->findNode(Des)->addAncestor(Src);
+					unsigned Levels = D->getLevels();
+					char Direction;
+					for (unsigned II = 1; II <= Levels; ++II)
+					{
+						const SCEV *Distance = D->getDistance(II);
 
-					  unsigned Levels = D->getLevels();
-					  char Direction;
-					  for (unsigned II = 1; II <= Levels; ++II) {
-						  const SCEV *Distance = D->getDistance(II);
-
-						  const SCEVConstant *SCEVConst = dyn_cast_or_null<SCEVConstant>(Distance);
-						  if (SCEVConst) {
-							  const ConstantInt *CI = SCEVConst->getValue();
-							  if (CI->isNegative()) {
-								  Direction = '<';
-							  }
-							  else if (CI->isZero()) {
-								  Direction = '=';
-							  }
-							  else {
-								  Direction = '>';
-							  }
-							  log << SCEVConst->getAPInt().abs().getZExtValue() << std::endl;
-							  Dep.push_back(Direction);
-						  }
-						  else if (D->isScalar(II)) {
+						const SCEVConstant *SCEVConst = dyn_cast_or_null<SCEVConstant>(Distance);
+						if (SCEVConst)
+						{
+							const ConstantInt *CI = SCEVConst->getValue();
+							if (CI->isNegative())
+							{
+								Direction = '<';
+							}
+							else if (CI->isZero())
+							{
+								Direction = '=';
+							}
+							else
+							{
+								Direction = '>';
+							}
+							log << SCEVConst->getAPInt().abs().getZExtValue() << std::endl;
+							Dep.push_back(Direction);
+						}
+						else if (D->isScalar(II))
+						{
 							Direction = 'S';
 							Dep.push_back(Direction);
-						  }
-						  else {
-							  unsigned Dir = D->getDirection(II);
-							  if (Dir == Dependence::DVEntry::LT || Dir == Dependence::DVEntry::LE){
-								  Direction = '<';
-							  }
-							  else if (Dir == Dependence::DVEntry::GT || Dir == Dependence::DVEntry::GE){
-								  Direction = '>';
-							  }
-							  else if (Dir == Dependence::DVEntry::EQ) {
-								  Direction = '=';
-							  }
-							  else {
-								  Direction = '*';
-							  }
-							  Dep.push_back(Direction);
-						  }
-					  }
-//					while (Dep.size() != Level) {
-//					  Dep.push_back('I');
-//					}
-				  }
+						}
+						else
+						{
+							unsigned Dir = D->getDirection(II);
+							if (Dir == Dependence::DVEntry::LT || Dir == Dependence::DVEntry::LE)
+							{
+								Direction = '<';
+							}
+							else if (Dir == Dependence::DVEntry::GT || Dir == Dependence::DVEntry::GE)
+							{
+								Direction = '>';
+							}
+							else if (Dir == Dependence::DVEntry::EQ)
+							{
+								Direction = '=';
+							}
+							else
+							{
+								Direction = '*';
+							}
+							Dep.push_back(Direction);
+						}
+					}
+					//					while (Dep.size() != Level) {
+					//					  Dep.push_back('I');
+					//					}
+				}
 
-				  for (int k = 0; k < Dep.size(); ++k) {
-					  log << Dep[k];
-				  }
-				  log << "\n";
-			  }
+				for (int k = 0; k < Dep.size(); ++k)
+				{
+					log << Dep[k];
+				}
+				log << "\n";
+			}
 		}
 	}
-
-
 
 	log.close();
 }
 
-void DFG::findMaxRecDist() {
-	dfgNode* node;
+void DFG::findMaxRecDist()
+{
+	dfgNode *node;
 	int recDist;
-	for (int i = 0; i < NodeList.size(); ++i) {
+	for (int i = 0; i < NodeList.size(); ++i)
+	{
 		node = NodeList[i];
 
-		for (int j = 0; j < node->getRecAncestors().size(); ++j) {
+		for (int j = 0; j < node->getRecAncestors().size(); ++j)
+		{
 			recDist = node->getASAPnumber() - node->getRecAncestors()[j]->getASAPnumber();
-			if(maxRecDist < recDist){
+			if (maxRecDist < recDist)
+			{
 				maxRecDist = recDist;
 			}
 		}
 
-		for (dfgNode* phiParent : node->getPHIancestors()){
-			const BasicBlock* phiBB = phiParent->BB;
-			const BasicBlock* nodeBB = node->BB;
+		for (dfgNode *phiParent : node->getPHIancestors())
+		{
+			const BasicBlock *phiBB = phiParent->BB;
+			const BasicBlock *nodeBB = node->BB;
 
-			SmallVector<std::pair<const BasicBlock *, const BasicBlock *>,8> Result;
-			FindFunctionBackedges(*(nodeBB->getParent()),Result);
+			SmallVector<std::pair<const BasicBlock *, const BasicBlock *>, 8> Result;
+			FindFunctionBackedges(*(nodeBB->getParent()), Result);
 
-			 std::pair <const BasicBlock*,const BasicBlock*> bbCouple(phiBB,nodeBB);
-			 if(std::find(Result.begin(),Result.end(),bbCouple)!=Result.end()){
-					int phiDist = phiParent->getASAPnumber() - node->getASAPnumber();
-					if(maxRecDist < phiDist){
-						maxRecDist = phiDist;
-					}
-			 }
-
+			std::pair<const BasicBlock *, const BasicBlock *> bbCouple(phiBB, nodeBB);
+			if (std::find(Result.begin(), Result.end(), bbCouple) != Result.end())
+			{
+				int phiDist = phiParent->getASAPnumber() - node->getASAPnumber();
+				if (maxRecDist < phiDist)
+				{
+					maxRecDist = phiDist;
+				}
+			}
 		}
+	}
+}
 
+void DFG::addMemRecDepEdgesNew(DependenceInfo *DI)
+{
+	std::vector<dfgNode *> memNodes;
+	dfgNode *nodePtr;
+	Instruction *Ins;
+	std::ofstream log;
+	int RecDist;
+
+	static int count = 0;
+	std::string Filename = (NodeList[0]->getNode()->getFunction()->getName() + "_L" + std::to_string(count++) + "addMemRecDepEdges.log").str();
+	log.open(Filename.c_str());
+	log << "Started...\n";
+
+	errs() << "&&&&&&&&&&&&&&&&&&&&Recurrence search started.....!\n";
+
+	//Create a list of memory instructions
+	for (int i = 0; i < NodeList.size(); ++i)
+	{
+		nodePtr = NodeList[i];
+
+		if (nodePtr->getNode() == NULL)
+		{
+			continue;
+		}
+		Ins = dyn_cast<Instruction>(nodePtr->getNode());
+		if (!Ins)
+			return;
+
+		LoadInst *Ld = dyn_cast<LoadInst>(nodePtr->getNode());
+		StoreInst *St = dyn_cast<StoreInst>(nodePtr->getNode());
+
+		if (!St && !Ld)
+			continue;
+		if (Ld && !Ld->isSimple())
+			return;
+		if (St && !St->isSimple())
+			return;
+		errs() << "ID=" << nodePtr->getIdx() << " ,";
+		nodePtr->getNode()->dump();
+		memNodes.push_back(nodePtr);
 	}
 
-}
+	log << "addMemRecDepEdges : Found " << memNodes.size() << "Loads and Stores to analyze\n";
 
+	for (int i = 0; i < memNodes.size(); ++i)
+	{
+		for (int j = i; j < memNodes.size(); ++j)
+		{
+			std::vector<char> Dep;
+			Instruction *Src = dyn_cast<Instruction>(memNodes[i]->getNode());
+			Instruction *Des = dyn_cast<Instruction>(memNodes[j]->getNode());
 
-
-void DFG::addMemRecDepEdgesNew(DependenceInfo *DI) {
-	std::vector<dfgNode*> memNodes;
-		dfgNode* nodePtr;
-		Instruction *Ins;
-		std::ofstream log;
-		int RecDist;
-
-		static int count = 0;
-		std::string Filename = (NodeList[0]->getNode()->getFunction()->getName() + "_L" + std::to_string(count++) + "addMemRecDepEdges.log").str();
-		log.open(Filename.c_str());
-		log << "Started...\n";
-
-		errs() << "&&&&&&&&&&&&&&&&&&&&Recurrence search started.....!\n";
-
-		//Create a list of memory instructions
-		for (int i = 0; i < NodeList.size(); ++i) {
-			nodePtr = NodeList[i];
-
-			if(nodePtr->getNode() == NULL){
+			if (Src == Des)
 				continue;
-			}
-			Ins = dyn_cast<Instruction>(nodePtr->getNode());
-			if (!Ins)
-			return;
 
-			LoadInst *Ld = dyn_cast<LoadInst>(nodePtr->getNode());
-			StoreInst *St = dyn_cast<StoreInst>(nodePtr->getNode());
+			if (isa<LoadInst>(Src) && isa<LoadInst>(Des))
+				continue;
 
-			if (!St && !Ld)
-			continue;
-			if (Ld && !Ld->isSimple())
-			return;
-			if (St && !St->isSimple())
-			return;
-			errs() << "ID=" << nodePtr->getIdx() << " ,";
-			nodePtr->getNode()->dump();
-			memNodes.push_back(nodePtr);
-		}
+			if (auto D = DI->depends(Src, Des, true))
+			{
+				log << "addMemRecDepEdges :"
+					<< "Found Dependency between Src=" << memNodes[i]->getIdx() << " Des=" << memNodes[j]->getIdx() << "\n";
+				outs() << "addMemRecDepEdges :"
+					   << "Found Dependency between Src=" << memNodes[i]->getIdx() << " Des=" << memNodes[j]->getIdx() << "\n";
 
-		log << "addMemRecDepEdges : Found " << memNodes.size() << "Loads and Stores to analyze\n";
+				if (D->isLoopIndependent())
+				{
+					outs() << "Loop Independent.\n";
+				}
+				else
+				{
+					outs() << "Loop Dependent.\n";
+				}
 
-		for (int i = 0; i < memNodes.size(); ++i) {
-			for (int j = i; j < memNodes.size(); ++j) {
-				  std::vector<char> Dep;
-			      Instruction *Src = dyn_cast<Instruction>(memNodes[i]->getNode());
-			      Instruction *Des = dyn_cast<Instruction>(memNodes[j]->getNode());
+				outs() << "Levels = " << D->getLevels() << "\n";
+				D->dump(outs());
 
-				  if (Src == Des)
-					  continue;
+				char Direction;
+				for (int i = 1; i <= D->getLevels(); i++)
+				{
+					const SCEV *Distance = D->getDistance(i);
+					const SCEVConstant *SCEVConst = dyn_cast_or_null<SCEVConstant>(Distance);
+					if (SCEVConst)
+					{
+						const ConstantInt *CI = SCEVConst->getValue();
+						if (CI->isNegative())
+							Direction = '<';
+						else if (CI->isZero())
+							Direction = '=';
+						else
+							Direction = '>';
+					}
+					else if (D->isScalar(i))
+					{
+						Direction = 'S';
+					}
+					else
+					{
+						unsigned Dir = D->getDirection(i);
+						if (Dir == Dependence::DVEntry::LT || Dir == Dependence::DVEntry::LE)
+							Direction = '<';
+						else if (Dir == Dependence::DVEntry::GT || Dir == Dependence::DVEntry::GE)
+							Direction = '>';
+						else if (Dir == Dependence::DVEntry::EQ)
+							Direction = '=';
+						else
+							Direction = '*';
+					}
 
-				  if (isa<LoadInst>(Src) && isa<LoadInst>(Des))
-					  continue;
+					outs() << "\tlevel=" << i << ",dir=" << Direction << "\n";
+				}
 
-				  if (auto D = DI->depends(Src, Des, true)) {
-					  log << "addMemRecDepEdges :" << "Found Dependency between Src=" << memNodes[i]->getIdx() << " Des=" << memNodes[j]->getIdx() << "\n";
-					  outs() << "addMemRecDepEdges :" << "Found Dependency between Src=" << memNodes[i]->getIdx() << " Des=" << memNodes[j]->getIdx() << "\n";
-
-
-					  if(D->isLoopIndependent()){
-						  outs() << "Loop Independent.\n";
-					  }
-					  else{
-						  outs() << "Loop Dependent.\n";
-					  }
-
-					  outs() << "Levels = " <<  D->getLevels() << "\n";
-					  D->dump(outs());
-
-						char Direction;
-						for (int i = 1; i <= D->getLevels() ; i++)
-						{
-							const SCEV *Distance = D->getDistance(i);
-          		const SCEVConstant *SCEVConst =  dyn_cast_or_null<SCEVConstant>(Distance);
-         			if (SCEVConst) {
-            		const ConstantInt *CI = SCEVConst->getValue();
-            		if (CI->isNegative()) Direction = '<';
-            		else if (CI->isZero()) Direction = '=';
-								else Direction = '>';
-          		} else if (D->isScalar(i)) {
-            		Direction = 'S';
-          		} else {
-            		unsigned Dir = D->getDirection(i);
-            		if (Dir == Dependence::DVEntry::LT || Dir == Dependence::DVEntry::LE) Direction = '<';
-            		else if (Dir == Dependence::DVEntry::GT || Dir == Dependence::DVEntry::GE) Direction = '>';
-            		else if (Dir == Dependence::DVEntry::EQ) Direction = '=';
-            		else Direction = '*';
-          		}
-
-							outs() << "\tlevel=" << i << ",dir=" << Direction << "\n";
-						}
-					
-
-					  if (D->isAnti()) {
+				if (D->isAnti())
+				{
 					// TODO: Handle Anit dependence.Check if it is sufficient to populate
 					// the Dependence Matrix with the direction reversed.
-						  log << "addMemRecDepEdges :" << "Anti dependence not handled\n";
-						  continue;
-	//					  return;
-					  }
+					log << "addMemRecDepEdges :"
+						<< "Anti dependence not handled\n";
+					continue;
+					//					  return;
+				}
 
+				if (D->isFlow())
+				{
+					log << "Found Flow dependence \n";
 
-					  if (D->isFlow()) {
-						  log << "Found Flow dependence \n";
+					if (std::find(BBSuccBasicBlocks[Src->getParent()].begin(), BBSuccBasicBlocks[Src->getParent()].end(), Des->getParent()) == BBSuccBasicBlocks[Src->getParent()].end())
+					{
+						continue;
+					}
 
+					//							this->findNode(Src)->addRecChild(Des,EDGE_TYPE_LDST);
+					//							this->findNode(Des)->addRecAncestor(Src);
+					std::string depType;
+					if (D->isFlow())
+					{
+						depType = "FLOW";
+					}
+					else
+					{
+						assert(D->isAnti());
+						depType = "ANTI";
+					}
 
-							 if(std::find(BBSuccBasicBlocks[Src->getParent()].begin(),BBSuccBasicBlocks[Src->getParent()].end(),Des->getParent())==BBSuccBasicBlocks[Src->getParent()].end()){
-								 continue;
-							 }
+					if (D->isConfused())
+						continue;
 
-//							this->findNode(Src)->addRecChild(Des,EDGE_TYPE_LDST);
-//							this->findNode(Des)->addRecAncestor(Src);
-							std::string depType;
-							if(D->isFlow()){
-								depType = "FLOW";
+					outs() << "adding recurrence relation!\n";
+					this->findNode(Des)->addRecChild(Src, depType, EDGE_TYPE_LDST);
+					this->findNode(Src)->addRecAncestor(Des, depType);
+
+					//							RecDist = this->findNode(Des)->getASAPnumber() - this->findNode(Src)->getASAPnumber();
+					//							if(maxRecDist < RecDist){
+					//								maxRecDist = RecDist;
+					//							}
+
+					unsigned Levels = D->getLevels();
+					char Direction;
+
+					for (unsigned II = 1; II <= Levels; ++II)
+					{
+						const SCEV *Distance = D->getDistance(II);
+
+						const SCEVConstant *SCEVConst = dyn_cast_or_null<SCEVConstant>(Distance);
+						if (SCEVConst)
+						{
+							const ConstantInt *CI = SCEVConst->getValue();
+							if (CI->isNegative())
+							{
+								Direction = '<';
 							}
-							else{
-								assert(D->isAnti());
-								depType = "ANTI";
+							else if (CI->isZero())
+							{
+								Direction = '=';
 							}
+							else
+							{
+								Direction = '>';
+							}
+							log << SCEVConst->getAPInt().abs().getZExtValue() << std::endl;
+							Dep.push_back(Direction);
+						}
+						else if (D->isScalar(II))
+						{
+							Direction = 'S';
+							Dep.push_back(Direction);
+						}
+						else
+						{
+							unsigned Dir = D->getDirection(II);
+							if (Dir == Dependence::DVEntry::LT || Dir == Dependence::DVEntry::LE)
+							{
+								Direction = '<';
+							}
+							else if (Dir == Dependence::DVEntry::GT || Dir == Dependence::DVEntry::GE)
+							{
+								Direction = '>';
+							}
+							else if (Dir == Dependence::DVEntry::EQ)
+							{
+								Direction = '=';
+							}
+							else
+							{
+								Direction = '*';
+							}
+							Dep.push_back(Direction);
+						}
+					}
+					//					while (Dep.size() != Level) {
+					//					  Dep.push_back('I');
+					//					}
+				}
 
-							if(D->isConfused()) continue;
-
-							outs() << "adding recurrence relation!\n";
-							this->findNode(Des)->addRecChild(Src,depType,EDGE_TYPE_LDST);
-							this->findNode(Src)->addRecAncestor(Des,depType);
-
-//							RecDist = this->findNode(Des)->getASAPnumber() - this->findNode(Src)->getASAPnumber();
-//							if(maxRecDist < RecDist){
-//								maxRecDist = RecDist;
-//							}
-
-						  unsigned Levels = D->getLevels();
-						  char Direction;
-
-
-						  for (unsigned II = 1; II <= Levels; ++II) {
-							  const SCEV *Distance = D->getDistance(II);
-
-							  const SCEVConstant *SCEVConst = dyn_cast_or_null<SCEVConstant>(Distance);
-							  if (SCEVConst) {
-								  const ConstantInt *CI = SCEVConst->getValue();
-								  if (CI->isNegative()) {
-									  Direction = '<';
-								  }
-								  else if (CI->isZero()) {
-									  Direction = '=';
-								  }
-								  else {
-									  Direction = '>';
-								  }
-								  log << SCEVConst->getAPInt().abs().getZExtValue() << std::endl;
-								  Dep.push_back(Direction);
-							  }
-							  else if (D->isScalar(II)) {
-								Direction = 'S';
-								Dep.push_back(Direction);
-							  }
-							  else {
-								  unsigned Dir = D->getDirection(II);
-								  if (Dir == Dependence::DVEntry::LT || Dir == Dependence::DVEntry::LE){
-									  Direction = '<';
-								  }
-								  else if (Dir == Dependence::DVEntry::GT || Dir == Dependence::DVEntry::GE){
-									  Direction = '>';
-								  }
-								  else if (Dir == Dependence::DVEntry::EQ) {
-									  Direction = '=';
-								  }
-								  else {
-									  Direction = '*';
-								  }
-								  Dep.push_back(Direction);
-							  }
-						  }
-	//					while (Dep.size() != Level) {
-	//					  Dep.push_back('I');
-	//					}
-					  }
-
-					  for (int k = 0; k < Dep.size(); ++k) {
-						  log << Dep[k];
-					  }
-					  log << "\n";
-				  }
+				for (int k = 0; k < Dep.size(); ++k)
+				{
+					log << Dep[k];
+				}
+				log << "\n";
 			}
 		}
+	}
 
-
-
-		log.close();
-//		assert(false);
-		errs() << "&&&&&&&&&&&&&&&&&&&&Recurrence search done.....!\n";
+	log.close();
+	//		assert(false);
+	errs() << "&&&&&&&&&&&&&&&&&&&&Recurrence search done.....!\n";
 }
 
-void DFG::addMemDepEdges(MemoryDependenceResults *MD) {
+void DFG::addMemDepEdges(MemoryDependenceResults *MD)
+{
 
 	assert(NodeList.size() > 0);
 	dfgNode firstNode = *NodeList[0];
-	SmallVector<std::pair<const BasicBlock *, const BasicBlock *>,1 > Result;
-	FindFunctionBackedges(*(firstNode.getNode()->getFunction()),Result);
+	SmallVector<std::pair<const BasicBlock *, const BasicBlock *>, 1> Result;
+	FindFunctionBackedges(*(firstNode.getNode()->getFunction()), Result);
 
-	Instruction* it;
+	Instruction *it;
 	MemDepResult mRes;
-	SmallVector<NonLocalDepResult,1> result;
-	for (int i = 0; i < NodeList.size(); ++i) {
+	SmallVector<NonLocalDepResult, 1> result;
+	for (int i = 0; i < NodeList.size(); ++i)
+	{
 		it = NodeList[i]->getNode();
-		if(it->mayReadOrWriteMemory()){
+		if (it->mayReadOrWriteMemory())
+		{
 			mRes = MD->getDependency(it);
 
 			errs() << "Dependent :";
 			it->dump();
 
-			if(mRes.isNonLocal()){
-				if(auto CS = CallSite(it)){
-
+			if (mRes.isNonLocal())
+			{
+				if (auto CS = CallSite(it))
+				{
 				}
-				else{
+				else
+				{
 					errs() << "****** GET NON LOCAL MEM DEPENDENCIES ******\n";
 
-					MD->getNonLocalPointerDependency(it,result);
+					MD->getNonLocalPointerDependency(it, result);
 
-					for (int j = 0; j < result.size(); ++j) {
-						if(result[j].getResult().getInst() != NULL){
+					for (int j = 0; j < result.size(); ++j)
+					{
+						if (result[j].getResult().getInst() != NULL)
+						{
 
-							if((result[j].getResult().getInst()->getOpcode() == Instruction::Load)&&(it->getOpcode() == Instruction::Load)){
-
+							if ((result[j].getResult().getInst()->getOpcode() == Instruction::Load) && (it->getOpcode() == Instruction::Load))
+							{
 							}
-							else{
+							else
+							{
 
-								 std::pair <const BasicBlock*,const BasicBlock*> bbCouple(result[j].getResult().getInst()->getParent(),it->getParent());
-								 if(std::find(Result.begin(),Result.end(),bbCouple)!=Result.end()){
-									 continue;
-								 }
+								std::pair<const BasicBlock *, const BasicBlock *> bbCouple(result[j].getResult().getInst()->getParent(), it->getParent());
+								if (std::find(Result.begin(), Result.end(), bbCouple) != Result.end())
+								{
+									continue;
+								}
 
 								result[j].getResult().getInst()->dump();
-								this->findNode(result[j].getResult().getInst())->addChild(it,EDGE_TYPE_LDST);
+								this->findNode(result[j].getResult().getInst())->addChild(it, EDGE_TYPE_LDST);
 								NodeList[i]->addAncestor(result[j].getResult().getInst());
 							}
-
 						}
 					}
 
 					errs() << "****** DONE NON LOCAL MEM DEPENDENCIES ******\n";
 				}
-
-
 			}
 
+			if (mRes.getInst() != NULL)
+			{
 
-			if(mRes.getInst() != NULL){
-
-				if( (mRes.getInst()->getOpcode() == Instruction::Load)&&(it->getOpcode() == Instruction::Load)){
-//					continue;
+				if ((mRes.getInst()->getOpcode() == Instruction::Load) && (it->getOpcode() == Instruction::Load))
+				{
+					//					continue;
 				}
-				else {
-					this->findNode(mRes.getInst())->addChild(it,EDGE_TYPE_LDST);
+				else
+				{
+					this->findNode(mRes.getInst())->addChild(it, EDGE_TYPE_LDST);
 					NodeList[i]->addAncestor(mRes.getInst());
 				}
 			}
@@ -1069,56 +1228,66 @@ void DFG::addMemDepEdges(MemoryDependenceResults *MD) {
 	}
 }
 
-int DFG::removeEdge(Edge* e) {
-	Edge* edgePtr;
-	edgePtr = findEdge(e->getSrc(),e->getDest());
-	if(edgePtr == NULL){
+int DFG::removeEdge(Edge *e)
+{
+	Edge *edgePtr;
+	edgePtr = findEdge(e->getSrc(), e->getDest());
+	if (edgePtr == NULL)
+	{
 		return -1;
 	}
 
-	for (int i = 0; i < edgeList.size(); ++i) {
-		if(edgePtr == &(edgeList[i])){
-			edgeList.erase(edgeList.begin()+i);
+	for (int i = 0; i < edgeList.size(); ++i)
+	{
+		if (edgePtr == &(edgeList[i]))
+		{
+			edgeList.erase(edgeList.begin() + i);
 		}
 	}
 
 	return 1;
 }
 
-int DFG::removeNode(dfgNode* n) {
-	dfgNode* nodePtr;
+int DFG::removeNode(dfgNode *n)
+{
+	dfgNode *nodePtr;
 	nodePtr = findNode(n->getNode());
-	if(nodePtr == NULL){
+	if (nodePtr == NULL)
+	{
 		return -1;
 	}
 
-	dfgNode* nodeTmp;
-	dfgNode* nodeTmp2;
-	Edge* edgeTmp;
+	dfgNode *nodeTmp;
+	dfgNode *nodeTmp2;
+	Edge *edgeTmp;
 
 	//Treat the ancestors
-	for (int i = 0; i < nodePtr->getAncestors().size(); ++i) {
+	for (int i = 0; i < nodePtr->getAncestors().size(); ++i)
+	{
 		nodeTmp = nodePtr->getAncestors()[i];
 		assert(nodeTmp->removeChild(nodePtr->getNode()) != -1);
 
-		for (int j = 0; j < nodePtr->getChildren().size(); ++j) {
-			nodeTmp->addChild(nodePtr->getChildren()[j]->getNode());  //TODO : Generalize for types of children
+		for (int j = 0; j < nodePtr->getChildren().size(); ++j)
+		{
+			nodeTmp->addChild(nodePtr->getChildren()[j]->getNode()); //TODO : Generalize for types of children
 			nodeTmp2 = nodePtr->getChildren()[j];
 
 			assert(nodeTmp2->removeAncestor(nodePtr->getNode()) != -1);
 			nodeTmp2->addAncestor(nodePtr->getAncestors()[i]->getNode());
 		}
 
-		edgeTmp = findEdge(nodePtr->getAncestors()[i],nodePtr);
+		edgeTmp = findEdge(nodePtr->getAncestors()[i], nodePtr);
 		assert(removeEdge(edgeTmp) != -1);
 	}
 
 	//Treat the children
-	for (int i = 0; i < nodePtr->getChildren().size(); ++i) {
+	for (int i = 0; i < nodePtr->getChildren().size(); ++i)
+	{
 		nodeTmp = nodePtr->getChildren()[i];
 		assert(nodeTmp->removeAncestor(nodePtr->getNode()) != -1);
 
-		for (int j = 0; j < nodePtr->getAncestors().size(); ++j) {
+		for (int j = 0; j < nodePtr->getAncestors().size(); ++j)
+		{
 			nodeTmp->addAncestor(nodePtr->getAncestors()[j]->getNode());
 			nodeTmp2 = nodePtr->getAncestors()[j];
 
@@ -1126,218 +1295,252 @@ int DFG::removeNode(dfgNode* n) {
 			nodeTmp2->addChild(nodePtr->getChildren()[i]->getNode());
 		}
 
-		edgeTmp = findEdge(nodePtr,nodePtr->getChildren()[i]);
+		edgeTmp = findEdge(nodePtr, nodePtr->getChildren()[i]);
 		assert(removeEdge(edgeTmp) != -1);
 	}
 
-//	NodeList.erase(std::remove(NodeList.begin(),NodeList.end(),*n),NodeList.end());
+	//	NodeList.erase(std::remove(NodeList.begin(),NodeList.end(),*n),NodeList.end());
 
-	for (int i = 0; i < NodeList.size(); ++i) {
-		if(nodePtr == NodeList[i]){
-			NodeList.erase(NodeList.begin()+i);
+	for (int i = 0; i < NodeList.size(); ++i)
+	{
+		if (nodePtr == NodeList[i])
+		{
+			NodeList.erase(NodeList.begin() + i);
 		}
 	}
 
 	return 1;
 }
 
-void DFG::removeAlloc() {
-	Instruction* insTmp;
-	for (int i = 0; i < NodeList.size(); ++i) {
+void DFG::removeAlloc()
+{
+	Instruction *insTmp;
+	for (int i = 0; i < NodeList.size(); ++i)
+	{
 		insTmp = NodeList[i]->getNode();
-		if(insTmp->getOpcode() == Instruction::Alloca /*|| insTmp->getOpcode() == Instruction::PHI*/){
+		if (insTmp->getOpcode() == Instruction::Alloca /*|| insTmp->getOpcode() == Instruction::PHI*/)
+		{
 			removeNode(NodeList[i]);
 		}
 	}
 	renumber();
 }
 
-void DFG::traverseDFS(dfgNode* startNode, int dfsCount) {
-//	//Assumption should be a connected DFG
-//	assert(getRoots().size()==1);
-//
-//	for (int i = 0; i < startNode->getChildren(); ++i) {
-//
-//	}
-
+void DFG::traverseDFS(dfgNode *startNode, int dfsCount)
+{
+	//	//Assumption should be a connected DFG
+	//	assert(getRoots().size()==1);
+	//
+	//	for (int i = 0; i < startNode->getChildren(); ++i) {
+	//
+	//	}
 }
 
-void DFG::traverseBFS(dfgNode* node, int ASAPlevel) {
+void DFG::traverseBFS(dfgNode *node, int ASAPlevel)
+{
 
-	if(node->getNode()){
+	if (node->getNode())
+	{
 		node->getNode()->dump();
 	}
 
-	dfgNode* child;
-	for (int i = 0; i < node->getChildren().size(); ++i) {
+	dfgNode *child;
+	for (int i = 0; i < node->getChildren().size(); ++i)
+	{
 
-		if(maxASAPLevel < ASAPlevel){
+		if (maxASAPLevel < ASAPlevel)
+		{
 			maxASAPLevel = ASAPlevel;
 		}
 
 		child = node->getChildren()[i];
-		if(child->getASAPnumber() < ASAPlevel){
+		if (child->getASAPnumber() < ASAPlevel)
+		{
 			child->setASAPnumber(ASAPlevel);
-			traverseBFS(child,ASAPlevel+1);
+			traverseBFS(child, ASAPlevel + 1);
 		}
 	}
 
-	for (int i = 0; i < node->getRecChildren().size(); ++i) {
+	for (int i = 0; i < node->getRecChildren().size(); ++i)
+	{
 
-		if(maxASAPLevel < ASAPlevel){
+		if (maxASAPLevel < ASAPlevel)
+		{
 			maxASAPLevel = ASAPlevel;
 		}
 
 		child = node->getRecChildren()[i];
-		if(child->getASAPnumber() < ASAPlevel){
+		if (child->getASAPnumber() < ASAPlevel)
+		{
 			child->setASAPnumber(ASAPlevel);
-			traverseBFS(child,ASAPlevel+1);
+			traverseBFS(child, ASAPlevel + 1);
 		}
 	}
 }
 
-void DFG::traverseInvBFS(dfgNode* node, int ALAPlevel) {
-	dfgNode* ancestor;
-	for (int i = 0; i < node->getAncestors().size(); ++i) {
+void DFG::traverseInvBFS(dfgNode *node, int ALAPlevel)
+{
+	dfgNode *ancestor;
+	for (int i = 0; i < node->getAncestors().size(); ++i)
+	{
 		ancestor = node->getAncestors()[i];
-		if(ancestor->getALAPnumber() < ALAPlevel){
+		if (ancestor->getALAPnumber() < ALAPlevel)
+		{
 			ancestor->setALAPnumber(ALAPlevel);
-			traverseInvBFS(ancestor,ALAPlevel+1);
+			traverseInvBFS(ancestor, ALAPlevel + 1);
 		}
 	}
 
-	for (int i = 0; i < node->getRecAncestors().size(); ++i) {
+	for (int i = 0; i < node->getRecAncestors().size(); ++i)
+	{
 		ancestor = node->getRecAncestors()[i];
-		if(ancestor->getALAPnumber() < ALAPlevel){
+		if (ancestor->getALAPnumber() < ALAPlevel)
+		{
 			ancestor->setALAPnumber(ALAPlevel);
-			traverseInvBFS(ancestor,ALAPlevel+1);
+			traverseInvBFS(ancestor, ALAPlevel + 1);
 		}
 	}
-
-
-
 }
 
-void DFG::scheduleASAP() {
-	std::vector<dfgNode*> leafs;
+void DFG::scheduleASAP()
+{
+	std::vector<dfgNode *> leafs;
 	leafs = getLeafs();
 	int nodesVisited = 0;
 
-	for (int i = 0; i < leafs.size(); ++i) {
+	for (int i = 0; i < leafs.size(); ++i)
+	{
 		leafs[i]->setASAPnumber(0);
-		traverseBFS(leafs[i],1);
+		traverseBFS(leafs[i], 1);
 	}
 	errs() << "scheduleASAP DONE!\n";
 }
 
-void DFG::scheduleALAP() {
-	dfgNode* node;
+void DFG::scheduleALAP()
+{
+	dfgNode *node;
 
 	int currASAPnumber = -1;
-	std::vector<dfgNode*> roots;
-//	for (int i = 0; i < NodeList.size(); ++i) {
-//		node = &(NodeList[i]);
-////		assert(node->getASAPnumber() != -1);
-//		if(node->getASAPnumber() > currASAPnumber){
-//			currASAPnumber = node->getASAPnumber();
-//		}
-//	}
+	std::vector<dfgNode *> roots;
+	//	for (int i = 0; i < NodeList.size(); ++i) {
+	//		node = &(NodeList[i]);
+	////		assert(node->getASAPnumber() != -1);
+	//		if(node->getASAPnumber() > currASAPnumber){
+	//			currASAPnumber = node->getASAPnumber();
+	//		}
+	//	}
 
-//	for (int i = 0; i < NodeList.size(); ++i) {
-//		if(node->getASAPnumber() == currASAPnumber){
-//			roots.push_back(node);
-//		}
-//	}
+	//	for (int i = 0; i < NodeList.size(); ++i) {
+	//		if(node->getASAPnumber() == currASAPnumber){
+	//			roots.push_back(node);
+	//		}
+	//	}
 
 	roots = getRoots();
 
-	for (int i = 0; i < roots.size(); ++i) {
+	for (int i = 0; i < roots.size(); ++i)
+	{
 		roots[i]->setALAPnumber(0);
-		traverseInvBFS(roots[i],1);
+		traverseInvBFS(roots[i], 1);
 	}
 
-	for (int i = 0; i < NodeList.size(); ++i) {
+	for (int i = 0; i < NodeList.size(); ++i)
+	{
 		NodeList[i]->setALAPnumber(maxASAPLevel - NodeList[i]->getALAPnumber());
 	}
-
 
 	errs() << "scheduleALAP DONE!\n";
 }
 
-void DFG::balanceASAPALAP() {
-	dfgNode* node;
+void DFG::balanceASAPALAP()
+{
+	dfgNode *node;
 
-	std::map<dfgNode*,int> newASAPVal;
+	std::map<dfgNode *, int> newASAPVal;
 
-	for (int i = 0; i < NodeList.size(); ++i) {
+	for (int i = 0; i < NodeList.size(); ++i)
+	{
 		node = NodeList[i];
 		int ASAP_ALAP_diff = node->getALAPnumber() - node->getASAPnumber();
-		ASAP_ALAP_diff = ASAP_ALAP_diff/2;
-		newASAPVal[node]= node->getASAPnumber() + ASAP_ALAP_diff;
+		ASAP_ALAP_diff = ASAP_ALAP_diff / 2;
+		newASAPVal[node] = node->getASAPnumber() + ASAP_ALAP_diff;
 	}
 
-	for (int i = 0; i < NodeList.size(); ++i) {
+	for (int i = 0; i < NodeList.size(); ++i)
+	{
 		node = NodeList[i];
-		if(node->getChildren().empty()){
+		if (node->getChildren().empty())
+		{
 			node->setASAPnumber(newASAPVal[node]);
 		}
-		else{
-			int minASAP=0;
-			for (dfgNode* child : node->getChildren()){
-				if(minASAP < newASAPVal[child]){
+		else
+		{
+			int minASAP = 0;
+			for (dfgNode *child : node->getChildren())
+			{
+				if (minASAP < newASAPVal[child])
+				{
 					minASAP = newASAPVal[child];
 				}
 			}
 
-			if(newASAPVal[node] < minASAP){
+			if (newASAPVal[node] < minASAP)
+			{
 				node->setASAPnumber(newASAPVal[node]);
 			}
-			else{
-				node->setASAPnumber(minASAP-1);
-				newASAPVal[node]=minASAP-1;
+			else
+			{
+				node->setASAPnumber(minASAP - 1);
+				newASAPVal[node] = minASAP - 1;
 			}
 		}
 	}
 
-//	for (int i = 0; i < NodeList.size(); ++i) {
-//		node = NodeList[i];
-//		int ASAP_ALAP_diff = node->getALAPnumber() - node->getASAPnumber();
-//		ASAP_ALAP_diff = ASAP_ALAP_diff/2;
-//		if(ASAP_ALAP_diff > 2){ //Hack for compressed sensing
-//			node->setASAPnumber(node->getASAPnumber() + ASAP_ALAP_diff + 2);
-//		}
-//		else if(ASAP_ALAP_diff>0){
-//			node->setASAPnumber(node->getASAPnumber() + ASAP_ALAP_diff);
-//		}
-////		node->setASAPnumber(node->getALAPnumber());
-//	}
+	//	for (int i = 0; i < NodeList.size(); ++i) {
+	//		node = NodeList[i];
+	//		int ASAP_ALAP_diff = node->getALAPnumber() - node->getASAPnumber();
+	//		ASAP_ALAP_diff = ASAP_ALAP_diff/2;
+	//		if(ASAP_ALAP_diff > 2){ //Hack for compressed sensing
+	//			node->setASAPnumber(node->getASAPnumber() + ASAP_ALAP_diff + 2);
+	//		}
+	//		else if(ASAP_ALAP_diff>0){
+	//			node->setASAPnumber(node->getASAPnumber() + ASAP_ALAP_diff);
+	//		}
+	////		node->setASAPnumber(node->getALAPnumber());
+	//	}
 }
 
-std::vector<dfgNode*> DFG::getLeafs() {
-	std::vector<dfgNode*> leafNodes;
-	for (int i = 0 ; i < NodeList.size() ; i++) {
-		if(NodeList[i]->getAncestors().size() == 0){
+std::vector<dfgNode *> DFG::getLeafs()
+{
+	std::vector<dfgNode *> leafNodes;
+	for (int i = 0; i < NodeList.size(); i++)
+	{
+		if (NodeList[i]->getAncestors().size() == 0)
+		{
 			leafNodes.push_back(NodeList[i]);
 		}
 	}
 	return leafNodes;
 }
 
-std::vector<std::vector<unsigned char> > DFG::selfMulConMat(
-		std::vector<std::vector<unsigned char> > in) {
+std::vector<std::vector<unsigned char>> DFG::selfMulConMat(
+	std::vector<std::vector<unsigned char>> in)
+{
 
-	std::vector<std::vector<unsigned char> > out;
+	std::vector<std::vector<unsigned char>> out;
 
-
-	for (int i = 0; i < in.size(); ++i) {
+	for (int i = 0; i < in.size(); ++i)
+	{
 
 		//Only support square matrices
 		assert(in.size() == in[i].size());
 
 		std::vector<unsigned char> tempVec;
-		for (int j = 0; j < in.size(); ++j) {
+		for (int j = 0; j < in.size(); ++j)
+		{
 			unsigned char tempInt = 0;
-			for (int k = 0; k < in.size(); ++k) {
+			for (int k = 0; k < in.size(); ++k)
+			{
 				tempInt = tempInt | (in[i][k] & in[k][j]);
 			}
 			tempVec.push_back(tempInt);
@@ -1348,27 +1551,30 @@ std::vector<std::vector<unsigned char> > DFG::selfMulConMat(
 	return out;
 }
 
-
-
-std::vector<std::vector<unsigned char> > DFG::getConMat() {
+std::vector<std::vector<unsigned char>> DFG::getConMat()
+{
 
 	int nodelistSize = NodeList.size();
 
-	std::vector<std::vector<unsigned char> > conMat;
-	dfgNode* node;
-	dfgNode* child;
+	std::vector<std::vector<unsigned char>> conMat;
+	dfgNode *node;
+	dfgNode *child;
 
-	for (int i = 0; i < nodelistSize; ++i) {
+	for (int i = 0; i < nodelistSize; ++i)
+	{
 		std::vector<unsigned char> temp;
-		for (int j = 0; j < nodelistSize; ++j) {
+		for (int j = 0; j < nodelistSize; ++j)
+		{
 			temp.push_back(0);
 		}
 		conMat.push_back(temp);
 	}
 
-	for (int i = 0; i < nodelistSize; ++i) {
+	for (int i = 0; i < nodelistSize; ++i)
+	{
 		node = NodeList[i];
-		for (int j = 0; j < node->getChildren().size(); ++j) {
+		for (int j = 0; j < node->getChildren().size(); ++j)
+		{
 			child = node->getChildren()[j];
 			conMat[node->getIdx()][child->getIdx()] = 1;
 		}
@@ -1377,58 +1583,67 @@ std::vector<std::vector<unsigned char> > DFG::getConMat() {
 	return conMat;
 }
 
-int DFG::getAffinityCost(dfgNode* a, dfgNode* b) {
+int DFG::getAffinityCost(dfgNode *a, dfgNode *b)
+{
 	int nodelistSize = NodeList.size();
 
 	assert(a->getASAPnumber() == b->getASAPnumber());
 	int currLevel = a->getASAPnumber();
-	int maxDist = std::min(maxASAPLevel - currLevel,2);
+	int maxDist = std::min(maxASAPLevel - currLevel, 2);
 
 	int affLevel = 0;
 	int affCost = 0;
 
-	if(maxASAPLevel == currLevel){
+	if (maxASAPLevel == currLevel)
+	{
 		return 0;
 	}
 
-	while(1) {
-		for (int i = 0; i < nodelistSize; ++i) {
+	while (1)
+	{
+		for (int i = 0; i < nodelistSize; ++i)
+		{
 
-			if(conMatArr[affLevel][a->getIdx()][i] == 1) {
-				if(conMatArr[affLevel][b->getIdx()][i] == 1){
-//					affCost = affCost + 2**(maxDist - (affLevel+1));
-//					affCost = affCost + (int)pow(2,(maxDist - (affLevel+1)));
-					affCost = affCost + (2 << (maxDist - (affLevel+1)));
+			if (conMatArr[affLevel][a->getIdx()][i] == 1)
+			{
+				if (conMatArr[affLevel][b->getIdx()][i] == 1)
+				{
+					//					affCost = affCost + 2**(maxDist - (affLevel+1));
+					//					affCost = affCost + (int)pow(2,(maxDist - (affLevel+1)));
+					affCost = affCost + (2 << (maxDist - (affLevel + 1)));
 				}
 			}
-
-
 		}
 
 		affLevel++;
-		if(affLevel == maxDist) {
+		if (affLevel == maxDist)
+		{
 			return affCost;
 		}
 
-		if(affLevel == conMatArr.size()){
-			conMatArr.push_back(selfMulConMat(conMatArr[affLevel-1]));
+		if (affLevel == conMatArr.size())
+		{
+			conMatArr.push_back(selfMulConMat(conMatArr[affLevel - 1]));
 		}
 	}
 }
 
-std::vector<int> DFG::getIntersection(std::vector<std::vector<int> > vectors) {
+std::vector<int> DFG::getIntersection(std::vector<std::vector<int>> vectors)
+{
 
 	assert(vectors.size() != 0);
 	std::vector<int> result;
 
-	for (int i = 0; i < vectors[0].size(); ++i) {
+	for (int i = 0; i < vectors[0].size(); ++i)
+	{
 		result.push_back(1);
 	}
 
-
-	for (int i = 1; i < vectors.size(); ++i) {
+	for (int i = 1; i < vectors.size(); ++i)
+	{
 		assert(vectors[i].size() == vectors[0].size());
-		for (int j = 0; j < vectors[i].size(); ++j) {
+		for (int j = 0; j < vectors[i].size(); ++j)
+		{
 			result[j] = result[j] & vectors[i][j];
 		}
 	}
@@ -1436,9 +1651,8 @@ std::vector<int> DFG::getIntersection(std::vector<std::vector<int> > vectors) {
 	return result;
 }
 
-
-
-int DFG::getDist(CGRANode* src, CGRANode* dest) {
+int DFG::getDist(CGRANode *src, CGRANode *dest)
+{
 	assert(src->getmappedDFGNode() != NULL);
 	assert(src->getmappedDFGNode() != NULL);
 
@@ -1446,22 +1660,25 @@ int DFG::getDist(CGRANode* src, CGRANode* dest) {
 	int yCost = abs(src->getY() - dest->getY());
 	int tCost = dest->getT() - src->getT();
 
-	if(tCost < 0){
+	if (tCost < 0)
+	{
 		return INT32_MAX;
 	}
 
-	if(xCost + yCost > tCost){
+	if (xCost + yCost > tCost)
+	{
 		return INT32_MAX;
 	}
 
 	return xCost + yCost;
 }
 
-int DFG::AStarSP(CGRANode* src, CGRANode* dest, std::vector<CGRANode*>* path) {
+int DFG::AStarSP(CGRANode *src, CGRANode *dest, std::vector<CGRANode *> *path)
+{
 
 	struct LessThanFScore
 	{
-		bool operator()(const std::pair<CGRANode*,int>& left, const std::pair<CGRANode*,int>& right) const
+		bool operator()(const std::pair<CGRANode *, int> &left, const std::pair<CGRANode *, int> &right) const
 		{
 			return left.second < right.second;
 		}
@@ -1469,68 +1686,79 @@ int DFG::AStarSP(CGRANode* src, CGRANode* dest, std::vector<CGRANode*>* path) {
 
 	path->clear();
 	std::vector<ConnectedCGRANode> connectedNodes;
-	std::vector<CGRANode*> closedSet;
-	std::vector<CGRANode*> openSet;
+	std::vector<CGRANode *> closedSet;
+	std::vector<CGRANode *> openSet;
 
-	std::map<CGRANode*,int> fscore;
-	std::map<CGRANode*,int> gscore;
-	std::map<CGRANode*,CGRANode*> prevNode;
-//	std::priority_queue<AStarNode, std::vector<AStarNode>, LessThanCost> openSet;
+	std::map<CGRANode *, int> fscore;
+	std::map<CGRANode *, int> gscore;
+	std::map<CGRANode *, CGRANode *> prevNode;
+	//	std::priority_queue<AStarNode, std::vector<AStarNode>, LessThanCost> openSet;
 
 	openSet.push_back(src);
-	fscore[src]=getDist(src,dest);
+	fscore[src] = getDist(src, dest);
 
-	if(fscore[src] == INT32_MAX){
+	if (fscore[src] == INT32_MAX)
+	{
 		return -1;
 	}
 
-	gscore[src]=0;
+	gscore[src] = 0;
 
-	CGRANode* current;
+	CGRANode *current;
 	int tentgscore;
 	int dist;
-	while(!openSet.empty()){
-//		anode = openSet.top();
-		std::map<CGRANode*,int>::iterator it = std::min_element(fscore.begin(),fscore.end(),LessThanFScore());
+	while (!openSet.empty())
+	{
+		//		anode = openSet.top();
+		std::map<CGRANode *, int>::iterator it = std::min_element(fscore.begin(), fscore.end(), LessThanFScore());
 		current = (*it).first;
 		fscore.erase(it);
 		openSet.erase(std::remove(openSet.begin(), openSet.end(), current), openSet.end());
 		closedSet.push_back(current);
-//		openSet.pop();
+		//		openSet.pop();
 
-		if(current == dest){
+		if (current == dest)
+		{
 			break;
 		}
 
-
 		connectedNodes = current->getConnectedNodes();
-		for (int i = 0; i < connectedNodes.size(); ++i) {
+		for (int i = 0; i < connectedNodes.size(); ++i)
+		{
 
-			if(connectedNodes[i].node->getmappedDFGNode() != NULL){
+			if (connectedNodes[i].node->getmappedDFGNode() != NULL)
+			{
 				continue;
 			}
 
-			dist = getDist(current,connectedNodes[i].node);
-			if(dist == INT32_MAX || gscore[current]==INT32_MAX){
+			dist = getDist(current, connectedNodes[i].node);
+			if (dist == INT32_MAX || gscore[current] == INT32_MAX)
+			{
 				tentgscore = INT32_MAX;
 			}
-			else{
-				tentgscore = gscore[current] + getDist(current,connectedNodes[i].node);
+			else
+			{
+				tentgscore = gscore[current] + getDist(current, connectedNodes[i].node);
 			}
 
-			if (std::find(closedSet.begin(), closedSet.end(),connectedNodes[i].node)!=closedSet.end()){
+			if (std::find(closedSet.begin(), closedSet.end(), connectedNodes[i].node) != closedSet.end())
+			{
 				continue;
 			}
 
-			if (std::find(openSet.begin(), openSet.end(),connectedNodes[i].node)==openSet.end()){
+			if (std::find(openSet.begin(), openSet.end(), connectedNodes[i].node) == openSet.end())
+			{
 				openSet.push_back(connectedNodes[i].node);
 			}
-			else{
-				if (gscore.find(connectedNodes[i].node) == gscore.end() ) {
+			else
+			{
+				if (gscore.find(connectedNodes[i].node) == gscore.end())
+				{
 					gscore[connectedNodes[i].node] = INT32_MAX;
 				}
 
-				if(tentgscore >= gscore[connectedNodes[i].node]){
+				if (tentgscore >= gscore[connectedNodes[i].node])
+				{
 					continue;
 				}
 			}
@@ -1538,177 +1766,193 @@ int DFG::AStarSP(CGRANode* src, CGRANode* dest, std::vector<CGRANode*>* path) {
 			prevNode[connectedNodes[i].node] = current;
 			gscore[connectedNodes[i].node] = tentgscore;
 
-			dist = getDist(connectedNodes[i].node,dest);
-			if(dist == INT32_MAX){
-	            fscore[connectedNodes[i].node] = INT32_MAX;
+			dist = getDist(connectedNodes[i].node, dest);
+			if (dist == INT32_MAX)
+			{
+				fscore[connectedNodes[i].node] = INT32_MAX;
 			}
-			else{
-	            fscore[connectedNodes[i].node] = tentgscore + getDist(connectedNodes[i].node,dest);
+			else
+			{
+				fscore[connectedNodes[i].node] = tentgscore + getDist(connectedNodes[i].node, dest);
 			}
-
 		}
 	}
 
 	int routeCost = 0;
 
-	if(current != dest){
+	if (current != dest)
+	{
 		return -1;
 	}
-	else{
-		while(current != src){
+	else
+	{
+		while (current != src)
+		{
 			path->push_back(current);
 			current = prevNode[current];
 			routeCost++;
 		}
 		return routeCost;
 	}
-
 }
 
-int DFG::AddRoutingEdges(dfgNode* node){
+int DFG::AddRoutingEdges(dfgNode *node)
+{
 
-	std::vector<dfgNode*> parents;
-	CGRANode* cnode;
-	std::vector<std::vector<int> > parentConnectedPhyNodes;
+	std::vector<dfgNode *> parents;
+	CGRANode *cnode;
+	std::vector<std::vector<int>> parentConnectedPhyNodes;
 	std::vector<int> parentIntersectionTmp;
-	int routingPossibilities=0;
+	int routingPossibilities = 0;
 
-
-
-	for (int j = 0; j < node->getAncestors().size(); ++j) {
+	for (int j = 0; j < node->getAncestors().size(); ++j)
+	{
 		parents.push_back(node->getAncestors()[j]);
 	}
 
-	for (int j = 0; j < parents.size(); ++j) {
+	for (int j = 0; j < parents.size(); ++j)
+	{
 		parentConnectedPhyNodes.push_back(currCGRA->getPhyConMatNode(parents[j]->getMappedLoc()));
 	}
 
-	do{
+	do
+	{
 		parentIntersectionTmp = getIntersection(parentConnectedPhyNodes);
 
 		routingPossibilities = 0;
-		for (int j = 0; j < parentIntersectionTmp.size(); ++j) {
+		for (int j = 0; j < parentIntersectionTmp.size(); ++j)
+		{
 			cnode = currCGRA->getCGRANode(j);
-			if(cnode->getmappedDFGNode() != NULL){
+			if (cnode->getmappedDFGNode() != NULL)
+			{
 				parentIntersectionTmp[j] = 0;
 			}
 
 			routingPossibilities = routingPossibilities + parentIntersectionTmp[j];
 		}
 
-		if(routingPossibilities == 0){
-
+		if (routingPossibilities == 0)
+		{
 		}
 
-	}while(routingPossibilities == 0);
-
-
+	} while (routingPossibilities == 0);
 }
 
+std::map<dfgNode *, std::vector<CGRANode *>> DFG::getPrimarySlots(
+	std::vector<dfgNode *> nodes)
+{
 
-std::map<dfgNode*, std::vector<CGRANode*> > DFG::getPrimarySlots(
-		std::vector<dfgNode*> nodes) {
+	dfgNode *node;
+	//	dfgNode* parent;
+	CGRANode *cnode;
 
-	dfgNode* node;
-//	dfgNode* parent;
-	CGRANode* cnode;
+	std::map<dfgNode *, std::vector<CGRANode *>> result;
+	std::vector<dfgNode *> parents;
 
-	std::map<dfgNode*, std::vector<CGRANode*> > result;
-	std::vector<dfgNode*> parents;
-
-	std::vector<std::vector<int> > parentConnectedPhyNodes;
+	std::vector<std::vector<int>> parentConnectedPhyNodes;
 	std::vector<int> parentIntersection;
 	std::vector<int> parentIntersectionTmp;
 
-	std::vector<std::vector<int> > phyConMat;
-
+	std::vector<std::vector<int>> phyConMat;
 
 	bool commonConsumer = false;
 	float probCost;
 	int routingPossibilities = 0;
 
-	for (int i = 0; i < nodes.size(); ++i) {
+	for (int i = 0; i < nodes.size(); ++i)
+	{
 		node = nodes[i];
-		for (int j = 0; j < node->getAncestors().size(); ++j) {
+		for (int j = 0; j < node->getAncestors().size(); ++j)
+		{
 			parents.push_back(node->getAncestors()[j]);
 		}
 
-
-		for (int j = 0; j < parents.size(); ++j) {
+		for (int j = 0; j < parents.size(); ++j)
+		{
 			parentConnectedPhyNodes.push_back(currCGRA->getPhyConMatNode(parents[j]->getMappedLoc()));
 		}
 
 		parentIntersectionTmp = getIntersection(parentConnectedPhyNodes);
 
-		for (int j = 0; j < parentIntersectionTmp.size(); ++j) {
+		for (int j = 0; j < parentIntersectionTmp.size(); ++j)
+		{
 			cnode = currCGRA->getCGRANode(j);
-			if(cnode->getmappedDFGNode() != NULL){
+			if (cnode->getmappedDFGNode() != NULL)
+			{
 				parentIntersectionTmp[j] = 0;
 			}
 
 			routingPossibilities = routingPossibilities + parentIntersectionTmp[j];
 		}
 
-		if(routingPossibilities == 0){
-
+		if (routingPossibilities == 0)
+		{
 		}
-
 
 		node->setRoutingPossibilities(routingPossibilities);
 
-		for (int j = 0; j < parentIntersectionTmp.size(); ++j) {
-			if(parentIntersectionTmp[j] == 1){
+		for (int j = 0; j < parentIntersectionTmp.size(); ++j)
+		{
+			if (parentIntersectionTmp[j] == 1)
+			{
 				cnode = currCGRA->getCGRANode(j);
-				if(cnode->getRoutingNode() != NULL){
-					if(node->getRoutingPossibilities() < cnode->getRoutingNode()->getRoutingPossibilities()){
+				if (cnode->getRoutingNode() != NULL)
+				{
+					if (node->getRoutingPossibilities() < cnode->getRoutingNode()->getRoutingPossibilities())
+					{
 						cnode->getRoutingNode()->setRoutingPossibilities(cnode->getRoutingNode()->getRoutingPossibilities() - 1);
 						result[cnode->getRoutingNode()].erase(std::remove(result[cnode->getRoutingNode()].begin(), result[cnode->getRoutingNode()].end(), cnode), result[cnode->getRoutingNode()].end());
 						cnode->setRoutingNode(node);
 					}
 				}
-				else{
+				else
+				{
 					cnode->setRoutingNode(node);
 					result[node].push_back(cnode);
 				}
 			}
 		}
-
-
 	}
 
-	for (int i = 0; i < nodes.size(); ++i) {
+	for (int i = 0; i < nodes.size(); ++i)
+	{
 		node = nodes[i];
-		for (int j = 0; j < node->getAncestors().size(); ++j) {
+		for (int j = 0; j < node->getAncestors().size(); ++j)
+		{
 			parents.push_back(node->getAncestors()[j]);
-
 		}
 
-//		if(parents.size() == 0){
-//			for (int var = 0; var < max; ++var) {
-//
-//			}
-//		}
+		//		if(parents.size() == 0){
+		//			for (int var = 0; var < max; ++var) {
+		//
+		//			}
+		//		}
 
-		for (int j = 0; j < parents.size(); ++j) {
+		for (int j = 0; j < parents.size(); ++j)
+		{
 			parentConnectedPhyNodes.push_back(currCGRA->getPhyConMatNode(parents[j]->getMappedLoc()));
 		}
 
 		parentIntersection = getIntersection(parentConnectedPhyNodes);
 
-		while (parentIntersection.size() == 0){
+		while (parentIntersection.size() == 0)
+		{
 			parentConnectedPhyNodes.clear();
 			phyConMat = currCGRA->getPhyConMat();
-//			phyConMat = selfMulConMat(phyConMat);
+			//			phyConMat = selfMulConMat(phyConMat);
 
-			for (int j = 0; j < parents.size(); ++j) {
+			for (int j = 0; j < parents.size(); ++j)
+			{
 				cnode = parents[j]->getMappedLoc();
-				parentConnectedPhyNodes.push_back( phyConMat[currCGRA->getConMatIdx(cnode->getT(),cnode->getY(),cnode->getX())] );
+				parentConnectedPhyNodes.push_back(phyConMat[currCGRA->getConMatIdx(cnode->getT(), cnode->getY(), cnode->getX())]);
 			}
 		}
 
-		std::vector<CGRANode*> resultNodeArr;
-		for (int j = 0; j < parentIntersection.size(); ++j) {
-			if(parentIntersection[j] == 1){
+		std::vector<CGRANode *> resultNodeArr;
+		for (int j = 0; j < parentIntersection.size(); ++j)
+		{
+			if (parentIntersection[j] == 1)
+			{
 				resultNodeArr.push_back(currCGRA->getCGRANode(j));
 			}
 		}
@@ -1719,99 +1963,103 @@ std::map<dfgNode*, std::vector<CGRANode*> > DFG::getPrimarySlots(
 }
 
 bool DFG::MapMultiDestRec(
-		std::map<dfgNode*,std::vector<std::pair<CGRANode*,int>> > *nodeDestMap,
-		std::map<CGRANode*, std::vector<dfgNode*> >* destNodeMap,
-		std::map<dfgNode*,std::vector< std::pair<CGRANode*,int> > >::iterator it,
-		std::map<CGRANode*,std::vector<CGRAEdge> > cgraEdges,
-		int index) {
+	std::map<dfgNode *, std::vector<std::pair<CGRANode *, int>>> *nodeDestMap,
+	std::map<CGRANode *, std::vector<dfgNode *>> *destNodeMap,
+	std::map<dfgNode *, std::vector<std::pair<CGRANode *, int>>>::iterator it,
+	std::map<CGRANode *, std::vector<CGRAEdge>> cgraEdges,
+	int index)
+{
 
-	std::map<dfgNode*,std::vector<std::pair<CGRANode*,int>> > localNodeDestMap = *nodeDestMap;
-	std::map<CGRANode*, std::vector<dfgNode*> > localdestNodeMap = *destNodeMap;
+	std::map<dfgNode *, std::vector<std::pair<CGRANode *, int>>> localNodeDestMap = *nodeDestMap;
+	std::map<CGRANode *, std::vector<dfgNode *>> localdestNodeMap = *destNodeMap;
 
-	dfgNode* node;
-	dfgNode* otherNode;
-	dfgNode* parent;
-	CGRANode* cnode;
-	CGRANode* chosenCnode = NULL;
-	std::pair<CGRANode*,int> cnodePair;
-	CGRANode* parentExt;
-//	std::vector< std::pair<CGRANode*,int> > possibleDests;
-	std::vector<dfgNode*> parents;
+	dfgNode *node;
+	dfgNode *otherNode;
+	dfgNode *parent;
+	CGRANode *cnode;
+	CGRANode *chosenCnode = NULL;
+	std::pair<CGRANode *, int> cnodePair;
+	CGRANode *parentExt;
+	//	std::vector< std::pair<CGRANode*,int> > possibleDests;
+	std::vector<dfgNode *> parents;
 
-//	std::vector<std::pair<CGRANode*, CGRANode*> > paths;
-	std::vector<CGRANode*> dests;
-	std::map<CGRANode*,int> destllMap;
+	//	std::vector<std::pair<CGRANode*, CGRANode*> > paths;
+	std::vector<CGRANode *> dests;
+	std::map<CGRANode *, int> destllMap;
 
-	std::vector<std::pair<CGRANode*, CGRANode*> > pathsNotRouted;
+	std::vector<std::pair<CGRANode *, CGRANode *>> pathsNotRouted;
 	bool success = false;
 
-//	CGRA localCGRA = *inCGRA;
-	std::map<CGRANode*,std::vector<CGRAEdge> > localCGRAEdges = cgraEdges;
+	//	CGRA localCGRA = *inCGRA;
+	std::map<CGRANode *, std::vector<CGRAEdge>> localCGRAEdges = cgraEdges;
 
 	node = it->first;
-//	possibleDests = it->second;
+	//	possibleDests = it->second;
 
 	bool routeComplete = false;
 
-	std::vector<std::pair<CGRANode*,int>> PossibleDests = it->second;
+	std::vector<std::pair<CGRANode *, int>> PossibleDests = it->second;
 
 	errs() << "MapMultiDestRec : Procesing NodeIdx = " << node->getIdx();
 	errs() << ", PossibleDests = " << it->second.size();
 	errs() << ", MII = " << currCGRA->getMII();
 	errs() << ", currASAPLevel = " << node->getASAPnumber() << "/" << maxASAPLevel;
-	errs() << ", NodeProgress = " << index+1 << "/" << nodeDestMap->size();
+	errs() << ", NodeProgress = " << index + 1 << "/" << nodeDestMap->size();
 	errs() << "\n";
 
-
-	for (int j = 0; j < node->getAncestors().size(); ++j) {
+	for (int j = 0; j < node->getAncestors().size(); ++j)
+	{
 		parent = node->getAncestors()[j];
-		parentExt = currCGRA->getCGRANode((parent->getMappedLoc()->getT() + 1)%(currCGRA->getMII()),parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
+		parentExt = currCGRA->getCGRANode((parent->getMappedLoc()->getT() + 1) % (currCGRA->getMII()), parent->getMappedLoc()->getY(), parent->getMappedLoc()->getX());
 
 		errs() << "ParentIdx=" << parent->getIdx();
 		errs() << ",ParentType=" << parent->getNameType();
 		errs() << ",ParentRT=" << parent->getmappedRealTime();
 		errs() << ",Path = "
 			   << "(" << parentExt->getT() << ","
-			   	   	  << parentExt->getY() << ","
-					  << parentExt->getX() << ") to ...\n";
+			   << parentExt->getY() << ","
+			   << parentExt->getX() << ") to ...\n";
 		parents.push_back(parent);
 	}
 
-
-	for (int i = 0; i < it->second.size(); ++i) {
+	for (int i = 0; i < it->second.size(); ++i)
+	{
 		success = false;
-		if(it->second[i].first->getmappedDFGNode() == NULL){
-//			errs() << "Possible Dest = "
-//				   << "(" << it->second[i].first->getT() << ","
-//				   	   	  << it->second[i].first->getY() << ","
-//						  << it->second[i].first->getX() << ")\n";
+		if (it->second[i].first->getmappedDFGNode() == NULL)
+		{
+			//			errs() << "Possible Dest = "
+			//				   << "(" << it->second[i].first->getT() << ","
+			//				   	   	  << it->second[i].first->getY() << ","
+			//						  << it->second[i].first->getX() << ")\n";
 
 			cnode = it->second[i].first;
-//			cnodePair = it->second[i];
+			//			cnodePair = it->second[i];
 			dests.push_back(cnode);
-			destllMap[cnode]=it->second[i].second;
+			destllMap[cnode] = it->second[i].second;
 		}
 	}
 
+	std::map<dfgNode *, std::vector<std::pair<CGRANode *, int>>>::iterator itlocal;
 
-	std::map<dfgNode*,std::vector< std::pair<CGRANode*,int> > >::iterator itlocal;
-
-
-	while(!success){
+	while (!success)
+	{
 		localCGRAEdges = cgraEdges;
-		routeComplete = astar->Route(node,parents,&dests,&destllMap,&localCGRAEdges,&pathsNotRouted,&chosenCnode,&deadEndReached);
+		routeComplete = astar->Route(node, parents, &dests, &destllMap, &localCGRAEdges, &pathsNotRouted, &chosenCnode, &deadEndReached);
 
 		errs() << "MapMultiDestRec::routeComplete=" << routeComplete << "\n";
 		errs() << "MapMultiDestRec::deadEndReached=" << deadEndReached << "\n";
 
-		if(deadEndReached || !routeComplete){
+		if (deadEndReached || !routeComplete)
+		{
 			return false;
 		}
 		assert(chosenCnode != NULL);
-		mappingOutFile << "nodeIdx=" << node->getIdx() << ", placed=(" << chosenCnode->getT() << "," << chosenCnode->getY() << "," << chosenCnode->getX() << ")" << "\n";
+		mappingOutFile << "nodeIdx=" << node->getIdx() << ", placed=(" << chosenCnode->getT() << "," << chosenCnode->getY() << "," << chosenCnode->getX() << ")"
+					   << "\n";
 		mappingOutFile << "routing success, keeping the current edges\n";
 
-		errs() << "Placed = " << "(" << chosenCnode->getT() << "," << chosenCnode->getY() << "," << chosenCnode->getX() << ")\n";
+		errs() << "Placed = "
+			   << "(" << chosenCnode->getT() << "," << chosenCnode->getY() << "," << chosenCnode->getX() << ")\n";
 		node->setMappedLoc(chosenCnode);
 		chosenCnode->setMappedDFGNode(node);
 		node->setMappedRealTime(destllMap[chosenCnode]);
@@ -1819,15 +2067,17 @@ bool DFG::MapMultiDestRec(
 		itlocal = it;
 		itlocal++;
 
-		if(index + 1 < nodeDestMap->size()){
+		if (index + 1 < nodeDestMap->size())
+		{
 			success = MapMultiDestRec(
-					&localNodeDestMap,
-					&localdestNodeMap,
-					itlocal,
-					localCGRAEdges,
-					index + 1);
+				&localNodeDestMap,
+				&localdestNodeMap,
+				itlocal,
+				localCGRAEdges,
+				index + 1);
 		}
-		else{
+		else
+		{
 			errs() << "nodeDestMap end reached..\n";
 			*nodeDestMap = localNodeDestMap;
 			*destNodeMap = localdestNodeMap;
@@ -1835,134 +2085,135 @@ bool DFG::MapMultiDestRec(
 			success = true;
 		}
 
-		if(!success){
+		if (!success)
+		{
 			errs() << "MapMultiDestRec : fails next possible destination\n";
 			node->setMappedLoc(NULL);
 			chosenCnode->setMappedDFGNode(NULL);
 			mappingOutFile << std::to_string(index + 1) << " :: mapping failed, therefore trying mapping again for index=" << std::to_string(index) << "\n";
-			if(backtrackCounter == 0){
+			if (backtrackCounter == 0)
+			{
 				return false;
 			}
 			backtrackCounter--;
 		}
 	}
 
-	backtrackCounter = std::min(initBtrack,backtrackCounter+1);
+	backtrackCounter = std::min(initBtrack, backtrackCounter + 1);
 	return true;
 
-//	//Old Code From Here
-//
-//	for (int i = 0; i < it->second.size(); ++i) {
-//		success = false;
-//		errs() << "Possible Dest = "
-//			   << "(" << it->second[i].first->getT() << ","
-//			   	   	  << it->second[i].first->getY() << ","
-//					  << it->second[i].first->getX() << ")\n";
-//
-//		if(it->second[i].first->getmappedDFGNode() == NULL){
-//			errs() << "Possible Dest is NULL\n";
-//			cnode = it->second[i].first;
-//			cnodePair = it->second[i];
-//			for (int j = 0; j < node->getAncestors().size(); ++j) {
-//				parent = node->getAncestors()[j];
-////				parentExt = currCGRA->getCGRANode(cnode->getT(),parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
-////				parentExt = parent->getMappedLoc();
-//				parentExt = currCGRA->getCGRANode((parent->getMappedLoc()->getT() + 1)%(currCGRA->getMII()),parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
-//
-//				errs() << "Path = "
-//					   << "(" << parentExt->getT() << ","
-//					   	   	  << parentExt->getY() << ","
-//							  << parentExt->getX() << ") to ";
-//
-//				errs() << "(" << cnode->getT() << ","
-//					   	   	  << cnode->getY() << ","
-//							  << cnode->getX() << ")\n";
-//
-////				paths.push_back(std::make_pair(parentExt,cnode));
-////				treePaths.push_back(createTreePath(parent,cnode));
-//				dests.push_back(cnode);
-//				parents.push_back(parent);
-//			}
-//
-//			localCGRAEdges = cgraEdges;
-//			mappingOutFile << "nodeIdx=" << node->getIdx() << ", placed=(" << cnode->getT() << "," << cnode->getY() << "," << cnode->getX() << ")" << "\n";
-////			astar->Route(node,parents,paths,&localCGRAEdges,&pathsNotRouted);
-//			astar->Route(node,parents,dests,&localCGRAEdges,&pathsNotRouted,&deadEndReached);
-//			dests.clear();
-////			paths.clear();
-//			if(!pathsNotRouted.empty()){
-//				mappingOutFile << "routing failed, clearing edges\n";
-//				errs() << "all paths are not routed.\n";
-//				pathsNotRouted.clear();
-//				if(deadEndReached){
-//					return false;
-//				}
-//				continue;
-//			}
-//			mappingOutFile << "routing success, keeping the current edges\n";
-//			pathsNotRouted.clear();
-//
-//			for (int j = 0; j < localdestNodeMap[cnode].size(); ++j) {
-//				otherNode = localdestNodeMap[cnode][j];
-//				localNodeDestMap[otherNode].erase(std::remove(localNodeDestMap[otherNode].begin(), localNodeDestMap[otherNode].end(), cnodePair), localNodeDestMap[otherNode].end());
-//			}
-//
-////			it->second.clear();
-////			it->second.push_back(cnodePair);
-//			localdestNodeMap[cnode].clear();
-//
-//			errs() << "Placed = " << "(" << cnode->getT() << "," << cnode->getY() << "," << cnode->getX() << ")\n";
-//			node->setMappedLoc(cnode);
-//			cnode->setMappedDFGNode(node);
-//			node->setMappedRealTime(cnodePair.second);
-//
-//			std::map<dfgNode*,std::vector< std::pair<CGRANode*,int> > >::iterator itlocal;
-//			itlocal = it;
-//			itlocal++;
-////			it++;
-//
-//			if(index + 1 < nodeDestMap->size()){
-//				success = MapMultiDestRec(
-//						&localNodeDestMap,
-//						&localdestNodeMap,
-//						itlocal,
-//						localCGRAEdges,
-//						index + 1);
-//			}
-//			else{
-//				errs() << "nodeDestMap end reached..\n";
-//				*nodeDestMap = localNodeDestMap;
-//				*destNodeMap = localdestNodeMap;
-//				currCGRA->setCGRAEdges(localCGRAEdges);
-//				success = true;
-//			}
-//
-//			if(deadEndReached){
-//				success = false;
-//				break;
-//			}
-//
-//
-//			if(success){
-//				it->second.clear();
-//				it->second.push_back(cnodePair);
-//				break;
-//			}
-//			else{
-//				errs() << "MapMultiDestRec : fails next possible destination\n";
-//				node->setMappedLoc(NULL);
-//				cnode->setMappedDFGNode(NULL);
-//				mappingOutFile << std::to_string(index + 1) << " :: mapping failed, therefore trying mapping again for index=" << std::to_string(index) << "\n";
-//			}
-//		}
-//	}
-//
-//	if(success){
-//
-//	}
-//	return success;
+	//	//Old Code From Here
+	//
+	//	for (int i = 0; i < it->second.size(); ++i) {
+	//		success = false;
+	//		errs() << "Possible Dest = "
+	//			   << "(" << it->second[i].first->getT() << ","
+	//			   	   	  << it->second[i].first->getY() << ","
+	//					  << it->second[i].first->getX() << ")\n";
+	//
+	//		if(it->second[i].first->getmappedDFGNode() == NULL){
+	//			errs() << "Possible Dest is NULL\n";
+	//			cnode = it->second[i].first;
+	//			cnodePair = it->second[i];
+	//			for (int j = 0; j < node->getAncestors().size(); ++j) {
+	//				parent = node->getAncestors()[j];
+	////				parentExt = currCGRA->getCGRANode(cnode->getT(),parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
+	////				parentExt = parent->getMappedLoc();
+	//				parentExt = currCGRA->getCGRANode((parent->getMappedLoc()->getT() + 1)%(currCGRA->getMII()),parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
+	//
+	//				errs() << "Path = "
+	//					   << "(" << parentExt->getT() << ","
+	//					   	   	  << parentExt->getY() << ","
+	//							  << parentExt->getX() << ") to ";
+	//
+	//				errs() << "(" << cnode->getT() << ","
+	//					   	   	  << cnode->getY() << ","
+	//							  << cnode->getX() << ")\n";
+	//
+	////				paths.push_back(std::make_pair(parentExt,cnode));
+	////				treePaths.push_back(createTreePath(parent,cnode));
+	//				dests.push_back(cnode);
+	//				parents.push_back(parent);
+	//			}
+	//
+	//			localCGRAEdges = cgraEdges;
+	//			mappingOutFile << "nodeIdx=" << node->getIdx() << ", placed=(" << cnode->getT() << "," << cnode->getY() << "," << cnode->getX() << ")" << "\n";
+	////			astar->Route(node,parents,paths,&localCGRAEdges,&pathsNotRouted);
+	//			astar->Route(node,parents,dests,&localCGRAEdges,&pathsNotRouted,&deadEndReached);
+	//			dests.clear();
+	////			paths.clear();
+	//			if(!pathsNotRouted.empty()){
+	//				mappingOutFile << "routing failed, clearing edges\n";
+	//				errs() << "all paths are not routed.\n";
+	//				pathsNotRouted.clear();
+	//				if(deadEndReached){
+	//					return false;
+	//				}
+	//				continue;
+	//			}
+	//			mappingOutFile << "routing success, keeping the current edges\n";
+	//			pathsNotRouted.clear();
+	//
+	//			for (int j = 0; j < localdestNodeMap[cnode].size(); ++j) {
+	//				otherNode = localdestNodeMap[cnode][j];
+	//				localNodeDestMap[otherNode].erase(std::remove(localNodeDestMap[otherNode].begin(), localNodeDestMap[otherNode].end(), cnodePair), localNodeDestMap[otherNode].end());
+	//			}
+	//
+	////			it->second.clear();
+	////			it->second.push_back(cnodePair);
+	//			localdestNodeMap[cnode].clear();
+	//
+	//			errs() << "Placed = " << "(" << cnode->getT() << "," << cnode->getY() << "," << cnode->getX() << ")\n";
+	//			node->setMappedLoc(cnode);
+	//			cnode->setMappedDFGNode(node);
+	//			node->setMappedRealTime(cnodePair.second);
+	//
+	//			std::map<dfgNode*,std::vector< std::pair<CGRANode*,int> > >::iterator itlocal;
+	//			itlocal = it;
+	//			itlocal++;
+	////			it++;
+	//
+	//			if(index + 1 < nodeDestMap->size()){
+	//				success = MapMultiDestRec(
+	//						&localNodeDestMap,
+	//						&localdestNodeMap,
+	//						itlocal,
+	//						localCGRAEdges,
+	//						index + 1);
+	//			}
+	//			else{
+	//				errs() << "nodeDestMap end reached..\n";
+	//				*nodeDestMap = localNodeDestMap;
+	//				*destNodeMap = localdestNodeMap;
+	//				currCGRA->setCGRAEdges(localCGRAEdges);
+	//				success = true;
+	//			}
+	//
+	//			if(deadEndReached){
+	//				success = false;
+	//				break;
+	//			}
+	//
+	//
+	//			if(success){
+	//				it->second.clear();
+	//				it->second.push_back(cnodePair);
+	//				break;
+	//			}
+	//			else{
+	//				errs() << "MapMultiDestRec : fails next possible destination\n";
+	//				node->setMappedLoc(NULL);
+	//				cnode->setMappedDFGNode(NULL);
+	//				mappingOutFile << std::to_string(index + 1) << " :: mapping failed, therefore trying mapping again for index=" << std::to_string(index) << "\n";
+	//			}
+	//		}
+	//	}
+	//
+	//	if(success){
+	//
+	//	}
+	//	return success;
 }
-
 
 //bool DFG::MapMultiDest(std::map<dfgNode*, std::vector<CGRANode*> > *nodeDestMap,std::map<CGRANode*, std::vector<dfgNode*> > *destNodeMap) {
 //	std::map<dfgNode*, std::vector<CGRANode*> > localNodeDestMap = *nodeDestMap;
@@ -1989,34 +2240,34 @@ bool DFG::MapMultiDestRec(
 //	return true;
 //}
 
+bool DFG::MapASAPLevel(int MII, int XDim, int YDim, ArchType arch)
+{
 
+	astar = new AStar(&mappingOutFile, MII, this);
+	currCGRA = new CGRA(MII, XDim, YDim, REGS_PER_NODE, arch /*RegXbarTREG*/);
 
-bool DFG::MapASAPLevel(int MII, int XDim, int YDim, ArchType arch) {
-
-	astar = new AStar(&mappingOutFile,MII,this);
-	currCGRA = new CGRA(MII,XDim,YDim,REGS_PER_NODE,arch/*RegXbarTREG*/);
-
-	for (int i = 0; i < subLoopDFGs.size(); ++i) {
+	for (int i = 0; i < subLoopDFGs.size(); ++i)
+	{
 		assert(currCGRA->PlaceMacro(subLoopDFGs[i]));
 	}
 
 	currCGRA->setMapped(true);
 
-
 	errs() << "STARTING MAPASAP with MII = " << MII << "with maxASAPLevel = " << maxASAPLevel << "\n";
 
-//	std::map<dfgNode*,std::vector<CGRANode*> > nodeDestMap;
-	std::map<dfgNode*,std::vector< std::pair<CGRANode*,int> > > nodeDestMap;
-	std::map<CGRANode*,std::vector<dfgNode*> > destNodeMap;
-	std::map<dfgNode*, std::map<CGRANode*,int>> nodeDestCostMap;
+	//	std::map<dfgNode*,std::vector<CGRANode*> > nodeDestMap;
+	std::map<dfgNode *, std::vector<std::pair<CGRANode *, int>>> nodeDestMap;
+	std::map<CGRANode *, std::vector<dfgNode *>> destNodeMap;
+	std::map<dfgNode *, std::map<CGRANode *, int>> nodeDestCostMap;
 
-	std::vector<dfgNode*> currLevelNodes;
-	dfgNode* node;
-	dfgNode* phiChild;
-	dfgNode* parent;
-	CGRANode* parentExt;
+	std::vector<dfgNode *> currLevelNodes;
+	dfgNode *node;
+	dfgNode *phiChild;
+	dfgNode *parent;
+	CGRANode *parentExt;
 
-	for (int level = 0; level <= maxASAPLevel; ++level) {
+	for (int level = 0; level <= maxASAPLevel; ++level)
+	{
 		currLevelNodes.clear();
 		nodeDestMap.clear();
 		destNodeMap.clear();
@@ -2024,10 +2275,12 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim, ArchType arch) {
 
 		errs() << "level = " << level << "\n";
 
-		for (int j = 0; j < NodeList.size(); ++j) {
+		for (int j = 0; j < NodeList.size(); ++j)
+		{
 			node = NodeList[j];
 
-			if(node->getASAPnumber() == level){
+			if (node->getASAPnumber() == level)
+			{
 				currLevelNodes.push_back(node);
 				astar->ASAPLevelNodeMap[level].push_back(node);
 			}
@@ -2035,194 +2288,212 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim, ArchType arch) {
 
 		errs() << "numOfNodes = " << currLevelNodes.size() << "\n";
 
-		for (int i = 0; i < currLevelNodes.size(); ++i) {
-				node = currLevelNodes[i];
-				int ll = (node->getASAPnumber()/MII)*MII-1;
-//				int ll = node->getASAPnumber()-1;
-//				int ll=-1;
-				int el = INT32_MAX;
-				dfgNode* latestParent;
-				for (int j = 0; j < node->getAncestors().size(); ++j) {
-					parent = node->getAncestors()[j];
+		for (int i = 0; i < currLevelNodes.size(); ++i)
+		{
+			node = currLevelNodes[i];
+			int ll = (node->getASAPnumber() / MII) * MII - 1;
+			//				int ll = node->getASAPnumber()-1;
+			//				int ll=-1;
+			int el = INT32_MAX;
+			dfgNode *latestParent;
+			for (int j = 0; j < node->getAncestors().size(); ++j)
+			{
+				parent = node->getAncestors()[j];
 
+				//every parent should be mapped
+				if (parent->getMappedLoc() == NULL)
+				{
+					errs() << "Parent : " << parent->getIdx() << " is not mapped!, this node=" << node->getIdx() << "\n";
+				}
+				assert(parent->getMappedLoc() != NULL);
 
-					//every parent should be mapped
-					if(parent->getMappedLoc() == NULL){
-						errs() << "Parent : " << parent->getIdx() << " is not mapped!, this node=" << node->getIdx() << "\n";
+				if (parent->getmappedRealTime() > ll)
+				{
+					if (parent->getmappedRealTime() % MII != parent->getMappedLoc()->getT())
+					{
+						errs() << "parent->getmappedRealTime()%MII = " << parent->getmappedRealTime() % MII << "\n";
+						errs() << "parent->getMappedLoc()->getT() = " << parent->getMappedLoc()->getT() << "\n";
 					}
-					assert(parent->getMappedLoc() != NULL);
 
-					if(parent->getmappedRealTime() > ll){
-						if(parent->getmappedRealTime()%MII != parent->getMappedLoc()->getT()){
-							errs() << "parent->getmappedRealTime()%MII = " << parent->getmappedRealTime()%MII << "\n";
-							errs() << "parent->getMappedLoc()->getT() = " << parent->getMappedLoc()->getT() << "\n";
+					assert(parent->getmappedRealTime() % MII == parent->getMappedLoc()->getT());
+					//						ll = parent->getMappedLoc()->getT();
+					ll = parent->getmappedRealTime();
+					latestParent = parent;
+				}
+
+				//					if(parent->getmappedRealTime() < el){
+				//						assert( parent->getmappedRealTime()%MII == parent->getMappedLoc()->getT() );
+				//						el = parent->getMappedLoc()->getT();
+				////						el = parent->getmappedRealTime();
+				//					}
+			}
+			//				if(!node->getAncestors().empty()){
+			//					ll+=node->getASAPnumber() - latestParent->getASAPnumber() - 1;
+			//				}
+			outs() << "ll=" << ll << "\n";
+
+			if (!node->getRecAncestors().empty())
+			{
+				errs() << "RecAnc for Node" << node->getIdx();
+				mappingOutFile << "RecAnc for Node" << node->getIdx();
+			}
+
+			for (int j = 0; j < node->getRecAncestors().size(); ++j)
+			{
+				parent = node->getRecAncestors()[j];
+
+				errs() << " (Id=" << parent->getIdx() <<
+
+					",rt=" << parent->getmappedRealTime() << ",t=" << parent->getMappedLoc()->getT() << "),";
+
+				mappingOutFile << " (Id=" << parent->getIdx() << ",rt=" << parent->getmappedRealTime() << ",t=" << parent->getMappedLoc()->getT() << "),";
+
+				if (parent->getmappedRealTime() < el)
+				{
+					assert(parent->getmappedRealTime() % MII == parent->getMappedLoc()->getT());
+					el = parent->getmappedRealTime();
+				}
+			}
+
+			if (!node->getRecAncestors().empty())
+			{
+				errs() << "\n";
+				mappingOutFile << "\n";
+				el = el % MII;
+			}
+
+			for (int var = 0; var < MII; ++var)
+			{
+
+				if (ll + 1 == el)
+				{ //this is only set if reccurence ancestors are found.
+					mappingOutFile << "MapASAPLevel breaking since reccurence ancestor found\n";
+					break;
+				}
+
+				if (/*!node->getPHIchildren().empty()*/ false)
+				{
+
+					assert(node->getPHIchildren().size() == 1);
+					phiChild = node->getPHIchildren()[0];
+					assert(phiChild->getMappedLoc() != NULL);
+					int y = phiChild->getMappedLoc()->getY();
+					int x = phiChild->getMappedLoc()->getX();
+
+					if (currCGRA->getCGRANode((ll + 1) % MII, y, x)->getmappedDFGNode() == NULL)
+					{
+						if (node->getIsMemOp() == (currCGRA->getCGRANode((ll + 1) % MII, y, x)->getPEType() == MEM))
+						{
+
+							nodeDestMap[node].push_back(std::make_pair(currCGRA->getCGRANode((ll + 1) % MII, y, x), (ll + 1)));
+							destNodeMap[currCGRA->getCGRANode((ll + 1) % MII, y, x)].push_back(node);
 						}
-
-						assert( parent->getmappedRealTime()%MII == parent->getMappedLoc()->getT() );
-//						ll = parent->getMappedLoc()->getT();
-						ll = parent->getmappedRealTime();
-						latestParent = parent;
-					}
-
-
-
-//					if(parent->getmappedRealTime() < el){
-//						assert( parent->getmappedRealTime()%MII == parent->getMappedLoc()->getT() );
-//						el = parent->getMappedLoc()->getT();
-////						el = parent->getmappedRealTime();
-//					}
-
-				}
-//				if(!node->getAncestors().empty()){
-//					ll+=node->getASAPnumber() - latestParent->getASAPnumber() - 1;
-//				}
-				outs() << "ll=" << ll << "\n";
-
-				if(!node->getRecAncestors().empty()){
-					errs() << "RecAnc for Node" << node->getIdx();
-					mappingOutFile << "RecAnc for Node" << node->getIdx();
-				}
-
-				for (int j = 0; j < node->getRecAncestors().size(); ++j) {
-					parent = node->getRecAncestors()[j];
-
-					errs() << " (Id=" << parent->getIdx() <<
-
-							  ",rt=" << parent->getmappedRealTime() <<
-							  ",t=" << parent->getMappedLoc()->getT() << "),";
-
-					mappingOutFile << " (Id=" << parent->getIdx() <<
-									  ",rt=" << parent->getmappedRealTime() <<
-									  ",t=" << parent->getMappedLoc()->getT() << "),";
-
-					if(parent->getmappedRealTime() < el){
-						assert( parent->getmappedRealTime()%MII == parent->getMappedLoc()->getT() );
-						el = parent->getmappedRealTime();
 					}
 				}
+				else
+				{
 
-				if(!node->getRecAncestors().empty()){
-					errs() << "\n";
-					mappingOutFile << "\n";
-					el = el%MII;
-				}
-
-
-
-					for (int var = 0; var < MII; ++var) {
-
-						if(ll + 1 == el){ //this is only set if reccurence ancestors are found.
-							mappingOutFile << "MapASAPLevel breaking since reccurence ancestor found\n";
+					for (int y = 0; y < YDim; ++y)
+					{
+						//Remove this after running mad benchmark
+						if (nodeDestMap[node].size() >= 100)
+						{
 							break;
 						}
-
-						if(/*!node->getPHIchildren().empty()*/false){
-
-							assert(node->getPHIchildren().size() == 1);
-							phiChild = node->getPHIchildren()[0];
-							assert(phiChild->getMappedLoc() != NULL);
-							int y = phiChild->getMappedLoc()->getY();
-							int x = phiChild->getMappedLoc()->getX();
-
-							if(currCGRA->getCGRANode((ll+1)%MII,y,x)->getmappedDFGNode() == NULL){
-								if(node->getIsMemOp() == (currCGRA->getCGRANode((ll+1)%MII,y,x)->getPEType() == MEM)){
-
-									nodeDestMap[node].push_back(std::make_pair(currCGRA->getCGRANode((ll+1)%MII,y,x),(ll+1)));
-									destNodeMap[currCGRA->getCGRANode((ll+1)%MII,y,x)].push_back(node);
-
-								}
+						for (int x = 0; x < XDim; ++x)
+						{
+							//Remove this after running mad benchmark
+							if (nodeDestMap[node].size() >= 100)
+							{
+								break;
 							}
+							if (currCGRA->getCGRANode((ll + 1) % MII, y, x)->getmappedDFGNode() == NULL)
+							{
+								if (node->getIsMemOp())
+								{ //if current operation is a memory operation
+									if (currCGRA->getCGRANode((ll + 1) % MII, y, x)->getPEType() == MEM)
+									{ // only allocate PEs capable of doing memory operations
 
-						}
-						else{
-
-							for (int y = 0; y < YDim; ++y) {
-								//Remove this after running mad benchmark
-								if(nodeDestMap[node].size() >= 100){
-									break;
-								}
-								for (int x = 0; x < XDim; ++x) {
-									//Remove this after running mad benchmark
-									if(nodeDestMap[node].size() >= 100){
-										break;
-									}
-									if(currCGRA->getCGRANode((ll+1)%MII,y,x)->getmappedDFGNode() == NULL){
-										if(node->getIsMemOp()){ //if current operation is a memory operation
-											if(currCGRA->getCGRANode((ll+1)%MII,y,x)->getPEType() == MEM){ // only allocate PEs capable of doing memory operations
-
-												if(node->getLeftAlignedMemOp()==1){
-													if(true){
-//													if(x==0){
-//													if((y==0||y==1)&&x==0){
-//													if(( (y < currCGRA->getYdim()/2) || (currCGRA->getYdim() == 1) )&&x==0){
-														nodeDestMap[node].push_back(std::make_pair(currCGRA->getCGRANode((ll+1)%MII,y,x),(ll+1)));
-														destNodeMap[currCGRA->getCGRANode((ll+1)%MII,y,x)].push_back(node);
-													}
-												}
-												else if(node->getLeftAlignedMemOp()==2){
-													if(true){
-//													if(x==currCGRA->getXdim()-1){
-//													assert(currCGRA->getYdim() > 2);
-//													if((y==2||y==3)&&x==0){
-//													if(( (y >= currCGRA->getYdim()/2) || (currCGRA->getYdim() == 1) )&&x==0){
-														nodeDestMap[node].push_back(std::make_pair(currCGRA->getCGRANode((ll+1)%MII,y,x),(ll+1)));
-														destNodeMap[currCGRA->getCGRANode((ll+1)%MII,y,x)].push_back(node);
-													}
-												}
-												else{
-													nodeDestMap[node].push_back(std::make_pair(currCGRA->getCGRANode((ll+1)%MII,y,x),(ll+1)));
-													destNodeMap[currCGRA->getCGRANode((ll+1)%MII,y,x)].push_back(node);
-												}
-
+										if (node->getLeftAlignedMemOp() == 1)
+										{
+											if (true)
+											{
+												//													if(x==0){
+												//													if((y==0||y==1)&&x==0){
+												//													if(( (y < currCGRA->getYdim()/2) || (currCGRA->getYdim() == 1) )&&x==0){
+												nodeDestMap[node].push_back(std::make_pair(currCGRA->getCGRANode((ll + 1) % MII, y, x), (ll + 1)));
+												destNodeMap[currCGRA->getCGRANode((ll + 1) % MII, y, x)].push_back(node);
 											}
 										}
-										else{ // for any other operations can allocate any PE.
-											nodeDestMap[node].push_back(std::make_pair(currCGRA->getCGRANode((ll+1)%MII,y,x),(ll+1)));
-											destNodeMap[currCGRA->getCGRANode((ll+1)%MII,y,x)].push_back(node);
+										else if (node->getLeftAlignedMemOp() == 2)
+										{
+											if (true)
+											{
+												//													if(x==currCGRA->getXdim()-1){
+												//													assert(currCGRA->getYdim() > 2);
+												//													if((y==2||y==3)&&x==0){
+												//													if(( (y >= currCGRA->getYdim()/2) || (currCGRA->getYdim() == 1) )&&x==0){
+												nodeDestMap[node].push_back(std::make_pair(currCGRA->getCGRANode((ll + 1) % MII, y, x), (ll + 1)));
+												destNodeMap[currCGRA->getCGRANode((ll + 1) % MII, y, x)].push_back(node);
+											}
+										}
+										else
+										{
+											nodeDestMap[node].push_back(std::make_pair(currCGRA->getCGRANode((ll + 1) % MII, y, x), (ll + 1)));
+											destNodeMap[currCGRA->getCGRANode((ll + 1) % MII, y, x)].push_back(node);
 										}
 									}
 								}
+								else
+								{ // for any other operations can allocate any PE.
+									nodeDestMap[node].push_back(std::make_pair(currCGRA->getCGRANode((ll + 1) % MII, y, x), (ll + 1)));
+									destNodeMap[currCGRA->getCGRANode((ll + 1) % MII, y, x)].push_back(node);
+								}
 							}
-
 						}
-
-
-						ll = (ll+1);
 					}
-				errs() << "MapASAPLevel:: nodeIdx=" << node->getIdx() << " ,Possible Dests = " << nodeDestMap[node].size() << "\n";
-				for (int i = 0; i < nodeDestMap[node].size(); ++i) {
-					errs() << nodeDestMap[node][i].first->getName() << ",RT=" << nodeDestMap[node][i].second << ";";
 				}
-				errs() << "\n";
-			}
 
-			errs() << "MapASAPLevel:: Finding dests are done!\n";
-
-			//Multiple Desination Nodes
-			deadEndReached = false;
-			if(!MapMultiDestRec(&nodeDestMap,&destNodeMap,nodeDestMap.begin(),*(currCGRA->getCGRAEdges()),0)){
-				delete currCGRA;
-				for (int var = 0; var < NodeList.size(); ++var) {
-					node = NodeList[var];
-					node->setMappedLoc(NULL);
-				}
-				return false;
+				ll = (ll + 1);
 			}
-//			return true;
+			errs() << "MapASAPLevel:: nodeIdx=" << node->getIdx() << " ,Possible Dests = " << nodeDestMap[node].size() << "\n";
+			for (int i = 0; i < nodeDestMap[node].size(); ++i)
+			{
+				errs() << nodeDestMap[node][i].first->getName() << ",RT=" << nodeDestMap[node][i].second << ";";
+			}
+			errs() << "\n";
+		}
+
+		errs() << "MapASAPLevel:: Finding dests are done!\n";
+
+		//Multiple Desination Nodes
+		deadEndReached = false;
+		if (!MapMultiDestRec(&nodeDestMap, &destNodeMap, nodeDestMap.begin(), *(currCGRA->getCGRAEdges()), 0))
+		{
+			delete currCGRA;
+			for (int var = 0; var < NodeList.size(); ++var)
+			{
+				node = NodeList[var];
+				node->setMappedLoc(NULL);
+			}
+			return false;
+		}
+		//			return true;
 	}
 	return true;
 }
 
-bool DFG::MapCGRA_SMART(int XDim, int YDim, ArchType arch, int bTrack, int initMII) {
+bool DFG::MapCGRA_SMART(int XDim, int YDim, ArchType arch, int bTrack, int initMII)
+{
 
 	this->initBtrack = bTrack;
 	this->backtrackCounter = bTrack;
-	this->setName(this->getName() + "_" + getArchName(arch) + "_" + std::to_string(XDim) + "_" + std::to_string(YDim) + "_BT" + std::to_string(initBtrack)) ;
+	this->setName(this->getName() + "_" + getArchName(arch) + "_" + std::to_string(XDim) + "_" + std::to_string(YDim) + "_BT" + std::to_string(initBtrack));
 	std::string mapfileName = this->getName() + "_mapping.log";
 	mappingOutFile.open(mapfileName.c_str());
 	clock_t begin = clock();
-	int MII = ceil((float)NodeList.size()/((float)XDim*(float)YDim));
-	int memMII =  ceil((float)getMEMOpsToBePlaced()/((float)YDim));
+	int MII = ceil((float)NodeList.size() / ((float)XDim * (float)YDim));
+	int memMII = ceil((float)getMEMOpsToBePlaced() / ((float)YDim));
 	findMaxRecDist();
 	conMatArr.push_back(getConMat());
 
@@ -2238,20 +2509,17 @@ bool DFG::MapCGRA_SMART(int XDim, int YDim, ArchType arch, int bTrack, int initM
 	mappingOutFile << "MapCGRAsa:: MEM Constrained MII = " << memMII << "\n";
 	mappingOutFile << "MapCGRAsa:: Recurrence Constrained MII = " << getMaxRecDist() << "\n";
 
-
-	MII = std::max(std::max(MII,getMaxRecDist()),std::max(memMII,initMII));
-//	int initMII = MII;
-//	MII = 19;
-
-
-
-
+	MII = std::max(std::max(MII, getMaxRecDist()), std::max(memMII, initMII));
+	//	int initMII = MII;
+	//	MII = 19;
 
 	//Sanity Check
-	dfgNode* node;
-	for (int i = 0; i < NodeList.size(); ++i) {
+	dfgNode *node;
+	for (int i = 0; i < NodeList.size(); ++i)
+	{
 		node = NodeList[i];
-		if (node->getAncestors().size() > 5){
+		if (node->getAncestors().size() > 5)
+		{
 			errs() << "Cannot map applications that have Fan in nodes more than 5\n";
 			return false;
 		}
@@ -2259,15 +2527,19 @@ bool DFG::MapCGRA_SMART(int XDim, int YDim, ArchType arch, int bTrack, int initM
 
 	int latency = 0;
 
-	while(1){
-		if(MapASAPLevel(MII,XDim,YDim,arch)){
+	while (1)
+	{
+		if (MapASAPLevel(MII, XDim, YDim, arch))
+		{
 			clock_t end = clock();
-			double elapsed_time = double(end - begin)/CLOCKS_PER_SEC;
+			double elapsed_time = double(end - begin) / CLOCKS_PER_SEC;
 			errs() << "MapCGRAsa :: Mapping success with MII = " << MII << "\n";
 
-			for (int i = 0; i < NodeList.size(); ++i) {
+			for (int i = 0; i < NodeList.size(); ++i)
+			{
 				node = NodeList[i];
-				if(node->getmappedRealTime() > latency){
+				if (node->getmappedRealTime() > latency)
+				{
 					latency = node->getmappedRealTime();
 				}
 			}
@@ -2277,37 +2549,44 @@ bool DFG::MapCGRA_SMART(int XDim, int YDim, ArchType arch, int bTrack, int initM
 			//Printing out SMART_PATH Histogram
 			mappingOutFile << "\n MapCGRAsa :: Beginning of SMART Path Histogram = \n";
 			mappingOutFile << "Path Size \tNumber of Paths \tPredicatePaths\n";
-			for (int i = 0; i <= astar->maxSMARTPathLength; ++i) {
-				if(astar->SMARTPathHist.find(i) == astar->SMARTPathHist.end()){
+			for (int i = 0; i <= astar->maxSMARTPathLength; ++i)
+			{
+				if (astar->SMARTPathHist.find(i) == astar->SMARTPathHist.end())
+				{
 					mappingOutFile << i << "\t\t\t0\t\t\t";
 				}
-				else{
+				else
+				{
 					mappingOutFile << i << "\t\t\t" << astar->SMARTPathHist[i] << "\t\t\t";
 				}
 
-				if(astar->SMARTPredicatePathHist.find(i) == astar->SMARTPathHist.end()){
+				if (astar->SMARTPredicatePathHist.find(i) == astar->SMARTPathHist.end())
+				{
 					mappingOutFile << "0\n";
 				}
-				else{
-					mappingOutFile << astar->SMARTPredicatePathHist[i] <<"\n";
+				else
+				{
+					mappingOutFile << astar->SMARTPredicatePathHist[i] << "\n";
 				}
-
-
 			}
 			mappingOutFile << "\n MapCGRAsa :: End of SMART Path Histogram.\n\n";
 
 			//Printing out PATH Histrogram
 			mappingOutFile << "\n MapCGRAsa :: Beginning of Path Histogram = \n";
 			mappingOutFile << "PathSize \tNumber of Paths \tCountRegConnections \tRegConnections \n";
-			for (int i = 0; i <= astar->maxPathLength; ++i) {
-				if(astar->PathHist.find(i) == astar->PathHist.end()){
+			for (int i = 0; i <= astar->maxPathLength; ++i)
+			{
+				if (astar->PathHist.find(i) == astar->PathHist.end())
+				{
 					mappingOutFile << i << "\t\t\t0\n";
 				}
-				else{
+				else
+				{
 					mappingOutFile << i << "\t\t\t" << astar->PathHist[i];
 					mappingOutFile << "\t\t\t\t\t" << astar->PathSMARTPathCount[i];
-				    mappingOutFile << "\t\t\t\t\t (";
-					for (int j = 0; j < astar->PathSMARTPaths[i].size(); j++) {
+					mappingOutFile << "\t\t\t\t\t (";
+					for (int j = 0; j < astar->PathSMARTPaths[i].size(); j++)
+					{
 						mappingOutFile << astar->PathSMARTPaths[i][j] << ",";
 					}
 					mappingOutFile << ")\n";
@@ -2316,32 +2595,36 @@ bool DFG::MapCGRA_SMART(int XDim, int YDim, ArchType arch, int bTrack, int initM
 
 			//Printing out mapped routes
 			printOutSMARTRoutes();
-//			printTurns();
+			//			printTurns();
 
-
-
-			std::map<CGRANode*, std::vector<CGRAEdge> >* cgraEdgesPtr = currCGRA->getCGRAEdges();
+			std::map<CGRANode *, std::vector<CGRAEdge>> *cgraEdgesPtr = currCGRA->getCGRAEdges();
 			std::vector<CGRAEdge> connections;
 			int count = 0;
 
 			mappingOutFile << "Reg Connections Available after use :: \n";
 
-			for (int t = 0; t < currCGRA->getMII(); ++t) {
-				for (int y = 0; y < currCGRA->getYdim(); ++y) {
-					for (int x = 0; x < currCGRA->getXdim(); ++x) {
-						connections = (*cgraEdgesPtr)[currCGRA->getCGRANode(t,y,x)];
-						for (int c = 0; c < connections.size(); ++c) {
-							if((connections[c].SrcPort == R0)||
-							   (connections[c].SrcPort == R1)||
-							   (connections[c].SrcPort == R2)||
-							   (connections[c].SrcPort == R3))
+			for (int t = 0; t < currCGRA->getMII(); ++t)
+			{
+				for (int y = 0; y < currCGRA->getYdim(); ++y)
+				{
+					for (int x = 0; x < currCGRA->getXdim(); ++x)
+					{
+						connections = (*cgraEdgesPtr)[currCGRA->getCGRANode(t, y, x)];
+						for (int c = 0; c < connections.size(); ++c)
+						{
+							if ((connections[c].SrcPort == R0) ||
+								(connections[c].SrcPort == R1) ||
+								(connections[c].SrcPort == R2) ||
+								(connections[c].SrcPort == R3))
 							{
-								if(connections[c].mappedDFGEdge == NULL){
+								if (connections[c].mappedDFGEdge == NULL)
+								{
 									count++;
 								}
 							}
 						}
-						mappingOutFile << "(" << t << "," << y << "," << x << ")" << "=" << count << "\n";
+						mappingOutFile << "(" << t << "," << y << "," << x << ")"
+									   << "=" << count << "\n";
 						count = 0;
 					}
 				}
@@ -2352,18 +2635,18 @@ bool DFG::MapCGRA_SMART(int XDim, int YDim, ArchType arch, int bTrack, int initM
 		}
 		errs() << "MapCGRAsa :: Mapping failed with MII = " << MII << "\n";
 		mappingOutFile << "MapCGRAsa :: Mapping failed with MII = " << MII << "\n";
-		if(MII >= 25){
+		if (MII >= 25)
+		{
 			errs() << "Largest MII is 25, current MII = 25 , therefore aborting mapping\n";
 			return false;
 		}
 
-		double currTime = double(clock() - begin)/CLOCKS_PER_SEC;
+		double currTime = double(clock() - begin) / CLOCKS_PER_SEC;
 		//TODO : DAC18 removed time limit
-//		if(currTime > 60*15){
-//			errs() << "8 mins window expired for the compilation, exiting\n";
-//			return false;
-//		}
-
+		//		if(currTime > 60*15){
+		//			errs() << "8 mins window expired for the compilation, exiting\n";
+		//			return false;
+		//		}
 
 		MII++;
 	}
@@ -2371,302 +2654,319 @@ bool DFG::MapCGRA_SMART(int XDim, int YDim, ArchType arch, int bTrack, int initM
 	return true;
 }
 
-
-void DFG::MapCGRA(int XDim, int YDim) {
+void DFG::MapCGRA(int XDim, int YDim)
+{
 
 	//TODO : Add recurrence constrained MII
-	int MII = ceil((float)NodeList.size()/((float)XDim*(float)YDim));
+	int MII = ceil((float)NodeList.size() / ((float)XDim * (float)YDim));
 	std::vector<ConnectedCGRANode> candidateCGRANodes;
-	dfgNode* temp;
+	dfgNode *temp;
 
-	struct cand{
+	struct cand
+	{
 		int max = 0;
 		int curr = 0;
 
-		cand(int m, int c) : max(m), curr(c){}
+		cand(int m, int c) : max(m), curr(c) {}
 	};
 
 	std::vector<cand> chosenCandidates;
 
-
-	while(1){
+	while (1)
+	{
 		errs() << "Mapping started with MII = " << MII << "\n";
-		currCGRA = new CGRA(MII,XDim,YDim,REGS_PER_NODE);
+		currCGRA = new CGRA(MII, XDim, YDim, REGS_PER_NODE);
 		int nodeListSequencer = 0;
 		int min_nodeListSequencer = NodeList.size();
 
-		for (int i = 0; i < NodeList.size(); ++i) {
-			chosenCandidates.push_back(cand(0,0));
+		for (int i = 0; i < NodeList.size(); ++i)
+		{
+			chosenCandidates.push_back(cand(0, 0));
 		}
 
-		while(1){
+		while (1)
+		{
 			temp = NodeList[nodeListSequencer];
-			errs() << "Mapping " << nodeListSequencer << "/" << NodeList.size() << "..." << ", with MII = " << MII << "\n";
+			errs() << "Mapping " << nodeListSequencer << "/" << NodeList.size() << "..."
+				   << ", with MII = " << MII << "\n";
 
-			if(nodeListSequencer == NodeList.size()){
+			if (nodeListSequencer == NodeList.size())
+			{
 				errs() << "Mapping done...\n";
 				break;
 			}
-
 
 			errs() << "Finding candidates for NodeSeq =" << nodeListSequencer << "...\n";
 			candidateCGRANodes = FindCandidateCGRANodes(temp);
 			errs() << "Found candidates : " << candidateCGRANodes.size() << "\n";
 
-//			for (int i = 0; i < candidateCGRANodes.size(); ++i) {
-//				errs() << "(t,y,x) = (" << candidateCGRANodes[i].node->getT() << ","
-//										<< candidateCGRANodes[i].node->getY() << ","
-//										<< candidateCGRANodes[i].node->getX() << ")\n";
-//			}
+			//			for (int i = 0; i < candidateCGRANodes.size(); ++i) {
+			//				errs() << "(t,y,x) = (" << candidateCGRANodes[i].node->getT() << ","
+			//										<< candidateCGRANodes[i].node->getY() << ","
+			//										<< candidateCGRANodes[i].node->getX() << ")\n";
+			//			}
 
 			//Remove this special Debug
-//			if(nodeListSequencer == 28){
-//				if(currCGRA->getCGRANode(2,2,1)->getmappedDFGNode() == NULL){
-//					errs() << "SPECIAL_DEBUG : (221) is NULL\n";
-//				}
-//				else{
-//					errs() << "SPECIAL_DEBUG : (221) is "<< currCGRA->getCGRANode(2,2,1)->getmappedDFGNode()->getIdx() <<"\n";
-//				}
-//			}
+			//			if(nodeListSequencer == 28){
+			//				if(currCGRA->getCGRANode(2,2,1)->getmappedDFGNode() == NULL){
+			//					errs() << "SPECIAL_DEBUG : (221) is NULL\n";
+			//				}
+			//				else{
+			//					errs() << "SPECIAL_DEBUG : (221) is "<< currCGRA->getCGRANode(2,2,1)->getmappedDFGNode()->getIdx() <<"\n";
+			//				}
+			//			}
 
-
-			if(candidateCGRANodes.size() == 0){
-				do{
+			if (candidateCGRANodes.size() == 0)
+			{
+				do
+				{
 					chosenCandidates[nodeListSequencer].curr = 0;
 					nodeListSequencer--;
 
-					if(nodeListSequencer >= 0){
+					if (nodeListSequencer >= 0)
+					{
 						backTrack(nodeListSequencer);
 					}
 
 					errs() << "nodeListSequencer =" << nodeListSequencer << "\n";
-				}while((chosenCandidates[nodeListSequencer].curr + 1 >= chosenCandidates[nodeListSequencer].max)
-						&&(nodeListSequencer >= 0));
+				} while ((chosenCandidates[nodeListSequencer].curr + 1 >= chosenCandidates[nodeListSequencer].max) && (nodeListSequencer >= 0));
 				errs() << "Backtracked to nodeListSequencer =" << nodeListSequencer << "\n";
 
-				if(nodeListSequencer < 0){
-					errs() << "Mapping failed for MII = "<< MII << "...\n";
+				if (nodeListSequencer < 0)
+				{
+					errs() << "Mapping failed for MII = " << MII << "...\n";
 					break;
 				}
 
 				chosenCandidates[nodeListSequencer].curr = chosenCandidates[nodeListSequencer].curr + 1;
 			}
-			else{
+			else
+			{
 				errs() << "current candidate = " << chosenCandidates[nodeListSequencer].curr << "\n";
 				chosenCandidates[nodeListSequencer].max = candidateCGRANodes.size();
 				candidateCGRANodes[chosenCandidates[nodeListSequencer].curr].node->setMappedDFGNode(temp);
 				temp->setMappedLoc(candidateCGRANodes[chosenCandidates[nodeListSequencer].curr].node);
 
 				errs() << "Mapped node with sequence =" << nodeListSequencer << "\n";
-				errs() << "(t,y,x) = (" << candidateCGRANodes[chosenCandidates[nodeListSequencer].curr].node->getT()  << ","
-									    << candidateCGRANodes[chosenCandidates[nodeListSequencer].curr].node->getY()  << ","
-									    << candidateCGRANodes[chosenCandidates[nodeListSequencer].curr].node->getX()  << ")\n";
-//				errs() << "(t,y,x) = (" << currCGRA->getCGRANode(temp->getMappedLoc()->getT(),temp->getMappedLoc()->getY(),temp->getMappedLoc()->getX())->getT()  << ","
-//									    << currCGRA->getCGRANode(temp->getMappedLoc()->getT(),temp->getMappedLoc()->getY(),temp->getMappedLoc()->getX())->getY()   << ","
-//									    << currCGRA->getCGRANode(temp->getMappedLoc()->getT(),temp->getMappedLoc()->getY(),temp->getMappedLoc()->getX())->getX()   << ")\n";
+				errs() << "(t,y,x) = (" << candidateCGRANodes[chosenCandidates[nodeListSequencer].curr].node->getT() << ","
+					   << candidateCGRANodes[chosenCandidates[nodeListSequencer].curr].node->getY() << ","
+					   << candidateCGRANodes[chosenCandidates[nodeListSequencer].curr].node->getX() << ")\n";
+				//				errs() << "(t,y,x) = (" << currCGRA->getCGRANode(temp->getMappedLoc()->getT(),temp->getMappedLoc()->getY(),temp->getMappedLoc()->getX())->getT()  << ","
+				//									    << currCGRA->getCGRANode(temp->getMappedLoc()->getT(),temp->getMappedLoc()->getY(),temp->getMappedLoc()->getX())->getY()   << ","
+				//									    << currCGRA->getCGRANode(temp->getMappedLoc()->getT(),temp->getMappedLoc()->getY(),temp->getMappedLoc()->getX())->getX()   << ")\n";
 				nodeListSequencer++;
 			}
-//			delete(&candidateCGRANodes);
+			//			delete(&candidateCGRANodes);
 		}
 
-		if(nodeListSequencer == NodeList.size()){
+		if (nodeListSequencer == NodeList.size())
+		{
 			errs() << "Mapping done...\n";
 			break;
 		}
 
-
 		MII++;
-		delete(currCGRA);
+		delete (currCGRA);
 	}
-
 }
 
-void DFG::traverseCriticalPath(dfgNode* node, int level) {
-//	dfgNode* temp;
-//	int i;
-//	for (i = 0; i < node->getChildren().size(); ++i) {
-//		temp = findNode(node->getChildren()[i]);
-//		if(temp->getASAPnumber() == temp->getALAPnumber()) {
-//
-//		}
-//	}
-
+void DFG::traverseCriticalPath(dfgNode *node, int level)
+{
+	//	dfgNode* temp;
+	//	int i;
+	//	for (i = 0; i < node->getChildren().size(); ++i) {
+	//		temp = findNode(node->getChildren()[i]);
+	//		if(temp->getASAPnumber() == temp->getALAPnumber()) {
+	//
+	//		}
+	//	}
 }
 
-void DFG::CreateSchList() {
-	dfgNode* temp;
+void DFG::CreateSchList()
+{
+	dfgNode *temp;
 
 	errs() << "#################Begin :: The Schedule List#################\n";
 
-//	for (int i = 0; i < NodeList.size(); ++i) {
-//		temp = &NodeList[i];
-//		errs() << "NodeIdx=" << temp->getIdx() << ", ASAP =" << temp->getASAPnumber() << ", ALAP =" << temp->getALAPnumber() << "\n";
-//	}
-//	errs() << "Done\n";
+	//	for (int i = 0; i < NodeList.size(); ++i) {
+	//		temp = &NodeList[i];
+	//		errs() << "NodeIdx=" << temp->getIdx() << ", ASAP =" << temp->getASAPnumber() << ", ALAP =" << temp->getALAPnumber() << "\n";
+	//	}
+	//	errs() << "Done\n";
 
-
-	std::sort(NodeList.begin(),NodeList.end(),ScheduleOrder());
+	std::sort(NodeList.begin(), NodeList.end(), ScheduleOrder());
 	errs() << "CreateSchList::Done sorting...\n";
-	for (int i = 0; i < NodeList.size(); ++i) {
+	for (int i = 0; i < NodeList.size(); ++i)
+	{
 		temp = NodeList[i];
 		temp->setSchIdx(i);
 
 		errs() << "NodeIdx=" << temp->getIdx() << ", ASAP =" << temp->getASAPnumber() << ", ALAP =" << temp->getALAPnumber() << "\n";
 	}
 	errs() << "#################End :: The Schedule List#################\n";
-
 }
 
-std::vector<ConnectedCGRANode> DFG::searchCandidates(CGRANode* mappedLoc, dfgNode* node, std::vector<std::pair<Instruction*,int>>* candidateNumbers) {
-			std::vector<ConnectedCGRANode> candidates = mappedLoc->getConnectedNodes();
-			eraseAlreadyMappedNodes(&candidates);
-			candidateNumbers->push_back(std::make_pair(node->getAncestors()[0]->getNode(),candidates.size()));
-			dfgNode* temp;
+std::vector<ConnectedCGRANode> DFG::searchCandidates(CGRANode *mappedLoc, dfgNode *node, std::vector<std::pair<Instruction *, int>> *candidateNumbers)
+{
+	std::vector<ConnectedCGRANode> candidates = mappedLoc->getConnectedNodes();
+	eraseAlreadyMappedNodes(&candidates);
+	candidateNumbers->push_back(std::make_pair(node->getAncestors()[0]->getNode(), candidates.size()));
+	dfgNode *temp;
 	//		candidateNumbers[node->getAncestors()[0]] = candidates.size();
 
-			std::vector<ConnectedCGRANode> candidates2;
-			std::vector<ConnectedCGRANode> candidates3;
-			bool matchFound = false;
+	std::vector<ConnectedCGRANode> candidates2;
+	std::vector<ConnectedCGRANode> candidates3;
+	bool matchFound = false;
 
-			for (int i = 0; i < node->getAncestors().size(); ++i) {
-				if(mappedLoc->getmappedDFGNode()->getNode() != node->getAncestors()[i]->getNode()) {
-					temp = findNode(node->getAncestors()[i]->getNode());
-					assert(temp->getMappedLoc() != NULL);
-					candidates2 = getConnectedCGRANodes(temp);
-//					candidates2 = temp->getMappedLoc()->getConnectedNodes();
-//					eraseAlreadyMappedNodes(&candidates2);
+	for (int i = 0; i < node->getAncestors().size(); ++i)
+	{
+		if (mappedLoc->getmappedDFGNode()->getNode() != node->getAncestors()[i]->getNode())
+		{
+			temp = findNode(node->getAncestors()[i]->getNode());
+			assert(temp->getMappedLoc() != NULL);
+			candidates2 = getConnectedCGRANodes(temp);
+			//					candidates2 = temp->getMappedLoc()->getConnectedNodes();
+			//					eraseAlreadyMappedNodes(&candidates2);
 
-					candidateNumbers->push_back(std::make_pair(node->getAncestors()[i]->getNode(),candidates2.size()));
+			candidateNumbers->push_back(std::make_pair(node->getAncestors()[i]->getNode(), candidates2.size()));
 
-					for (int j = 0; j < candidates.size(); ++j) {
-						for (int k = 0; k < candidates2.size(); ++k) {
-							if(candidates[j].node == candidates2[k].node){
-								candidates[j].cost = candidates[j].cost + candidates2[k].cost;
-								matchFound = true;
-								break;
-							}
-						}
-						if(matchFound){
-							candidates3.push_back(candidates[j]);
-						}
-						matchFound = false;
+			for (int j = 0; j < candidates.size(); ++j)
+			{
+				for (int k = 0; k < candidates2.size(); ++k)
+				{
+					if (candidates[j].node == candidates2[k].node)
+					{
+						candidates[j].cost = candidates[j].cost + candidates2[k].cost;
+						matchFound = true;
+						break;
 					}
-					candidates = candidates3;
 				}
+				if (matchFound)
+				{
+					candidates3.push_back(candidates[j]);
+				}
+				matchFound = false;
 			}
-			eraseAlreadyMappedNodes(&candidates);
-			return candidates;
+			candidates = candidates3;
+		}
+	}
+	eraseAlreadyMappedNodes(&candidates);
+	return candidates;
 }
 
-void DFG::eraseAlreadyMappedNodes(std::vector<ConnectedCGRANode>* candidates) {
+void DFG::eraseAlreadyMappedNodes(std::vector<ConnectedCGRANode> *candidates)
+{
 	std::vector<ConnectedCGRANode>::iterator it = candidates->begin();
 
-	while(it != candidates->end()){
-		if(it->node->getmappedDFGNode() != NULL){
-//			errs() << "eraseAlreadyMappedNodes :: Already mapped = (" << it->node->getT() << ","
-//																	  << it->node->getY() << ","
-//																	  << it->node->getX() << ")\n";
+	while (it != candidates->end())
+	{
+		if (it->node->getmappedDFGNode() != NULL)
+		{
+			//			errs() << "eraseAlreadyMappedNodes :: Already mapped = (" << it->node->getT() << ","
+			//																	  << it->node->getY() << ","
+			//																	  << it->node->getX() << ")\n";
 			it = candidates->erase(it);
 		}
-		else {
+		else
+		{
 			++it;
 		}
 	}
-
 }
 
-void DFG::backTrack(int nodeSeq) {
-	dfgNode* temp = NodeList[nodeSeq];
-	dfgNode* anc;
-//	errs() << "Backtrack : NodeSeq=" << nodeSeq << "\n";
+void DFG::backTrack(int nodeSeq)
+{
+	dfgNode *temp = NodeList[nodeSeq];
+	dfgNode *anc;
+	//	errs() << "Backtrack : NodeSeq=" << nodeSeq << "\n";
 
-
-	if(temp->getMappedLoc() != NULL){
-//		errs() << "(t,y,x) = (" << temp->getMappedLoc()->getT() << "," << temp->getMappedLoc()->getY() << "," << temp->getMappedLoc()->getX() << "\n";
+	if (temp->getMappedLoc() != NULL)
+	{
+		//		errs() << "(t,y,x) = (" << temp->getMappedLoc()->getT() << "," << temp->getMappedLoc()->getY() << "," << temp->getMappedLoc()->getX() << "\n";
 		temp->getMappedLoc()->setMappedDFGNode(NULL);
 		temp->setMappedLoc(NULL);
 	}
 
-	for (int i = 0; i < temp->getAncestors().size(); ++i) {
+	for (int i = 0; i < temp->getAncestors().size(); ++i)
+	{
 		anc = temp->getAncestors()[i];
 
-		std::vector<CGRANode*>::iterator it = anc->getRoutingLocs()->begin();
+		std::vector<CGRANode *>::iterator it = anc->getRoutingLocs()->begin();
 
-		while(it != anc->getRoutingLocs()->end()){
-//			errs() << "BackTrack :: erasing routing=(" << (*it)->getT() << ","
-//													   << (*it)->getY() << ","
-//													   << (*it)->getX() << ")\n";
+		while (it != anc->getRoutingLocs()->end())
+		{
+			//			errs() << "BackTrack :: erasing routing=(" << (*it)->getT() << ","
+			//													   << (*it)->getY() << ","
+			//													   << (*it)->getX() << ")\n";
 			(*it)->setMappedDFGNode(NULL);
 			it = anc->getRoutingLocs()->erase(it);
 		}
 	}
-
-
-
-
 }
 
 std::vector<ConnectedCGRANode> DFG::ExpandCandidatesAddingRoutingNodes(
-		std::vector<std::pair<Instruction*, int> >* candidateNumbers) {
+	std::vector<std::pair<Instruction *, int>> *candidateNumbers)
+{
 
-	dfgNode* temp;
+	dfgNode *temp;
 	std::vector<ConnectedCGRANode> candidates2;
-	std::vector<std::pair<Instruction*, int> > candidateNumbersTemp;
-	std::sort(candidateNumbers->begin(),candidateNumbers->end(),ValueComparer());
+	std::vector<std::pair<Instruction *, int>> candidateNumbersTemp;
+	std::sort(candidateNumbers->begin(), candidateNumbers->end(), ValueComparer());
 
-//	int conMat[currCGRA->getMII()*currCGRA->getYdim()*currCGRA->getXdim()][currCGRA->getMII()*currCGRA->getYdim()*currCGRA->getXdim()];
-	std::vector<std::vector<int> > conMat;
+	//	int conMat[currCGRA->getMII()*currCGRA->getYdim()*currCGRA->getXdim()][currCGRA->getMII()*currCGRA->getYdim()*currCGRA->getXdim()];
+	std::vector<std::vector<int>> conMat;
 
-
-	for (int i = 0; i < currCGRA->getMII()*currCGRA->getYdim()*currCGRA->getXdim(); ++i) {
+	for (int i = 0; i < currCGRA->getMII() * currCGRA->getYdim() * currCGRA->getXdim(); ++i)
+	{
 		std::vector<int> temp;
-		for (int j = 0; j < currCGRA->getMII()*currCGRA->getYdim()*currCGRA->getXdim(); ++j) {
+		for (int j = 0; j < currCGRA->getMII() * currCGRA->getYdim() * currCGRA->getXdim(); ++j)
+		{
 			temp.push_back(0);
 		}
 		conMat.push_back(temp);
 	}
 
-
-
 	std::vector<ConnectedCGRANode> phyCand;
 
-	for (int t = 0; t < currCGRA->getMII(); ++t) {
-		for (int y = 0; y < currCGRA->getYdim(); ++y) {
-			for (int x = 0; x < currCGRA->getXdim(); ++x) {
-				conMat[getConMatIdx(t,y,x)][getConMatIdx(t,y,x)] = 1;
+	for (int t = 0; t < currCGRA->getMII(); ++t)
+	{
+		for (int y = 0; y < currCGRA->getYdim(); ++y)
+		{
+			for (int x = 0; x < currCGRA->getXdim(); ++x)
+			{
+				conMat[getConMatIdx(t, y, x)][getConMatIdx(t, y, x)] = 1;
 
-				phyCand = currCGRA->getCGRANode(t,y,x)->getConnectedNodes();
-				for (int i = 0; i < phyCand.size(); ++i) {
-					if(phyCand[i].node->getmappedDFGNode() == NULL){
-						conMat[getConMatIdx(t,y,x)][getConMatIdx(phyCand[i].node->getT(),phyCand[i].node->getY(),phyCand[i].node->getX())] = 1;
+				phyCand = currCGRA->getCGRANode(t, y, x)->getConnectedNodes();
+				for (int i = 0; i < phyCand.size(); ++i)
+				{
+					if (phyCand[i].node->getmappedDFGNode() == NULL)
+					{
+						conMat[getConMatIdx(t, y, x)][getConMatIdx(phyCand[i].node->getT(), phyCand[i].node->getY(), phyCand[i].node->getX())] = 1;
 					}
 				}
 			}
 		}
 	}
 
+	for (int i = 0; i < candidateNumbers->size(); ++i)
+	{
+		temp = findNode((*candidateNumbers)[i].first);
 
-	for (int i = 0; i < candidateNumbers->size(); ++i) {
-					temp = findNode((*candidateNumbers)[i].first);
+		candidates2 = getConnectedCGRANodes(temp);
+		std::sort(candidates2.begin(), candidates2.end(), CostComparer());
 
-					candidates2 = getConnectedCGRANodes(temp);
-					std::sort(candidates2.begin(),candidates2.end(),CostComparer());
+		for (int j = 0; j < candidates2.size(); ++j)
+		{
 
-					for (int j = 0; j < candidates2.size(); ++j) {
-
-
-
-
-	//					errs() << "candidates2 = (" << candidates2[j].node->getT() << ","
-	//							   	   	   	   	    << candidates2[j].node->getY() << ","
-	//												<< candidates2[j].node->getX() << ")\n";
-					}
+			//					errs() << "candidates2 = (" << candidates2[j].node->getT() << ","
+			//							   	   	   	   	    << candidates2[j].node->getY() << ","
+			//												<< candidates2[j].node->getX() << ")\n";
+		}
 	}
-
-
 }
 
-std::vector<ConnectedCGRANode> DFG::getConnectedCGRANodes(dfgNode* node) {
+std::vector<ConnectedCGRANode> DFG::getConnectedCGRANodes(dfgNode *node)
+{
 	assert(node->getMappedLoc() != NULL);
 
 	std::vector<ConnectedCGRANode> candidates;
@@ -2675,54 +2975,65 @@ std::vector<ConnectedCGRANode> DFG::getConnectedCGRANodes(dfgNode* node) {
 	bool found = false;
 
 	int routingCost;
-	for (int i = 0; i < node->getRoutingLocs()->size(); ++i) {
+	for (int i = 0; i < node->getRoutingLocs()->size(); ++i)
+	{
 		found = false;
 		routingCost = (*node->getRoutingLocs())[i]->getT() - node->getMappedLoc()->getT();
-		if (routingCost < 0){
+		if (routingCost < 0)
+		{
 			routingCost = routingCost + currCGRA->getMII();
 		}
 
 		candidates2 = (*node->getRoutingLocs())[i]->getConnectedNodes();
 
-		for (int j = 0; j < candidates2.size(); ++j) {
+		for (int j = 0; j < candidates2.size(); ++j)
+		{
 			candidates2[j].cost = candidates2[j].cost + routingCost;
 
 			found = false;
-			for (int k = 0; k < candidates.size(); ++k) {
-				if(candidates2[j].node == candidates[k].node){
+			for (int k = 0; k < candidates.size(); ++k)
+			{
+				if (candidates2[j].node == candidates[k].node)
+				{
 					found = true;
 				}
 			}
 
-			if(!found){
+			if (!found)
+			{
 				candidates.push_back(candidates2[j]);
 			}
-
 		}
-
 	}
 	eraseAlreadyMappedNodes(&candidates);
 	return candidates;
 }
 
-int DFG::getConMatIdx(int t, int y, int x) {
-	return t*currCGRA->getYdim()*currCGRA->getXdim() + y*currCGRA->getXdim() + x;
+int DFG::getConMatIdx(int t, int y, int x)
+{
+	return t * currCGRA->getYdim() * currCGRA->getXdim() + y * currCGRA->getXdim() + x;
 }
 
-std::vector<ConnectedCGRANode> DFG::FindCandidateCGRANodes(dfgNode* node) {
-	dfgNode* temp;
+std::vector<ConnectedCGRANode> DFG::FindCandidateCGRANodes(dfgNode *node)
+{
+	dfgNode *temp;
 	std::vector<ConnectedCGRANode> candidates;
-	std::vector<std::pair<Instruction*,int>> candidateNumbers;
-	std::vector<std::pair<Instruction*,int>> candidateNumbersLvl2;
+	std::vector<std::pair<Instruction *, int>> candidateNumbers;
+	std::vector<std::pair<Instruction *, int>> candidateNumbersLvl2;
 
 	assert(currCGRA != NULL);
 
-	if(node->getAncestors().size() == 0){
-		for (int t = 0; t < currCGRA->getMII(); ++t) {
-			for (int y = 0; y < currCGRA->getYdim(); ++y) {
-				for (int x = 0; x < currCGRA->getXdim(); ++x) {
-					if(currCGRA->getCGRANode(t,y,x)->getmappedDFGNode() == NULL){
-						ConnectedCGRANode tempCGRANode(currCGRA->getCGRANode(t,y,x),0,"startNodes");
+	if (node->getAncestors().size() == 0)
+	{
+		for (int t = 0; t < currCGRA->getMII(); ++t)
+		{
+			for (int y = 0; y < currCGRA->getYdim(); ++y)
+			{
+				for (int x = 0; x < currCGRA->getXdim(); ++x)
+				{
+					if (currCGRA->getCGRANode(t, y, x)->getmappedDFGNode() == NULL)
+					{
+						ConnectedCGRANode tempCGRANode(currCGRA->getCGRANode(t, y, x), 0, "startNodes");
 						candidates.push_back(tempCGRANode);
 					}
 				}
@@ -2730,100 +3041,109 @@ std::vector<ConnectedCGRANode> DFG::FindCandidateCGRANodes(dfgNode* node) {
 		}
 		return candidates;
 	}
-	else if (node->getAncestors().size() == 1){
+	else if (node->getAncestors().size() == 1)
+	{
 		temp = node->getAncestors()[0];
 		assert(temp->getMappedLoc() != NULL);
 
 		candidates = getConnectedCGRANodes(temp);
-//		candidates = temp->getMappedLoc()->getConnectedNodes();
+		//		candidates = temp->getMappedLoc()->getConnectedNodes();
 
-//		for (int i = 0; i < candidates.size(); ++i) {
-//			if(candidates[i].node->getmappedDFGNode() != NULL){
-//				candidates.erase(candidates.begin() + i);
-//			}
-//		}
+		//		for (int i = 0; i < candidates.size(); ++i) {
+		//			if(candidates[i].node->getmappedDFGNode() != NULL){
+		//				candidates.erase(candidates.begin() + i);
+		//			}
+		//		}
 		eraseAlreadyMappedNodes(&candidates);
 
 		return candidates;
-	} else{ //(node->getAncestors().size() > 1
+	}
+	else
+	{ //(node->getAncestors().size() > 1
 		temp = node->getAncestors()[0];
 
-		if(temp->getMappedLoc() == NULL){
+		if (temp->getMappedLoc() == NULL)
+		{
 			errs() << "Unmapped ancestor : " << temp->getIdx() << "\n";
 		}
 
 		assert(temp->getMappedLoc() != NULL);
 
-		if(temp->getMappedLoc()->getmappedDFGNode() == NULL){
+		if (temp->getMappedLoc()->getmappedDFGNode() == NULL)
+		{
 			errs() << "Unmapped ancestor : " << temp->getIdx() << "\n";
 		}
 
 		assert(temp->getMappedLoc()->getmappedDFGNode() != NULL);
 		candidateNumbers.clear();
-		candidates = searchCandidates(temp->getMappedLoc(),node,&candidateNumbers);
+		candidates = searchCandidates(temp->getMappedLoc(), node, &candidateNumbers);
 
-//		errs() << "FindCandidateCGRANodes :: candidates.size()=" << candidates.size() << "\n";
+		//		errs() << "FindCandidateCGRANodes :: candidates.size()=" << candidates.size() << "\n";
 
 		std::vector<ConnectedCGRANode> candidates2;
 
-		if(candidates.size() == 0){
-			std::sort(candidateNumbers.begin(),candidateNumbers.end(),ValueComparer());
-			for (int i = 0; i < candidateNumbers.size(); ++i) {
+		if (candidates.size() == 0)
+		{
+			std::sort(candidateNumbers.begin(), candidateNumbers.end(), ValueComparer());
+			for (int i = 0; i < candidateNumbers.size(); ++i)
+			{
 				temp = findNode(candidateNumbers[i].first);
 				candidates2 = getConnectedCGRANodes(temp);
-//				candidates2 = temp->getMappedLoc()->getConnectedNodes();
-//				eraseAlreadyMappedNodes(&candidates2);
-				std::sort(candidates2.begin(),candidates2.end(),CostComparer());
+				//				candidates2 = temp->getMappedLoc()->getConnectedNodes();
+				//				eraseAlreadyMappedNodes(&candidates2);
+				std::sort(candidates2.begin(), candidates2.end(), CostComparer());
 
-				for (int j = 0; j < candidates2.size(); ++j) {
-//					errs() << "candidates2 = (" << candidates2[j].node->getT() << ","
-//							   	   	   	   	    << candidates2[j].node->getY() << ","
-//												<< candidates2[j].node->getX() << ")\n";
+				for (int j = 0; j < candidates2.size(); ++j)
+				{
+					//					errs() << "candidates2 = (" << candidates2[j].node->getT() << ","
+					//							   	   	   	   	    << candidates2[j].node->getY() << ","
+					//												<< candidates2[j].node->getX() << ")\n";
 				}
 
 				//search one-level with routing nodes
-				for (int j = 0; j < candidates2.size(); ++j) {
+				for (int j = 0; j < candidates2.size(); ++j)
+				{
 					candidates2[j].node->setMappedDFGNode(temp);
-					candidates = searchCandidates(candidates2[j].node,node,&candidateNumbersLvl2);
-					if(candidates.size() == 0){
+					candidates = searchCandidates(candidates2[j].node, node, &candidateNumbersLvl2);
+					if (candidates.size() == 0)
+					{
 						candidates2[j].node->setMappedDFGNode(NULL);
-					}else{
-//						errs() << "FindCandidateCGRANodes :: Routing node added=(" << candidates2[j].node->getT() << ","
-//																				   << candidates2[j].node->getY() << ","
-//																				   << candidates2[j].node->getX() << ")\n";
+					}
+					else
+					{
+						//						errs() << "FindCandidateCGRANodes :: Routing node added=(" << candidates2[j].node->getT() << ","
+						//																				   << candidates2[j].node->getY() << ","
+						//																				   << candidates2[j].node->getX() << ")\n";
 						temp->getRoutingLocs()->push_back(candidates2[j].node);
 						break;
 					}
 				}
-				if(candidates.size() != 0){
+				if (candidates.size() != 0)
+				{
 					break;
 				}
 			}
-
-
 		}
 
-		if(candidates.size() == 0){
+		if (candidates.size() == 0)
+		{
 			errs() << "No Candidates found for NODE_ID:" << node->getIdx() << "\n";
 			errs() << "Need to backtrack...\n";
 			return candidates;
 		}
 
-		std::sort(candidates.begin(),candidates.end(),CostComparer());
+		std::sort(candidates.begin(), candidates.end(), CostComparer());
 		return candidates;
 	}
-
-
 }
 
-
-
-void DFG::MapCGRA_EMS(int XDim, int YDim, std::string mapfileName) {
+void DFG::MapCGRA_EMS(int XDim, int YDim, std::string mapfileName)
+{
 	mappingOutFile.open(mapfileName.c_str());
 	clock_t begin = clock();
-	int MII = ceil((float)NodeList.size()/((float)XDim*(float)YDim));
+	int MII = ceil((float)NodeList.size() / ((float)XDim * (float)YDim));
 	findMaxRecDist();
-//	conMat = getConMat();
+	//	conMat = getConMat();
 	conMatArr.push_back(getConMat());
 	printConMat(conMatArr[0]);
 
@@ -2833,47 +3153,53 @@ void DFG::MapCGRA_EMS(int XDim, int YDim, std::string mapfileName) {
 	mappingOutFile << "MapCGRAsa:: Resource Constrained MII = " << MII << "\n";
 	mappingOutFile << "MapCGRAsa:: Recurrence Constrained MII = " << getMaxRecDist() << "\n";
 
+	MII = std::max(MII, getMaxRecDist());
 
-	MII = std::max(MII,getMaxRecDist());
-
-	astar = new AStar(&mappingOutFile,MII,this);
-
-
-
+	astar = new AStar(&mappingOutFile, MII, this);
 
 	//Sanity Check
-	dfgNode* node;
-	for (int i = 0; i < NodeList.size(); ++i) {
+	dfgNode *node;
+	for (int i = 0; i < NodeList.size(); ++i)
+	{
 		node = NodeList[i];
-		if (node->getAncestors().size() > 5){
+		if (node->getAncestors().size() > 5)
+		{
 			errs() << "Cannot map applications that have Fan in nodes more than 5\n";
 			return;
 		}
 	}
 
-	while(1){
-		if(MapCGRA_EMS_ASAPLevel(MII,XDim,YDim)){
+	while (1)
+	{
+		if (MapCGRA_EMS_ASAPLevel(MII, XDim, YDim))
+		{
 			clock_t end = clock();
-			double elapsed_time = double(end - begin)/CLOCKS_PER_SEC;
+			double elapsed_time = double(end - begin) / CLOCKS_PER_SEC;
 			mappingOutFile << "Duration :: " << elapsed_time << "\n";
 			mappingOutFile << "MapCGRAsa :: Mapping success with MII = " << MII << "\n";
 
-			std::map<CGRANode*, std::vector<CGRAEdge> >* cgraEdgesPtr = currCGRA->getCGRAEdges();
+			std::map<CGRANode *, std::vector<CGRAEdge>> *cgraEdgesPtr = currCGRA->getCGRAEdges();
 			std::vector<CGRAEdge> connections;
 			int count = 0;
 
 			mappingOutFile << "Reg Connections Available after use :: \n";
 
-			for (int t = 0; t < currCGRA->getMII(); ++t) {
-				for (int y = 0; y < currCGRA->getYdim(); ++y) {
-					for (int x = 0; x < currCGRA->getXdim(); ++x) {
-						connections = (*cgraEdgesPtr)[currCGRA->getCGRANode(t,y,x)];
-						for (int c = 0; c < connections.size(); ++c) {
-							if( (connections[c].Dst->getY() == y) && (connections[c].Dst->getX() == x) ){
+			for (int t = 0; t < currCGRA->getMII(); ++t)
+			{
+				for (int y = 0; y < currCGRA->getYdim(); ++y)
+				{
+					for (int x = 0; x < currCGRA->getXdim(); ++x)
+					{
+						connections = (*cgraEdgesPtr)[currCGRA->getCGRANode(t, y, x)];
+						for (int c = 0; c < connections.size(); ++c)
+						{
+							if ((connections[c].Dst->getY() == y) && (connections[c].Dst->getX() == x))
+							{
 								count++;
 							}
 						}
-						mappingOutFile << "(" << t << "," << y << "," << x << ")" << "=" << count << "\n";
+						mappingOutFile << "(" << t << "," << y << "," << x << ")"
+									   << "=" << count << "\n";
 						count = 0;
 					}
 				}
@@ -2881,61 +3207,60 @@ void DFG::MapCGRA_EMS(int XDim, int YDim, std::string mapfileName) {
 			break;
 		}
 
-		delete(currCGRA);
+		delete (currCGRA);
 		clearMapping();
 		MII++;
 	}
-
-
 }
 
-bool DFG::MapCGRA_EMS_ASAPLevel(int MII, int XDim, int YDim) {
-	currCGRA = new CGRA(MII,XDim,YDim,REGS_PER_NODE);
+bool DFG::MapCGRA_EMS_ASAPLevel(int MII, int XDim, int YDim)
+{
+	currCGRA = new CGRA(MII, XDim, YDim, REGS_PER_NODE);
 
 	errs() << "STARTING MAPASAP with MII = " << MII << "with maxASAPLevel = " << maxASAPLevel << "\n";
 	mappingOutFile << "STARTING MAPASAP with MII = " << MII << "with maxASAPLevel = " << maxASAPLevel << "\n";
 
-	std::map<CGRANode*,std::vector<CGRAEdge> >::iterator edgeIt;
-	for(edgeIt = currCGRA->getCGRAEdges()->begin();
-		edgeIt != currCGRA->getCGRAEdges()->end();
-		edgeIt++){
+	std::map<CGRANode *, std::vector<CGRAEdge>>::iterator edgeIt;
+	for (edgeIt = currCGRA->getCGRAEdges()->begin();
+		 edgeIt != currCGRA->getCGRAEdges()->end();
+		 edgeIt++)
+	{
 		mappingOutFile << "DEBUG:: Node=" << edgeIt->first->getName() << ", NumberOfEdges=" << edgeIt->second.size() << std::endl;
 	}
 
+	//	currCGRA->getCGRAEdges()
 
-//	currCGRA->getCGRAEdges()
+	//	std::map<dfgNode*,std::vector<CGRANode*> > nodeDestMap;
+	std::map<dfgNode *, std::vector<std::pair<CGRANode *, int>>> nodeDestMap;
+	std::map<CGRANode *, std::vector<dfgNode *>> destNodeMap;
+	std::map<dfgNode *, std::map<CGRANode *, int>> nodeDestCostMap;
 
+	std::map<dfgNode *, std::vector<std::pair<CGRANode *, int>>>::iterator nodeDestMapIt;
+	std::map<CGRANode *, std::vector<dfgNode *>>::iterator destNodeMapIt;
 
-//	std::map<dfgNode*,std::vector<CGRANode*> > nodeDestMap;
-	std::map<dfgNode*,std::vector< std::pair<CGRANode*,int> > > nodeDestMap;
-	std::map<CGRANode*,std::vector<dfgNode*> > destNodeMap;
-	std::map<dfgNode*, std::map<CGRANode*,int>> nodeDestCostMap;
-
-	std::map<dfgNode*,std::vector< std::pair<CGRANode*,int> > >::iterator nodeDestMapIt;
-	std::map<CGRANode*,std::vector<dfgNode*> >::iterator destNodeMapIt;
-
-	std::vector<dfgNode*> currLevelNodes;
-	dfgNode* node;
+	std::vector<dfgNode *> currLevelNodes;
+	dfgNode *node;
 	int mappedRealTime;
-	dfgNode* phiChild;
-	dfgNode* parent;
-	CGRANode* parentExt;
+	dfgNode *phiChild;
+	dfgNode *parent;
+	CGRANode *parentExt;
 
-	CGRANode* end;
+	CGRANode *end;
 	Port endPort;
 
 	//----Data Structures for Sorting the destination nodes based on routing --- (1)
-	std::map<std::pair<CGRANode*,Port>,std::pair<CGRANode*,Port> > cameFrom;
-	std::map<CGRANode*,int> costSoFar;
-	CGRANode* cnode;
-	std::pair<CGRANode*, CGRANode*> path;
+	std::map<std::pair<CGRANode *, Port>, std::pair<CGRANode *, Port>> cameFrom;
+	std::map<CGRANode *, int> costSoFar;
+	CGRANode *cnode;
+	std::pair<CGRANode *, CGRANode *> path;
 	int cost;
 
 	std::vector<nodeWithCost> nodesWithCost;
-//	std::vector<nodeWithCost> globalNodesWithCost;
+	//	std::vector<nodeWithCost> globalNodesWithCost;
 	// End of --- (1)
 
-	for (int level = 0; level <= maxASAPLevel; ++level) {
+	for (int level = 0; level <= maxASAPLevel; ++level)
+	{
 
 		globalNodesWithCost.clear();
 		currLevelNodes.clear();
@@ -2945,152 +3270,163 @@ bool DFG::MapCGRA_EMS_ASAPLevel(int MII, int XDim, int YDim) {
 
 		errs() << "level = " << level << "\n";
 
-		for (int j = 0; j < NodeList.size(); ++j) {
+		for (int j = 0; j < NodeList.size(); ++j)
+		{
 			node = NodeList[j];
 
-			if(node->getASAPnumber() == level){
+			if (node->getASAPnumber() == level)
+			{
 				currLevelNodes.push_back(node);
 			}
 		}
 
 		errs() << "numOfNodes = " << currLevelNodes.size() << "\n";
 
-		for (int i = 0; i < currLevelNodes.size(); ++i) {
+		for (int i = 0; i < currLevelNodes.size(); ++i)
+		{
 			node = currLevelNodes[i];
 			int ll = 0;
 			int el = INT32_MAX;
-			for (int j = 0; j < node->getAncestors().size(); ++j) {
+			for (int j = 0; j < node->getAncestors().size(); ++j)
+			{
 				parent = node->getAncestors()[j];
 
-
 				//every parent should be mapped
-				if(parent->getMappedLoc() == NULL){
+				if (parent->getMappedLoc() == NULL)
+				{
 					errs() << "parent :: nodeIdx=" << parent->getIdx() << ", ASAP=" << parent->getASAPnumber() << "\n";
-//					parent->getNode()->dump();
-
+					//					parent->getNode()->dump();
 				}
 				assert(parent->getMappedLoc() != NULL);
 
-				if(parent->getmappedRealTime() > ll){
-					if(parent->getmappedRealTime()%MII != parent->getMappedLoc()->getT()){
+				if (parent->getmappedRealTime() > ll)
+				{
+					if (parent->getmappedRealTime() % MII != parent->getMappedLoc()->getT())
+					{
 						errs() << "getMappedRealTime assertion is going to fail!\n";
-						errs() << "parent->getmappedRealTime()%MII = " << parent->getmappedRealTime()%MII << "\n";
+						errs() << "parent->getmappedRealTime()%MII = " << parent->getmappedRealTime() % MII << "\n";
 						errs() << "parent->getMappedLoc()->getT() = " << parent->getMappedLoc()->getT() << "\n";
 					}
 
-					assert( parent->getmappedRealTime()%MII == parent->getMappedLoc()->getT() );
-//						ll = parent->getMappedLoc()->getT();
+					assert(parent->getmappedRealTime() % MII == parent->getMappedLoc()->getT());
+					//						ll = parent->getMappedLoc()->getT();
 					ll = parent->getmappedRealTime();
 				}
 
-//					if(parent->getmappedRealTime() < el){
-//						assert( parent->getmappedRealTime()%MII == parent->getMappedLoc()->getT() );
-//						el = parent->getMappedLoc()->getT();
-////						el = parent->getmappedRealTime();
-//					}
-
+				//					if(parent->getmappedRealTime() < el){
+				//						assert( parent->getmappedRealTime()%MII == parent->getMappedLoc()->getT() );
+				//						el = parent->getMappedLoc()->getT();
+				////						el = parent->getmappedRealTime();
+				//					}
 			}
 
-			if(!node->getRecAncestors().empty()){
+			if (!node->getRecAncestors().empty())
+			{
 				errs() << "RecAnc for Node" << node->getIdx();
 				mappingOutFile << "RecAnc for Node" << node->getIdx();
 			}
 
-			for (int j = 0; j < node->getRecAncestors().size(); ++j) {
+			for (int j = 0; j < node->getRecAncestors().size(); ++j)
+			{
 				parent = node->getRecAncestors()[j];
 
-				errs() << " (Id=" << parent->getIdx() <<
-						  ",rt=" << parent->getmappedRealTime() <<
-						  ",t=" << parent->getMappedLoc()->getT() << "),";
+				errs() << " (Id=" << parent->getIdx() << ",rt=" << parent->getmappedRealTime() << ",t=" << parent->getMappedLoc()->getT() << "),";
 
-				mappingOutFile << " (Id=" << parent->getIdx() <<
-								  ",rt=" << parent->getmappedRealTime() <<
-								  ",t=" << parent->getMappedLoc()->getT() << "),";
+				mappingOutFile << " (Id=" << parent->getIdx() << ",rt=" << parent->getmappedRealTime() << ",t=" << parent->getMappedLoc()->getT() << "),";
 
-				if(parent->getmappedRealTime() < el){
-					assert( parent->getmappedRealTime()%MII == parent->getMappedLoc()->getT() );
+				if (parent->getmappedRealTime() < el)
+				{
+					assert(parent->getmappedRealTime() % MII == parent->getMappedLoc()->getT());
 					el = parent->getmappedRealTime();
 				}
 			}
 
-			if(!node->getRecAncestors().empty()){
+			if (!node->getRecAncestors().empty())
+			{
 				errs() << "\n";
 				mappingOutFile << "\n";
-				el = el%MII;
+				el = el % MII;
 			}
 
+			for (int var = 0; var < MII; ++var)
+			{
 
+				if (ll + 1 == el)
+				{ //this is only set if reccurence ancestors are found.
+					mappingOutFile << "MapASAPLevel breaking since reccurence ancestor found\n";
+					break;
+				}
 
-				for (int var = 0; var < MII; ++var) {
+				if (!node->getPHIchildren().empty())
+				{
 
-					if(ll + 1 == el){ //this is only set if reccurence ancestors are found.
-						mappingOutFile << "MapASAPLevel breaking since reccurence ancestor found\n";
-						break;
+					assert(node->getPHIchildren().size() == 1);
+					phiChild = node->getPHIchildren()[0];
+					assert(phiChild->getMappedLoc() != NULL);
+					int y = phiChild->getMappedLoc()->getY();
+					int x = phiChild->getMappedLoc()->getX();
+
+					if (currCGRA->getCGRANode((ll + 1) % MII, y, x)->getmappedDFGNode() == NULL)
+					{
+						nodeDestMap[node].push_back(std::make_pair(currCGRA->getCGRANode((ll + 1) % MII, y, x), (ll + 1)));
+						destNodeMap[currCGRA->getCGRANode((ll + 1) % MII, y, x)].push_back(node);
 					}
+				}
+				else
+				{
 
-					if(!node->getPHIchildren().empty()){
-
-						assert(node->getPHIchildren().size() == 1);
-						phiChild = node->getPHIchildren()[0];
-						assert(phiChild->getMappedLoc() != NULL);
-						int y = phiChild->getMappedLoc()->getY();
-						int x = phiChild->getMappedLoc()->getX();
-
-						if(currCGRA->getCGRANode((ll+1)%MII,y,x)->getmappedDFGNode() == NULL){
-							nodeDestMap[node].push_back(std::make_pair(currCGRA->getCGRANode((ll+1)%MII,y,x),(ll+1)));
-							destNodeMap[currCGRA->getCGRANode((ll+1)%MII,y,x)].push_back(node);
-						}
-
-					}
-					else{
-
-						for (int y = 0; y < YDim; ++y) {
-							for (int x = 0; x < XDim; ++x) {
-								if(currCGRA->getCGRANode((ll+1)%MII,y,x)->getmappedDFGNode() == NULL){
-									nodeDestMap[node].push_back(std::make_pair(currCGRA->getCGRANode((ll+1)%MII,y,x),(ll+1)));
-									destNodeMap[currCGRA->getCGRANode((ll+1)%MII,y,x)].push_back(node);
-								}
+					for (int y = 0; y < YDim; ++y)
+					{
+						for (int x = 0; x < XDim; ++x)
+						{
+							if (currCGRA->getCGRANode((ll + 1) % MII, y, x)->getmappedDFGNode() == NULL)
+							{
+								nodeDestMap[node].push_back(std::make_pair(currCGRA->getCGRANode((ll + 1) % MII, y, x), (ll + 1)));
+								destNodeMap[currCGRA->getCGRANode((ll + 1) % MII, y, x)].push_back(node);
 							}
 						}
-
 					}
-
-
-					ll = (ll+1);
 				}
+
+				ll = (ll + 1);
+			}
 			errs() << "MapASAPLevel:: nodeIdx=" << node->getIdx() << " ,Possible Dests = " << nodeDestMap[node].size() << "\n";
 		}
 
 		errs() << "MapASAPLevel:: Finding dests are done!\n";
 
 		//Sorting the nodeDestMap based routing/affinity costs
-		for (nodeDestMapIt = nodeDestMap.begin() ; nodeDestMapIt != nodeDestMap.end() ; nodeDestMapIt++){
+		for (nodeDestMapIt = nodeDestMap.begin(); nodeDestMapIt != nodeDestMap.end(); nodeDestMapIt++)
+		{
 			node = nodeDestMapIt->first;
 			nodesWithCost.clear();
-			for (int i = 0; i < nodeDestMapIt->second.size(); ++i) {
+			for (int i = 0; i < nodeDestMapIt->second.size(); ++i)
+			{
 				cnode = nodeDestMapIt->second[i].first;
 				mappedRealTime = nodeDestMapIt->second[i].second;
 
 				cost = 0;
-				for (int j = 0; j < node->getAncestors().size(); ++j) {
+				for (int j = 0; j < node->getAncestors().size(); ++j)
+				{
 					parent = node->getAncestors()[j];
 					parentExt = parent->getMappedLoc();
-//					parentExt = currCGRA->getCGRANode((parent->getMappedLoc()->getT() + 1)%(currCGRA->getMII()),parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
-					path = std::make_pair(parentExt,cnode);
+					//					parentExt = currCGRA->getCGRANode((parent->getMappedLoc()->getT() + 1)%(currCGRA->getMII()),parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
+					path = std::make_pair(parentExt, cnode);
 
 					//Calculate cost for the path
-					end = astar->AStarSearchEMS(*(currCGRA->getCGRAEdges()),parentExt,cnode,&cameFrom,&costSoFar,&endPort);
+					end = astar->AStarSearchEMS(*(currCGRA->getCGRAEdges()), parentExt, cnode, &cameFrom, &costSoFar, &endPort);
 					cost += costSoFar[cnode];
 				}
-				nodesWithCost.push_back( nodeWithCost(node,cnode,cost,mappedRealTime));
+				nodesWithCost.push_back(nodeWithCost(node, cnode, cost, mappedRealTime));
 			}
 			std::sort(nodesWithCost.begin(), nodesWithCost.end(), LessThanNodeWithCost());
 			globalNodesWithCost.push_back(nodesWithCost[0]);
-		    nodeDestMap[node].clear();
+			nodeDestMap[node].clear();
 			for (std::vector<nodeWithCost>::iterator it = nodesWithCost.begin();
-												     it != nodesWithCost.end();
-													 it++){
-				nodeDestMap[node].push_back(std::make_pair(it->cnode,it->mappedRealTime));
+				 it != nodesWithCost.end();
+				 it++)
+			{
+				nodeDestMap[node].push_back(std::make_pair(it->cnode, it->mappedRealTime));
 			}
 			assert(nodeDestMap[node].size() != 0);
 			//TODO : Implement affinity cost
@@ -3099,100 +3435,107 @@ bool DFG::MapCGRA_EMS_ASAPLevel(int MII, int XDim, int YDim) {
 		std::sort(globalNodesWithCost.begin(), globalNodesWithCost.end(), LessThanNodeWithCost());
 
 		deadEndReached = false;
-		if(!MAPCGRA_EMS_MultDest(&nodeDestMap,&destNodeMap,globalNodesWithCost.begin(),*(currCGRA->getCGRAEdges()),0)){
+		if (!MAPCGRA_EMS_MultDest(&nodeDestMap, &destNodeMap, globalNodesWithCost.begin(), *(currCGRA->getCGRAEdges()), 0))
+		{
 			return false;
 		}
-
 
 	} // End of ASAP level iterations
 	return true;
 }
 
-bool DFG::MAPCGRA_EMS_MultDest(std::map<dfgNode*,std::vector< std::pair<CGRANode*,int> > > *nodeDestMap,
-	      	  	  	  	  	   std::map<CGRANode*,std::vector<dfgNode*> > *destNodeMap,
-//							   std::map<dfgNode*,std::vector< std::pair<CGRANode*,int> > >::iterator it,
+bool DFG::MAPCGRA_EMS_MultDest(std::map<dfgNode *, std::vector<std::pair<CGRANode *, int>>> *nodeDestMap,
+							   std::map<CGRANode *, std::vector<dfgNode *>> *destNodeMap,
+							   //							   std::map<dfgNode*,std::vector< std::pair<CGRANode*,int> > >::iterator it,
 							   const std::vector<nodeWithCost>::iterator it,
-							   std::map<CGRANode*,std::vector<CGRAEdge> > cgraEdges,
-							   int index) {
+							   std::map<CGRANode *, std::vector<CGRAEdge>> cgraEdges,
+							   int index)
+{
 
-	std::map<dfgNode*,std::vector<std::pair<CGRANode*,int>> > localNodeDestMap = *nodeDestMap;
-	std::map<CGRANode*, std::vector<dfgNode*> > localdestNodeMap = *destNodeMap;
+	std::map<dfgNode *, std::vector<std::pair<CGRANode *, int>>> localNodeDestMap = *nodeDestMap;
+	std::map<CGRANode *, std::vector<dfgNode *>> localdestNodeMap = *destNodeMap;
 
-	dfgNode* node;
-	dfgNode* otherNode;
-	dfgNode* parent;
-	CGRANode* cnode;
-	std::pair<CGRANode*,int> cnodePair;
-	CGRANode* parentExt;
-//	std::vector< std::pair<CGRANode*,int> > possibleDests;
-	std::vector<dfgNode*> parents;
-//	std::vector<std::pair<CGRANode*, CGRANode*> > paths;
-	std::vector<CGRANode*> dests;
-	std::vector<std::pair<CGRANode*, CGRANode*> > pathsNotRouted;
+	dfgNode *node;
+	dfgNode *otherNode;
+	dfgNode *parent;
+	CGRANode *cnode;
+	std::pair<CGRANode *, int> cnodePair;
+	CGRANode *parentExt;
+	//	std::vector< std::pair<CGRANode*,int> > possibleDests;
+	std::vector<dfgNode *> parents;
+	//	std::vector<std::pair<CGRANode*, CGRANode*> > paths;
+	std::vector<CGRANode *> dests;
+	std::vector<std::pair<CGRANode *, CGRANode *>> pathsNotRouted;
 	bool success = false;
-//	int idx = index;
+	//	int idx = index;
 
-//	CGRA localCGRA = *inCGRA;
-	std::map<CGRANode*,std::vector<CGRAEdge> > localCGRAEdges = cgraEdges;
+	//	CGRA localCGRA = *inCGRA;
+	std::map<CGRANode *, std::vector<CGRAEdge>> localCGRAEdges = cgraEdges;
 
 	node = it->node;
-//	possibleDests = it->second;
+	//	possibleDests = it->second;
 
-//	if(node == NULL){
-//		errs() << "Node is NULL...\n";
-//	}else{
-//		errs() << "Node = \n";
-//		node->getNode()->dump();
-//	}
+	//	if(node == NULL){
+	//		errs() << "Node is NULL...\n";
+	//	}else{
+	//		errs() << "Node = \n";
+	//		node->getNode()->dump();
+	//	}
 
-//	errs() << "MapMultiDestRec : Procesing NodeIdx = " << node->getIdx() << " ,PossibleDests = " << (*nodeDestMap)[node].size() << "\n";
+	//	errs() << "MapMultiDestRec : Procesing NodeIdx = " << node->getIdx() << " ,PossibleDests = " << (*nodeDestMap)[node].size() << "\n";
 
 	errs() << "EMSMapMultiDestRec : Procesing NodeIdx = " << node->getIdx();
 	errs() << ", PossibleDests = " << (*nodeDestMap)[node].size();
 	errs() << ", MII = " << currCGRA->getMII();
 	errs() << ", currASAPLevel = " << node->getASAPnumber();
-	errs() << ", NodeProgress = " << index+1 << "/" << nodeDestMap->size();
+	errs() << ", NodeProgress = " << index + 1 << "/" << nodeDestMap->size();
 	errs() << "\n";
 
-
-	for (int i = 0; i < (*nodeDestMap)[node].size(); ++i) {
+	for (int i = 0; i < (*nodeDestMap)[node].size(); ++i)
+	{
 		success = false;
 
-		if((*nodeDestMap)[node][i].first->getmappedDFGNode() == NULL){
+		if ((*nodeDestMap)[node][i].first->getmappedDFGNode() == NULL)
+		{
 			errs() << "Possible Dest = "
 				   << "(" << (*nodeDestMap)[node][i].first->getT() << ","
-				   	   	  << (*nodeDestMap)[node][i].first->getY() << ","
-						  << (*nodeDestMap)[node][i].first->getX() << "), Index="<< i+1 << "/" << (*nodeDestMap)[node].size() << "\n";
+				   << (*nodeDestMap)[node][i].first->getY() << ","
+				   << (*nodeDestMap)[node][i].first->getX() << "), Index=" << i + 1 << "/" << (*nodeDestMap)[node].size() << "\n";
 			cnode = (*nodeDestMap)[node][i].first;
 			cnodePair = (*nodeDestMap)[node][i];
-			for (int j = 0; j < node->getAncestors().size(); ++j) {
+			for (int j = 0; j < node->getAncestors().size(); ++j)
+			{
 				parent = node->getAncestors()[j];
-//				parentExt = currCGRA->getCGRANode(cnode->getT(),parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
+				//				parentExt = currCGRA->getCGRANode(cnode->getT(),parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
 				parentExt = parent->getMappedLoc();
-//				parentExt = currCGRA->getCGRANode((parent->getMappedLoc()->getT() + 1)%(currCGRA->getMII()),parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
+				//				parentExt = currCGRA->getCGRANode((parent->getMappedLoc()->getT() + 1)%(currCGRA->getMII()),parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
 
-//				errs() << "Path = "
-//					   << "(" << parentExt->getT() << ","
-//					   	   	  << parentExt->getY() << ","
-//							  << parentExt->getX() << ") to ";
-//
-//				errs() << "(" << cnode->getT() << ","
-//					   	   	  << cnode->getY() << ","
-//							  << cnode->getX() << ")\n";
+				//				errs() << "Path = "
+				//					   << "(" << parentExt->getT() << ","
+				//					   	   	  << parentExt->getY() << ","
+				//							  << parentExt->getX() << ") to ";
+				//
+				//				errs() << "(" << cnode->getT() << ","
+				//					   	   	  << cnode->getY() << ","
+				//							  << cnode->getX() << ")\n";
 
-//				paths.push_back(std::make_pair(parentExt,cnode));
+				//				paths.push_back(std::make_pair(parentExt,cnode));
 				dests.push_back(cnode);
 				parents.push_back(parent);
 			}
 
 			localCGRAEdges = cgraEdges;
-			mappingOutFile << "nodeIdx=" << node->getIdx() << ", placed=(" << cnode->getT() << "," << cnode->getY() << "," << cnode->getX() << ")" << "\n";
-//			astar->EMSRoute(parents,paths,&localCGRAEdges,&pathsNotRouted);
-			astar->EMSRoute(node,parents,dests,&localCGRAEdges,&pathsNotRouted,&deadEndReached);
+			mappingOutFile << "nodeIdx=" << node->getIdx() << ", placed=(" << cnode->getT() << "," << cnode->getY() << "," << cnode->getX() << ")"
+						   << "\n";
+			//			astar->EMSRoute(parents,paths,&localCGRAEdges,&pathsNotRouted);
+			astar->EMSRoute(node, parents, dests, &localCGRAEdges, &pathsNotRouted, &deadEndReached);
 			dests.clear();
-			if(!pathsNotRouted.empty()){
-				for (int j = 0; j < parents.size(); ++j) {
-					for (int k = 0; k < parents[j]->getRoutingLocs()->size(); ++k) {
+			if (!pathsNotRouted.empty())
+			{
+				for (int j = 0; j < parents.size(); ++j)
+				{
+					for (int k = 0; k < parents[j]->getRoutingLocs()->size(); ++k)
+					{
 						(*parents[j]->getRoutingLocs())[k]->setMappedDFGNode(NULL);
 					}
 					parents[j]->getRoutingLocs()->clear();
@@ -3200,7 +3543,8 @@ bool DFG::MAPCGRA_EMS_MultDest(std::map<dfgNode*,std::vector< std::pair<CGRANode
 				mappingOutFile << "routing failed, clearing edges\n";
 				errs() << "all paths are not routed.\n";
 				pathsNotRouted.clear();
-				if(deadEndReached){
+				if (deadEndReached)
+				{
 					return false;
 				}
 				continue;
@@ -3208,16 +3552,18 @@ bool DFG::MAPCGRA_EMS_MultDest(std::map<dfgNode*,std::vector< std::pair<CGRANode
 			mappingOutFile << "routing success, keeping the current edges\n";
 			pathsNotRouted.clear();
 
-			for (int j = 0; j < localdestNodeMap[cnode].size(); ++j) {
+			for (int j = 0; j < localdestNodeMap[cnode].size(); ++j)
+			{
 				otherNode = localdestNodeMap[cnode][j];
 				localNodeDestMap[otherNode].erase(std::remove(localNodeDestMap[otherNode].begin(), localNodeDestMap[otherNode].end(), cnodePair), localNodeDestMap[otherNode].end());
 			}
 
-//			it->second.clear();
-//			it->second.push_back(cnodePair);
+			//			it->second.clear();
+			//			it->second.push_back(cnodePair);
 			localdestNodeMap[cnode].clear();
 
-			errs() << "Placed = " << "(" << cnode->getT() << "," << cnode->getY() << "," << cnode->getX() << ")\n";
+			errs() << "Placed = "
+				   << "(" << cnode->getT() << "," << cnode->getY() << "," << cnode->getX() << ")\n";
 			node->setMappedLoc(cnode);
 			cnode->setMappedDFGNode(node);
 			node->setMappedRealTime(cnodePair.second);
@@ -3225,27 +3571,31 @@ bool DFG::MAPCGRA_EMS_MultDest(std::map<dfgNode*,std::vector< std::pair<CGRANode
 			std::vector<nodeWithCost>::iterator itlocal;
 			itlocal = it;
 			itlocal++;
-//			it++;
+			//			it++;
 
-//			idx++;
+			//			idx++;
 
-			if(index + 1 < nodeDestMap->size()){
-				if(!EMSSortNodeDest(&localNodeDestMap,localCGRAEdges,index + 1)){
+			if (index + 1 < nodeDestMap->size())
+			{
+				if (!EMSSortNodeDest(&localNodeDestMap, localCGRAEdges, index + 1))
+				{
 					errs() << "&& EMSSortNodeDest Done and Some nodes does not have destination retrying...\n";
 					success = false;
 				}
-				else{
+				else
+				{
 					itlocal = globalNodesWithCost.begin() + index + 1;
 					errs() << "&& EMSSortNodeDest Done \n";
 					success = MAPCGRA_EMS_MultDest(
-							&localNodeDestMap,
-							&localdestNodeMap,
-							itlocal,
-							localCGRAEdges,
-							index + 1);
+						&localNodeDestMap,
+						&localdestNodeMap,
+						itlocal,
+						localCGRAEdges,
+						index + 1);
 				}
 			}
-			else{
+			else
+			{
 				errs() << "nodeDestMap end reached..\n";
 				*nodeDestMap = localNodeDestMap;
 				*destNodeMap = localdestNodeMap;
@@ -3253,17 +3603,20 @@ bool DFG::MAPCGRA_EMS_MultDest(std::map<dfgNode*,std::vector< std::pair<CGRANode
 				success = true;
 			}
 
-			if(deadEndReached){
+			if (deadEndReached)
+			{
 				success = false;
 				break;
 			}
 
-			if(success){
+			if (success)
+			{
 				(*nodeDestMap)[node].clear();
 				(*nodeDestMap)[node].push_back(cnodePair);
 				break;
 			}
-			else{
+			else
+			{
 				errs() << "MapMultiDestRec : fails next possible destination\n";
 				node->setMappedLoc(NULL);
 				cnode->setMappedDFGNode(NULL);
@@ -3272,15 +3625,17 @@ bool DFG::MAPCGRA_EMS_MultDest(std::map<dfgNode*,std::vector< std::pair<CGRANode
 		}
 	}
 
-	if(success){
-
+	if (success)
+	{
 	}
 	return success;
 }
 
-void DFG::clearMapping() {
-	dfgNode* node;
-	for (int i = 0; i < NodeList.size(); ++i) {
+void DFG::clearMapping()
+{
+	dfgNode *node;
+	for (int i = 0; i < NodeList.size(); ++i)
+	{
 		node = NodeList[i];
 		node->setMappedLoc(NULL);
 		node->setMappedRealTime(-1);
@@ -3288,93 +3643,102 @@ void DFG::clearMapping() {
 	}
 }
 
-TreePath DFG::createTreePath(dfgNode* parent, CGRANode* dest) {
+TreePath DFG::createTreePath(dfgNode *parent, CGRANode *dest)
+{
 	TreePath tp;
-	dfgNode* child;
-	CGRANode* ParentExt;
-	CGRANode* cnode;
+	dfgNode *child;
+	CGRANode *ParentExt;
+	CGRANode *cnode;
 	int MII = currCGRA->getMII();
 
 	//Initial node, AKA the source
 	assert(parent->getMappedLoc() != NULL);
 
-	if(parent->getMappedLoc()->getPEType() == MEM){
-		ParentExt = currCGRA->getCGRANode((parent->getMappedLoc()->getT()+2)%MII,parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
+	if (parent->getMappedLoc()->getPEType() == MEM)
+	{
+		ParentExt = currCGRA->getCGRANode((parent->getMappedLoc()->getT() + 2) % MII, parent->getMappedLoc()->getY(), parent->getMappedLoc()->getX());
 		tp.sourceSCpathTdimLengths[ParentExt] = 2;
 	}
-	else{
-		ParentExt = currCGRA->getCGRANode((parent->getMappedLoc()->getT()+1)%MII,parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
+	else
+	{
+		ParentExt = currCGRA->getCGRANode((parent->getMappedLoc()->getT() + 1) % MII, parent->getMappedLoc()->getY(), parent->getMappedLoc()->getX());
 		tp.sourceSCpathTdimLengths[ParentExt] = 1;
 	}
 	tp.sources.push_back(ParentExt);
 	tp.sourcePorts[ParentExt] = TILE;
-	tp.sourcePaths[ParentExt] = (std::make_pair(parent,parent));
+	tp.sourcePaths[ParentExt] = (std::make_pair(parent, parent));
 	tp.sourceSCpathLengths[ParentExt] = 0;
 
-
-//	if(parent->getIdx() == 22){
-//		errs() << "createTreePath::Parent=" << parent->getIdx() << "\n";
-//		errs() << "createTreePath::ParentExt=" << ParentExt->getName() << "\n";
-//	}
-
+	//	if(parent->getIdx() == 22){
+	//		errs() << "createTreePath::Parent=" << parent->getIdx() << "\n";
+	//		errs() << "createTreePath::ParentExt=" << ParentExt->getName() << "\n";
+	//	}
 
 	assert(parent != NULL);
-
 
 	tp.dest = dest;
 	bool foundParentTreeBasedRoutingLocs = false;
 
-	for (int i = 0; i < parent->getChildren().size(); ++i) {
+	for (int i = 0; i < parent->getChildren().size(); ++i)
+	{
 		child = parent->getChildren()[i];
-		if(child->getMappedLoc() != NULL){
+		if (child->getMappedLoc() != NULL)
+		{
 			foundParentTreeBasedRoutingLocs = false;
-			if((*child->getTreeBasedRoutingLocs()).find(parent) != (*child->getTreeBasedRoutingLocs()).end()){
-				for (int j = 0; j < (*child->getTreeBasedRoutingLocs())[parent].size(); ++j) {
+			if ((*child->getTreeBasedRoutingLocs()).find(parent) != (*child->getTreeBasedRoutingLocs()).end())
+			{
+				for (int j = 0; j < (*child->getTreeBasedRoutingLocs())[parent].size(); ++j)
+				{
 					cnode = (*child->getTreeBasedRoutingLocs())[parent][j]->cnode;
 					tp.sources.push_back(cnode);
-					tp.sourcePorts[cnode]=(*child->getTreeBasedRoutingLocs())[parent][j]->lastPort;
+					tp.sourcePorts[cnode] = (*child->getTreeBasedRoutingLocs())[parent][j]->lastPort;
 
-//					errs() << "getTreeBasedRoutingLocs read :: ";
-//					errs() << ", currNode=" << child->getIdx();
-//					errs() << ", currParent=" << parent->getIdx();
-//					errs() << ", cnode=" << cnode->getName();
-//					errs() << ", port=" << getCGRA()->getPortName(tp.sourcePorts[cnode]) << "\n";
-//					errs() << ", pathLength=" << (*child->getTreeBasedRoutingLocs())[parent][j]->SCpathLength << "\n";
+					//					errs() << "getTreeBasedRoutingLocs read :: ";
+					//					errs() << ", currNode=" << child->getIdx();
+					//					errs() << ", currParent=" << parent->getIdx();
+					//					errs() << ", cnode=" << cnode->getName();
+					//					errs() << ", port=" << getCGRA()->getPortName(tp.sourcePorts[cnode]) << "\n";
+					//					errs() << ", pathLength=" << (*child->getTreeBasedRoutingLocs())[parent][j]->SCpathLength << "\n";
 					assert(std::string("INV").compare(getCGRA()->getPortName(tp.sourcePorts[cnode])) != 0);
 
-
-					tp.sourceSCpathLengths[cnode]=(*child->getTreeBasedRoutingLocs())[parent][j]->SCpathLength;
-					tp.sourceSCpathTdimLengths[cnode]=(*child->getTreeBasedRoutingLocs())[parent][j]->TdimPathLength;
-					if(cnode == ParentExt){
-						tp.sourcePaths[cnode] = (std::make_pair(parent,parent));
+					tp.sourceSCpathLengths[cnode] = (*child->getTreeBasedRoutingLocs())[parent][j]->SCpathLength;
+					tp.sourceSCpathTdimLengths[cnode] = (*child->getTreeBasedRoutingLocs())[parent][j]->TdimPathLength;
+					if (cnode == ParentExt)
+					{
+						tp.sourcePaths[cnode] = (std::make_pair(parent, parent));
 					}
-					else{
-						tp.sourcePaths[cnode] = (std::make_pair(parent,child));
+					else
+					{
+						tp.sourcePaths[cnode] = (std::make_pair(parent, child));
 					}
 					foundParentTreeBasedRoutingLocs = true;
 				}
-
 			}
 
-			if((*child->getTreeBasedGoalLocs()).find(parent) != (*child->getTreeBasedGoalLocs()).end()){
-				for (int j = 0; j < (*child->getTreeBasedGoalLocs())[parent].size(); ++j) {
+			if ((*child->getTreeBasedGoalLocs()).find(parent) != (*child->getTreeBasedGoalLocs()).end())
+			{
+				for (int j = 0; j < (*child->getTreeBasedGoalLocs())[parent].size(); ++j)
+				{
 					cnode = (*child->getTreeBasedGoalLocs())[parent][j]->cnode;
 					tp.sources.push_back(cnode);
-					tp.sourcePorts[cnode]=(*child->getTreeBasedGoalLocs())[parent][j]->lastPort;
+					tp.sourcePorts[cnode] = (*child->getTreeBasedGoalLocs())[parent][j]->lastPort;
 					assert(std::string("INV").compare(getCGRA()->getPortName(tp.sourcePorts[cnode])) != 0);
-					tp.sourceSCpathLengths[cnode]=(*child->getTreeBasedGoalLocs())[parent][j]->SCpathLength;
-					tp.sourceSCpathTdimLengths[cnode]=(*child->getTreeBasedGoalLocs())[parent][j]->TdimPathLength;
-					if(cnode == ParentExt){
-						tp.sourcePaths[cnode] = (std::make_pair(parent,parent));
+					tp.sourceSCpathLengths[cnode] = (*child->getTreeBasedGoalLocs())[parent][j]->SCpathLength;
+					tp.sourceSCpathTdimLengths[cnode] = (*child->getTreeBasedGoalLocs())[parent][j]->TdimPathLength;
+					if (cnode == ParentExt)
+					{
+						tp.sourcePaths[cnode] = (std::make_pair(parent, parent));
 					}
-					else{
-						tp.sourcePaths[cnode] = (std::make_pair(parent,child));
+					else
+					{
+						tp.sourcePaths[cnode] = (std::make_pair(parent, child));
 					}
 					foundParentTreeBasedRoutingLocs = true;
 				}
 			}
 
-			if(!foundParentTreeBasedRoutingLocs){
+			if (!foundParentTreeBasedRoutingLocs)
+			{
 				errs() << "foundParentTreeBasedRoutingLocs is false!\n";
 				errs() << "child=" << child->getIdx() << "\n";
 				errs() << "childLoc=" << child->getMappedLoc()->getName() << "\n";
@@ -3385,7 +3749,6 @@ TreePath DFG::createTreePath(dfgNode* parent, CGRANode* dest) {
 			assert(tp.sourcePaths[cnode].second != NULL);
 		}
 	}
-
 
 	return tp;
 }
@@ -3421,64 +3784,75 @@ TreePath DFG::createTreePath(dfgNode* parent, CGRANode* dest) {
 //	return util;
 //}
 
-void DFG::printOutSMARTRoutes() {
-	dfgNode* node;
-	dfgNode* parent;
-	dfgNode* origNode;
-	dfgNode* origParent;
+void DFG::printOutSMARTRoutes()
+{
+	dfgNode *node;
+	dfgNode *parent;
+	dfgNode *origNode;
+	dfgNode *origParent;
 
-	std::vector<std::ofstream> outFiles(currCGRA->getYdim()*currCGRA->getXdim());
+	std::vector<std::ofstream> outFiles(currCGRA->getYdim() * currCGRA->getXdim());
 	std::ofstream *currOutFile;
-	CGRANode* cnode;
-	CGRANode* routingCnode;
-	CGRANode* parentExt;
-	std::map<int,std::vector<std::string> > logEntries;
+	CGRANode *cnode;
+	CGRANode *routingCnode;
+	CGRANode *parentExt;
+	std::map<int, std::vector<std::string>> logEntries;
 	bool noRouting = true;
 	int MII = currCGRA->getMII();
-	std::pair<dfgNode*,dfgNode*> sourcePath;
-
+	std::pair<dfgNode *, dfgNode *> sourcePath;
 
 	int pT = -1;
 	int pY = -1;
 	int pX = -1;
 
-
 	//Sanity check
-	for (int i = 0; i < NodeList.size(); ++i) {
+	for (int i = 0; i < NodeList.size(); ++i)
+	{
 		node = NodeList[i];
-		if(node->getMappedLoc() == NULL){
+		if (node->getMappedLoc() == NULL)
+		{
 			errs() << "printOutSMARTRoutes :: All the nodes are not mapped!\n";
 			return;
 		}
 	}
 
-	for (int y = 0; y < currCGRA->getYdim(); ++y) {
-		for (int x = 0; x < currCGRA->getXdim(); ++x) {
+	for (int y = 0; y < currCGRA->getYdim(); ++y)
+	{
+		for (int x = 0; x < currCGRA->getXdim(); ++x)
+		{
 			std::string tempOutFileName = name + "_SMRT_" + std::to_string(y) + "_" + std::to_string(x) + ".log";
-			outFiles[convertToPhyLoc(y,x)].open(tempOutFileName.c_str());
+			outFiles[convertToPhyLoc(y, x)].open(tempOutFileName.c_str());
 		}
 	}
 
 	int routeStart = 0;
 	int k;
 	//Generate Log Entries
-	for (int t = 0; t < currCGRA->getMII(); ++t) {
-		for (int y = 0; y < currCGRA->getYdim(); ++y) {
-			for (int x = 0; x < currCGRA->getXdim(); ++x) {
-				cnode = currCGRA->getCGRANode(t,y,x);
-				if(cnode->getmappedDFGNode() != NULL){
+	for (int t = 0; t < currCGRA->getMII(); ++t)
+	{
+		for (int y = 0; y < currCGRA->getYdim(); ++y)
+		{
+			for (int x = 0; x < currCGRA->getXdim(); ++x)
+			{
+				cnode = currCGRA->getCGRANode(t, y, x);
+				if (cnode->getmappedDFGNode() != NULL)
+				{
 					node = cnode->getmappedDFGNode();
 					origNode = node;
-					if(node->getMappedLoc() == cnode){ // node is not just a routing location
-						for (int i = 0; i < node->getAncestors().size(); ++i) {
+					if (node->getMappedLoc() == cnode)
+					{ // node is not just a routing location
+						for (int i = 0; i < node->getAncestors().size(); ++i)
+						{
 							parent = node->getAncestors()[i];
 							origParent = parent;
 
-							if(parent->getMappedLoc()->getPEType() == MEM){
-								parentExt = currCGRA->getCGRANode((parent->getMappedLoc()->getT()+2)%MII,parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
+							if (parent->getMappedLoc()->getPEType() == MEM)
+							{
+								parentExt = currCGRA->getCGRANode((parent->getMappedLoc()->getT() + 2) % MII, parent->getMappedLoc()->getY(), parent->getMappedLoc()->getX());
 							}
-							else{
-								parentExt = currCGRA->getCGRANode((parent->getMappedLoc()->getT()+1)%MII,parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
+							else
+							{
+								parentExt = currCGRA->getCGRANode((parent->getMappedLoc()->getT() + 1) % MII, parent->getMappedLoc()->getY(), parent->getMappedLoc()->getX());
 							}
 
 							routeStart = 0;
@@ -3489,52 +3863,56 @@ void DFG::printOutSMARTRoutes() {
 							errs() << "FinalDestNodeIdx=" << node->getIdx() << "\n";
 							errs() << "FinalParentNodeIdx=" << parent->getIdx() << "\n";
 							errs() << "ParentsSize=" << node->getAncestors().size() << "\n";
-							do{
-							assert(parent->getMappedLoc() != NULL);
-							assert(node->getMappedLoc() != NULL);
-//							strEntry = node->getMappedLoc()->getNameWithOutTime();
-//							routingCnode = node->getMappedLoc();
-//							noRouting = true;
-								for (int j = routeStart; j < node->getMergeRoutingLocs()[parent].size(); ++j) {
-									errs() << "routePath = "<< node->getMergeRoutingLocs()[parent][j]->cnode->getName() << "\n";
-//									if(routingCnode->getT() != node->getMergeRoutingLocs()[parent][j]->getT()){
-//										if(!noRouting){
-//											pT = routingCnode->getT();
-//											pY = routingCnode->getY();
-//											pX = routingCnode->getX();
-//
-//											logEntries[convertToPhyLoc(pT,pY,pX)].push_back(strEntry);
-//										}
-//										routingCnode = node->getMergeRoutingLocs()[parent][j];
-//										noRouting = true;
-//										strEntry =  routingCnode->getNameWithOutTime() + " <-- " ;
-//									}else{
-										routingCnode = node->getMergeRoutingLocs()[parent][j]->cnode;
-//										noRouting = false;
-										strEntry = strEntry + routingCnode->getName() + " <-- " ;
-										nodeRouteMap[origNode][origParent].push_back(routingCnode);
-//									}
+							do
+							{
+								assert(parent->getMappedLoc() != NULL);
+								assert(node->getMappedLoc() != NULL);
+								//							strEntry = node->getMappedLoc()->getNameWithOutTime();
+								//							routingCnode = node->getMappedLoc();
+								//							noRouting = true;
+								for (int j = routeStart; j < node->getMergeRoutingLocs()[parent].size(); ++j)
+								{
+									errs() << "routePath = " << node->getMergeRoutingLocs()[parent][j]->cnode->getName() << "\n";
+									//									if(routingCnode->getT() != node->getMergeRoutingLocs()[parent][j]->getT()){
+									//										if(!noRouting){
+									//											pT = routingCnode->getT();
+									//											pY = routingCnode->getY();
+									//											pX = routingCnode->getX();
+									//
+									//											logEntries[convertToPhyLoc(pT,pY,pX)].push_back(strEntry);
+									//										}
+									//										routingCnode = node->getMergeRoutingLocs()[parent][j];
+									//										noRouting = true;
+									//										strEntry =  routingCnode->getNameWithOutTime() + " <-- " ;
+									//									}else{
+									routingCnode = node->getMergeRoutingLocs()[parent][j]->cnode;
+									//										noRouting = false;
+									strEntry = strEntry + routingCnode->getName() + " <-- ";
+									nodeRouteMap[origNode][origParent].push_back(routingCnode);
+									//									}
 								}
 
-//								if(!noRouting){
-//									pT = routingCnode->getT();
-//									pY = routingCnode->getY();
-//									pX = routingCnode->getX();
-//
-//									logEntries[convertToPhyLoc(pT,pY,pX)].push_back(strEntry);
-//								}
+								//								if(!noRouting){
+								//									pT = routingCnode->getT();
+								//									pY = routingCnode->getY();
+								//									pX = routingCnode->getX();
+								//
+								//									logEntries[convertToPhyLoc(pT,pY,pX)].push_back(strEntry);
+								//								}
 
 								sourcePath = (*node->getSourceRoutingPath())[parent];
 								node = sourcePath.second;
 								parent = sourcePath.first;
-//								parentExt = currCGRA->getCGRANode((parent->getMappedLoc()->getT()+1)%MII,parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
+								//								parentExt = currCGRA->getCGRANode((parent->getMappedLoc()->getT()+1)%MII,parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
 
-
-								if(node != parent){
-									for (k = 0; k < node->getMergeRoutingLocs()[parent].size(); ++k) {
+								if (node != parent)
+								{
+									for (k = 0; k < node->getMergeRoutingLocs()[parent].size(); ++k)
+									{
 										errs() << "pathNode =" << node->getMergeRoutingLocs()[parent][k]->cnode->getName() << "\n";
-										if(node->getMergeRoutingLocs()[parent][k]->cnode == routingCnode){
-											routeStart = k+1;
+										if (node->getMergeRoutingLocs()[parent][k]->cnode == routingCnode)
+										{
+											routeStart = k + 1;
 											break;
 										}
 									}
@@ -3547,50 +3925,54 @@ void DFG::printOutSMARTRoutes() {
 
 									errs() << "node->getMergeRoutingLocs()[parent].size() = " << node->getMergeRoutingLocs()[parent].size() << "\n";
 
-									assert(routeStart == k+1);
+									assert(routeStart == k + 1);
 								}
 
-
-							}while(node != parent);
+							} while (node != parent);
 							assert(routingCnode == parentExt);
 							errs() << "%% Path Mapping Done ! \n";
 
-//							if(!noRouting){
-								pT = cnode->getT();
-								pY = cnode->getY();
-								pX = cnode->getX();
+							//							if(!noRouting){
+							pT = cnode->getT();
+							pY = cnode->getY();
+							pX = cnode->getX();
 
-								logEntries[convertToPhyLoc(pT,pY,pX)].push_back(strEntry);
-//							}
-
+							logEntries[convertToPhyLoc(pT, pY, pX)].push_back(strEntry);
+							//							}
 
 							node = cnode->getmappedDFGNode();
-
 						}
-					}else{ // node is just a routing location, this will not happen in SMART based routing
-						logEntries[convertToPhyLoc(t,y,x)].push_back("ROUTING ONLY");
+					}
+					else
+					{ // node is just a routing location, this will not happen in SMART based routing
+						logEntries[convertToPhyLoc(t, y, x)].push_back("ROUTING ONLY");
 					}
 				}
-				else{
-					logEntries[convertToPhyLoc(t,y,x)].push_back("NIL");
+				else
+				{
+					logEntries[convertToPhyLoc(t, y, x)].push_back("NIL");
 				}
-
 			}
 		}
 	}
 
 	//Writeout Log Entries
-	for (int t = 0; t < currCGRA->getMII(); ++t) {
-		for (int y = 0; y < currCGRA->getYdim(); ++y) {
-			for (int x = 0; x < currCGRA->getXdim(); ++x) {
-				for (int i = 0; i < logEntries[convertToPhyLoc(t,y,x)].size(); ++i) {
-					outFiles[convertToPhyLoc(y,x)] << std::to_string(t) << "," << logEntries[convertToPhyLoc(t,y,x)][i] << std::endl;
+	for (int t = 0; t < currCGRA->getMII(); ++t)
+	{
+		for (int y = 0; y < currCGRA->getYdim(); ++y)
+		{
+			for (int x = 0; x < currCGRA->getXdim(); ++x)
+			{
+				for (int i = 0; i < logEntries[convertToPhyLoc(t, y, x)].size(); ++i)
+				{
+					outFiles[convertToPhyLoc(y, x)] << std::to_string(t) << "," << logEntries[convertToPhyLoc(t, y, x)][i] << std::endl;
 				}
 			}
 		}
 	}
 
-	for (int i = 0; i < outFiles.size(); ++i) {
+	for (int i = 0; i < outFiles.size(); ++i)
+	{
 		outFiles[i].close();
 	}
 
@@ -3601,18 +3983,19 @@ void DFG::printOutSMARTRoutes() {
 	//Print Header
 	pathLengthFile << "Node,Parent,Route,RouteLength,dT(RouteLength)/MII" << std::endl;
 
-	std::map<dfgNode*,std::map<dfgNode*,std::vector<CGRANode*>>>::iterator nodeIt;
-	std::map<dfgNode*,std::vector<CGRANode*>>::iterator ParentIt;
+	std::map<dfgNode *, std::map<dfgNode *, std::vector<CGRANode *>>>::iterator nodeIt;
+	std::map<dfgNode *, std::vector<CGRANode *>>::iterator ParentIt;
 
-
-	for(nodeIt = nodeRouteMap.begin();
-		nodeIt != nodeRouteMap.end();
-		nodeIt++){
+	for (nodeIt = nodeRouteMap.begin();
+		 nodeIt != nodeRouteMap.end();
+		 nodeIt++)
+	{
 
 		node = nodeIt->first;
-		for(ParentIt = nodeRouteMap[node].begin();
-			ParentIt != nodeRouteMap[node].end();
-			ParentIt++){
+		for (ParentIt = nodeRouteMap[node].begin();
+			 ParentIt != nodeRouteMap[node].end();
+			 ParentIt++)
+		{
 
 			parent = ParentIt->first;
 
@@ -3623,12 +4006,16 @@ void DFG::printOutSMARTRoutes() {
 			int endTime = nodeRouteMap[node][parent][0]->getT();
 			int revisits = 0;
 
-			for (int i = 0; i < nodeRouteMap[node][parent].size(); ++i) {
+			for (int i = 0; i < nodeRouteMap[node][parent].size(); ++i)
+			{
 				pathLengthFile << nodeRouteMap[node][parent][i]->getNameSp() << "<--";
 
-				if(i!=0){
-					if(nodeRouteMap[node][parent][i]->getT() == endTime){
-						if(nodeRouteMap[node][parent][i-1]->getT() != nodeRouteMap[node][parent][i]->getT()){
+				if (i != 0)
+				{
+					if (nodeRouteMap[node][parent][i]->getT() == endTime)
+					{
+						if (nodeRouteMap[node][parent][i - 1]->getT() != nodeRouteMap[node][parent][i]->getT())
+						{
 							revisits++;
 						}
 					}
@@ -3638,106 +4025,119 @@ void DFG::printOutSMARTRoutes() {
 
 			pathLengthFile << nodeRouteMap[node][parent].size() << ",";
 			pathLengthFile << revisits << std::endl;
-//			pathLengthFile << nodeRouteMap[node][parent].size()/currCGRA->getMII() << std::endl;
+			//			pathLengthFile << nodeRouteMap[node][parent].size()/currCGRA->getMII() << std::endl;
 		}
 		pathLengthFile << std::endl;
 	}
 	pathLengthFile.close();
 	analyzeRTpaths();
-
 }
 
-int DFG::convertToPhyLoc(int t, int y, int x) {
-	return t*currCGRA->getYdim()*currCGRA->getXdim() + y*currCGRA->getXdim() + x;
+int DFG::convertToPhyLoc(int t, int y, int x)
+{
+	return t * currCGRA->getYdim() * currCGRA->getXdim() + y * currCGRA->getXdim() + x;
 }
 
-int DFG::convertToPhyLoc(int y, int x) {
-	return y*currCGRA->getXdim() + x;
+int DFG::convertToPhyLoc(int y, int x)
+{
+	return y * currCGRA->getXdim() + x;
 }
-
 
 //This function should be called on the incremented pointers, i.e. Nodes upto index are mapped
 //This function should reorder nodeDestMap, i.e. nodes that are not yet mapped considering the tree based routing
 bool DFG::EMSSortNodeDest(
-		std::map<dfgNode*, std::vector<std::pair<CGRANode*, int> > >* nodeDestMap,
-		std::map<CGRANode*,std::vector<CGRAEdge> > cgraEdges,
-		int index) {
+	std::map<dfgNode *, std::vector<std::pair<CGRANode *, int>>> *nodeDestMap,
+	std::map<CGRANode *, std::vector<CGRAEdge>> cgraEdges,
+	int index)
+{
 
 	//Nodes upto index are mapped
 	std::vector<nodeWithCost>::iterator it = globalNodesWithCost.begin() + index;
 	std::vector<nodeWithCost>::iterator localtItPrev;
 	std::vector<nodeWithCost>::iterator localtItForward;
-	dfgNode* node = it->node;
+	dfgNode *node = it->node;
 	int affCost = -1;
 	int routeCost = -1;
 	std::vector<nodeWithCost> localNodesWithCost;
-	std::map<dfgNode*, std::vector<std::pair<CGRANode*, int> > > newNodeDestMap;
-	CGRANode* cnode;
+	std::map<dfgNode *, std::vector<std::pair<CGRANode *, int>>> newNodeDestMap;
+	CGRANode *cnode;
 	int mappedRealTime = -1;
 	bool result = true;
 
 	//Loop through mapped nodes
-	for(localtItPrev = it-1; localtItPrev != it ; localtItPrev++){
+	for (localtItPrev = it - 1; localtItPrev != it; localtItPrev++)
+	{
 		//Assumption : All nodes are mapped until this point
 		assert(localtItPrev->node->getMappedLoc() != NULL);
 		errs() << "localtItPrev, NodeIdx = " << localtItPrev->node->getIdx() << "\n";
 
-		for (localtItForward = it; localtItForward != globalNodesWithCost.end(); localtItForward++) {
+		for (localtItForward = it; localtItForward != globalNodesWithCost.end(); localtItForward++)
+		{
 			errs() << "localtItForward, NodeIdx = " << localtItForward->node->getIdx() << "\n";
-			if(localtItForward->node->getASAPnumber() == 16){
+			if (localtItForward->node->getASAPnumber() == 16)
+			{
 				errs() << "getAffinityCost started.\n";
 			}
-			affCost = getAffinityCost(localtItForward->node,localtItPrev->node);
+			affCost = getAffinityCost(localtItForward->node, localtItPrev->node);
 			//TODO :removing affcost for now, add it later
-//			affCost = 0;
-			if(localtItForward->node->getASAPnumber() == 16){
+			//			affCost = 0;
+			if (localtItForward->node->getASAPnumber() == 16)
+			{
 				errs() << "getAffinityCost done.\n";
-				errs() << "(*nodeDestMap)[localtItForward->node].size = " <<  (*nodeDestMap)[localtItForward->node].size() << "\n";
+				errs() << "(*nodeDestMap)[localtItForward->node].size = " << (*nodeDestMap)[localtItForward->node].size() << "\n";
 			}
 
 			localNodesWithCost.clear();
-			for (int j = 0; j < (*nodeDestMap)[localtItForward->node].size(); ++j) {
-				if(localtItForward->node->getASAPnumber() == 16){
+			for (int j = 0; j < (*nodeDestMap)[localtItForward->node].size(); ++j)
+			{
+				if (localtItForward->node->getASAPnumber() == 16)
+				{
 					errs() << "(*nodeDestMap)[localtItForward->node], j = " << j << "\n";
 				}
 
 				cnode = (*nodeDestMap)[localtItForward->node][j].first;
 				mappedRealTime = (*nodeDestMap)[localtItForward->node][j].second;
 
-				routeCost = getStaticRoutingCost(localtItForward->node,cnode,cgraEdges);
-				if(routeCost == INT_MAX){ //Not Routed
-//					localNodesWithCost.push_back(nodeWithCost(localtItForward->node,cnode,INT_MAX,mappedRealTime));
-//					localNodesWithCost[localNodesWithCost.size()-1].affinityCost = 0;
-//					localNodesWithCost[localNodesWithCost.size()-1].routingCost = routeCost;
+				routeCost = getStaticRoutingCost(localtItForward->node, cnode, cgraEdges);
+				if (routeCost == INT_MAX)
+				{   //Not Routed
+					//					localNodesWithCost.push_back(nodeWithCost(localtItForward->node,cnode,INT_MAX,mappedRealTime));
+					//					localNodesWithCost[localNodesWithCost.size()-1].affinityCost = 0;
+					//					localNodesWithCost[localNodesWithCost.size()-1].routingCost = routeCost;
 				}
-				else{
-					affCost = affCost*getDistCGRANodes(cnode,localtItPrev->node->getMappedLoc());
-					localNodesWithCost.push_back(nodeWithCost(localtItForward->node,cnode,routeCost + affCost,mappedRealTime));
-					localNodesWithCost[localNodesWithCost.size()-1].affinityCost = affCost;
-					localNodesWithCost[localNodesWithCost.size()-1].routingCost = routeCost;
+				else
+				{
+					affCost = affCost * getDistCGRANodes(cnode, localtItPrev->node->getMappedLoc());
+					localNodesWithCost.push_back(nodeWithCost(localtItForward->node, cnode, routeCost + affCost, mappedRealTime));
+					localNodesWithCost[localNodesWithCost.size() - 1].affinityCost = affCost;
+					localNodesWithCost[localNodesWithCost.size() - 1].routingCost = routeCost;
 				}
 			}
-//			assert(localNodesWithCost.size() == (*nodeDestMap)[localtItForward->node].size());
-			if(localNodesWithCost.size() == 0){
+			//			assert(localNodesWithCost.size() == (*nodeDestMap)[localtItForward->node].size());
+			if (localNodesWithCost.size() == 0)
+			{
 				result = false;
 			}
-			else{
-				std::sort(localNodesWithCost.begin(),localNodesWithCost.end(),LessThanNodeWithCost());
+			else
+			{
+				std::sort(localNodesWithCost.begin(), localNodesWithCost.end(), LessThanNodeWithCost());
 				(*nodeDestMap)[localtItForward->node].clear();
-				for (int j = 0; j < localNodesWithCost.size(); ++j) {
-					(*nodeDestMap)[localtItForward->node].push_back(std::make_pair(localNodesWithCost[j].cnode,localNodesWithCost[j].mappedRealTime));
+				for (int j = 0; j < localNodesWithCost.size(); ++j)
+				{
+					(*nodeDestMap)[localtItForward->node].push_back(std::make_pair(localNodesWithCost[j].cnode, localNodesWithCost[j].mappedRealTime));
 				}
 				assert(localNodesWithCost.size() != 0);
 				localtItForward->cost = localNodesWithCost[0].cost;
-				errs() << "routeCost=" << localNodesWithCost[0].routingCost << ", affCost=" << localNodesWithCost[0].affinityCost << ", Total=" << localNodesWithCost[0].cost <<"\n";
+				errs() << "routeCost=" << localNodesWithCost[0].routingCost << ", affCost=" << localNodesWithCost[0].affinityCost << ", Total=" << localNodesWithCost[0].cost << "\n";
 			}
 		}
 	}
-	std::sort(it,globalNodesWithCost.end(),LessThanNodeWithCost());
+	std::sort(it, globalNodesWithCost.end(), LessThanNodeWithCost());
 	return result;
 }
 
-int DFG::getDistCGRANodes(CGRANode* a, CGRANode* b) {
+int DFG::getDistCGRANodes(CGRANode *a, CGRANode *b)
+{
 	int aX = a->getX();
 	int aY = a->getY();
 	int aT = a->getT();
@@ -3749,10 +4149,13 @@ int DFG::getDistCGRANodes(CGRANode* a, CGRANode* b) {
 	return abs(aX - bX) + abs(aY - bY) + abs(aT - bT);
 }
 
-void DFG::printConMat(std::vector<std::vector<unsigned char> > conMat) {
+void DFG::printConMat(std::vector<std::vector<unsigned char>> conMat)
+{
 	errs() << "Printing ConMat....\n";
-	for (int i = 0; i < conMat.size(); ++i) {
-		for (int j = 0; j < conMat[i].size(); ++j) {
+	for (int i = 0; i < conMat.size(); ++i)
+	{
+		for (int j = 0; j < conMat[i].size(); ++j)
+		{
 			errs() << (int)conMat[i][j] << " ";
 		}
 		errs() << "\n";
@@ -3760,81 +4163,89 @@ void DFG::printConMat(std::vector<std::vector<unsigned char> > conMat) {
 	errs() << "Done Printing ConMat....\n";
 }
 
-int DFG::getStaticRoutingCost(dfgNode* node, CGRANode* dest, std::map<CGRANode*,std::vector<CGRAEdge> > Edges) {
-	dfgNode* parent;
+int DFG::getStaticRoutingCost(dfgNode *node, CGRANode *dest, std::map<CGRANode *, std::vector<CGRAEdge>> Edges)
+{
+	dfgNode *parent;
 	TreePath tp;
-	CGRANode* end;
+	CGRANode *end;
 	Port endPort;
 
-	CGRANode* cnode;
+	CGRANode *cnode;
 	Port currPort;
-	std::pair<CGRANode*,Port> currNodePortPair;
+	std::pair<CGRANode *, Port> currNodePortPair;
 	int currCost = 0;
 	int bestCost = INT_MAX;
-	CGRANode* bestSource = NULL;
+	CGRANode *bestSource = NULL;
 
 	int cost = 0;
 
-	std::map<std::pair<CGRANode*,Port>,std::pair<CGRANode*,Port> > cameFrom;
-	std::map<std::pair<CGRANode*,Port>,std::pair<CGRANode*,Port> >::iterator cameFromIt;
-	std::map<CGRANode*,int> costSoFar;
+	std::map<std::pair<CGRANode *, Port>, std::pair<CGRANode *, Port>> cameFrom;
+	std::map<std::pair<CGRANode *, Port>, std::pair<CGRANode *, Port>>::iterator cameFromIt;
+	std::map<CGRANode *, int> costSoFar;
 
-	std::vector<CGRAEdge*> tempCGRAEdges;
+	std::vector<CGRAEdge *> tempCGRAEdges;
 
-	for (int i = 0; i < node->getAncestors().size(); ++i) {
+	for (int i = 0; i < node->getAncestors().size(); ++i)
+	{
 		parent = node->getAncestors()[i];
-		tp = createTreePath(parent,dest);
+		tp = createTreePath(parent, dest);
 
 		bestSource = NULL;
-		for (int j = 0; j < tp.sources.size(); ++j) {
-			end = astar->AStarSearchEMS(Edges,tp.sources[j],dest,&cameFrom,&costSoFar,&endPort);
-			if(end != dest){
+		for (int j = 0; j < tp.sources.size(); ++j)
+		{
+			end = astar->AStarSearchEMS(Edges, tp.sources[j], dest, &cameFrom, &costSoFar, &endPort);
+			if (end != dest)
+			{
 				continue;
 			}
 
 			//traverse the path
 			cnode = dest;
-			for(cameFromIt = cameFrom.begin(); cameFromIt != cameFrom.end(); cameFromIt++){
-				if(cameFromIt->first.first == cnode){
+			for (cameFromIt = cameFrom.begin(); cameFromIt != cameFrom.end(); cameFromIt++)
+			{
+				if (cameFromIt->first.first == cnode)
+				{
 					currPort = cameFromIt->first.second;
 					break;
 				}
 			}
-			currNodePortPair = std::make_pair(cnode,currPort);
-
-
+			currNodePortPair = std::make_pair(cnode, currPort);
 
 			currCost = 0;
-			while(cnode != tp.sources[j]){
-				if((cnode->getX() == cameFrom[currNodePortPair].first->getX())&&
-				   (cnode->getY() == cameFrom[currNodePortPair].first->getY())
-						){
+			while (cnode != tp.sources[j])
+			{
+				if ((cnode->getX() == cameFrom[currNodePortPair].first->getX()) &&
+					(cnode->getY() == cameFrom[currNodePortPair].first->getY()))
+				{
 					currCost++;
 				}
-				else{
-					if(cnode == dest){
-
+				else
+				{
+					if (cnode == dest)
+					{
 					}
-					else{
+					else
+					{
 						currCost += currCGRA->getMII();
 					}
-
 				}
-//				currCost += (currCGRA->getCGRANode(0,1,1)->originalEdgesSize - (*currCGRA->getCGRAEdges())[cnode].size());
+				//				currCost += (currCGRA->getCGRANode(0,1,1)->originalEdgesSize - (*currCGRA->getCGRAEdges())[cnode].size());
 				cnode = cameFrom[currNodePortPair].first;
 			}
 
-			if(currCost < bestCost){
+			if (currCost < bestCost)
+			{
 				bestCost = currCost;
 				bestSource = tp.sources[j];
 			}
 		}
 
-		if(bestSource == NULL){
-//			errs() << "getStaticRoutingCost :: routing ParentIdx=" << parent->getIdx();
-//			errs() << ", placed=" << parent->getMappedLoc()->getName();
-//			errs() << " to nodeIdx" << node->getIdx() << ", triedToBePlaced=" << dest->getName();
-//			errs() << " FAILED! \n";
+		if (bestSource == NULL)
+		{
+			//			errs() << "getStaticRoutingCost :: routing ParentIdx=" << parent->getIdx();
+			//			errs() << ", placed=" << parent->getMappedLoc()->getName();
+			//			errs() << " to nodeIdx" << node->getIdx() << ", triedToBePlaced=" << dest->getName();
+			//			errs() << " FAILED! \n";
 			return INT_MAX;
 		}
 		cost = cost + bestCost;
@@ -3842,29 +4253,37 @@ int DFG::getStaticRoutingCost(dfgNode* node, CGRANode* dest, std::map<CGRANode*,
 	return cost;
 }
 
-MemOp DFG::isMemoryOp(dfgNode* node) {
+MemOp DFG::isMemoryOp(dfgNode *node)
+{
 
 	LoadInst *Ld = dyn_cast<LoadInst>(node->getNode());
 	StoreInst *St = dyn_cast<StoreInst>(node->getNode());
 
-	if (!St && !Ld){
+	if (!St && !Ld)
+	{
 		return INVALID;
 	}
 
-	if(Ld){
-		if(!Ld->isSimple()){
+	if (Ld)
+	{
+		if (!Ld->isSimple())
+		{
 			return INVALID;
 		}
-		else{
+		else
+		{
 			return LOAD;
 		}
 	}
 
-	if(St){
-		if(!St->isSimple()){
+	if (St)
+	{
+		if (!St->isSimple())
+		{
 			return INVALID;
 		}
-		else{
+		else
+		{
 			return STORE;
 		}
 	}
@@ -3873,17 +4292,24 @@ MemOp DFG::isMemoryOp(dfgNode* node) {
 }
 
 #ifndef XMLCheckResult
-	#define XMLCheckResult(a_eResult) if (a_eResult != tinyxml2::XML_SUCCESS) { printf("Error: %i\n", a_eResult); return a_eResult; }
+#define XMLCheckResult(a_eResult)           \
+	if (a_eResult != tinyxml2::XML_SUCCESS) \
+	{                                       \
+		printf("Error: %i\n", a_eResult);   \
+		return a_eResult;                   \
+	}
 #endif
 
 #ifndef XMLCheckNULL
-	#define XMLCheckNULL(xmlNode) if(xmlNode == NULL) return tinyxml2::XML_ERROR_FILE_READ_ERROR;
+#define XMLCheckNULL(xmlNode) \
+	if (xmlNode == NULL)      \
+		return tinyxml2::XML_ERROR_FILE_READ_ERROR;
 #endif
 
-
-int DFG::readXML(std::string fileName) {
+int DFG::readXML(std::string fileName)
+{
 	tinyxml2::XMLDocument inputDFG;
-	std::vector<dfgNode*> nodelist;
+	std::vector<dfgNode *> nodelist;
 
 	int totalNumberOps = -1;
 	int opManualCount = 0;
@@ -3891,17 +4317,17 @@ int DFG::readXML(std::string fileName) {
 	int edgeManualCount = 0;
 
 	tinyxml2::XMLError err;
-	tinyxml2::XMLElement* nextElem;
-	tinyxml2::XMLElement* inElem1;
-	tinyxml2::XMLElement* inElem2;
-	tinyxml2::XMLNode* pRoot;
+	tinyxml2::XMLElement *nextElem;
+	tinyxml2::XMLElement *inElem1;
+	tinyxml2::XMLElement *inElem2;
+	tinyxml2::XMLNode *pRoot;
 	int ancNumber = -1;
 	int childNumber = -1;
 
 	int tempInt1 = -1;
 	int tempInt2 = -1;
-	const char* tempchararr;
-//	std::string tempString;
+	const char *tempchararr;
+	//	std::string tempString;
 
 	errs() << "Reading xml input file : " << fileName << "\n";
 	err = inputDFG.LoadFile(fileName.c_str());
@@ -3924,8 +4350,9 @@ int DFG::readXML(std::string fileName) {
 	nextElem = nextElem->NextSiblingElement("OP");
 	XMLCheckNULL(nextElem);
 
-	while(nextElem != NULL){
-		dfgNode* node = new dfgNode(this);
+	while (nextElem != NULL)
+	{
+		dfgNode *node = new dfgNode(this);
 		errs() << "Reading OP," << opManualCount << "\n";
 
 		inElem1 = nextElem->FirstChildElement("ID");
@@ -3941,53 +4368,53 @@ int DFG::readXML(std::string fileName) {
 		errs() << tempchararr << "\n";
 		node->setNameType(tempString);
 
-//		errs() << "Reading In-edge-number : ";
-//		inElem1 = nextElem->FirstChildElement("In-edge-number");
-//		XMLCheckNULL(inElem1);
-//		err = inElem1->QueryIntText(&tempInt1);
-//		XMLCheckResult(err);
-//		ancNumber = tempInt1;
-//		errs() << ancNumber << "\n";
-//
-//		if(ancNumber > 0){
-//			//traverse to in-edges
-//			inElem1 = nextElem->FirstChildElement("In-edges");
-//			XMLCheckNULL(inElem1);
-//
-//			inElem1 = inElem1->FirstChildElement("Edge");
-//			XMLCheckNULL(inElem1);
-//			for (int i = 0; i < ancNumber; ++i) {
-//				errs() << "Read in-edge \n";
-//				err = inElem1->QueryIntText(&tempInt1);
-//				XMLCheckResult(err);
-//				node->InEdgesIdx.push_back(tempInt1);
-//
-//				inElem1 = inElem1->NextSiblingElement("Edge");
-//			}
-//		}
-//
-//		errs() << "Reading Out-edge-number : \n";
-//		inElem1 = nextElem->FirstChildElement("Out-edge-number");
-//		XMLCheckNULL(inElem1);
-//		err = inElem1->QueryIntText(&tempInt1);
-//		XMLCheckResult(err);
-//		childNumber = tempInt1;
-//
-//		if(childNumber > 0){
-//			//traverse to in-edges
-//			inElem1 = nextElem->FirstChildElement("Out-edges");
-//			XMLCheckNULL(inElem1);
-//
-//			inElem1 = inElem1->FirstChildElement("Edge");
-//			XMLCheckNULL(inElem1);
-//			for (int i = 0; i < ancNumber; ++i) {
-//				err = inElem1->QueryIntText(&tempInt1);
-//				XMLCheckResult(err);
-//				node->OutEdgesIdx.push_back(tempInt1);
-//
-//				inElem1 = inElem1->NextSiblingElement("Edge");
-//			}
-//		}
+		//		errs() << "Reading In-edge-number : ";
+		//		inElem1 = nextElem->FirstChildElement("In-edge-number");
+		//		XMLCheckNULL(inElem1);
+		//		err = inElem1->QueryIntText(&tempInt1);
+		//		XMLCheckResult(err);
+		//		ancNumber = tempInt1;
+		//		errs() << ancNumber << "\n";
+		//
+		//		if(ancNumber > 0){
+		//			//traverse to in-edges
+		//			inElem1 = nextElem->FirstChildElement("In-edges");
+		//			XMLCheckNULL(inElem1);
+		//
+		//			inElem1 = inElem1->FirstChildElement("Edge");
+		//			XMLCheckNULL(inElem1);
+		//			for (int i = 0; i < ancNumber; ++i) {
+		//				errs() << "Read in-edge \n";
+		//				err = inElem1->QueryIntText(&tempInt1);
+		//				XMLCheckResult(err);
+		//				node->InEdgesIdx.push_back(tempInt1);
+		//
+		//				inElem1 = inElem1->NextSiblingElement("Edge");
+		//			}
+		//		}
+		//
+		//		errs() << "Reading Out-edge-number : \n";
+		//		inElem1 = nextElem->FirstChildElement("Out-edge-number");
+		//		XMLCheckNULL(inElem1);
+		//		err = inElem1->QueryIntText(&tempInt1);
+		//		XMLCheckResult(err);
+		//		childNumber = tempInt1;
+		//
+		//		if(childNumber > 0){
+		//			//traverse to in-edges
+		//			inElem1 = nextElem->FirstChildElement("Out-edges");
+		//			XMLCheckNULL(inElem1);
+		//
+		//			inElem1 = inElem1->FirstChildElement("Edge");
+		//			XMLCheckNULL(inElem1);
+		//			for (int i = 0; i < ancNumber; ++i) {
+		//				err = inElem1->QueryIntText(&tempInt1);
+		//				XMLCheckResult(err);
+		//				node->OutEdgesIdx.push_back(tempInt1);
+		//
+		//				inElem1 = inElem1->NextSiblingElement("Edge");
+		//			}
+		//		}
 		nextElem = nextElem->NextSiblingElement("OP");
 		opManualCount++;
 		nodelist.push_back(node);
@@ -4009,8 +4436,9 @@ int DFG::readXML(std::string fileName) {
 	nextElem = nextElem->NextSiblingElement("EDGE");
 	XMLCheckNULL(nextElem);
 
-	while(nextElem != NULL){
-		errs() << "Reading Edge, "<< edgeManualCount << "\n";
+	while (nextElem != NULL)
+	{
+		errs() << "Reading Edge, " << edgeManualCount << "\n";
 		inElem1 = nextElem->FirstChildElement("Start-OP");
 		XMLCheckNULL(inElem1);
 		err = inElem1->QueryIntText(&tempInt1);
@@ -4020,10 +4448,14 @@ int DFG::readXML(std::string fileName) {
 		err = inElem1->QueryIntText(&tempInt2);
 		XMLCheckResult(err);
 
-		for (int i = 0; i < nodelist.size(); ++i) {
-			if(nodelist[i]->getIdx() == tempInt1){
-				for (int j = 0; j < nodelist.size(); ++j) {
-					if(nodelist[j]->getIdx() == tempInt2){
+		for (int i = 0; i < nodelist.size(); ++i)
+		{
+			if (nodelist[i]->getIdx() == tempInt1)
+			{
+				for (int j = 0; j < nodelist.size(); ++j)
+				{
+					if (nodelist[j]->getIdx() == tempInt2)
+					{
 						nodelist[i]->addChildNode(nodelist[j]);
 						nodelist[j]->addAncestorNode(nodelist[i]);
 
@@ -4050,27 +4482,31 @@ int DFG::readXML(std::string fileName) {
 	return 0;
 }
 
-int DFG::printREGIMapOuts() {
+int DFG::printREGIMapOuts()
+{
 	std::ofstream nodeFile;
 	std::ofstream edgeFile;
-	dfgNode* node;
-	Edge* edge;
+	dfgNode *node;
+	Edge *edge;
 	std::string fName;
 	std::hash<std::string> strHash;
-	std::hash<const char*> charArrHash;
+	std::hash<const char *> charArrHash;
 
 	//Printing Nodes
 	fName = name + "_REGIMAP_nodefile.txt";
 	nodeFile.open(fName.c_str());
-	for (int i = 0; i < NodeList.size(); ++i) {
+	for (int i = 0; i < NodeList.size(); ++i)
+	{
 		node = NodeList[i];
 
-		if(node->getNode() != NULL){
+		if (node->getNode() != NULL)
+		{
 			nodeFile << std::to_string(node->getIdx()) << "\t";
 			nodeFile << std::to_string((int)charArrHash(node->getNode()->getOpcodeName())) << "\t";
 			nodeFile << node->getNode()->getOpcodeName() << std::endl;
 		}
-		else{
+		else
+		{
 			nodeFile << std::to_string(node->getIdx()) << "\t";
 			nodeFile << std::to_string((int)strHash(node->getNameType())) << "\t";
 			nodeFile << node->getNameType() << std::endl;
@@ -4081,7 +4517,8 @@ int DFG::printREGIMapOuts() {
 	//Printing Edges
 	fName = name + "_REGIMAP_edgefile.txt";
 	edgeFile.open(fName.c_str());
-	for (int i = 0; i < edgeList.size(); ++i) {
+	for (int i = 0; i < edgeList.size(); ++i)
+	{
 		edge = &edgeList[i];
 
 		//currenlty assuming all the edges are data
@@ -4089,100 +4526,118 @@ int DFG::printREGIMapOuts() {
 
 		edgeFile << std::to_string(edge->getSrc()->getIdx()) << "\t";
 		edgeFile << std::to_string(edge->getDest()->getIdx()) << "\t";
-		edgeFile << "0" << "\t";
+		edgeFile << "0"
+				 << "\t";
 		edgeFile << "TRU" << std::endl;
 	}
 	edgeFile.close();
 
-
 	return 0;
 }
 
-int DFG::printTurns() {
-	dfgNode* node;
-	dfgNode* parent;
-	CGRANode* cnode;
-	CGRANode* nextCnode;
+int DFG::printTurns()
+{
+	dfgNode *node;
+	dfgNode *parent;
+	CGRANode *cnode;
+	CGRANode *nextCnode;
 
 	int xdiff;
 	int ydiff;
 
-	std::map<dfgNode*,std::vector<pathData* >> parentRouteMap;
-	std::map<dfgNode*,std::vector<pathData* >>::iterator parentRouteMapIt;
+	std::map<dfgNode *, std::vector<pathData *>> parentRouteMap;
+	std::map<dfgNode *, std::vector<pathData *>>::iterator parentRouteMapIt;
 
-	enum TurnDirs {NORTH,EAST,WEST,SOUTH,TILE};
-	std::map<CGRANode*,std::map<TurnDirs,int> > CGRANodeTurnStatsMap;
+	enum TurnDirs
+	{
+		NORTH,
+		EAST,
+		WEST,
+		SOUTH,
+		TILE
+	};
+	std::map<CGRANode *, std::map<TurnDirs, int>> CGRANodeTurnStatsMap;
 
-	for (int t = 0; t < currCGRA->getMII(); ++t) {
-		for (int y = 0; y < currCGRA->getYdim(); ++y) {
-			for (int x = 0; x < currCGRA->getXdim(); ++x) {
-				CGRANodeTurnStatsMap[currCGRA->getCGRANode(t,y,x)][NORTH] = 0;
-				CGRANodeTurnStatsMap[currCGRA->getCGRANode(t,y,x)][EAST] = 0;
-				CGRANodeTurnStatsMap[currCGRA->getCGRANode(t,y,x)][WEST] = 0;
-				CGRANodeTurnStatsMap[currCGRA->getCGRANode(t,y,x)][SOUTH] = 0;
-				CGRANodeTurnStatsMap[currCGRA->getCGRANode(t,y,x)][TILE] = 0;
+	for (int t = 0; t < currCGRA->getMII(); ++t)
+	{
+		for (int y = 0; y < currCGRA->getYdim(); ++y)
+		{
+			for (int x = 0; x < currCGRA->getXdim(); ++x)
+			{
+				CGRANodeTurnStatsMap[currCGRA->getCGRANode(t, y, x)][NORTH] = 0;
+				CGRANodeTurnStatsMap[currCGRA->getCGRANode(t, y, x)][EAST] = 0;
+				CGRANodeTurnStatsMap[currCGRA->getCGRANode(t, y, x)][WEST] = 0;
+				CGRANodeTurnStatsMap[currCGRA->getCGRANode(t, y, x)][SOUTH] = 0;
+				CGRANodeTurnStatsMap[currCGRA->getCGRANode(t, y, x)][TILE] = 0;
 			}
 		}
 	}
 
-	for (int i = 0; i < NodeList.size(); ++i) {
+	for (int i = 0; i < NodeList.size(); ++i)
+	{
 		node = NodeList[i];
 		parentRouteMap = node->getMergeRoutingLocs();
 
 		for (parentRouteMapIt = parentRouteMap.begin();
 			 parentRouteMapIt != parentRouteMap.end();
-			 ++parentRouteMapIt) {
+			 ++parentRouteMapIt)
+		{
 
 			parent = parentRouteMapIt->first;
 
-			if(parentRouteMap[parent].size() > 0){
+			if (parentRouteMap[parent].size() > 0)
+			{
 				CGRANodeTurnStatsMap[parentRouteMap[parent][0]->cnode][TILE]++;
 			}
-			else{
+			else
+			{
 				continue;
 			}
 
-			for (int j = 1; j < parentRouteMap[parent].size(); ++j) {
+			for (int j = 1; j < parentRouteMap[parent].size(); ++j)
+			{
 				cnode = parentRouteMap[parent][j]->cnode;
-				nextCnode = parentRouteMap[parent][j-1]->cnode;
+				nextCnode = parentRouteMap[parent][j - 1]->cnode;
 
-				if(cnode->getT() == nextCnode->getT()){ //SMART Routes
+				if (cnode->getT() == nextCnode->getT())
+				{ //SMART Routes
 					xdiff = nextCnode->getX() - cnode->getX();
 					ydiff = nextCnode->getY() - cnode->getY();
 
 					//either one should not be zero
-					assert((xdiff != 0)||(ydiff != 0));
+					assert((xdiff != 0) || (ydiff != 0));
 
-					if(ydiff > 0){
+					if (ydiff > 0)
+					{
 						assert(xdiff == 0);
 						CGRANodeTurnStatsMap[cnode][SOUTH]++;
 					}
-					else if(ydiff == 0){
-						if(xdiff > 0){
+					else if (ydiff == 0)
+					{
+						if (xdiff > 0)
+						{
 							CGRANodeTurnStatsMap[cnode][EAST]++;
 						}
-						else{ // xdiff < 0
+						else
+						{ // xdiff < 0
 							CGRANodeTurnStatsMap[cnode][WEST]++;
 						}
 					}
-					else{ //ydiff < 0
+					else
+					{ //ydiff < 0
 						assert(xdiff == 0);
 						CGRANodeTurnStatsMap[cnode][NORTH]++;
 					}
 				}
-				else{
-					if(std::find(cnode->regAllocation[nextCnode].begin(),cnode->regAllocation[nextCnode].end(),findEdge(parent,node)) == cnode->regAllocation[nextCnode].end()){
-						cnode->regAllocation[nextCnode].push_back(findEdge(parent,node));
+				else
+				{
+					if (std::find(cnode->regAllocation[nextCnode].begin(), cnode->regAllocation[nextCnode].end(), findEdge(parent, node)) == cnode->regAllocation[nextCnode].end())
+					{
+						cnode->regAllocation[nextCnode].push_back(findEdge(parent, node));
 					}
 				}
-
 			}
-
-
 		}
-
-
-
 	}
 
 	std::ofstream outFile;
@@ -4190,10 +4645,13 @@ int DFG::printTurns() {
 	outFile.open(fName.c_str());
 
 	outFile << "Cycle,Y,X,NORTH,EAST,WEST,SOUTH,TILE" << std::endl;
-	for (int y = 0; y < currCGRA->getYdim(); ++y) {
-		for (int x = 0; x < currCGRA->getXdim(); ++x) {
-			for (int t = 0; t < currCGRA->getMII(); ++t) {
-				cnode = currCGRA->getCGRANode(t,y,x);
+	for (int y = 0; y < currCGRA->getYdim(); ++y)
+	{
+		for (int x = 0; x < currCGRA->getXdim(); ++x)
+		{
+			for (int t = 0; t < currCGRA->getMII(); ++t)
+			{
+				cnode = currCGRA->getCGRANode(t, y, x);
 				outFile << cnode->getName() << ",";
 				outFile << std::to_string(CGRANodeTurnStatsMap[cnode][NORTH]) << ",";
 				outFile << std::to_string(CGRANodeTurnStatsMap[cnode][EAST]) << ",";
@@ -4211,7 +4669,8 @@ int DFG::printTurns() {
 	return 0;
 }
 
-int DFG::printRegStats() {
+int DFG::printRegStats()
+{
 
 	std::ofstream outFileRegStats;
 	std::ofstream outFileRegToggle;
@@ -4221,75 +4680,91 @@ int DFG::printRegStats() {
 	fName = name + "_REGTOGGLE.csv";
 	outFileRegToggle.open(fName.c_str());
 
-	std::map<CGRANode*,std::vector<Edge*> >::iterator it;
+	std::map<CGRANode *, std::vector<Edge *>>::iterator it;
 
-	CGRANode* cnode;
-	CGRANode* nextCnode;
-	std::map<int,Edge*> regAlloc;
-	std::map<int,int> regToggle;
-	std::vector<Edge*> tempEdgeVec;
-	std::vector<Edge*>::iterator tempEdgeVecIt;
+	CGRANode *cnode;
+	CGRANode *nextCnode;
+	std::map<int, Edge *> regAlloc;
+	std::map<int, int> regToggle;
+	std::vector<Edge *> tempEdgeVec;
+	std::vector<Edge *>::iterator tempEdgeVecIt;
 
 	int freeSlots;
 	int totalToggles = NodeList.size(); //This is for output register of the ALU
-	const int maxToggles = currCGRA->getXdim()*currCGRA->getYdim()*currCGRA->getMII()*(currCGRA->getRegsPerNode()+1);
+	const int maxToggles = currCGRA->getXdim() * currCGRA->getYdim() * currCGRA->getMII() * (currCGRA->getRegsPerNode() + 1);
 
-
-	for (int y = 0; y < currCGRA->getYdim(); ++y) {
-		for (int x = 0; x < currCGRA->getXdim(); ++x) {
-			outFileRegToggle << currCGRA->getCGRANode(0,y,x)->getNameWithOutTime() << ",";
+	for (int y = 0; y < currCGRA->getYdim(); ++y)
+	{
+		for (int x = 0; x < currCGRA->getXdim(); ++x)
+		{
+			outFileRegToggle << currCGRA->getCGRANode(0, y, x)->getNameWithOutTime() << ",";
 
 			//Init regAlloc
-			for (int i = 0; i < currCGRA->getRegsPerNode(); ++i) {
+			for (int i = 0; i < currCGRA->getRegsPerNode(); ++i)
+			{
 				regAlloc[i] = NULL;
 				regToggle[i] = 0;
 			}
 
-			for (int t = 0; t < currCGRA->getMII(); ++t) {
-				cnode = currCGRA->getCGRANode(t,y,x);
+			for (int t = 0; t < currCGRA->getMII(); ++t)
+			{
+				cnode = currCGRA->getCGRANode(t, y, x);
 				outFileRegStats << cnode->getName() << ",";
 
 				for (it = cnode->regAllocation.begin();
 					 it != cnode->regAllocation.end();
-					 it++){
+					 it++)
+				{
 
 					nextCnode = it->first;
-					if(nextCnode->getT() != cnode->getT()){
+					if (nextCnode->getT() != cnode->getT())
+					{
 						tempEdgeVec = it->second;
 
-						if(tempEdgeVec.size() > 4){
+						if (tempEdgeVec.size() > 4)
+						{
 							errs() << "init tempEdgeVec.size() =" << tempEdgeVec.size() << "\n";
-							for (int i = 0; i < tempEdgeVec.size(); ++i) {
+							for (int i = 0; i < tempEdgeVec.size(); ++i)
+							{
 								errs() << tempEdgeVec[i]->getName() << "\n";
 							}
 						}
 
 						freeSlots = 0;
-						for (int i = 0; i < currCGRA->getRegsPerNode(); ++i) {
-							if(regAlloc[i]!=NULL){
-								tempEdgeVecIt = std::find(tempEdgeVec.begin(),tempEdgeVec.end(),regAlloc[i]);
-								if(tempEdgeVecIt != tempEdgeVec.end()){
+						for (int i = 0; i < currCGRA->getRegsPerNode(); ++i)
+						{
+							if (regAlloc[i] != NULL)
+							{
+								tempEdgeVecIt = std::find(tempEdgeVec.begin(), tempEdgeVec.end(), regAlloc[i]);
+								if (tempEdgeVecIt != tempEdgeVec.end())
+								{
 									tempEdgeVec.erase(tempEdgeVecIt);
 								}
-								else{
-									regAlloc[i]=NULL;
+								else
+								{
+									regAlloc[i] = NULL;
 									freeSlots++;
 								}
 							}
-							else{
+							else
+							{
 								freeSlots++;
 							}
 						}
 
-						if(freeSlots < tempEdgeVec.size()){
+						if (freeSlots < tempEdgeVec.size())
+						{
 							errs() << "freeSlots=" << freeSlots << ",tempEdgeVec.size()=" << tempEdgeVec.size() << "\n";
 						}
 						assert(freeSlots >= tempEdgeVec.size());
 
-						for (int i = 0; i < tempEdgeVec.size(); ++i) {
-							for (int j = 0; j < currCGRA->getRegsPerNode(); ++j) {
-								if(regAlloc[j]==NULL){
-									regAlloc[j]=tempEdgeVec[i];
+						for (int i = 0; i < tempEdgeVec.size(); ++i)
+						{
+							for (int j = 0; j < currCGRA->getRegsPerNode(); ++j)
+							{
+								if (regAlloc[j] == NULL)
+								{
+									regAlloc[j] = tempEdgeVec[i];
 									regToggle[j]++;
 									totalToggles++;
 									break;
@@ -4297,22 +4772,26 @@ int DFG::printRegStats() {
 							}
 						}
 
-						for (int i = 0; i < it->second.size(); ++i) {
+						for (int i = 0; i < it->second.size(); ++i)
+						{
 							outFileRegStats << it->second[i]->getName();
-							for (int j = 0; j < currCGRA->getRegsPerNode(); ++j) {
-								if(regAlloc[j] == it->second[i]){
+							for (int j = 0; j < currCGRA->getRegsPerNode(); ++j)
+							{
+								if (regAlloc[j] == it->second[i])
+								{
 									outFileRegStats << "-R" << std::to_string(j) << ",";
 									break;
 								}
 							}
 						}
-//						outFile << it->second->getName() << ",";
+						//						outFile << it->second->getName() << ",";
 					}
 				}
 				outFileRegStats << std::endl;
 			}
 
-			for (int i = 0; i < currCGRA->getRegsPerNode(); ++i) {
+			for (int i = 0; i < currCGRA->getRegsPerNode(); ++i)
+			{
 				outFileRegToggle << std::to_string(regToggle[i]) << ",";
 			}
 			outFileRegToggle << std::endl;
@@ -4322,7 +4801,7 @@ int DFG::printRegStats() {
 	outFileRegToggle << std::endl;
 	outFileRegToggle << "TOTAL Toggles," << std::to_string(totalToggles) << std::endl;
 	outFileRegToggle << "Max Toggles," << std::to_string(maxToggles) << std::endl;
-	outFileRegToggle << "Toggle Percentage," << std::to_string((double(totalToggles)*100.0)/double(maxToggles)) << std::endl;
+	outFileRegToggle << "Toggle Percentage," << std::to_string((double(totalToggles) * 100.0) / double(maxToggles)) << std::endl;
 
 	outFileRegStats.close();
 	outFileRegToggle.close();
@@ -4330,109 +4809,127 @@ int DFG::printRegStats() {
 }
 
 int DFG::sortPossibleDests(
-		std::vector<std::pair<CGRANode*, int> >* possibleDests) {
-
-
-
-
+	std::vector<std::pair<CGRANode *, int>> *possibleDests)
+{
 }
 
-int DFG::removeRedEdgesPHI() {
-	dfgNode* node;
-	for (int i = 0; i < NodeList.size(); ++i) {
+int DFG::removeRedEdgesPHI()
+{
+	dfgNode *node;
+	for (int i = 0; i < NodeList.size(); ++i)
+	{
 		node = NodeList[i];
-		if(node->getNode()==NULL)continue;
+		if (node->getNode() == NULL)
+			continue;
 
-		if(dyn_cast<PHINode>(node->getNode())){
-			for(dfgNode* parent : node->getAncestors()){
-				if(node->getNameType().compare("CMERGE")!=0){
+		if (dyn_cast<PHINode>(node->getNode()))
+		{
+			for (dfgNode *parent : node->getAncestors())
+			{
+				if (node->getNameType().compare("CMERGE") != 0)
+				{
 					parent->removeChild(node);
 					node->removeAncestor(parent);
-					removeEdge(findEdge(parent,node));
+					removeEdge(findEdge(parent, node));
 				}
 			}
 		}
 	}
 }
 
-int DFG::addCMERGEtoSELECT() {
-	dfgNode* node;
-	for (int i = 0; i < NodeList.size(); ++i) {
-		node=NodeList[i];
-		if(node->getNode()==NULL)continue;
+int DFG::addCMERGEtoSELECT()
+{
+	dfgNode *node;
+	for (int i = 0; i < NodeList.size(); ++i)
+	{
+		node = NodeList[i];
+		if (node->getNode() == NULL)
+			continue;
 
-		if(SelectInst* SEL = dyn_cast<SelectInst>(node->getNode())){
+		if (SelectInst *SEL = dyn_cast<SelectInst>(node->getNode()))
+		{
 			SEL->dump();
 			outs() << "node ancestors = " << node->getAncestors().size() << "\n";
-//			assert(node->getAncestors().size()==3);
+			//			assert(node->getAncestors().size()==3);
 
 			int condVal;
-			dfgNode* condNode = NULL;
-//			if(ConstantInt *CI = dyn_cast<ConstantInt>(SEL->getCondition())){
-//				condVal = CI->getSExtValue();
-//			}
-			if(dyn_cast<Instruction>(SEL->getCondition())){
+			dfgNode *condNode = NULL;
+			//			if(ConstantInt *CI = dyn_cast<ConstantInt>(SEL->getCondition())){
+			//				condVal = CI->getSExtValue();
+			//			}
+			if (dyn_cast<Instruction>(SEL->getCondition()))
+			{
 				condNode = findNode(cast<Instruction>(SEL->getCondition()));
 				cast<Instruction>(SEL->getCondition())->dump();
-				assert(condNode!=NULL);
-				assert(std::find(node->getAncestors().begin(),node->getAncestors().end(),condNode) != node->getAncestors().end());
+				assert(condNode != NULL);
+				assert(std::find(node->getAncestors().begin(), node->getAncestors().end(), condNode) != node->getAncestors().end());
 			}
-			else{
+			else
+			{
 				assert(false);
 			}
 
 			int trueVal;
-			dfgNode* trueNode = NULL;
-			if(ConstantInt *CI = dyn_cast<ConstantInt>(SEL->getTrueValue())){
+			dfgNode *trueNode = NULL;
+			if (ConstantInt *CI = dyn_cast<ConstantInt>(SEL->getTrueValue()))
+			{
 				trueVal = CI->getSExtValue();
 			}
-			else if(ConstantFP *FP = dyn_cast<ConstantFP>(SEL->getTrueValue())){
+			else if (ConstantFP *FP = dyn_cast<ConstantFP>(SEL->getTrueValue()))
+			{
 				trueVal = 0; // 2019 work
 			}
-			else if(dyn_cast<Instruction>(SEL->getTrueValue())){
+			else if (dyn_cast<Instruction>(SEL->getTrueValue()))
+			{
 				trueNode = findNode(cast<Instruction>(SEL->getTrueValue()));
 				cast<Instruction>(SEL->getTrueValue())->dump();
-				assert(trueNode!=NULL);
-				assert(std::find(node->getAncestors().begin(),node->getAncestors().end(),trueNode) != node->getAncestors().end());
+				assert(trueNode != NULL);
+				assert(std::find(node->getAncestors().begin(), node->getAncestors().end(), trueNode) != node->getAncestors().end());
 			}
-			else{
+			else
+			{
 				assert(false);
 			}
 
 			int falseVal;
-			dfgNode* falseNode = NULL;
-			if(ConstantInt *CI = dyn_cast<ConstantInt>(SEL->getFalseValue())){
+			dfgNode *falseNode = NULL;
+			if (ConstantInt *CI = dyn_cast<ConstantInt>(SEL->getFalseValue()))
+			{
 				falseVal = CI->getSExtValue();
 			}
-			else if(ConstantFP *FP = dyn_cast<ConstantFP>(SEL->getFalseValue())){
+			else if (ConstantFP *FP = dyn_cast<ConstantFP>(SEL->getFalseValue()))
+			{
 				falseVal = 0; // 2019 work
 			}
-			else if(dyn_cast<Instruction>(SEL->getFalseValue())){
+			else if (dyn_cast<Instruction>(SEL->getFalseValue()))
+			{
 				falseNode = findNode(cast<Instruction>(SEL->getFalseValue()));
 				cast<Instruction>(SEL->getFalseValue())->dump();
-				assert(falseNode!=NULL);
-				assert(std::find(node->getAncestors().begin(),node->getAncestors().end(),falseNode) != node->getAncestors().end());
+				assert(falseNode != NULL);
+				assert(std::find(node->getAncestors().begin(), node->getAncestors().end(), falseNode) != node->getAncestors().end());
 			}
-			else{
+			else
+			{
 				assert(false);
 			}
 
-
 			condNode->removeChild(node);
 			node->removeAncestor(condNode);
-			removeEdge(findEdge(condNode,node));
+			removeEdge(findEdge(condNode, node));
 
-			if(trueNode){
+			if (trueNode)
+			{
 				trueNode->removeChild(node);
 				node->removeAncestor(trueNode);
-				removeEdge(findEdge(trueNode,node));
-				node->addCMergeParent(condNode,trueNode,-1,true);
+				removeEdge(findEdge(trueNode, node));
+				node->addCMergeParent(condNode, trueNode, -1, true);
 			}
-			else{
-				node->addCMergeParent(condNode,trueNode,trueVal,true);
+			else
+			{
+				node->addCMergeParent(condNode, trueNode, trueVal, true);
 			}
 
-			dfgNode* notnode = new dfgNode(this);
+			dfgNode *notnode = new dfgNode(this);
 			notnode->setIdx(this->getNodesPtr()->size());
 			this->getNodesPtr()->push_back(notnode);
 			notnode->BB = node->BB;
@@ -4441,28 +4938,29 @@ int DFG::addCMERGEtoSELECT() {
 			condNode->addChildNode(notnode);
 			notnode->addAncestorNode(condNode);
 
-			if(falseNode){
+			if (falseNode)
+			{
 				falseNode->removeChild(node);
 				node->removeAncestor(falseNode);
-				removeEdge(findEdge(falseNode,node));
-				node->addCMergeParent(notnode,falseNode,-1,true);
+				removeEdge(findEdge(falseNode, node));
+				node->addCMergeParent(notnode, falseNode, -1, true);
 			}
-			else{
-				node->addCMergeParent(notnode,falseNode,falseVal,true);
+			else
+			{
+				node->addCMergeParent(notnode, falseNode, falseVal, true);
 			}
-
 		}
-
 	}
 	return 0;
 }
 
-int DFG::printJUMPLHeader(std::ofstream& binFile,
-		std::ofstream& binOpNameFile) {
+int DFG::printJUMPLHeader(std::ofstream &binFile,
+						  std::ofstream &binOpNameFile)
+{
 
 	binOp currBinOp;
 
-	currBinOp.opcode=HyCUBEInsBinary[JUMPL];
+	currBinOp.opcode = HyCUBEInsBinary[JUMPL];
 	currBinOp.outMap[PRED] = 0b111;
 	currBinOp.outMap[OP1] = 0b111;
 	currBinOp.outMap[OP2] = 0b111;
@@ -4474,7 +4972,7 @@ int DFG::printJUMPLHeader(std::ofstream& binFile,
 	currBinOp.regbypass = 0;
 	currBinOp.tregwen = 0;
 
-	uint32_t constant = 1; //PC
+	uint32_t constant = 1;										 //PC
 	constant = (constant << 5) | (currCGRA->getMII() & 0b11111); //LE
 	constant = (constant << 5) | 1;
 	currBinOp.constant = constant;
@@ -4484,46 +4982,47 @@ int DFG::printJUMPLHeader(std::ofstream& binFile,
 	binFile << std::to_string(0) << std::endl;
 	binOpNameFile << std::to_string(0) << std::endl;
 
-
-	for (int j = 0; j < currCGRA->getYdim(); ++j) {
-		for (int k = 0; k < currCGRA->getXdim(); ++k) {
+	for (int j = 0; j < currCGRA->getYdim(); ++j)
+	{
+		for (int k = 0; k < currCGRA->getXdim(); ++k)
+		{
 			binFile << "Y=" << std::to_string(j) << " X=" << std::to_string(k) << ",";
 			binOpNameFile << "Y=" << std::to_string(j) << " X=" << std::to_string(k) << ",";
 
 			//Print Binary
 			binFile << std::setfill('0');
-			binFile << std::setw(1) << std::bitset<1>(currBinOp.npb) ;//<< ",";
-			binFile << std::setw(1) << std::bitset<1>(currBinOp.constantValid) ;//<< ",";
-			binFile << std::setw(27) << std::bitset<27>(currBinOp.constant) ;//<< ",";
-			binFile << std::setw(5) << std::bitset<5>(currBinOp.opcode) ;//<< "," ;
-			binFile << std::setw(4) << std::bitset<4>(currBinOp.regwen) ;//<< ",";
-			binFile << std::bitset<1>(currBinOp.tregwen) ;//<< ",";
-			binFile << std::setw(4) << std::bitset<4>(currBinOp.regbypass) ;//<< ",";
-			binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[PRED]) ;//<< ",";
-			binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[OP2]) ;//<< ",";
-			binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[OP1]) ;//<< ",";
-			binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[NORTH]) ;//<< ",";
-			binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[WEST]) ;//<< ",";
-			binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[SOUTH]) ;//<< ",";
+			binFile << std::setw(1) << std::bitset<1>(currBinOp.npb);			//<< ",";
+			binFile << std::setw(1) << std::bitset<1>(currBinOp.constantValid); //<< ",";
+			binFile << std::setw(27) << std::bitset<27>(currBinOp.constant);	//<< ",";
+			binFile << std::setw(5) << std::bitset<5>(currBinOp.opcode);		//<< "," ;
+			binFile << std::setw(4) << std::bitset<4>(currBinOp.regwen);		//<< ",";
+			binFile << std::bitset<1>(currBinOp.tregwen);						//<< ",";
+			binFile << std::setw(4) << std::bitset<4>(currBinOp.regbypass);		//<< ",";
+			binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[PRED]);  //<< ",";
+			binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[OP2]);   //<< ",";
+			binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[OP1]);   //<< ",";
+			binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[NORTH]); //<< ",";
+			binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[WEST]);  //<< ",";
+			binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[SOUTH]); //<< ",";
 			binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[EAST]) << std::endl;
 
 			//Print Binary with OpName
 			binOpNameFile << std::setfill('0');
-			binOpNameFile << std::setw(1) << std::bitset<1>(currBinOp.npb) ;//<< ",";
-			binOpNameFile << std::setw(1) << std::bitset<1>(currBinOp.constantValid) ;//<< ",";
-			binOpNameFile << std::setw(27) << std::bitset<27>(currBinOp.constant) ;//<< ",";
-			binOpNameFile << std::setw(5) << std::bitset<5>(currBinOp.opcode) ;//<< "," ;
-			binOpNameFile << std::setw(4) << std::bitset<4>(currBinOp.regwen) ;//<< ",";
-			binOpNameFile << std::bitset<1>(currBinOp.tregwen) ;//<< ",";
-			binOpNameFile << std::setw(4) << std::bitset<4>(currBinOp.regbypass) ;//<< ",";
-			binOpNameFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[PRED]) ;//<< ",";
-			binOpNameFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[OP2]) ;//<< ",";
-			binOpNameFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[OP1]) ;//<< ",";
-			binOpNameFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[NORTH]) ;//<< ",";
-			binOpNameFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[WEST]) ;//<< ",";
-			binOpNameFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[SOUTH]) ;//<< ",";
+			binOpNameFile << std::setw(1) << std::bitset<1>(currBinOp.npb);			  //<< ",";
+			binOpNameFile << std::setw(1) << std::bitset<1>(currBinOp.constantValid); //<< ",";
+			binOpNameFile << std::setw(27) << std::bitset<27>(currBinOp.constant);	//<< ",";
+			binOpNameFile << std::setw(5) << std::bitset<5>(currBinOp.opcode);		  //<< "," ;
+			binOpNameFile << std::setw(4) << std::bitset<4>(currBinOp.regwen);		  //<< ",";
+			binOpNameFile << std::bitset<1>(currBinOp.tregwen);						  //<< ",";
+			binOpNameFile << std::setw(4) << std::bitset<4>(currBinOp.regbypass);	 //<< ",";
+			binOpNameFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[PRED]);  //<< ",";
+			binOpNameFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[OP2]);   //<< ",";
+			binOpNameFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[OP1]);   //<< ",";
+			binOpNameFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[NORTH]); //<< ",";
+			binOpNameFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[WEST]);  //<< ",";
+			binOpNameFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[SOUTH]); //<< ",";
 			binOpNameFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[EAST]) << ",";
-		    binOpNameFile << HyCUBEInsStrings[JUMPL] << std::endl;
+			binOpNameFile << HyCUBEInsStrings[JUMPL] << std::endl;
 		}
 	}
 
@@ -4531,23 +5030,25 @@ int DFG::printJUMPLHeader(std::ofstream& binFile,
 	binOpNameFile << std::endl;
 }
 
-int DFG::printMapping() {
-	dfgNode* node;
-	dfgNode* parent;
-	CGRANode* cnode;
-	CGRANode* PrevCnode;
-	CGRANode* PrevPrevCnode;
+int DFG::printMapping()
+{
+	dfgNode *node;
+	dfgNode *parent;
+	CGRANode *cnode;
+	CGRANode *PrevCnode;
+	CGRANode *PrevPrevCnode;
 	std::vector<CGRAEdge> cgraEdges;
 	std::vector<CGRAEdge> cgraEdges_t;
 	std::vector<CGRAEdge> cgraEdges_t2;
-	std::map<Port,Edge*> portDfgEdgeMap;
+	std::map<Port, Edge *> portDfgEdgeMap;
 
-	std::vector<Port> portOrder = {NORTH,EAST,WEST,SOUTH,R0,R1,R2,R3};
-	std::vector<Port> insPortOrder = {TREG,R0,R1,R2,R3,PRED,OP1,OP2,NORTH,EAST,WEST,SOUTH};
-	std::map<CGRANode*,std::map<Port,Port>> XBarMap;
+	std::vector<Port> portOrder = {NORTH, EAST, WEST, SOUTH, R0, R1, R2, R3};
+	std::vector<Port> insPortOrder = {TREG, R0, R1, R2, R3, PRED, OP1, OP2, NORTH, EAST, WEST, SOUTH};
+	std::map<CGRANode *, std::map<Port, Port>> XBarMap;
 
 	//Check all nodes are mapped
-	for (int i = 0; i < NodeList.size(); ++i) {
+	for (int i = 0; i < NodeList.size(); ++i)
+	{
 		node = NodeList[i];
 		assert(node->getMappedLoc() != NULL);
 	}
@@ -4560,9 +5061,6 @@ int DFG::printMapping() {
 	std::string insFileName = name + "_insFile.csv";
 	insFile.open(insFileName.c_str());
 
-
-
-
 	std::ofstream binFile;
 	std::string binFileName = name + "_binFile.trc";
 	binFile.open(binFileName.c_str());
@@ -4574,17 +5072,18 @@ int DFG::printMapping() {
 	//Print Header
 	mapFile << "Time,";
 	insFile << "Time,";
-//	binFile << "Time,";
-	for (int j = 0; j < currCGRA->getYdim(); ++j) {
-		for (int k = 0; k < currCGRA->getXdim(); ++k) {
+	//	binFile << "Time,";
+	for (int j = 0; j < currCGRA->getYdim(); ++j)
+	{
+		for (int k = 0; k < currCGRA->getXdim(); ++k)
+		{
 			mapFile << "Y=" << std::to_string(j) << " X=" << std::to_string(k) << ",";
 			mapFile << "NORTH,EAST,WEST,SOUTH,R0,R1,R2,R3,";
 
 			insFile << "Y=" << std::to_string(j) << " X=" << std::to_string(k) << ",";
 			insFile << "TREG,R0,R1,R2,R3,PRED,OP1,OP2,NORTH,EAST,WEST,SOUTH,";
 
-//			binFile << "Y=" << std::to_string(j) << " X=" << std::to_string(k) << ",";
-
+			//			binFile << "Y=" << std::to_string(j) << " X=" << std::to_string(k) << ",";
 		}
 	}
 	binFile << "NPB,CONSTVALID,CONST,OPCODE,REGWEN,TREGWEN,REGBYPASS,PRED,OP1,OP2,NORTH,WEST,SOUTH,EAST";
@@ -4592,31 +5091,37 @@ int DFG::printMapping() {
 	mapFile << std::endl;
 	binFile << std::endl;
 
-	std::map<int,std::map<int,uint64_t> > constantValidMaskMap;
+	std::map<int, std::map<int, uint64_t>> constantValidMaskMap;
 
-	printJUMPLHeader(binFile,binOpNameFile);
+	printJUMPLHeader(binFile, binOpNameFile);
 
 	//Print Data
-	std::map<dfgNode*,std::set<dfgNode*>> parentInfo;
-	for (int i = 0; i < currCGRA->getMII(); ++i) {
+	std::map<dfgNode *, std::set<dfgNode *>> parentInfo;
+	for (int i = 0; i < currCGRA->getMII(); ++i)
+	{
 		mapFile << std::to_string(i) << ",";
 		insFile << std::to_string(i) << ",";
-		binFile << std::to_string(i+1) << std::endl;
-		binOpNameFile << std::to_string(i+1) << std::endl;
-		for (int j = 0; j < currCGRA->getYdim(); ++j) {
-			for (int k = 0; k < currCGRA->getXdim(); ++k) {
-				cnode = currCGRA->getCGRANode(i,j,k);
+		binFile << std::to_string(i + 1) << std::endl;
+		binOpNameFile << std::to_string(i + 1) << std::endl;
+		for (int j = 0; j < currCGRA->getYdim(); ++j)
+		{
+			for (int k = 0; k < currCGRA->getXdim(); ++k)
+			{
+				cnode = currCGRA->getCGRANode(i, j, k);
 				node = cnode->getmappedDFGNode();
-				if(node != NULL){
+				if (node != NULL)
+				{
 					mapFile << std::to_string(node->getIdx()) << "::Parents<";
-					for (int l = 0; l < node->getAncestors().size(); ++l) {
+					for (int l = 0; l < node->getAncestors().size(); ++l)
+					{
 						parent = node->getAncestors()[l];
 						mapFile << std::to_string(parent->getIdx()) << ":";
 					}
 					mapFile << ">,";
 					insFile << HyCUBEInsStrings[node->getFinalIns()] << ",";
 				}
-				else{
+				else
+				{
 					insFile << "NA,";
 					mapFile << "NA,";
 				}
@@ -4624,107 +5129,131 @@ int DFG::printMapping() {
 				binOpNameFile << "Y=" << std::to_string(j) << " X=" << std::to_string(k) << ",";
 				//CGRAEdges
 				PrevCnode = cnode;
-				PrevPrevCnode = currCGRA->getCGRANode((i - 1 + 3*currCGRA->getMII())%currCGRA->getMII(),j,k);
-				cnode = currCGRA->getCGRANode((i+1)%currCGRA->getMII(),j,k);
+				PrevPrevCnode = currCGRA->getCGRANode((i - 1 + 3 * currCGRA->getMII()) % currCGRA->getMII(), j, k);
+				cnode = currCGRA->getCGRANode((i + 1) % currCGRA->getMII(), j, k);
 				cgraEdges = (*currCGRA->getCGRAEdges())[cnode];
 				cgraEdges_t = currCGRA->getCGRAEdgesWithDest(cnode);
 
-
-				for (int l = 0; l < cgraEdges.size(); ++l) {
-					if(cgraEdges[l].mappedDFGEdge != NULL){
+				for (int l = 0; l < cgraEdges.size(); ++l)
+				{
+					if (cgraEdges[l].mappedDFGEdge != NULL)
+					{
 						portDfgEdgeMap[cgraEdges[l].SrcPort] = cgraEdges[l].mappedDFGEdge;
 
-						if(PrevPrevCnode->getPEType() == MEM){
-							if(cgraEdges[l].mappedDFGEdge->getSrc() == PrevPrevCnode->getmappedDFGNode()){
+						if (PrevPrevCnode->getPEType() == MEM)
+						{
+							if (cgraEdges[l].mappedDFGEdge->getSrc() == PrevPrevCnode->getmappedDFGNode())
+							{
 								XBarMap[PrevCnode][cgraEdges[l].SrcPort] = TILE;
 							}
-							else{
-								for (int m = 0; m < cgraEdges_t.size(); ++m) {
-									if(cgraEdges_t[m].mappedDFGEdge->getSrc() == cgraEdges[l].mappedDFGEdge->getSrc()){
+							else
+							{
+								for (int m = 0; m < cgraEdges_t.size(); ++m)
+								{
+									if (cgraEdges_t[m].mappedDFGEdge->getSrc() == cgraEdges[l].mappedDFGEdge->getSrc())
+									{
 										XBarMap[PrevCnode][cgraEdges[l].SrcPort] = cgraEdges_t[m].DstPort;
 									}
 								}
 							}
 						}
-						else{
-							if(cgraEdges[l].mappedDFGEdge->getSrc() == PrevCnode->getmappedDFGNode()){
+						else
+						{
+							if (cgraEdges[l].mappedDFGEdge->getSrc() == PrevCnode->getmappedDFGNode())
+							{
 								XBarMap[PrevCnode][cgraEdges[l].SrcPort] = TILE;
 							}
-							else{
-								for (int m = 0; m < cgraEdges_t.size(); ++m) {
-									if(cgraEdges_t[m].mappedDFGEdge->getSrc() == cgraEdges[l].mappedDFGEdge->getSrc()){
+							else
+							{
+								for (int m = 0; m < cgraEdges_t.size(); ++m)
+								{
+									if (cgraEdges_t[m].mappedDFGEdge->getSrc() == cgraEdges[l].mappedDFGEdge->getSrc())
+									{
 										XBarMap[PrevCnode][cgraEdges[l].SrcPort] = cgraEdges_t[m].DstPort;
 									}
 								}
 							}
 						}
-
 					}
 				}
 
-// TODO :: ADD a similiar if strucuture to MEM nodes where I need to check PrevPrevCnode instead of PrevCnode
-				if(cnode->getmappedDFGNode() != NULL){
-					if(PrevCnode->getmappedDFGNode() != NULL){
-						for (int l = 0; l < cnode->getmappedDFGNode()->getAncestors().size(); ++l) {
-							if(PrevCnode->getmappedDFGNode() == cnode->getmappedDFGNode()->getAncestors()[l]){
-								dfgNode* currCnodeNode = cnode->getmappedDFGNode();
-								dfgNode* cnodeParent = cnode->getmappedDFGNode()->getAncestors()[l];
+				// TODO :: ADD a similiar if strucuture to MEM nodes where I need to check PrevPrevCnode instead of PrevCnode
+				if (cnode->getmappedDFGNode() != NULL)
+				{
+					if (PrevCnode->getmappedDFGNode() != NULL)
+					{
+						for (int l = 0; l < cnode->getmappedDFGNode()->getAncestors().size(); ++l)
+						{
+							if (PrevCnode->getmappedDFGNode() == cnode->getmappedDFGNode()->getAncestors()[l])
+							{
+								dfgNode *currCnodeNode = cnode->getmappedDFGNode();
+								dfgNode *cnodeParent = cnode->getmappedDFGNode()->getAncestors()[l];
 								parentInfo[currCnodeNode].insert(cnodeParent);
-								if(PrevCnode->getmappedDFGNode()->getFinalIns() == NOP){
-
+								if (PrevCnode->getmappedDFGNode()->getFinalIns() == NOP)
+								{
 
 									//How can a NOP be a parent of someone?
 									assert(false);
 
-//									if(XBarMap[PrevCnode].find(PRED) == XBarMap[PrevCnode].end()){
-//										XBarMap[PrevCnode][PRED] = TILE;
-//									}
-//									else if(XBarMap[PrevCnode].find(OP1) == XBarMap[PrevCnode].end()){
-//										XBarMap[PrevCnode][OP1] = TILE;
-//									}
-//									else if(XBarMap[PrevCnode].find(OP2) == XBarMap[PrevCnode].end()){
-//										XBarMap[PrevCnode][OP2] = TILE;
-//									}
-//									else{
-//										assert(false);
-//									}
+									//									if(XBarMap[PrevCnode].find(PRED) == XBarMap[PrevCnode].end()){
+									//										XBarMap[PrevCnode][PRED] = TILE;
+									//									}
+									//									else if(XBarMap[PrevCnode].find(OP1) == XBarMap[PrevCnode].end()){
+									//										XBarMap[PrevCnode][OP1] = TILE;
+									//									}
+									//									else if(XBarMap[PrevCnode].find(OP2) == XBarMap[PrevCnode].end()){
+									//										XBarMap[PrevCnode][OP2] = TILE;
+									//									}
+									//									else{
+									//										assert(false);
+									//									}
 								}
-								else{
+								else
+								{
 
-									bool found=false;
-									if(currCnodeNode->parentClassification.find(0) !=
-									   currCnodeNode->parentClassification.end() ){
-										if(currCnodeNode->parentClassification[0]==cnodeParent){
-											assert(XBarMap[PrevCnode].find(PRED)==XBarMap[PrevCnode].end());
+									bool found = false;
+									if (currCnodeNode->parentClassification.find(0) !=
+										currCnodeNode->parentClassification.end())
+									{
+										if (currCnodeNode->parentClassification[0] == cnodeParent)
+										{
+											assert(XBarMap[PrevCnode].find(PRED) == XBarMap[PrevCnode].end());
 											XBarMap[PrevCnode][PRED] = TILE;
-											found=true;
+											found = true;
 										}
 									}
-									else{
+									else
+									{
 										XBarMap[PrevCnode][PRED] = INV;
 									}
 
-									if(currCnodeNode->parentClassification.find(1) !=
-									   currCnodeNode->parentClassification.end() ){
-										if(currCnodeNode->parentClassification[1]==cnodeParent){
-											assert(XBarMap[PrevCnode].find(OP1)==XBarMap[PrevCnode].end());
+									if (currCnodeNode->parentClassification.find(1) !=
+										currCnodeNode->parentClassification.end())
+									{
+										if (currCnodeNode->parentClassification[1] == cnodeParent)
+										{
+											assert(XBarMap[PrevCnode].find(OP1) == XBarMap[PrevCnode].end());
 											XBarMap[PrevCnode][OP1] = TILE;
-											found=true;
+											found = true;
 										}
 									}
-									else{
+									else
+									{
 										XBarMap[PrevCnode][OP1] = INV;
 									}
 
-									if(currCnodeNode->parentClassification.find(2) !=
-									   currCnodeNode->parentClassification.end() ){
-										if(currCnodeNode->parentClassification[2]==cnodeParent){
-											assert(XBarMap[PrevCnode].find(OP2)==XBarMap[PrevCnode].end());
+									if (currCnodeNode->parentClassification.find(2) !=
+										currCnodeNode->parentClassification.end())
+									{
+										if (currCnodeNode->parentClassification[2] == cnodeParent)
+										{
+											assert(XBarMap[PrevCnode].find(OP2) == XBarMap[PrevCnode].end());
 											XBarMap[PrevCnode][OP2] = TILE;
-											found=true;
+											found = true;
 										}
 									}
-									else{
+									else
+									{
 										XBarMap[PrevCnode][OP2] = INV;
 									}
 
@@ -4732,21 +5261,20 @@ int DFG::printMapping() {
 									outs() << "printMapping : currParent = " << cnodeParent->getIdx() << "\n";
 									assert(found);
 
-//									if((PrevCnode->getmappedDFGNode()->getFinalIns() == CMP) ||
-//									   (PrevCnode->getmappedDFGNode()->getFinalIns() == BR)	){
-//										XBarMap[PrevCnode][PRED] = TILE;
-//									}
-//									else if(XBarMap[PrevCnode].find(OP1) == XBarMap[PrevCnode].end()){
-//										XBarMap[PrevCnode][OP1] = TILE;
-//									}
-//									else if(XBarMap[PrevCnode].find(OP2) == XBarMap[PrevCnode].end()){
-//										XBarMap[PrevCnode][OP2] = TILE;
-//									}
-//									else{
-//										errs() << "UNCOMMENT here : assertion failes here truly!\n";
-////										assert(false);
-//									}
-
+									//									if((PrevCnode->getmappedDFGNode()->getFinalIns() == CMP) ||
+									//									   (PrevCnode->getmappedDFGNode()->getFinalIns() == BR)	){
+									//										XBarMap[PrevCnode][PRED] = TILE;
+									//									}
+									//									else if(XBarMap[PrevCnode].find(OP1) == XBarMap[PrevCnode].end()){
+									//										XBarMap[PrevCnode][OP1] = TILE;
+									//									}
+									//									else if(XBarMap[PrevCnode].find(OP2) == XBarMap[PrevCnode].end()){
+									//										XBarMap[PrevCnode][OP2] = TILE;
+									//									}
+									//									else{
+									//										errs() << "UNCOMMENT here : assertion failes here truly!\n";
+									////										assert(false);
+									//									}
 								}
 							}
 						}
@@ -4754,107 +5282,125 @@ int DFG::printMapping() {
 				}
 
 				//adding the similiar structure
-				if(PrevPrevCnode->getPEType() == MEM){
-					if(cnode->getmappedDFGNode() != NULL){
-						if(PrevPrevCnode->getmappedDFGNode() != NULL){
-							for (int l = 0; l < cnode->getmappedDFGNode()->getAncestors().size(); ++l) {
-								if(PrevPrevCnode->getmappedDFGNode() == cnode->getmappedDFGNode()->getAncestors()[l]){
+				if (PrevPrevCnode->getPEType() == MEM)
+				{
+					if (cnode->getmappedDFGNode() != NULL)
+					{
+						if (PrevPrevCnode->getmappedDFGNode() != NULL)
+						{
+							for (int l = 0; l < cnode->getmappedDFGNode()->getAncestors().size(); ++l)
+							{
+								if (PrevPrevCnode->getmappedDFGNode() == cnode->getmappedDFGNode()->getAncestors()[l])
+								{
 
-									dfgNode* currCnodeNode = cnode->getmappedDFGNode();
-									dfgNode* cnodeParent = cnode->getmappedDFGNode()->getAncestors()[l];
+									dfgNode *currCnodeNode = cnode->getmappedDFGNode();
+									dfgNode *cnodeParent = cnode->getmappedDFGNode()->getAncestors()[l];
 									parentInfo[currCnodeNode].insert(cnodeParent);
-									if(PrevPrevCnode->getmappedDFGNode()->getFinalIns() == NOP){
-
+									if (PrevPrevCnode->getmappedDFGNode()->getFinalIns() == NOP)
+									{
 
 										//How can a NOP be a parent of someone?
 										assert(false);
 
-	//									if(XBarMap[PrevCnode].find(PRED) == XBarMap[PrevCnode].end()){
-	//										XBarMap[PrevCnode][PRED] = TILE;
-	//									}
-	//									else if(XBarMap[PrevCnode].find(OP1) == XBarMap[PrevCnode].end()){
-	//										XBarMap[PrevCnode][OP1] = TILE;
-	//									}
-	//									else if(XBarMap[PrevCnode].find(OP2) == XBarMap[PrevCnode].end()){
-	//										XBarMap[PrevCnode][OP2] = TILE;
-	//									}
-	//									else{
-	//										assert(false);
-	//									}
+										//									if(XBarMap[PrevCnode].find(PRED) == XBarMap[PrevCnode].end()){
+										//										XBarMap[PrevCnode][PRED] = TILE;
+										//									}
+										//									else if(XBarMap[PrevCnode].find(OP1) == XBarMap[PrevCnode].end()){
+										//										XBarMap[PrevCnode][OP1] = TILE;
+										//									}
+										//									else if(XBarMap[PrevCnode].find(OP2) == XBarMap[PrevCnode].end()){
+										//										XBarMap[PrevCnode][OP2] = TILE;
+										//									}
+										//									else{
+										//										assert(false);
+										//									}
 									}
-									else{
+									else
+									{
 
-										bool found=false;
-										if(currCnodeNode->parentClassification.find(0) !=
-										   currCnodeNode->parentClassification.end() ){
-											if(currCnodeNode->parentClassification[0]==cnodeParent){
-												assert(XBarMap[PrevCnode].find(PRED)==XBarMap[PrevCnode].end());
+										bool found = false;
+										if (currCnodeNode->parentClassification.find(0) !=
+											currCnodeNode->parentClassification.end())
+										{
+											if (currCnodeNode->parentClassification[0] == cnodeParent)
+											{
+												assert(XBarMap[PrevCnode].find(PRED) == XBarMap[PrevCnode].end());
 												XBarMap[PrevCnode][PRED] = TILE;
-												found=true;
+												found = true;
 											}
 										}
-										else{
+										else
+										{
 											XBarMap[PrevCnode][PRED] = INV;
 										}
 
-										if(currCnodeNode->parentClassification.find(1) !=
-										   currCnodeNode->parentClassification.end() ){
-											if(currCnodeNode->parentClassification[1]==cnodeParent){
-												assert(XBarMap[PrevCnode].find(OP1)==XBarMap[PrevCnode].end());
+										if (currCnodeNode->parentClassification.find(1) !=
+											currCnodeNode->parentClassification.end())
+										{
+											if (currCnodeNode->parentClassification[1] == cnodeParent)
+											{
+												assert(XBarMap[PrevCnode].find(OP1) == XBarMap[PrevCnode].end());
 												XBarMap[PrevCnode][OP1] = TILE;
-												found=true;
+												found = true;
 											}
 										}
-										else{
+										else
+										{
 											XBarMap[PrevCnode][OP1] = INV;
 										}
 
-										if(currCnodeNode->parentClassification.find(2) !=
-										   currCnodeNode->parentClassification.end() ){
-											if(currCnodeNode->parentClassification[2]==cnodeParent){
-												assert(XBarMap[PrevCnode].find(OP2)==XBarMap[PrevCnode].end());
+										if (currCnodeNode->parentClassification.find(2) !=
+											currCnodeNode->parentClassification.end())
+										{
+											if (currCnodeNode->parentClassification[2] == cnodeParent)
+											{
+												assert(XBarMap[PrevCnode].find(OP2) == XBarMap[PrevCnode].end());
 												XBarMap[PrevCnode][OP2] = TILE;
-												found=true;
+												found = true;
 											}
 										}
-										else{
+										else
+										{
 											XBarMap[PrevCnode][OP2] = INV;
 										}
 
 										outs() << "printMapping : currNode = " << currCnodeNode->getIdx() << "\n";
 										outs() << "printMapping : currParent = " << cnodeParent->getIdx() << "\n";
 
-										if(!found){
+										if (!found)
+										{
 											outs() << "Node : \n";
-											if(currCnodeNode->getNode()){
+											if (currCnodeNode->getNode())
+											{
 												currCnodeNode->getNode()->dump();
 											}
 											outs() << "Parent : \n";
-											if(cnodeParent->getNode()){
+											if (cnodeParent->getNode())
+											{
 												cnodeParent->getNode()->dump();
 											}
-											else if(cnodeParent->getNameType().compare("OUTOutLoopLOAD")==0){
+											else if (cnodeParent->getNameType().compare("OUTOutLoopLOAD") == 0)
+											{
 												OutLoopNodeMapReverse[cnodeParent]->dump();
 											}
 										}
 										//TODO : DAC18
-//										assert(found);
+										//										assert(found);
 
-	//									if((PrevCnode->getmappedDFGNode()->getFinalIns() == CMP) ||
-	//									   (PrevCnode->getmappedDFGNode()->getFinalIns() == BR)	){
-	//										XBarMap[PrevCnode][PRED] = TILE;
-	//									}
-	//									else if(XBarMap[PrevCnode].find(OP1) == XBarMap[PrevCnode].end()){
-	//										XBarMap[PrevCnode][OP1] = TILE;
-	//									}
-	//									else if(XBarMap[PrevCnode].find(OP2) == XBarMap[PrevCnode].end()){
-	//										XBarMap[PrevCnode][OP2] = TILE;
-	//									}
-	//									else{
-	//										errs() << "UNCOMMENT here : assertion failes here truly!\n";
-	////										assert(false);
-	//									}
-
+										//									if((PrevCnode->getmappedDFGNode()->getFinalIns() == CMP) ||
+										//									   (PrevCnode->getmappedDFGNode()->getFinalIns() == BR)	){
+										//										XBarMap[PrevCnode][PRED] = TILE;
+										//									}
+										//									else if(XBarMap[PrevCnode].find(OP1) == XBarMap[PrevCnode].end()){
+										//										XBarMap[PrevCnode][OP1] = TILE;
+										//									}
+										//									else if(XBarMap[PrevCnode].find(OP2) == XBarMap[PrevCnode].end()){
+										//										XBarMap[PrevCnode][OP2] = TILE;
+										//									}
+										//									else{
+										//										errs() << "UNCOMMENT here : assertion failes here truly!\n";
+										////										assert(false);
+										//									}
 									}
 								}
 							}
@@ -4864,186 +5410,212 @@ int DFG::printMapping() {
 
 				//removing other edges if edges with dest as current node is found
 				cgraEdges_t2.clear();
-				for (int m = 0; m < cgraEdges_t.size(); ++m) {
+				for (int m = 0; m < cgraEdges_t.size(); ++m)
+				{
 
-					if(cnode->getmappedDFGNode() == NULL)break;
-					if(cnode->getmappedDFGNode()->isParent(cgraEdges_t[m].mappedDFGEdge->getSrc())){
+					if (cnode->getmappedDFGNode() == NULL)
+						break;
+					if (cnode->getmappedDFGNode()->isParent(cgraEdges_t[m].mappedDFGEdge->getSrc()))
+					{
 						cgraEdges_t2.push_back(cgraEdges_t[m]);
 					}
 
-//					if(cgraEdges_t[m].mappedDFGEdge->getDest() == cnode->getmappedDFGNode()){
-//
-//					}
+					//					if(cgraEdges_t[m].mappedDFGEdge->getDest() == cnode->getmappedDFGNode()){
+					//
+					//					}
 				}
 
-				if(!cgraEdges_t2.empty()){
+				if (!cgraEdges_t2.empty())
+				{
 					cgraEdges_t = cgraEdges_t2;
 				}
 
-				for (int m = 0; m < cgraEdges_t.size(); ++m) {
-					dfgNode* currCnodeNode = cnode->getmappedDFGNode();
+				for (int m = 0; m < cgraEdges_t.size(); ++m)
+				{
+					dfgNode *currCnodeNode = cnode->getmappedDFGNode();
 
-					if(currCnodeNode==NULL){
+					if (currCnodeNode == NULL)
+					{
 						continue;
 					}
 
-					if(parentInfo[currCnodeNode].find(cgraEdges_t[m].mappedDFGEdge->getSrc())
-							!= parentInfo[currCnodeNode].end()){
+					if (parentInfo[currCnodeNode].find(cgraEdges_t[m].mappedDFGEdge->getSrc()) != parentInfo[currCnodeNode].end())
+					{
 						continue;
 					}
 
-					bool parentFound=false;
-					for(dfgNode* parent : currCnodeNode->getAncestors()){
+					bool parentFound = false;
+					for (dfgNode *parent : currCnodeNode->getAncestors())
+					{
 						currCGRA->printCGRAEdge(cgraEdges_t[m]);
-						if(parent == cgraEdges_t[m].mappedDFGEdge->getSrc()){
-							parentFound=true;
+						if (parent == cgraEdges_t[m].mappedDFGEdge->getSrc())
+						{
+							parentFound = true;
 						}
 					}
-//					bool parentFound = std::find(currCnodeNode->getAncestors().begin(),
-//												 currCnodeNode->getAncestors().end(),
-//												 cgraEdges_t[m].mappedDFGEdge->getSrc())
-//									   != currCnodeNode->getAncestors().end();
-					if(parentFound) {
+					//					bool parentFound = std::find(currCnodeNode->getAncestors().begin(),
+					//												 currCnodeNode->getAncestors().end(),
+					//												 cgraEdges_t[m].mappedDFGEdge->getSrc())
+					//									   != currCnodeNode->getAncestors().end();
+					if (parentFound)
+					{
 						outs() << "currCnodeNode=" << currCnodeNode->getIdx() << "\n";
 						outs() << "Parents=";
-						for(dfgNode* parent : currCnodeNode->getAncestors()){
+						for (dfgNode *parent : currCnodeNode->getAncestors())
+						{
 							outs() << parent->getIdx() << ",";
 						}
 						outs() << "\n";
 						outs() << "Parent=" << cgraEdges_t[m].mappedDFGEdge->getSrc()->getIdx() << "\n";
 					}
 
-					if((cgraEdges_t[m].mappedDFGEdge->getDest() == cnode->getmappedDFGNode())||parentFound){
+					if ((cgraEdges_t[m].mappedDFGEdge->getDest() == cnode->getmappedDFGNode()) || parentFound)
+					{
 
-
-						dfgNode* cnodeParent = cgraEdges_t[m].mappedDFGEdge->getSrc();
-						dfgNode* cnodeChild = cgraEdges_t[m].mappedDFGEdge->getDest();
+						dfgNode *cnodeParent = cgraEdges_t[m].mappedDFGEdge->getSrc();
+						dfgNode *cnodeChild = cgraEdges_t[m].mappedDFGEdge->getDest();
 						parentInfo[currCnodeNode].insert(cnodeParent);
 
-						if(cgraEdges_t[m].mappedDFGEdge->getSrc()->getFinalIns() == NOP){
+						if (cgraEdges_t[m].mappedDFGEdge->getSrc()->getFinalIns() == NOP)
+						{
 
 							assert(false);
 							//Nothing should be routed from a NOP instruction
 
-//							if(XBarMap[PrevCnode].find(PRED) == XBarMap[PrevCnode].end()){
-//								XBarMap[PrevCnode][PRED] = cgraEdges_t[m].DstPort;
-//							}
-//							else if(XBarMap[PrevCnode].find(OP1) == XBarMap[PrevCnode].end()){
-//								XBarMap[PrevCnode][OP1] = cgraEdges_t[m].DstPort;
-//							}
-//							else if(XBarMap[PrevCnode].find(OP2) == XBarMap[PrevCnode].end()){
-//								XBarMap[PrevCnode][OP2] = cgraEdges_t[m].DstPort;
-//							}
-//							else{
-//								assert(false);
-//							}
-
+							//							if(XBarMap[PrevCnode].find(PRED) == XBarMap[PrevCnode].end()){
+							//								XBarMap[PrevCnode][PRED] = cgraEdges_t[m].DstPort;
+							//							}
+							//							else if(XBarMap[PrevCnode].find(OP1) == XBarMap[PrevCnode].end()){
+							//								XBarMap[PrevCnode][OP1] = cgraEdges_t[m].DstPort;
+							//							}
+							//							else if(XBarMap[PrevCnode].find(OP2) == XBarMap[PrevCnode].end()){
+							//								XBarMap[PrevCnode][OP2] = cgraEdges_t[m].DstPort;
+							//							}
+							//							else{
+							//								assert(false);
+							//							}
 						}
-						else{
+						else
+						{
 
 							outs() << "printMapping : currNode = " << currCnodeNode->getIdx() << "\n";
 							outs() << "printMapping : currParent = " << cnodeParent->getIdx() << "\n";
 							outs() << "printMapping : PrevCnode = " << PrevCnode->getName() << "\n";
 
-							bool found=false;
-							if(currCnodeNode->parentClassification.find(0) !=
-							   currCnodeNode->parentClassification.end() ){
-								if(currCnodeNode->parentClassification[0]==cnodeParent){
+							bool found = false;
+							if (currCnodeNode->parentClassification.find(0) !=
+								currCnodeNode->parentClassification.end())
+							{
+								if (currCnodeNode->parentClassification[0] == cnodeParent)
+								{
 									this->getCGRA()->printCGRAEdge(cgraEdges_t[m]);
-									assert(XBarMap[PrevCnode].find(PRED)==XBarMap[PrevCnode].end());
+									assert(XBarMap[PrevCnode].find(PRED) == XBarMap[PrevCnode].end());
 									XBarMap[PrevCnode][PRED] = cgraEdges_t[m].DstPort;
 									std::cout << "PRED : " << cgraEdges_t[m].DstPort << "\n";
-									found=true;
+									found = true;
 								}
 							}
-							else{
+							else
+							{
 								XBarMap[PrevCnode][PRED] = INV;
 							}
 
-							if(currCnodeNode->parentClassification.find(1) !=
-							   currCnodeNode->parentClassification.end() ){
-								if(currCnodeNode->parentClassification[1]==cnodeParent){
+							if (currCnodeNode->parentClassification.find(1) !=
+								currCnodeNode->parentClassification.end())
+							{
+								if (currCnodeNode->parentClassification[1] == cnodeParent)
+								{
 									this->getCGRA()->printCGRAEdge(cgraEdges_t[m]);
-									assert(XBarMap[PrevCnode].find(OP1)==XBarMap[PrevCnode].end());
+									assert(XBarMap[PrevCnode].find(OP1) == XBarMap[PrevCnode].end());
 									XBarMap[PrevCnode][OP1] = cgraEdges_t[m].DstPort;
 									std::cout << "I1 : " << cgraEdges_t[m].DstPort << "\n";
-									found=true;
+									found = true;
 								}
 							}
-							else{
+							else
+							{
 								XBarMap[PrevCnode][OP1] = INV;
 							}
 
-							if(currCnodeNode->parentClassification.find(2) !=
-							   currCnodeNode->parentClassification.end() ){
-								if(currCnodeNode->parentClassification[2]==cnodeParent){
+							if (currCnodeNode->parentClassification.find(2) !=
+								currCnodeNode->parentClassification.end())
+							{
+								if (currCnodeNode->parentClassification[2] == cnodeParent)
+								{
 									this->getCGRA()->printCGRAEdge(cgraEdges_t[m]);
-									assert(XBarMap[PrevCnode].find(OP2)==XBarMap[PrevCnode].end());
+									assert(XBarMap[PrevCnode].find(OP2) == XBarMap[PrevCnode].end());
 									XBarMap[PrevCnode][OP2] = cgraEdges_t[m].DstPort;
 									std::cout << "I2 : " << cgraEdges_t[m].DstPort << "\n";
-									found=true;
+									found = true;
 								}
 							}
-							else{
+							else
+							{
 								XBarMap[PrevCnode][OP2] = INV;
 							}
 
-							if(!found){
+							if (!found)
+							{
 								outs() << "Node : \n";
-								if(currCnodeNode->getNode()){
+								if (currCnodeNode->getNode())
+								{
 									currCnodeNode->getNode()->dump();
 								}
 								outs() << "Parent : \n";
-								if(cnodeParent->getNode()){
+								if (cnodeParent->getNode())
+								{
 									cnodeParent->getNode()->dump();
 								}
-								else if(cnodeParent->getNameType().compare("OUTOutLoopLOAD")==0){
+								else if (cnodeParent->getNameType().compare("OUTOutLoopLOAD") == 0)
+								{
 									OutLoopNodeMapReverse[cnodeParent]->dump();
 								}
 							}
 
 							//TODO : DAC18
-//							assert(found);
+							//							assert(found);
 
 							// mapped for hyCUBE instructions
-//							if((cgraEdges_t[m].mappedDFGEdge->getSrc()->getFinalIns() == CMP) ||
-//							   (cgraEdges_t[m].mappedDFGEdge->getSrc()->getFinalIns() == BR)	){
-//								XBarMap[PrevCnode][PRED] = cgraEdges_t[m].DstPort;
-//							}
-//							else if(XBarMap[PrevCnode].find(OP1) == XBarMap[PrevCnode].end()){
-//								XBarMap[PrevCnode][OP1] = cgraEdges_t[m].DstPort;
-//							}
-//							else if(XBarMap[PrevCnode].find(OP2) == XBarMap[PrevCnode].end()){
-//								XBarMap[PrevCnode][OP2] = cgraEdges_t[m].DstPort;
-//							}
-//							else{
-//								errs() << "UNCOMMENT here : assertion failes here truly!\n";
-////								assert(false);
-//							}
-
-
+							//							if((cgraEdges_t[m].mappedDFGEdge->getSrc()->getFinalIns() == CMP) ||
+							//							   (cgraEdges_t[m].mappedDFGEdge->getSrc()->getFinalIns() == BR)	){
+							//								XBarMap[PrevCnode][PRED] = cgraEdges_t[m].DstPort;
+							//							}
+							//							else if(XBarMap[PrevCnode].find(OP1) == XBarMap[PrevCnode].end()){
+							//								XBarMap[PrevCnode][OP1] = cgraEdges_t[m].DstPort;
+							//							}
+							//							else if(XBarMap[PrevCnode].find(OP2) == XBarMap[PrevCnode].end()){
+							//								XBarMap[PrevCnode][OP2] = cgraEdges_t[m].DstPort;
+							//							}
+							//							else{
+							//								errs() << "UNCOMMENT here : assertion failes here truly!\n";
+							////								assert(false);
+							//							}
 						}
 					}
 				}
 
-
 				//File Printing
 
-				for (int l = 0; l < portOrder.size(); ++l) {
-					if(portDfgEdgeMap.find(portOrder[l]) != portDfgEdgeMap.end()){
+				for (int l = 0; l < portOrder.size(); ++l)
+				{
+					if (portDfgEdgeMap.find(portOrder[l]) != portDfgEdgeMap.end())
+					{
 						mapFile << portDfgEdgeMap[portOrder[l]]->getName() << ",";
 					}
-					else{
+					else
+					{
 						mapFile << "NA,";
 					}
 				}
 				portDfgEdgeMap.clear();
 
 				binOp currBinOp;
-				if(node!=NULL){
+				if (node != NULL)
+				{
 					currBinOp.opcode = HyCUBEInsBinary[node->getFinalIns()];
 				}
-				else{
+				else
+				{
 					currBinOp.opcode = 0;
 				}
 				//0b111 is used to cut of the output -- maybe switch of the asynchrnous repeater
@@ -5061,28 +5633,31 @@ int DFG::printMapping() {
 				currBinOp.constantValid = 0;
 				currBinOp.npb = 0;
 
-				if(node!=NULL){
-					if(node->hasConstantVal()){
-						currBinOp.constant=node->getConstantVal();
-//						currBinOp.outMap[OP2] = node->getConstantVal() >> 27;
+				if (node != NULL)
+				{
+					if (node->hasConstantVal())
+					{
+						currBinOp.constant = node->getConstantVal();
+						//						currBinOp.outMap[OP2] = node->getConstantVal() >> 27;
 						currBinOp.constantValid = 1;
-						constantValidMaskMap[j][k]=(constantValidMaskMap[j][k]&(~1)|1) << 1;
+						constantValidMaskMap[j][k] = (constantValidMaskMap[j][k] & (~1) | 1) << 1;
 					}
-					if(node->getNPB()){
+					if (node->getNPB())
+					{
 						currBinOp.npb = 1;
 					}
 					outs() << "CurrNode=" << node->getIdx() << ",placed=" << node->getMappedLoc()->getName() << ",xbarop2=" << currBinOp.outMap[OP2] << "\n";
 				}
 
-
-
-
-				for (int l = 0; l < insPortOrder.size(); ++l) {
-					if(XBarMap[PrevCnode].find(insPortOrder[l]) != XBarMap[PrevCnode].end()){
+				for (int l = 0; l < insPortOrder.size(); ++l)
+				{
+					if (XBarMap[PrevCnode].find(insPortOrder[l]) != XBarMap[PrevCnode].end())
+					{
 						insFile << currCGRA->getPortName(XBarMap[PrevCnode][insPortOrder[l]]) << ",";
-						updateBinOp(&currBinOp,insPortOrder[l],XBarMap[PrevCnode][insPortOrder[l]]);
+						updateBinOp(&currBinOp, insPortOrder[l], XBarMap[PrevCnode][insPortOrder[l]]);
 					}
-					else{
+					else
+					{
 						insFile << "NA,";
 					}
 				}
@@ -5091,45 +5666,45 @@ int DFG::printMapping() {
 
 				//Print Binary
 				binFile << std::setfill('0');
-				binFile << std::setw(1) << std::bitset<1>(currBinOp.npb) ;//<< ",";
-				binFile << std::setw(1) << std::bitset<1>(currBinOp.constantValid) ;//<< ",";
-				binFile << std::setw(27) << std::bitset<27>(currBinOp.constant) ;//<< ",";
-				binFile << std::setw(5) << std::bitset<5>(currBinOp.opcode) ;//<< "," ;
-				binFile << std::setw(4) << std::bitset<4>(currBinOp.regwen) ;//<< ",";
-				binFile << std::bitset<1>(currBinOp.tregwen) ;//<< ",";
-				binFile << std::setw(4) << std::bitset<4>(currBinOp.regbypass) ;//<< ",";
-				binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[PRED]) ;//<< ",";
-				binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[OP2]) ;//<< ",";
-				binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[OP1]) ;//<< ",";
-				binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[NORTH]) ;//<< ",";
-				binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[WEST]) ;//<< ",";
-				binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[SOUTH]) ;//<< ",";
+				binFile << std::setw(1) << std::bitset<1>(currBinOp.npb);			//<< ",";
+				binFile << std::setw(1) << std::bitset<1>(currBinOp.constantValid); //<< ",";
+				binFile << std::setw(27) << std::bitset<27>(currBinOp.constant);	//<< ",";
+				binFile << std::setw(5) << std::bitset<5>(currBinOp.opcode);		//<< "," ;
+				binFile << std::setw(4) << std::bitset<4>(currBinOp.regwen);		//<< ",";
+				binFile << std::bitset<1>(currBinOp.tregwen);						//<< ",";
+				binFile << std::setw(4) << std::bitset<4>(currBinOp.regbypass);		//<< ",";
+				binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[PRED]);  //<< ",";
+				binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[OP2]);   //<< ",";
+				binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[OP1]);   //<< ",";
+				binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[NORTH]); //<< ",";
+				binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[WEST]);  //<< ",";
+				binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[SOUTH]); //<< ",";
 				binFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[EAST]) << std::endl;
 
 				//Print Binary with OpName
 				binOpNameFile << std::setfill('0');
-				binOpNameFile << std::setw(1) << std::bitset<1>(currBinOp.npb) ;//<< ",";
-				binOpNameFile << std::setw(1) << std::bitset<1>(currBinOp.constantValid) ;//<< ",";
-				binOpNameFile << std::setw(27) << std::bitset<27>(currBinOp.constant) ;//<< ",";
-				binOpNameFile << std::setw(5) << std::bitset<5>(currBinOp.opcode) ;//<< "," ;
-				binOpNameFile << std::setw(4) << std::bitset<4>(currBinOp.regwen) ;//<< ",";
-				binOpNameFile << std::bitset<1>(currBinOp.tregwen) ;//<< ",";
-				binOpNameFile << std::setw(4) << std::bitset<4>(currBinOp.regbypass) ;//<< ",";
-				binOpNameFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[PRED]) ;//<< ",";
-				binOpNameFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[OP2]) ;//<< ",";
-				binOpNameFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[OP1]) ;//<< ",";
-				binOpNameFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[NORTH]) ;//<< ",";
-				binOpNameFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[WEST]) ;//<< ",";
-				binOpNameFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[SOUTH]) ;//<< ",";
+				binOpNameFile << std::setw(1) << std::bitset<1>(currBinOp.npb);			  //<< ",";
+				binOpNameFile << std::setw(1) << std::bitset<1>(currBinOp.constantValid); //<< ",";
+				binOpNameFile << std::setw(27) << std::bitset<27>(currBinOp.constant);	//<< ",";
+				binOpNameFile << std::setw(5) << std::bitset<5>(currBinOp.opcode);		  //<< "," ;
+				binOpNameFile << std::setw(4) << std::bitset<4>(currBinOp.regwen);		  //<< ",";
+				binOpNameFile << std::bitset<1>(currBinOp.tregwen);						  //<< ",";
+				binOpNameFile << std::setw(4) << std::bitset<4>(currBinOp.regbypass);	 //<< ",";
+				binOpNameFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[PRED]);  //<< ",";
+				binOpNameFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[OP2]);   //<< ",";
+				binOpNameFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[OP1]);   //<< ",";
+				binOpNameFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[NORTH]); //<< ",";
+				binOpNameFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[WEST]);  //<< ",";
+				binOpNameFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[SOUTH]); //<< ",";
 				binOpNameFile << std::setw(3) << std::bitset<3>(currBinOp.outMap[EAST]) << ",";
-				if(node!=NULL){
+				if (node != NULL)
+				{
 					binOpNameFile << HyCUBEInsStrings[node->getFinalIns()] << std::endl;
 				}
-				else{
+				else
+				{
 					binOpNameFile << "NULL" << std::endl;
 				}
-
-
 			}
 		}
 		mapFile << std::endl;
@@ -5138,32 +5713,35 @@ int DFG::printMapping() {
 	}
 
 	//Check whether all the parents are accounted for
-	for(std::pair<dfgNode*,std::set<dfgNode*>> unit : parentInfo){
-		dfgNode* node = unit.first;
-		if(node->getAncestors().size()!=parentInfo[node].size()){
+	for (std::pair<dfgNode *, std::set<dfgNode *>> unit : parentInfo)
+	{
+		dfgNode *node = unit.first;
+		if (node->getAncestors().size() != parentInfo[node].size())
+		{
 			outs() << "This node :" << node->getIdx() << "'s parents are not accounted for\n";
 			outs() << "Accounted parents : ";
-			for(dfgNode* par : parentInfo[node]){
+			for (dfgNode *par : parentInfo[node])
+			{
 				outs() << par->getIdx() << ",";
 			}
 			outs() << "\n";
 		}
-		assert(node->getAncestors().size()==parentInfo[node].size());
+		assert(node->getAncestors().size() == parentInfo[node].size());
 	}
 
-//	outs() << "parentInfo.size() =" << parentInfo.size() << "\n";
-//	outs() << "NodeList.size() =" << NodeList.size() << "\n";
-//	assert(parentInfo.size()==NodeList.size());
+	//	outs() << "parentInfo.size() =" << parentInfo.size() << "\n";
+	//	outs() << "NodeList.size() =" << NodeList.size() << "\n";
+	//	assert(parentInfo.size()==NodeList.size());
 
 	binFile << std::endl;
 	binOpNameFile << std::endl;
 
-//	for (int j = 0; j < currCGRA->getYdim(); ++j) {
-//		for (int k = 0; k < currCGRA->getXdim(); ++k) {
-//			binFile << "Y=" << j << ",X=" << k << "ContantValidMask=" << std::setw(32) << std::bitset<32>(constantValidMaskMap[j][k]) << std::endl;
-//			binOpNameFile << "Y=" << j << ",X=" << k << "ContantValidMask=" << std::setw(32) << std::bitset<32>(constantValidMaskMap[j][k]) << std::endl;
-//		}
-//	}
+	//	for (int j = 0; j < currCGRA->getYdim(); ++j) {
+	//		for (int k = 0; k < currCGRA->getXdim(); ++k) {
+	//			binFile << "Y=" << j << ",X=" << k << "ContantValidMask=" << std::setw(32) << std::bitset<32>(constantValidMaskMap[j][k]) << std::endl;
+	//			binOpNameFile << "Y=" << j << ",X=" << k << "ContantValidMask=" << std::setw(32) << std::bitset<32>(constantValidMaskMap[j][k]) << std::endl;
+	//		}
+	//	}
 
 	mapFile.close();
 	insFile.close();
@@ -5171,180 +5749,203 @@ int DFG::printMapping() {
 	binOpNameFile.close();
 }
 
-int DFG::updateBinOp(binOp* binOpIns, Port outPort, Port inPort) {
+int DFG::updateBinOp(binOp *binOpIns, Port outPort, Port inPort)
+{
 
-	switch (outPort) {
+	switch (outPort)
+	{
+	case R0:
+		if (inPort != R0)
+		{
+			binOpIns->regwen = binOpIns->regwen | 0b1000;
+		}
+		break;
+	case R1:
+		if (inPort != R1)
+		{
+			binOpIns->regwen = binOpIns->regwen | 0b0001;
+		}
+		break;
+	case R2:
+		if (inPort != R2)
+		{
+			binOpIns->regwen = binOpIns->regwen | 0b0100;
+		}
+		break;
+	case R3:
+		if (inPort != R3)
+		{
+			binOpIns->regwen = binOpIns->regwen | 0b0010;
+		}
+		break;
+	case NORTH:
+	case EAST:
+	case WEST:
+	case SOUTH:
+	case OP1:
+	case OP2:
+	case PRED:
+		switch (inPort)
+		{
 		case R0:
-			if(inPort != R0){
-				binOpIns->regwen = binOpIns->regwen | 0b1000;
-			}
+			binOpIns->regbypass = binOpIns->regbypass | 0b0100;
+		case NORTH:
+			binOpIns->outMap[outPort] = 0b011;
 			break;
 		case R1:
-			if(inPort != R1){
-				binOpIns->regwen = binOpIns->regwen | 0b0001;
-			}
+			binOpIns->regbypass = binOpIns->regbypass | 0b0001;
+		case EAST:
+			binOpIns->outMap[outPort] = 0b000;
 			break;
 		case R2:
-			if(inPort != R2){
-				binOpIns->regwen = binOpIns->regwen | 0b0100;
-			}
+			binOpIns->regbypass = binOpIns->regbypass | 0b0010;
+		case WEST:
+			binOpIns->outMap[outPort] = 0b010;
 			break;
 		case R3:
-			if(inPort != R3){
-				binOpIns->regwen = binOpIns->regwen | 0b0010;
-			}
-			break;
-		case NORTH:
-		case EAST:
-		case WEST:
+			binOpIns->regbypass = binOpIns->regbypass | 0b1000;
 		case SOUTH:
-		case OP1:
-		case OP2:
-		case PRED:
-			switch (inPort) {
-				case R0:
-					binOpIns->regbypass =binOpIns->regbypass | 0b0100;
-				case NORTH:
-					binOpIns->outMap[outPort]= 0b011;
-					break;
-				case R1:
-					binOpIns->regbypass =binOpIns->regbypass | 0b0001;
-				case EAST:
-					binOpIns->outMap[outPort]= 0b000;
-					break;
-				case R2:
-					binOpIns->regbypass =binOpIns->regbypass | 0b0010;
-				case WEST:
-					binOpIns->outMap[outPort]= 0b010;
-					break;
-				case R3:
-					binOpIns->regbypass =binOpIns->regbypass | 0b1000;
-				case SOUTH:
-					binOpIns->outMap[outPort]= 0b001;
-					break;
-				case TILE:
-					binOpIns->outMap[outPort]= 0b100;
-					break;
-				case TREG:
-					binOpIns->outMap[outPort]= 0b101;
-					break;
-				case INV:
-					binOpIns->outMap[outPort]= 0b111;
-					break;
-				default:
-					assert(false);
-					break;
-			}
+			binOpIns->outMap[outPort] = 0b001;
+			break;
+		case TILE:
+			binOpIns->outMap[outPort] = 0b100;
 			break;
 		case TREG:
-			if(inPort != TREG){
-				binOpIns->tregwen = 0b1;
-			}
+			binOpIns->outMap[outPort] = 0b101;
+			break;
+		case INV:
+			binOpIns->outMap[outPort] = 0b111;
 			break;
 		default:
 			assert(false);
 			break;
+		}
+		break;
+	case TREG:
+		if (inPort != TREG)
+		{
+			binOpIns->tregwen = 0b1;
+		}
+		break;
+	default:
+		assert(false);
+		break;
 	}
 }
 
-int DFG::printCongestionInfo() {
-	std::map<int,std::vector<dfgNode*>> nodeMapASAPLevels;
-	std::map<int,double> regEdgeCountASAPLevels;
-	dfgNode* node;
-	dfgNode* child;
+int DFG::printCongestionInfo()
+{
+	std::map<int, std::vector<dfgNode *>> nodeMapASAPLevels;
+	std::map<int, double> regEdgeCountASAPLevels;
+	dfgNode *node;
+	dfgNode *child;
 	int childASAPLevel;
 	bool sanity = false;
 
-	for (int i = 0; i < maxASAPLevel; ++i) {
-		regEdgeCountASAPLevels[i]=0;
+	for (int i = 0; i < maxASAPLevel; ++i)
+	{
+		regEdgeCountASAPLevels[i] = 0;
 	}
 
-	for (int i = 0; i < NodeList.size(); ++i) {
+	for (int i = 0; i < NodeList.size(); ++i)
+	{
 		node = NodeList[i];
 		nodeMapASAPLevels[node->getASAPnumber()].push_back(node);
 
-		for (int j = 0; j < node->getChildren().size(); ++j) {
+		for (int j = 0; j < node->getChildren().size(); ++j)
+		{
 			child = node->getChildren()[j];
 			childASAPLevel = child->getASAPnumber();
-			for (int k = node->getASAPnumber()+1; k < childASAPLevel; ++k) {
+			for (int k = node->getASAPnumber() + 1; k < childASAPLevel; ++k)
+			{
 				regEdgeCountASAPLevels[k]++;
 			}
 		}
 	}
 
-	int MII = (int)ceil((double)NodeList.size() / ((double)currCGRA->getXdim()*(double)currCGRA->getYdim()));
-	std::map<int,std::map<int,int>> nodeMapEst;
-	std::map<int,int> totalNodeCountMapEst;
+	int MII = (int)ceil((double)NodeList.size() / ((double)currCGRA->getXdim() * (double)currCGRA->getYdim()));
+	std::map<int, std::map<int, int>> nodeMapEst;
+	std::map<int, int> totalNodeCountMapEst;
 
-	std::map<int,std::map<int,double>> edgeMapEst;
-	std::map<int,double> totalEdgeCountMapEst;
+	std::map<int, std::map<int, double>> edgeMapEst;
+	std::map<int, double> totalEdgeCountMapEst;
 
-	int cgraNodePerLevel = currCGRA->getXdim()*currCGRA->getYdim();
+	int cgraNodePerLevel = currCGRA->getXdim() * currCGRA->getYdim();
 
 	int II = MII;
 	int t;
 	int T;
 
-	for (int i = 0; i < II; ++i) {
-		totalNodeCountMapEst[i]=0;
+	for (int i = 0; i < II; ++i)
+	{
+		totalNodeCountMapEst[i] = 0;
 		nodeMapEst[i][-1] = -1;
 	}
 
-	int mapLevel=0;
-	int nodeNumberToBePlaced=0;
-	for (int i = 0; i < maxASAPLevel; ++i) {
+	int mapLevel = 0;
+	int nodeNumberToBePlaced = 0;
+	for (int i = 0; i < maxASAPLevel; ++i)
+	{
 		errs() << "printCongestionInfo :: ASAPLevel=" << i << "\n";
-		t = mapLevel%II;
-		T = mapLevel/II;
+		t = mapLevel % II;
+		T = mapLevel / II;
 
-		if(totalNodeCountMapEst[t] + nodeMapASAPLevels[i].size() <= cgraNodePerLevel){
+		if (totalNodeCountMapEst[t] + nodeMapASAPLevels[i].size() <= cgraNodePerLevel)
+		{
 			totalNodeCountMapEst[t] += nodeMapASAPLevels[i].size();
 			assert(nodeMapEst[t].find(T) == nodeMapEst[t].end());
-			nodeMapEst[t][T]=nodeMapASAPLevels[i].size();
-			edgeMapEst[t][T]=regEdgeCountASAPLevels[i];
+			nodeMapEst[t][T] = nodeMapASAPLevels[i].size();
+			edgeMapEst[t][T] = regEdgeCountASAPLevels[i];
 			mapLevel++;
-			nodeNumberToBePlaced=0;
+			nodeNumberToBePlaced = 0;
 		}
-		else{
+		else
+		{
 			nodeNumberToBePlaced = totalNodeCountMapEst[t] + nodeMapASAPLevels[i].size() - cgraNodePerLevel;
 			errs() << "first nodeNumberToBePlaced=" << nodeNumberToBePlaced << "\n";
 			totalNodeCountMapEst[t] = cgraNodePerLevel;
 			assert(nodeMapEst[t].find(T) == nodeMapEst[t].end());
 			nodeMapEst[t][T] = cgraNodePerLevel - totalNodeCountMapEst[t];
-			edgeMapEst[t][T] = (regEdgeCountASAPLevels[i]*(double)nodeMapEst[t][T])/(double)nodeMapASAPLevels[i].size();
+			edgeMapEst[t][T] = (regEdgeCountASAPLevels[i] * (double)nodeMapEst[t][T]) / (double)nodeMapASAPLevels[i].size();
 			assert(nodeNumberToBePlaced > 0);
 
-			while(nodeNumberToBePlaced!=0){
+			while (nodeNumberToBePlaced != 0)
+			{
 				errs() << "while nodeNumberToBePlaced=" << nodeNumberToBePlaced << "\n";
 				mapLevel++;
-				t = mapLevel%II;
-				T = mapLevel/II;
-				if(totalNodeCountMapEst[t]+nodeNumberToBePlaced <= cgraNodePerLevel){
-					totalNodeCountMapEst[t]+=nodeNumberToBePlaced;
+				t = mapLevel % II;
+				T = mapLevel / II;
+				if (totalNodeCountMapEst[t] + nodeNumberToBePlaced <= cgraNodePerLevel)
+				{
+					totalNodeCountMapEst[t] += nodeNumberToBePlaced;
 					assert(nodeMapEst[t].find(T) == nodeMapEst[t].end());
-					nodeMapEst[t][T]=nodeNumberToBePlaced;
-					edgeMapEst[t][T] = (regEdgeCountASAPLevels[i]*(double)nodeMapEst[t][T])/(double)nodeMapASAPLevels[i].size();
+					nodeMapEst[t][T] = nodeNumberToBePlaced;
+					edgeMapEst[t][T] = (regEdgeCountASAPLevels[i] * (double)nodeMapEst[t][T]) / (double)nodeMapASAPLevels[i].size();
 					mapLevel++;
-					nodeNumberToBePlaced=0;
+					nodeNumberToBePlaced = 0;
 				}
-				else{
-					nodeNumberToBePlaced = totalNodeCountMapEst[t]+nodeNumberToBePlaced-cgraNodePerLevel;
+				else
+				{
+					nodeNumberToBePlaced = totalNodeCountMapEst[t] + nodeNumberToBePlaced - cgraNodePerLevel;
 					errs() << "while else nodeNumberToBePlaced=" << nodeNumberToBePlaced << "\n";
 					totalNodeCountMapEst[t] = cgraNodePerLevel;
 					assert(nodeMapEst[t].find(T) == nodeMapEst[t].end());
 					nodeMapEst[t][T] = cgraNodePerLevel - totalNodeCountMapEst[t];
-					edgeMapEst[t][T] = (regEdgeCountASAPLevels[i]*(double)nodeMapEst[t][T])/(double)nodeMapASAPLevels[i].size();
+					edgeMapEst[t][T] = (regEdgeCountASAPLevels[i] * (double)nodeMapEst[t][T]) / (double)nodeMapASAPLevels[i].size();
 				}
 
 				//sanitycheck
 				sanity = false;
-				for (int i = 0; i < II; ++i) {
+				for (int i = 0; i < II; ++i)
+				{
 					assert(totalNodeCountMapEst[i] <= cgraNodePerLevel);
-					if(totalNodeCountMapEst[i]<cgraNodePerLevel){
+					if (totalNodeCountMapEst[i] < cgraNodePerLevel)
+					{
 						sanity = true;
 					}
 				}
-				if(!sanity){
+				if (!sanity)
+				{
 					errs() << "printCongestionInfo is crazy!\n";
 					exit(-1);
 				}
@@ -5356,13 +5957,15 @@ int DFG::printCongestionInfo() {
 	std::ofstream outFile;
 	std::string outFileName = name + "_congestinfo.txt";
 	outFile.open(outFileName.c_str());
-	std::map<int,int>::iterator it;
+	std::map<int, int>::iterator it;
 
-	for (int i = 0; i < II; ++i) {
+	for (int i = 0; i < II; ++i)
+	{
 		errs() << "t=" << std::to_string(i);
 		outFile << "t=" << std::to_string(i);
 
-		for (int j = 0; j < nodeMapEst[i].size()-1; ++j) {
+		for (int j = 0; j < nodeMapEst[i].size() - 1; ++j)
+		{
 			assert(nodeMapEst[i].find(j) != nodeMapEst[i].end());
 			errs() << "," << std::to_string(nodeMapEst[i][j]);
 			outFile << "," << std::to_string(nodeMapEst[i][j]);
@@ -5374,11 +5977,13 @@ int DFG::printCongestionInfo() {
 	errs() << "Edges\n";
 	outFile << "Edges" << std::endl;
 
-	for (int i = 0; i < II; ++i) {
+	for (int i = 0; i < II; ++i)
+	{
 		errs() << "t=" << std::to_string(i);
 		outFile << "t=" << std::to_string(i);
 
-		for (int j = 0; j < edgeMapEst[i].size()-1; ++j) {
+		for (int j = 0; j < edgeMapEst[i].size() - 1; ++j)
+		{
 			assert(edgeMapEst[i].find(j) != edgeMapEst[i].end());
 			errs() << "," << std::to_string(edgeMapEst[i][j]);
 			outFile << "," << std::to_string(edgeMapEst[i][j]);
@@ -5387,30 +5992,35 @@ int DFG::printCongestionInfo() {
 		outFile << std::endl;
 	}
 
-
 	outFile.close();
 
 	errs() << "printCongestionInfo done\n";
 	return 0;
 }
 
-int DFG::handleMEMops() {
-	dfgNode* node;
-	for (int i = 0; i < NodeList.size(); ++i) {
+int DFG::handleMEMops()
+{
+	dfgNode *node;
+	for (int i = 0; i < NodeList.size(); ++i)
+	{
 		node = NodeList[i];
-		if(node->getNode() != NULL){
-			if(node->getNode()->mayReadOrWriteMemory()){
+		if (node->getNode() != NULL)
+		{
+			if (node->getNode()->mayReadOrWriteMemory())
+			{
 				node->setIsMemOp(true);
 			}
 		}
-		else{
-			if((node->getNameType().compare("LOAD") == 0)||
-			   (node->getNameType().compare("STORE") == 0)||
-			   (node->getNameType().compare("LOOPSTART") == 0)||
-			   (node->getNameType().compare("STORESTART") == 0)||
-			   (node->getNameType().compare("LOOPEXIT") == 0)||
-			   (node->getNameType().compare("OutLoopSTORE") == 0)||
-			   (node->getNameType().compare("OutLoopLOAD") == 0)){
+		else
+		{
+			if ((node->getNameType().compare("LOAD") == 0) ||
+				(node->getNameType().compare("STORE") == 0) ||
+				(node->getNameType().compare("LOOPSTART") == 0) ||
+				(node->getNameType().compare("STORESTART") == 0) ||
+				(node->getNameType().compare("LOOPEXIT") == 0) ||
+				(node->getNameType().compare("OutLoopSTORE") == 0) ||
+				(node->getNameType().compare("OutLoopLOAD") == 0))
+			{
 				node->setIsMemOp(true);
 			}
 		}
@@ -5418,13 +6028,17 @@ int DFG::handleMEMops() {
 	return 0;
 }
 
-int DFG::getMEMOpsToBePlaced() {
+int DFG::getMEMOpsToBePlaced()
+{
 	int memOpsToBePlaced = 0;
-	dfgNode* node;
-	for (int i = 0; i < NodeList.size(); ++i) {
+	dfgNode *node;
+	for (int i = 0; i < NodeList.size(); ++i)
+	{
 		node = NodeList[i];
-		if(node->getMappedLoc() == NULL){
-			if(node->getIsMemOp()){
+		if (node->getMappedLoc() == NULL)
+		{
+			if (node->getIsMemOp())
+			{
 				memOpsToBePlaced++;
 			}
 		}
@@ -5432,18 +6046,22 @@ int DFG::getMEMOpsToBePlaced() {
 	return memOpsToBePlaced;
 }
 
-int DFG::getOutLoopMEMOps(){
-	int outloopMEMOps=0;
-	for(dfgNode* node : NodeList){
-		if(node->getNameType().compare("OutLoopLOAD")==0 ||
-		   node->getNameType().compare("OutLoopSTORE")==0){
+int DFG::getOutLoopMEMOps()
+{
+	int outloopMEMOps = 0;
+	for (dfgNode *node : NodeList)
+	{
+		if (node->getNameType().compare("OutLoopLOAD") == 0 ||
+			node->getNameType().compare("OutLoopSTORE") == 0)
+		{
 			outloopMEMOps++;
 		}
 	}
 	return outloopMEMOps;
 }
 
-DFG::DFG(std::string name, std::map<Loop*,std::string>* lnPtr) {
+DFG::DFG(std::string name, std::map<Loop *, std::string> *lnPtr)
+{
 	this->name = name;
 	this->loopNamesPtr = lnPtr;
 
@@ -5532,326 +6150,407 @@ DFG::DFG(std::string name, std::map<Loop*,std::string>* lnPtr) {
 	HyCUBEInsBinary[MOVC] = 0 | (0b11111);
 }
 
-int DFG::nameNodes() {
-	dfgNode* node;
+int DFG::nameNodes()
+{
+	dfgNode *node;
 
-	for (int i = 0; i < NodeList.size(); ++i) {
+	for (int i = 0; i < NodeList.size(); ++i)
+	{
 		node = NodeList[i];
 
-		if(node->getNode() != NULL){
-			switch(node->getNode()->getOpcode()){
-				case Instruction::Add:
-				case Instruction::FAdd:
-					node->setFinalIns(ADD);
-					break;
-				case Instruction::Sub:
-				case Instruction::FSub:
-					node->setFinalIns(SUB);
-					break;
-				case Instruction::Mul:
-				case Instruction::FMul:
-					node->setFinalIns(MUL);
-					break;
-				case Instruction::UDiv:
-				case Instruction::SDiv:
-				case Instruction::FDiv:
-					node->setFinalIns(DIV);
-					break;
-				case Instruction::URem:
-				case Instruction::SRem:
-				case Instruction::FRem:
-					errs() << "REM operations are not implemented\n";
-					assert(false);
-					break;
-				case Instruction::Shl:
-					node->setFinalIns(LS);
-					break;
-				case Instruction::LShr:
-					node->setFinalIns(RS);
-					break;
-				case Instruction::AShr:
-					node->setFinalIns(ARS);
-					break;
-				case Instruction::And:
-					node->setFinalIns(AND);
-					break;
-				case Instruction::Or:
-					node->setFinalIns(OR);
-					break;
-				case Instruction::Xor:
-					node->setFinalIns(XOR);
-					break;
-				case Instruction::Load:
-					if(node->getTypeSizeBytes()>=4){ //TODO : remove this, we dont support 8 byte data structs
+		if (node->getNode() != NULL)
+		{
+			switch (node->getNode()->getOpcode())
+			{
+			case Instruction::Add:
+			case Instruction::FAdd:
+				node->setFinalIns(ADD);
+				break;
+			case Instruction::Sub:
+			case Instruction::FSub:
+				node->setFinalIns(SUB);
+				break;
+			case Instruction::Mul:
+			case Instruction::FMul:
+				node->setFinalIns(MUL);
+				break;
+			case Instruction::UDiv:
+			case Instruction::SDiv:
+			case Instruction::FDiv:
+				node->setFinalIns(DIV);
+				break;
+			case Instruction::URem:
+			case Instruction::SRem:
+			case Instruction::FRem:
+				errs() << "REM operations are not implemented\n";
+				assert(false);
+				break;
+			case Instruction::Shl:
+				node->setFinalIns(LS);
+				break;
+			case Instruction::LShr:
+				node->setFinalIns(RS);
+				break;
+			case Instruction::AShr:
+				node->setFinalIns(ARS);
+				break;
+			case Instruction::And:
+				node->setFinalIns(AND);
+				break;
+			case Instruction::Or:
+				node->setFinalIns(OR);
+				break;
+			case Instruction::Xor:
+				node->setFinalIns(XOR);
+				break;
+			case Instruction::Load:
+				if (node->getTypeSizeBytes() >= 4)
+				{ //TODO : remove this, we dont support 8 byte data structs
+					node->setFinalIns(Hy_LOAD);
+				}
+				else if (node->getTypeSizeBytes() == 2)
+				{
+					node->setFinalIns(Hy_LOADH);
+				}
+				else if (node->getTypeSizeBytes() == 1)
+				{
+					node->setFinalIns(Hy_LOADB);
+				}
+				else if (node->getNode()->getType()->isPointerTy())
+				{ //pointer is a 32 bit address
+					node->setFinalIns(Hy_LOAD);
+				}
+				else
+				{
+					node->getNode()->dump();
+					outs() << "OutLoopLOAD size = " << node->getTypeSizeBytes() << "\n";
+					if (node->getNode()->getType() == Type::getDoubleTy(node->getNode()->getContext()))
+					{
 						node->setFinalIns(Hy_LOAD);
 					}
-					else if(node->getTypeSizeBytes()==2){
-						node->setFinalIns(Hy_LOADH);
-					}
-					else if(node->getTypeSizeBytes()==1){
-						node->setFinalIns(Hy_LOADB);
-					}
-					else if(node->getNode()->getType()->isPointerTy()){ //pointer is a 32 bit address
+					if (node->getNode()->getType() == Type::getDoublePtrTy(node->getNode()->getContext()))
+					{
 						node->setFinalIns(Hy_LOAD);
 					}
-					else{
-						node->getNode()->dump();
-						outs() << "OutLoopLOAD size = " << node->getTypeSizeBytes() << "\n";
-						if(node->getNode()->getType()==Type::getDoubleTy(node->getNode()->getContext())){
-							node->setFinalIns(Hy_LOAD);
-						}
-						if(node->getNode()->getType()==Type::getDoublePtrTy(node->getNode()->getContext())){
-							node->setFinalIns(Hy_LOAD);
-						}
-						else{
-							assert(0);
-						}
-					}
-					break;
-				case Instruction::Store:
-					if(node->getTypeSizeBytes()>=4){ //TODO : remove this, we dont support 8 byte data structs
-						node->setFinalIns(Hy_STORE);
-					}
-					else if(node->getTypeSizeBytes()==2){
-						node->setFinalIns(Hy_STOREH);
-					}
-					else if(node->getTypeSizeBytes()==1){
-						node->setFinalIns(Hy_STOREB);
-					}
-					else if(node->getNode()->getType()->isPointerTy() || node->getNode()->getOperand(0)->getType()->isPointerTy()){ //pointer is a 32 bit address
-						node->setFinalIns(Hy_STORE);
-					}
-					else{
-						node->getNode()->dump();
-						outs() << "TypeSize : " << node->getTypeSizeBytes() << "\n";
+					else
+					{
 						assert(0);
 					}
-					break;
-				case Instruction::GetElementPtr:
-					node->setFinalIns(ADD);
-					node->setConstantVal(node->getGEPbaseAddr());
-					break;
-				case Instruction::Trunc:
-					{TruncInst* TI = cast<TruncInst>(node->getNode());
-//					node->setConstantVal(TI->getDestTy()->getIntegerBitWidth()/8);
-					double destBitWidthDbl = (double)(TI->getDestTy()->getIntegerBitWidth());
-					double bitMaskDbl = pow(2,destBitWidthDbl)-1;
-					uint32_t bitMask= ((uint32_t)bitMaskDbl);
-					node->setConstantVal(bitMask);
-					node->setFinalIns(AND);}
-					break;
-				case Instruction::SExt:
-					{SExtInst* SI = cast<SExtInst>(node->getNode());
-					uint32_t srcByteWidth = SI->getSrcTy()->getIntegerBitWidth()/8;
-					uint32_t destByteWidth = SI->getDestTy()->getIntegerBitWidth()/8;
-					uint32_t constOperand = (srcByteWidth << 16) | destByteWidth;
-					node->setConstantVal(constOperand);
-					node->setFinalIns(SEXT);}
-					break;
-				case Instruction::ZExt:
-					node->setFinalIns(OR);
-					node->setConstantVal(0);
-					break;
-				case Instruction::SIToFP:
-				case Instruction::FPExt:
-				case Instruction::FPTrunc:
-				case Instruction::FPToUI:
-				case Instruction::FPToSI:
-				case Instruction::UIToFP:
-				case Instruction::PtrToInt:
-				case Instruction::IntToPtr:
-				case Instruction::BitCast:
-				case Instruction::AddrSpaceCast:
+				}
+				break;
+			case Instruction::Store:
+				if (node->getTypeSizeBytes() >= 4)
+				{ //TODO : remove this, we dont support 8 byte data structs
+					node->setFinalIns(Hy_STORE);
+				}
+				else if (node->getTypeSizeBytes() == 2)
+				{
+					node->setFinalIns(Hy_STOREH);
+				}
+				else if (node->getTypeSizeBytes() == 1)
+				{
+					node->setFinalIns(Hy_STOREB);
+				}
+				else if (node->getNode()->getType()->isPointerTy() || node->getNode()->getOperand(0)->getType()->isPointerTy())
+				{ //pointer is a 32 bit address
+					node->setFinalIns(Hy_STORE);
+				}
+				else
+				{
 					node->getNode()->dump();
-//					assert(0);
-					//2019 work
-					node->setFinalIns(OR);
-					node->setConstantVal(0);
-					break;
-				case Instruction::PHI:
-				case Instruction::Select:
-					node->setFinalIns(SELECT);
-					break;
-				case Instruction::Br:
-					{BranchInst* BRI = cast<BranchInst>(node->getNode());
-					if(BRI->isUnconditional()){
-						node->setFinalIns(OR);
-						node->setConstantVal(1);
+					outs() << "TypeSize : " << node->getTypeSizeBytes() << "\n";
+					assert(0);
+				}
+				break;
+			case Instruction::GetElementPtr:
+				node->setFinalIns(ADD);
+				{
+					GetElementPtrInst *GEP = cast<GetElementPtrInst>(node->getNode());
+					assert(GEPOffsetMap.find(GEP) != GEPOffsetMap.end());
+
+					if(node->getGEPbaseAddr() != -1){
+						node->setGEPbaseAddr(node->getGEPbaseAddr() + GEPOffsetMap[GEP]);
 					}
 					else{
-						node->setFinalIns(OR);
-						node->setConstantVal(0);
-					}}
-					break;
-				case Instruction::ICmp:
-					{
-						outs() << "NameNodes::Node=" << node->getIdx() << ",CMP=";
-						CmpInst* CI = cast<CmpInst>(node->getNode());
-						CI->dump();
-						switch(CI->getPredicate()){
-							case CmpInst::ICMP_SLT:
-							case CmpInst::ICMP_ULT:
-								outs() << "LT\n";
-								node->setFinalIns(CLT);
-								break;
-							case CmpInst::ICMP_SGT:
-							case CmpInst::ICMP_UGT:
-								outs() << "GT\n";
-								node->setFinalIns(CGT);
-								break;
-							case CmpInst::ICMP_EQ:
-								outs() << "EQ\n";
-								node->setFinalIns(CMP);
-								break;
-							default:
-								assert(false);
-								break;
-						}
+						node->setGEPbaseAddr(GEPOffsetMap[GEP]);
 					}
+					node->setConstantVal(node->getGEPbaseAddr());
+				}
+				break;
+
+				break;
+			case Instruction::Trunc:
+			{
+				TruncInst *TI = cast<TruncInst>(node->getNode());
+				//					node->setConstantVal(TI->getDestTy()->getIntegerBitWidth()/8);
+				double destBitWidthDbl = (double)(TI->getDestTy()->getIntegerBitWidth());
+				double bitMaskDbl = pow(2, destBitWidthDbl) - 1;
+				uint32_t bitMask = ((uint32_t)bitMaskDbl);
+				node->setConstantVal(bitMask);
+				node->setFinalIns(AND);
+			}
+			break;
+			case Instruction::SExt:
+			{
+				SExtInst *SI = cast<SExtInst>(node->getNode());
+				uint32_t srcByteWidth = SI->getSrcTy()->getIntegerBitWidth() / 8;
+				uint32_t destByteWidth = SI->getDestTy()->getIntegerBitWidth() / 8;
+				uint32_t constOperand = (srcByteWidth << 16) | destByteWidth;
+				node->setConstantVal(constOperand);
+				node->setFinalIns(SEXT);
+			}
+			break;
+			case Instruction::ZExt:
+				node->setFinalIns(OR);
+				node->setConstantVal(0);
+				break;
+			case Instruction::SIToFP:
+			case Instruction::FPExt:
+			case Instruction::FPTrunc:
+			case Instruction::FPToUI:
+			case Instruction::FPToSI:
+			case Instruction::UIToFP:
+			case Instruction::PtrToInt:
+			case Instruction::IntToPtr:
+			case Instruction::BitCast:
+			case Instruction::AddrSpaceCast:
+				node->getNode()->dump();
+				//					assert(0);
+				//2019 work
+				node->setFinalIns(OR);
+				node->setConstantVal(0);
+				break;
+			case Instruction::PHI:
+			case Instruction::Select:
+				node->setFinalIns(SELECT);
+				break;
+			case Instruction::Br:
+			{
+				BranchInst *BRI = cast<BranchInst>(node->getNode());
+				if (BRI->isUnconditional())
+				{
+					node->setFinalIns(OR);
+					node->setConstantVal(1);
+				}
+				else
+				{
+					node->setFinalIns(OR);
+					node->setConstantVal(0);
+				}
+			}
+			break;
+			case Instruction::ICmp:
+			{
+				outs() << "NameNodes::Node=" << node->getIdx() << ",CMP=";
+				CmpInst *CI = cast<CmpInst>(node->getNode());
+				CI->dump();
+				switch (CI->getPredicate())
+				{
+				case CmpInst::ICMP_SLT:
+				case CmpInst::ICMP_ULT:
+					outs() << "LT\n";
+					node->setFinalIns(CLT);
 					break;
-				case Instruction::FCmp:
-					outs() << "NameNodes::Node=" << node->getIdx() << ",FCMP\n";
+				case CmpInst::ICMP_SGT:
+				case CmpInst::ICMP_UGT:
+					outs() << "GT\n";
+					node->setFinalIns(CGT);
+					break;
+				case CmpInst::ICMP_EQ:
+					outs() << "EQ\n";
 					node->setFinalIns(CMP);
-					//2019 work
-//					assert(false);
 					break;
-				default :
-					errs() << "The Op :" << node->getNode()->getOpcodeName() << " that I thought would not be in the compiled code\n";
-					node->getNode()->dump();
+				default:
 					assert(false);
 					break;
+				}
+			}
+			break;
+			case Instruction::FCmp:
+				outs() << "NameNodes::Node=" << node->getIdx() << ",FCMP\n";
+				node->setFinalIns(CMP);
+				//2019 work
+				//					assert(false);
+				break;
+			default:
+				errs() << "The Op :" << node->getNode()->getOpcodeName() << " that I thought would not be in the compiled code\n";
+				node->getNode()->dump();
+				assert(false);
+				break;
 			}
 		}
-		else{
-			if(node->getNameType().compare("LOAD") == 0){
-				if(node->getTypeSizeBytes()==4){
+		else
+		{
+			if (node->getNameType().compare("LOAD") == 0)
+			{
+				if (node->getTypeSizeBytes() == 4)
+				{
 					node->setFinalIns(Hy_LOAD);
 				}
-				else if(node->getTypeSizeBytes()==2){
+				else if (node->getTypeSizeBytes() == 2)
+				{
 					node->setFinalIns(Hy_LOADH);
 				}
-				else if(node->getTypeSizeBytes()==1){
+				else if (node->getTypeSizeBytes() == 1)
+				{
 					node->setFinalIns(Hy_LOADB);
 				}
-				else{
+				else
+				{
 					assert(0);
 				}
 			}
-			else if(node->getNameType().compare("STORE") == 0){
-				if(node->getTypeSizeBytes()==4){
+			else if (node->getNameType().compare("STORE") == 0)
+			{
+				if (node->getTypeSizeBytes() == 4)
+				{
 					node->setFinalIns(Hy_STORE);
 				}
-				else if(node->getTypeSizeBytes()==2){
+				else if (node->getTypeSizeBytes() == 2)
+				{
 					node->setFinalIns(Hy_STOREH);
 				}
-				else if(node->getTypeSizeBytes()==1){
+				else if (node->getTypeSizeBytes() == 1)
+				{
 					node->setFinalIns(Hy_STOREB);
 				}
-				else{
+				else
+				{
 					assert(0);
 				}
 			}
-			else if(node->getNameType().compare("NORMAL") == 0){
+			else if (node->getNameType().compare("NORMAL") == 0)
+			{
 				node->setFinalIns(ADD);
 			}
-			else if(node->getNameType().compare("CTRLBrOR") == 0){
+			else if (node->getNameType().compare("CTRLBrOR") == 0)
+			{
 				node->setFinalIns(OR);
 			}
-			else if(node->getNameType().compare("SELECTPHI") == 0){
+			else if (node->getNameType().compare("SELECTPHI") == 0)
+			{
 				node->setFinalIns(SELECT);
 			}
-			else if(node->getNameType().compare("OutLoopSTORE") == 0){
-				if(node->getTypeSizeBytes()==4){
+			else if (node->getNameType().compare("OutLoopSTORE") == 0)
+			{
+				if (node->getTypeSizeBytes() == 4)
+				{
 					node->setFinalIns(Hy_STORE);
 				}
-				else if(node->getTypeSizeBytes()==2){
+				else if (node->getTypeSizeBytes() == 2)
+				{
 					node->setFinalIns(Hy_STOREH);
 				}
-				else if(node->getTypeSizeBytes()==1){
+				else if (node->getTypeSizeBytes() == 1)
+				{
 					node->setFinalIns(Hy_STOREB);
 				}
-				else{
+				else
+				{
 					OutLoopNodeMapReverse[node]->dump();
-					if(OutLoopNodeMapReverse[node]->getType()->isDoubleTy()){
+					if (OutLoopNodeMapReverse[node]->getType()->isDoubleTy())
+					{
 						//TODO : to make it compatible with double
 						node->setFinalIns(Hy_STORE);
 					}
-					else{
+					else
+					{
 						assert(0);
 					}
 				}
 				node->setConstantVal(node->getoutloopAddr());
 			}
-			else if(node->getNameType().compare("OutLoopLOAD") == 0){
-				if(node->getTypeSizeBytes()==4){
+			else if (node->getNameType().compare("OutLoopLOAD") == 0)
+			{
+				if (node->getTypeSizeBytes() == 4)
+				{
 					node->setFinalIns(Hy_LOAD);
 				}
-				else if(node->getTypeSizeBytes()==2){
+				else if (node->getTypeSizeBytes() == 2)
+				{
 					node->setFinalIns(Hy_LOADH);
 				}
-				else if(node->getTypeSizeBytes()==1){
+				else if (node->getTypeSizeBytes() == 1)
+				{
 					node->setFinalIns(Hy_LOADB);
 				}
-				else{
+				else
+				{
 					OutLoopNodeMapReverse[node]->dump();
 					outs() << "OutLoopLOAD size = " << node->getTypeSizeBytes() << "\n";
-					if(OutLoopNodeMapReverse[node]->getType()->isDoubleTy()){
+					if (OutLoopNodeMapReverse[node]->getType()->isDoubleTy())
+					{
 						//TODO : to make it compatible with double
 						node->setFinalIns(Hy_LOAD);
 					}
-					else{
+					else
+					{
 						assert(0);
 					}
 				}
 				node->setConstantVal(node->getoutloopAddr());
 			}
-			else if(node->getNameType().compare("CMERGE") == 0){
+			else if (node->getNameType().compare("CMERGE") == 0)
+			{
 				node->setFinalIns(CMERGE);
 			}
-			else if(node->getNameType().compare("LOOPSTART") == 0){
-//				node->setFinalIns(BR);
+			else if (node->getNameType().compare("LOOPSTART") == 0)
+			{
+				//				node->setFinalIns(BR);
 				node->setFinalIns(Hy_LOADB);
 				node->setConstantVal(MEM_SIZE - 2);
 			}
-			else if(node->getNameType().compare("LOADSTART") == 0){
+			else if (node->getNameType().compare("LOADSTART") == 0)
+			{
 				node->setFinalIns(Hy_LOADB);
 				node->setConstantVal(MEM_SIZE - 2);
 			}
-			else if(node->getNameType().compare("STORESTART") == 0){
+			else if (node->getNameType().compare("STORESTART") == 0)
+			{
 				node->setFinalIns(Hy_STOREB);
 				node->setConstantVal(MEM_SIZE - 2);
 			}
-			else if(node->getNameType().compare("LOOPEXIT") == 0){
+			else if (node->getNameType().compare("LOOPEXIT") == 0)
+			{
 				node->setFinalIns(Hy_STOREB);
-				node->setConstantVal(MEM_SIZE/2 - 1);
+				node->setConstantVal(MEM_SIZE / 2 - 1);
 			}
-			else if(node->getNameType().compare("MOVC") == 0){
+			else if (node->getNameType().compare("MOVC") == 0)
+			{
 				node->setFinalIns(MOVC);
 			}
-			else if(node->getNameType().compare("XORNOT") == 0){
+			else if (node->getNameType().compare("XORNOT") == 0)
+			{
 				node->setFinalIns(XOR);
 				node->setConstantVal(1);
 			}
-			else if(node->getNameType().compare("ORZERO") == 0){
+			else if (node->getNameType().compare("ORZERO") == 0)
+			{
 				node->setFinalIns(OR);
 				node->setConstantVal(0);
 			}
-			else if(node->getNameType().compare("GEPLEFTSHIFT") == 0){
+			else if (node->getNameType().compare("GEPLEFTSHIFT") == 0)
+			{
 				node->setFinalIns(LS);
 			}
-			else if(node->getNameType().compare("GEPADD") == 0){
+			else if (node->getNameType().compare("GEPADD") == 0)
+			{
 				node->setFinalIns(ADD);
 			}
-			else if(node->getNameType().compare("MASKAND") == 0){
+			else if (node->getNameType().compare("MASKAND") == 0)
+			{
 				node->setFinalIns(AND);
 			}
-			else if(node->getNameType().compare("PREDAND") == 0){
+			else if (node->getNameType().compare("PREDAND") == 0)
+			{
 				node->setFinalIns(AND);
 			}
-			else if(node->getNameType().compare("TRIGMERGE") == 0){
+			else if (node->getNameType().compare("TRIGMERGE") == 0)
+			{
 				node->setFinalIns(SELECT);
 			}
-			else {
+			else
+			{
 				errs() << "Unknown custom node \n";
 				assert(false);
 			}
@@ -5861,14 +6560,18 @@ int DFG::nameNodes() {
 	}
 }
 
-int DFG::checkSanity() {
-	dfgNode* node;
+int DFG::checkSanity()
+{
+	dfgNode *node;
 	//Sanity Check
-	for (int i = 0; i < NodeList.size(); ++i) {
+	for (int i = 0; i < NodeList.size(); ++i)
+	{
 		node = NodeList[i];
-		if(node->getAncestors().size() > 3){
-			errs() << "More than 3 ancestors, NodeIdx="<< node->getIdx();
-			if(node->getNode() != NULL){
+		if (node->getAncestors().size() > 3)
+		{
+			errs() << "More than 3 ancestors, NodeIdx=" << node->getIdx();
+			if (node->getNode() != NULL)
+			{
 				node->getNode()->dump();
 			}
 			errs() << "\n";
@@ -5877,99 +6580,111 @@ int DFG::checkSanity() {
 	}
 }
 
-
-std::string DFG::getArchName(ArchType arch) {
-	switch (arch) {
-		case RegXbar:
-			return "RegXBar";
-			break;
-		case RegXbarTREG:
-			return "RegXbarTREG";
-			break;
-		case DoubleXBar:
-			return "DoubleXBar";
-			break;
-		case LatchXbar:
-			return "LatchXbar";
-			break;
-		case StdNOC:
-			return "StdNOC";
-			break;
-		case NoNOC:
-			return "NoNOC";
-			break;
-		case ALL2ALL:
-			return "ALL2ALL";
-			break;
-		default:
-			return "UnNamed Arch";
-			break;
+std::string DFG::getArchName(ArchType arch)
+{
+	switch (arch)
+	{
+	case RegXbar:
+		return "RegXBar";
+		break;
+	case RegXbarTREG:
+		return "RegXbarTREG";
+		break;
+	case DoubleXBar:
+		return "DoubleXBar";
+		break;
+	case LatchXbar:
+		return "LatchXbar";
+		break;
+	case StdNOC:
+		return "StdNOC";
+		break;
+	case NoNOC:
+		return "NoNOC";
+		break;
+	case ALL2ALL:
+		return "ALL2ALL";
+		break;
+	default:
+		return "UnNamed Arch";
+		break;
 	}
 }
 
-bool DFG::MapASAPLevelUnWrapped(int MII, int XDim, int YDim, ArchType arch) {
+bool DFG::MapASAPLevelUnWrapped(int MII, int XDim, int YDim, ArchType arch)
+{
 
 	return true;
 }
 
-int DFG::handlePHINodes(std::set<BasicBlock*> LoopBB) {
+int DFG::handlePHINodes(std::set<BasicBlock *> LoopBB)
+{
 	errs() << "handlePHINodes started!\n";
-	dfgNode* node;
-	std::map<dfgNode*,std::vector<const BasicBlock*> > processedPhiNodes;
+	dfgNode *node;
+	std::map<dfgNode *, std::vector<const BasicBlock *>> processedPhiNodes;
 
-	for (int i = 0; i < NodeList.size(); ++i) {
+	for (int i = 0; i < NodeList.size(); ++i)
+	{
 		node = NodeList[i];
-		for (int j = 0; j < node->PHIchildren.size(); ++j) {
+		for (int j = 0; j < node->PHIchildren.size(); ++j)
+		{
 			assert(node->PHIchildren[j] != NULL);
 			node->PHIchildren[j]->dump();
 			assert(findNode(node->PHIchildren[j]) != NULL);
 
-
 			node->PHIchildren[j]->dump();
 
-			if(PHINode* phiIns = dyn_cast<PHINode>(node->PHIchildren[j])){
-				for (int k = 0; k < phiIns->getNumIncomingValues(); ++k) {
-					BasicBlock* bb = phiIns->getIncomingBlock(k);
-					if(bb!=node->BB){
+			if (PHINode *phiIns = dyn_cast<PHINode>(node->PHIchildren[j]))
+			{
+				for (int k = 0; k < phiIns->getNumIncomingValues(); ++k)
+				{
+					BasicBlock *bb = phiIns->getIncomingBlock(k);
+					if (bb != node->BB)
+					{
 						continue;
 					}
 					outs() << "handlePHINodes adding nodes...\n";
 					BasicBlock::iterator instIter = --bb->end();
-					Instruction* brIns = &*instIter;
+					Instruction *brIns = &*instIter;
 					assert(brIns->getOpcode() == Instruction::Br);
 
-					dfgNode* brNode = findNode(brIns);
-					findNode(node->PHIchildren[j])->addCMergeParent(node,brNode);
+					dfgNode *brNode = findNode(brIns);
+					findNode(node->PHIchildren[j])->addCMergeParent(node, brNode);
 					processedPhiNodes[findNode(node->PHIchildren[j])].push_back(node->BB);
 				}
-
 			}
-			else{
+			else
+			{
 				assert(0);
 			}
 
-//			node->addPHIChildNode(findNode(node->PHIchildren[j]));
-//			findNode(node->PHIchildren[j])->addPHIAncestorNode(node);
+			//			node->addPHIChildNode(findNode(node->PHIchildren[j]));
+			//			findNode(node->PHIchildren[j])->addPHIAncestorNode(node);
 		}
 	}
 
 	outs() << "second loop\n";
 
-	for (int i = 0; i < NodeList.size(); ++i) {
-		node=NodeList[i];
-		if(node->getNode()==NULL) continue;
-		if(PHINode* phiIns = dyn_cast<PHINode>(node->getNode())){
+	for (int i = 0; i < NodeList.size(); ++i)
+	{
+		node = NodeList[i];
+		if (node->getNode() == NULL)
+			continue;
+		if (PHINode *phiIns = dyn_cast<PHINode>(node->getNode()))
+		{
 			phiIns->dump();
 			outs() << "incomingblocks:" << phiIns->getNumIncomingValues() << "\n";
 
-			for (int k = 0; k < phiIns->getNumIncomingValues(); ++k) {
-				BasicBlock* bb = phiIns->getIncomingBlock(k);
+			for (int k = 0; k < phiIns->getNumIncomingValues(); ++k)
+			{
+				BasicBlock *bb = phiIns->getIncomingBlock(k);
 
-				if(processedPhiNodes.find(node)!=processedPhiNodes.end()){
-					if(std::find(processedPhiNodes[node].begin(),
-							     processedPhiNodes[node].end(),
-								 bb)!=processedPhiNodes[node].end()
-								 ){
+				if (processedPhiNodes.find(node) != processedPhiNodes.end())
+				{
+					if (std::find(processedPhiNodes[node].begin(),
+								  processedPhiNodes[node].end(),
+								  bb) != processedPhiNodes[node].end())
+					{
 						continue;
 					}
 				}
@@ -5977,93 +6692,110 @@ int DFG::handlePHINodes(std::set<BasicBlock*> LoopBB) {
 				outs() << "handlePHINodes adding nodes in second loop...\n";
 
 				BasicBlock::iterator instIter = --bb->end();
-				Instruction* brIns = &*instIter;
+				Instruction *brIns = &*instIter;
 				brIns->dump();
-//				assert(LoopBB.find(brIns->getParent())!=LoopBB.end());
+				//				assert(LoopBB.find(brIns->getParent())!=LoopBB.end());
 				assert(brIns->getOpcode() == Instruction::Br);
-				dfgNode* brNode = findNode(brIns);
-//				assert(brNode!=NULL);
+				dfgNode *brNode = findNode(brIns);
+				//				assert(brNode!=NULL);
 
-				if(ConstantInt *CI = dyn_cast<ConstantInt>(phiIns->getIncomingValueForBlock(bb))){
+				if (ConstantInt *CI = dyn_cast<ConstantInt>(phiIns->getIncomingValueForBlock(bb)))
+				{
 					assert(CI->getBitWidth() <= 32);
 
-					if(LoopBB.find(brIns->getParent())==LoopBB.end()){
-						node->addCMergeParent(brIns,CI->getSExtValue());
+					if (LoopBB.find(brIns->getParent()) == LoopBB.end())
+					{
+						node->addCMergeParent(brIns, CI->getSExtValue());
 					}
-					else{
-						assert(brNode!=NULL);
-						node->addCMergeParent(brNode,NULL,CI->getSExtValue());
-					}
-
-				} //TODO : DAC18
-				else if(ConstantFP *CF = dyn_cast<ConstantFP>(phiIns->getIncomingValueForBlock(bb))){
-//					assert(CI->getBitWidth() <= 32);
-
-					if(LoopBB.find(brIns->getParent())==LoopBB.end()){
-						node->addCMergeParent(brIns,(int)(CF->getValueAPF().convertToFloat()));
-					}
-					else{
-						assert(brNode!=NULL);
-						node->addCMergeParent(brNode,NULL,(int)(CF->getValueAPF().convertToFloat()));
+					else
+					{
+						assert(brNode != NULL);
+						node->addCMergeParent(brNode, NULL, CI->getSExtValue());
 					}
 
 				} //TODO : DAC18
-				else if(UndefValue *UND = dyn_cast<UndefValue>(phiIns->getIncomingValueForBlock(bb))){
+				else if (ConstantFP *CF = dyn_cast<ConstantFP>(phiIns->getIncomingValueForBlock(bb)))
+				{
+					//					assert(CI->getBitWidth() <= 32);
 
-					if(LoopBB.find(brIns->getParent())==LoopBB.end()){
-						node->addCMergeParent(brIns,0);
+					if (LoopBB.find(brIns->getParent()) == LoopBB.end())
+					{
+						node->addCMergeParent(brIns, (int)(CF->getValueAPF().convertToFloat()));
 					}
-					else{
-						assert(brNode!=NULL);
-						node->addCMergeParent(brNode,NULL,0);
+					else
+					{
+						assert(brNode != NULL);
+						node->addCMergeParent(brNode, NULL, (int)(CF->getValueAPF().convertToFloat()));
 					}
 
-				}
-				else if(Instruction* phiData= dyn_cast<Instruction>(phiIns->getIncomingValueForBlock(bb))){
-					if(LoopBB.find(phiData->getParent())==LoopBB.end()){
-//						node->addLoadParent(phiData);
-//						assert(OutLoopNodeMap[phiData]!=NULL);
-//						dfgNode* phiDataNode=OutLoopNodeMap[phiData];
-//						node->addCMergeParent(brNode,phiDataNode);
+				} //TODO : DAC18
+				else if (UndefValue *UND = dyn_cast<UndefValue>(phiIns->getIncomingValueForBlock(bb)))
+				{
 
-						if(LoopBB.find(brIns->getParent())==LoopBB.end()){
-							node->addCMergeParent(brIns,phiData);
-						}
-						else{
-							node->addCMergeParent(brNode,phiData);
-						}
-
+					if (LoopBB.find(brIns->getParent()) == LoopBB.end())
+					{
+						node->addCMergeParent(brIns, 0);
 					}
-					else{
-						assert(findNode(phiData)!=NULL);
-//						assert(brNode!=NULL);
-						dfgNode* phiDataNode=findNode(phiData);
-//						node->addCMergeParent(brNode,phiDataNode);
-
-						if(LoopBB.find(brIns->getParent())==LoopBB.end()){
-							node->addCMergeParent(brIns,phiDataNode);
-						}
-						else{
-							node->addCMergeParent(brNode,phiDataNode);
-						}
-
+					else
+					{
+						assert(brNode != NULL);
+						node->addCMergeParent(brNode, NULL, 0);
 					}
 				}
-				else if(sizeArrMap.find(phiIns->getIncomingValueForBlock(bb)->getName().str()) != sizeArrMap.end()){
+				else if (Instruction *phiData = dyn_cast<Instruction>(phiIns->getIncomingValueForBlock(bb)))
+				{
+					if (LoopBB.find(phiData->getParent()) == LoopBB.end())
+					{
+						//						node->addLoadParent(phiData);
+						//						assert(OutLoopNodeMap[phiData]!=NULL);
+						//						dfgNode* phiDataNode=OutLoopNodeMap[phiData];
+						//						node->addCMergeParent(brNode,phiDataNode);
+
+						if (LoopBB.find(brIns->getParent()) == LoopBB.end())
+						{
+							node->addCMergeParent(brIns, phiData);
+						}
+						else
+						{
+							node->addCMergeParent(brNode, phiData);
+						}
+					}
+					else
+					{
+						assert(findNode(phiData) != NULL);
+						//						assert(brNode!=NULL);
+						dfgNode *phiDataNode = findNode(phiData);
+						//						node->addCMergeParent(brNode,phiDataNode);
+
+						if (LoopBB.find(brIns->getParent()) == LoopBB.end())
+						{
+							node->addCMergeParent(brIns, phiDataNode);
+						}
+						else
+						{
+							node->addCMergeParent(brNode, phiDataNode);
+						}
+					}
+				}
+				else if (sizeArrMap.find(phiIns->getIncomingValueForBlock(bb)->getName().str()) != sizeArrMap.end())
+				{
 
 					std::string ptrName = phiIns->getIncomingValueForBlock(bb)->getName().str();
 
-					if(LoopBB.find(brIns->getParent())==LoopBB.end()){
-						node->addCMergeParent(brIns,allocatedArraysMap[ptrName]);
+					if (LoopBB.find(brIns->getParent()) == LoopBB.end())
+					{
+						node->addCMergeParent(brIns, allocatedArraysMap[ptrName]);
 					}
-					else{
-						assert(brNode!=NULL);
-						node->addCMergeParent(brNode,NULL,allocatedArraysMap[ptrName]);
+					else
+					{
+						assert(brNode != NULL);
+						node->addCMergeParent(brNode, NULL, allocatedArraysMap[ptrName]);
 					}
-
 				}
-				else{
-					for(std::pair<std::string,int> pair : sizeArrMap){
+				else
+				{
+					for (std::pair<std::string, int> pair : sizeArrMap)
+					{
 						outs() << pair.first << ":" << pair.second << "\n";
 					}
 					outs() << "sizeARRMap size =" << sizeArrMap.size() << "\n";
@@ -6074,102 +6806,119 @@ int DFG::handlePHINodes(std::set<BasicBlock*> LoopBB) {
 		}
 	}
 
-	bool loopStartFound=false;
-	for(std::pair<BasicBlock*,BasicBlock*> pair : this->loopentryBB){
-		BasicBlock* bb = pair.first;
-		BasicBlock* entrybb = pair.second;
+	bool loopStartFound = false;
+	for (std::pair<BasicBlock *, BasicBlock *> pair : this->loopentryBB)
+	{
+		BasicBlock *bb = pair.first;
+		BasicBlock *entrybb = pair.second;
 		BasicBlock::iterator instIter = --bb->end();
-		Instruction* brIns = &*instIter;
+		Instruction *brIns = &*instIter;
 		assert(brIns->getOpcode() == Instruction::Br);
 
-		if(LoopStartMap.find(brIns)!=LoopStartMap.end()){
+		if (LoopStartMap.find(brIns) != LoopStartMap.end())
+		{
 			continue;
 		}
 
-		dfgNode* tempLoopStartNode;
+		dfgNode *tempLoopStartNode;
 		tempLoopStartNode = new dfgNode(this);
-		if(LoopStartMap.empty()){
+		if (LoopStartMap.empty())
+		{
 			tempLoopStartNode->setIdx(getNodesPtr()->size());
 			getNodesPtr()->push_back(tempLoopStartNode);
 		}
-		else{
+		else
+		{
 			tempLoopStartNode->setIdx(10000);
 		}
 		tempLoopStartNode->setNameType("LOOPSTART");
 		outs() << "Adding loopstart.\n";
 		brIns->dump();
 		tempLoopStartNode->BB = entrybb;
-		LoopStartMap[brIns]=tempLoopStartNode;
+		LoopStartMap[brIns] = tempLoopStartNode;
 
-		std::vector<dfgNode*> leafNodes;
-		for (int i = 0; i < NodeList.size(); ++i) {
-			node=NodeList[i];
-			if(node->getNameType().compare("LOOPSTART")==0){
+		std::vector<dfgNode *> leafNodes;
+		for (int i = 0; i < NodeList.size(); ++i)
+		{
+			node = NodeList[i];
+			if (node->getNameType().compare("LOOPSTART") == 0)
+			{
 				continue;
 			}
-			if(node->getNameType().compare("OutLoopLOAD")==0){
+			if (node->getNameType().compare("OutLoopLOAD") == 0)
+			{
 				continue;
 			}
-			if(node->getNameType().compare("MOVC")==0){
+			if (node->getNameType().compare("MOVC") == 0)
+			{
 				continue;
 			}
-			if(node->BB != entrybb){
+			if (node->BB != entrybb)
+			{
 				continue;
 			}
-			if(node->getAncestors().empty() && node->getPHIancestors().empty()){
+			if (node->getAncestors().empty() && node->getPHIancestors().empty())
+			{
 				leafNodes.push_back(node);
 			}
 		}
 
-		for(dfgNode* leafNode : leafNodes){
+		for (dfgNode *leafNode : leafNodes)
+		{
 			tempLoopStartNode->addChildNode(leafNode);
 			leafNode->addAncestorNode(tempLoopStartNode);
 		}
 	}
 
-
 	errs() << "handlePHINodes DONE!\n";
 	return 0;
 }
 
-TreePath DFG::createTreePathPHIDest(dfgNode* node, CGRANode* dest, CGRANode* phiChildDest) {
-		TreePath tp;
-		dfgNode* child;
-		CGRANode* NodeExt;
-		CGRANode* cnode;
-		int MII = currCGRA->getMII();
+TreePath DFG::createTreePathPHIDest(dfgNode *node, CGRANode *dest, CGRANode *phiChildDest)
+{
+	TreePath tp;
+	dfgNode *child;
+	CGRANode *NodeExt;
+	CGRANode *cnode;
+	int MII = currCGRA->getMII();
 
-		assert(!node->getPHIchildren().empty());
+	assert(!node->getPHIchildren().empty());
 
-		if(dest->getPEType() == MEM){
-			NodeExt = currCGRA->getCGRANode((dest->getT()+2)%MII,dest->getY(),dest->getX());
-			tp.sourceSCpathTdimLengths[NodeExt] = 2;
-		}
-		else{
-			NodeExt = currCGRA->getCGRANode((dest->getT()+1)%MII,dest->getY(),dest->getX());
-			tp.sourceSCpathTdimLengths[NodeExt] = 1;
-		}
-		tp.sources.push_back(NodeExt);
-		tp.sourcePorts[NodeExt] = TILE;
-		tp.sourcePaths[NodeExt] = (std::make_pair(node,node));
-		tp.sourceSCpathLengths[NodeExt] = 0;
+	if (dest->getPEType() == MEM)
+	{
+		NodeExt = currCGRA->getCGRANode((dest->getT() + 2) % MII, dest->getY(), dest->getX());
+		tp.sourceSCpathTdimLengths[NodeExt] = 2;
+	}
+	else
+	{
+		NodeExt = currCGRA->getCGRANode((dest->getT() + 1) % MII, dest->getY(), dest->getX());
+		tp.sourceSCpathTdimLengths[NodeExt] = 1;
+	}
+	tp.sources.push_back(NodeExt);
+	tp.sourcePorts[NodeExt] = TILE;
+	tp.sourcePaths[NodeExt] = (std::make_pair(node, node));
+	tp.sourceSCpathLengths[NodeExt] = 0;
 
-		assert(node != NULL);
+	assert(node != NULL);
 
-		tp.dest = phiChildDest;
-		bool foundParentTreeBasedRoutingLocs = false;
+	tp.dest = phiChildDest;
+	bool foundParentTreeBasedRoutingLocs = false;
 
-		return tp;
+	return tp;
 }
 
-void DFG::addPHIChildEdges() {
-	dfgNode* node;
-	dfgNode* phiChildNode;
+void DFG::addPHIChildEdges()
+{
+	dfgNode *node;
+	dfgNode *phiChildNode;
 
-	for (int i = 0; i < NodeList.size(); ++i) {
+	for (int i = 0; i < NodeList.size(); ++i)
+	{
 		node = NodeList[i];
-		if(!node->PHIchildren.empty()){
-			for (int j = 0; j < node->PHIchildren.size(); ++j) {
+		if (!node->PHIchildren.empty())
+		{
+			for (int j = 0; j < node->PHIchildren.size(); ++j)
+			{
 				phiChildNode = findNode(node->PHIchildren[j]);
 
 				Edge temp;
@@ -6185,257 +6934,272 @@ void DFG::addPHIChildEdges() {
 				InsertEdge(temp);
 			}
 		}
-
 	}
-
 }
 
-void DFG::addPHIParents() {
-	dfgNode* node;
-	dfgNode* phiChild;
+void DFG::addPHIParents()
+{
+	dfgNode *node;
+	dfgNode *phiChild;
 
-	std::vector<dfgNode*> ancestors;
-	std::vector<dfgNode*>::iterator searchParent;
-	for (int i = 0; i < NodeList.size(); ++i) {
+	std::vector<dfgNode *> ancestors;
+	std::vector<dfgNode *>::iterator searchParent;
+	for (int i = 0; i < NodeList.size(); ++i)
+	{
 		node = NodeList[i];
-		for (int j = 0; j < node->getPHIchildren().size(); ++j) {
+		for (int j = 0; j < node->getPHIchildren().size(); ++j)
+		{
 			phiChild = node->getPHIchildren()[j];
 			ancestors = phiChild->getAncestors();
 			errs() << "\n addPHIParents : child : " << phiChild->getIdx() << "\n";
 			errs() << "addPHIParents : anc : " << node->getIdx() << "\n";
 			errs() << "ancestors.size= : " << ancestors.size() << "\n";
-			searchParent = std::find(ancestors.begin(),ancestors.end(),node);
-			if(searchParent != ancestors.end())
-			errs() << "searchParent : " << (*searchParent)->getIdx() << "\n";
-			if (searchParent == ancestors.end()){
+			searchParent = std::find(ancestors.begin(), ancestors.end(), node);
+			if (searchParent != ancestors.end())
+				errs() << "searchParent : " << (*searchParent)->getIdx() << "\n";
+			if (searchParent == ancestors.end())
+			{
 				errs() << "ifaddPHIParents : child : " << phiChild->getIdx() << "\n";
 				errs() << "ifaddPHIParents : anc : " << node->getIdx() << "\n";
-				phiChild->addAncestorNode(node,EDGE_TYPE_PHI);
-				node->addChildNode(phiChild,EDGE_TYPE_PHI);
+				phiChild->addAncestorNode(node, EDGE_TYPE_PHI);
+				node->addChildNode(phiChild, EDGE_TYPE_PHI);
 			}
 		}
 	}
-
 }
 
-dfgNode* DFG::findNodeMappedLoc(CGRANode* cnode) {
-	dfgNode* node;
+dfgNode *DFG::findNodeMappedLoc(CGRANode *cnode)
+{
+	dfgNode *node;
 
-	for (int i = 0; i < NodeList.size(); ++i) {
+	for (int i = 0; i < NodeList.size(); ++i)
+	{
 		node = NodeList[i];
-		if(node->getMappedLoc() == cnode){
+		if (node->getMappedLoc() == cnode)
+		{
 			return node;
 		}
 	}
 	return NULL;
 }
 
-void DFG::partitionFuncDFG(DFG* funcDFG, std::vector<DFG*> dfgVectorPtr) {
-
-
-
-
+void DFG::partitionFuncDFG(DFG *funcDFG, std::vector<DFG *> dfgVectorPtr)
+{
 }
 
+void DFG::GEPInvestigate(Function &F, Loop *L, std::map<std::string, int> *sizeArrMap)
+{
 
-void DFG::GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeArrMap) {
-
-	LLVMContext& Ctx = F.getContext();
-	std::set<Value*> handledGEPs;
+	LLVMContext &Ctx = F.getContext();
+	std::set<Value *> handledGEPs;
 
 	//LoopPreHeader Printf marker insertion
-	BasicBlock* loopPH = L->getLoopPreheader();
+	BasicBlock *loopPH = L->getLoopPreheader();
 	BasicBlock::iterator instIterPH = loopPH->begin();
-	Instruction* loopPHStartIns = &*instIterPH;
+	Instruction *loopPHStartIns = &*instIterPH;
 
 	IRBuilder<> builder(loopPHStartIns);
-	builder.SetInsertPoint(loopPH,loopPH->getFirstInsertionPt());
+	builder.SetInsertPoint(loopPH, loopPH->getFirstInsertionPt());
 
-	Value* printfSTARTstr = builder.CreateGlobalStringPtr((*this->loopNamesPtr)[L] + ":------------LOOP START--------------\n");
-	Value* printfENDstr = builder.CreateGlobalStringPtr((*this->loopNamesPtr)[L] + ":------------LOOP END----------------\n");
-	assert(this->loopNamesPtr->find(L)!=this->loopNamesPtr->end());
-	Value* loopName = builder.CreateGlobalStringPtr((*this->loopNamesPtr)[L]);
+	Value *printfSTARTstr = builder.CreateGlobalStringPtr((*this->loopNamesPtr)[L] + ":------------LOOP START--------------\n");
+	Value *printfENDstr = builder.CreateGlobalStringPtr((*this->loopNamesPtr)[L] + ":------------LOOP END----------------\n");
+	assert(this->loopNamesPtr->find(L) != this->loopNamesPtr->end());
+	Value *loopName = builder.CreateGlobalStringPtr((*this->loopNamesPtr)[L]);
 
-//	Constant* printfMARKER = F.getParent()->getOrInsertFunction(
-//					  "printf",
-//					  FunctionType::getVoidTy(Ctx),
-//					  Type::getInt8PtrTy(Ctx),
-//					  NULL);
+	//	Constant* printfMARKER = F.getParent()->getOrInsertFunction(
+	//					  "printf",
+	//					  FunctionType::getVoidTy(Ctx),
+	//					  Type::getInt8PtrTy(Ctx),
+	//					  NULL);
 
 	auto loopStartFn = F.getParent()->getOrInsertFunction(
-							"loopStart",
-							FunctionType::getVoidTy(Ctx),
-							Type::getInt8PtrTy(Ctx));
+		"loopStart",
+		FunctionType::getVoidTy(Ctx),
+		Type::getInt8PtrTy(Ctx));
 
-	builder.CreateCall(loopStartFn,{loopName});
-
+	builder.CreateCall(loopStartFn, {loopName});
 
 	//the entry location for instrumentation code
-	BasicBlock* loopHeader = L->getHeader();
+	BasicBlock *loopHeader = L->getHeader();
 	BasicBlock::iterator instIter = loopHeader->begin();
-	Instruction* loopStartIns = &*instIter;
+	Instruction *loopStartIns = &*instIter;
 
-	SmallVector<BasicBlock*,8> loopExitBlocksSV;
-    L->getExitBlocks(loopExitBlocksSV);
+	SmallVector<BasicBlock *, 8> loopExitBlocksSV;
+	L->getExitBlocks(loopExitBlocksSV);
 
-    std::set<BasicBlock*> s;
-    for( unsigned i = 0; i < loopExitBlocksSV.size(); ++i ) s.insert( loopExitBlocksSV[i] );
-    std::vector<BasicBlock*> loopExitBlocks;
-    loopExitBlocks.assign( s.begin(), s.end() );
+	std::set<BasicBlock *> s;
+	for (unsigned i = 0; i < loopExitBlocksSV.size(); ++i)
+		s.insert(loopExitBlocksSV[i]);
+	std::vector<BasicBlock *> loopExitBlocks;
+	loopExitBlocks.assign(s.begin(), s.end());
 
-    std::vector<Instruction*> loopExitInsVec;
-    assert(loopExitBlocks.size()!=0);
-	for (int i = 0; i < loopExitBlocks.size(); ++i) {
-		BasicBlock* LoopExitBB = loopExitBlocks[i];
-//		BasicBlock::iterator instIter = --LoopExitBB->end();
+	std::vector<Instruction *> loopExitInsVec;
+	assert(loopExitBlocks.size() != 0);
+	for (int i = 0; i < loopExitBlocks.size(); ++i)
+	{
+		BasicBlock *LoopExitBB = loopExitBlocks[i];
+		//		BasicBlock::iterator instIter = --LoopExitBB->end();
 		BasicBlock::iterator instIter = LoopExitBB->begin();
 		outs() << "LoopExit Blocks : \n";
 		LoopExitBB->dump();
 
-		if(std::find(loopExitInsVec.begin(),loopExitInsVec.end(),&*instIter)==loopExitInsVec.end()){
+		if (std::find(loopExitInsVec.begin(), loopExitInsVec.end(), &*instIter) == loopExitInsVec.end())
+		{
 			loopExitInsVec.push_back(&*instIter);
 		}
 	}
 
-//	IRBuilder<> builder(loopStartIns);
-//	builder.SetInsertPoint(loopStartIns);
-	builder.SetInsertPoint(loopHeader,loopHeader->getFirstInsertionPt());
+	//	IRBuilder<> builder(loopStartIns);
+	//	builder.SetInsertPoint(loopStartIns);
+	builder.SetInsertPoint(loopHeader, loopHeader->getFirstInsertionPt());
 	auto clearPrintedArrs = F.getParent()->getOrInsertFunction(
-	  "clearPrintedArrs", FunctionType::getVoidTy(Ctx));
+		"clearPrintedArrs", FunctionType::getVoidTy(Ctx));
 
-//	for (int i = 0; i < loopExitInsVec.size(); ++i) {
-//		builder.SetInsertPoint(loopExitInsVec[i]);
-//		builder.CreateCall(clearPrintedArrs);
-//	}
+	//	for (int i = 0; i < loopExitInsVec.size(); ++i) {
+	//		builder.SetInsertPoint(loopExitInsVec[i]);
+	//		builder.CreateCall(clearPrintedArrs);
+	//	}
 
-	for (int i = 0; i < loopExitBlocks.size(); ++i) {
-		builder.SetInsertPoint(loopExitBlocks[i],--loopExitBlocks[i]->end());
+	for (int i = 0; i < loopExitBlocks.size(); ++i)
+	{
+		builder.SetInsertPoint(loopExitBlocks[i], --loopExitBlocks[i]->end());
 		builder.CreateCall(clearPrintedArrs);
 	}
 
-	dfgNode* node;
-	for (int i = 0; i < NodeList.size(); ++i) {
+	dfgNode *node;
+	for (int i = 0; i < NodeList.size(); ++i)
+	{
 		node = NodeList[i];
 
-
-		if(node->getNameType().compare("OutLoopLOAD")==0){
-			if(!node->isTransferedByHost()){
+		if (node->getNameType().compare("OutLoopLOAD") == 0)
+		{
+			if (!node->isTransferedByHost())
+			{
 				continue;
 			}
 			errs() << "OutLoopLoad found!!\n";
-			Value* printfstr = builder.CreateGlobalStringPtr("OutLoopLoadNode:%d,val=%d,addr=%d\n");
-			assert(OutLoopNodeMapReverse[node]!=NULL);
+			Value *printfstr = builder.CreateGlobalStringPtr("OutLoopLoadNode:%d,val=%d,addr=%d\n");
+			assert(OutLoopNodeMapReverse[node] != NULL);
 			OutLoopNodeMapReverse[node]->dump();
-			Value* loadVal = OutLoopNodeMapReverse[node];
-			Value* nodeIdx = ConstantInt::get(Type::getInt32Ty(Ctx),node->getIdx());
-			Value* addrVal = ConstantInt::get(Type::getInt32Ty(Ctx),node->getoutloopAddr());
-//			Value* args[] = {printfstr,nodeIdx,loadVal,addrVal};
+			Value *loadVal = OutLoopNodeMapReverse[node];
+			Value *nodeIdx = ConstantInt::get(Type::getInt32Ty(Ctx), node->getIdx());
+			Value *addrVal = ConstantInt::get(Type::getInt32Ty(Ctx), node->getoutloopAddr());
+			//			Value* args[] = {printfstr,nodeIdx,loadVal,addrVal};
 
-//			Constant* printf = F.getParent()->getOrInsertFunction(
-//							  "printf",
-//							  FunctionType::getVoidTy(Ctx),
-//							  Type::getInt8PtrTy(Ctx),
-//							  Type::getInt32Ty(Ctx),
-//							  loadVal->getType(),
-//							  Type::getInt32Ty(Ctx),
-//							  NULL);
+			//			Constant* printf = F.getParent()->getOrInsertFunction(
+			//							  "printf",
+			//							  FunctionType::getVoidTy(Ctx),
+			//							  Type::getInt8PtrTy(Ctx),
+			//							  Type::getInt32Ty(Ctx),
+			//							  loadVal->getType(),
+			//							  Type::getInt32Ty(Ctx),
+			//							  NULL);
 
 			auto outloopReportFn = F.getParent()->getOrInsertFunction(
-									  "outloopValueReport",
-									  FunctionType::getVoidTy(Ctx),
-									  Type::getInt32Ty(Ctx), //nodeIdx
-									  loadVal->getType(), //value
-									  Type::getInt32Ty(Ctx), //addr
-									  Type::getInt8Ty(Ctx),  //isLoad
-									  Type::getInt8Ty(Ctx),  //isHostTrans
-									  Type::getInt8Ty(Ctx) //size
-									  );
+				"outloopValueReport",
+				FunctionType::getVoidTy(Ctx),
+				Type::getInt32Ty(Ctx), //nodeIdx
+				loadVal->getType(),	//value
+				Type::getInt32Ty(Ctx), //addr
+				Type::getInt8Ty(Ctx),  //isLoad
+				Type::getInt8Ty(Ctx),  //isHostTrans
+				Type::getInt8Ty(Ctx)   //size
+			);
 
-			Value* isLoad = ConstantInt::get(Type::getInt8Ty(Ctx),1);
-			Value* isHostTrans;
-			Value* size = ConstantInt::get(Type::getInt8Ty(Ctx),node->getTypeSizeBytes());
-			if(node->isTransferedByHost()){
-				isHostTrans = ConstantInt::get(Type::getInt8Ty(Ctx),1);
+			Value *isLoad = ConstantInt::get(Type::getInt8Ty(Ctx), 1);
+			Value *isHostTrans;
+			Value *size = ConstantInt::get(Type::getInt8Ty(Ctx), node->getTypeSizeBytes());
+			if (node->isTransferedByHost())
+			{
+				isHostTrans = ConstantInt::get(Type::getInt8Ty(Ctx), 1);
 			}
-			else{
-				isHostTrans = ConstantInt::get(Type::getInt8Ty(Ctx),0);
+			else
+			{
+				isHostTrans = ConstantInt::get(Type::getInt8Ty(Ctx), 0);
 			}
-			Value* args[] = {nodeIdx,loadVal,addrVal,isLoad,isHostTrans,size};
-			for (int i = 0; i < loopExitBlocks.size(); ++i) {
-				builder.SetInsertPoint(loopExitBlocks[i],--loopExitBlocks[i]->end());
-//				builder.CreateCall(printf,args);
-				builder.CreateCall(outloopReportFn,args);
-//				outs() << "its a load\n";
-//				loopExitBlocks[i]->dump();
+			Value *args[] = {nodeIdx, loadVal, addrVal, isLoad, isHostTrans, size};
+			for (int i = 0; i < loopExitBlocks.size(); ++i)
+			{
+				builder.SetInsertPoint(loopExitBlocks[i], --loopExitBlocks[i]->end());
+				//				builder.CreateCall(printf,args);
+				builder.CreateCall(outloopReportFn, args);
+				//				outs() << "its a load\n";
+				//				loopExitBlocks[i]->dump();
 			}
 		}
 
-		if(node->getNameType().compare("OutLoopSTORE")==0){
-			if(!node->isTransferedByHost()){
+		if (node->getNameType().compare("OutLoopSTORE") == 0)
+		{
+			if (!node->isTransferedByHost())
+			{
 				continue;
 			}
-			Value* printfstr = builder.CreateGlobalStringPtr("OutLoopStoreNode:%d,val=%d,addr=%d\n");
-			assert(node->getAncestors().size()==1);
-			Value* StoreVal = (node->getAncestors())[0]->getNode();
-			Value* nodeIdx = ConstantInt::get(Type::getInt32Ty(Ctx),node->getIdx());
-			Value* addrVal = ConstantInt::get(Type::getInt32Ty(Ctx),node->getoutloopAddr());
-//			Value* args[] = {printfstr,nodeIdx,StoreVal,addrVal};
+			Value *printfstr = builder.CreateGlobalStringPtr("OutLoopStoreNode:%d,val=%d,addr=%d\n");
+			assert(node->getAncestors().size() == 1);
+			Value *StoreVal = (node->getAncestors())[0]->getNode();
+			Value *nodeIdx = ConstantInt::get(Type::getInt32Ty(Ctx), node->getIdx());
+			Value *addrVal = ConstantInt::get(Type::getInt32Ty(Ctx), node->getoutloopAddr());
+			//			Value* args[] = {printfstr,nodeIdx,StoreVal,addrVal};
 
-//			Constant* printf = F.getParent()->getOrInsertFunction(
-//							  "printf",
-//							  FunctionType::getVoidTy(Ctx),
-//							  Type::getInt8PtrTy(Ctx),
-//							  Type::getInt32Ty(Ctx),
-//							  StoreVal->getType(),
-//							  Type::getInt32Ty(Ctx),
-//							  NULL);
+			//			Constant* printf = F.getParent()->getOrInsertFunction(
+			//							  "printf",
+			//							  FunctionType::getVoidTy(Ctx),
+			//							  Type::getInt8PtrTy(Ctx),
+			//							  Type::getInt32Ty(Ctx),
+			//							  StoreVal->getType(),
+			//							  Type::getInt32Ty(Ctx),
+			//							  NULL);
 
 			auto outloopReportFn = F.getParent()->getOrInsertFunction(
-									  "outloopValueReport",
-									  FunctionType::getVoidTy(Ctx),
-									  Type::getInt32Ty(Ctx), //nodeIdx
-									  StoreVal->getType(), //value
-									  Type::getInt32Ty(Ctx), //addr
-									  Type::getInt8Ty(Ctx),  //isLoad
-									  Type::getInt8Ty(Ctx),  //isHostTrans
-									  Type::getInt8Ty(Ctx)  //size
-									  );
+				"outloopValueReport",
+				FunctionType::getVoidTy(Ctx),
+				Type::getInt32Ty(Ctx), //nodeIdx
+				StoreVal->getType(),   //value
+				Type::getInt32Ty(Ctx), //addr
+				Type::getInt8Ty(Ctx),  //isLoad
+				Type::getInt8Ty(Ctx),  //isHostTrans
+				Type::getInt8Ty(Ctx)   //size
+			);
 
-			Value* isLoad = ConstantInt::get(Type::getInt8Ty(Ctx),0);
-			Value* isHostTrans;
-			Value* size = ConstantInt::get(Type::getInt8Ty(Ctx),node->getTypeSizeBytes());
-			if(node->isTransferedByHost()){
-				isHostTrans = ConstantInt::get(Type::getInt8Ty(Ctx),1);
+			Value *isLoad = ConstantInt::get(Type::getInt8Ty(Ctx), 0);
+			Value *isHostTrans;
+			Value *size = ConstantInt::get(Type::getInt8Ty(Ctx), node->getTypeSizeBytes());
+			if (node->isTransferedByHost())
+			{
+				isHostTrans = ConstantInt::get(Type::getInt8Ty(Ctx), 1);
 			}
-			else{
-				isHostTrans = ConstantInt::get(Type::getInt8Ty(Ctx),0);
+			else
+			{
+				isHostTrans = ConstantInt::get(Type::getInt8Ty(Ctx), 0);
 			}
-			Value* args[] = {nodeIdx,StoreVal,addrVal,isLoad,isHostTrans,size};
-			for (int i = 0; i < loopExitBlocks.size(); ++i) {
-				builder.SetInsertPoint(loopExitBlocks[i],--loopExitBlocks[i]->end());
-//				builder.CreateCall(printf,args);
-				builder.CreateCall(outloopReportFn,args);
-//				outs() << "its a store\n";
-//				OutLoopNodeMapReverse[node]->dump();
-//				loopExitBlocks[i]->dump();
+			Value *args[] = {nodeIdx, StoreVal, addrVal, isLoad, isHostTrans, size};
+			for (int i = 0; i < loopExitBlocks.size(); ++i)
+			{
+				builder.SetInsertPoint(loopExitBlocks[i], --loopExitBlocks[i]->end());
+				//				builder.CreateCall(printf,args);
+				builder.CreateCall(outloopReportFn, args);
+				//				outs() << "its a store\n";
+				//				OutLoopNodeMapReverse[node]->dump();
+				//				loopExitBlocks[i]->dump();
 			}
 		}
 
-		if(node->getNode()==NULL){
+		if (node->getNode() == NULL)
+		{
 			continue;
 		}
-		Instruction* ins = node->getNode();
+		Instruction *ins = node->getNode();
 
-//		for (auto &B : F){
-//			BasicBlock* BB = dyn_cast<BasicBlock>(&B);
-//			for(auto &I : *BB){
-//
-//			Instruction* ins = &I;
+		//		for (auto &B : F){
+		//			BasicBlock* BB = dyn_cast<BasicBlock>(&B);
+		//			for(auto &I : *BB){
+		//
+		//			Instruction* ins = &I;
 
+		//			errs() << "GEPInvestigate node found\n";
 
-//			errs() << "GEPInvestigate node found\n";
-
-		if(GetElementPtrInst *GEP = dyn_cast<GetElementPtrInst>(ins)){
+		if (GetElementPtrInst *GEP = dyn_cast<GetElementPtrInst>(ins))
+		{
 			const DataLayout DL = ins->getParent()->getParent()->getParent()->getDataLayout();
 
 			//number of elements
@@ -6443,504 +7207,524 @@ void DFG::GEPInvestigate(Function &F, Loop* L, std::map<std::string,int>* sizeAr
 			GEP->dump();
 			Type *T = GEP->getSourceElementType();
 
-			errs() << "S/A/I/P=" << T->isStructTy()<< "/";
-			errs() << T->isArrayTy()<< "/";
-			errs() << T->isIntegerTy()<< "/";
-			errs() << T->isPointerTy()<< "\n";
+			errs() << "S/A/I/P=" << T->isStructTy() << "/";
+			errs() << T->isArrayTy() << "/";
+			errs() << T->isIntegerTy() << "/";
+			errs() << T->isPointerTy() << "\n";
 
+			if (dyn_cast<StructType>(T))
+			{
 
-			if(dyn_cast<StructType>(T)){
-
-				if(handledGEPs.find(GEP->getPointerOperand())!=handledGEPs.end()){
+				if (handledGEPs.find(GEP->getPointerOperand()) != handledGEPs.end())
+				{
 					continue;
 				}
 
-				StructType* ST = dyn_cast<StructType>(T);
+				StructType *ST = dyn_cast<StructType>(T);
 				errs() << "StructType=" << ST->getName() << "\n";
 
-//				//Insert a call to our function
-//				builder(loopStartIns);
-//				builder.SetInsertPoint(loopStartIns);
-				builder.SetInsertPoint(loopHeader,loopHeader->getFirstInsertionPt());
-//				builder.SetInsertPoint(loopHeader,++builder.GetInsertPoint());
+				//				//Insert a call to our function
+				//				builder(loopStartIns);
+				//				builder.SetInsertPoint(loopStartIns);
+				builder.SetInsertPoint(loopHeader, loopHeader->getFirstInsertionPt());
+				//				builder.SetInsertPoint(loopHeader,++builder.GetInsertPoint());
 
-				Value* old = GEP->getPointerOperand();
-				Value* bitcastedPtr = builder.CreateBitCast(old,Type::getInt8PtrTy(Ctx));
+				Value *old = GEP->getPointerOperand();
+				Value *bitcastedPtr = builder.CreateBitCast(old, Type::getInt8PtrTy(Ctx));
 				int size = DL.getTypeAllocSize(ST);
 
-				(*sizeArrMap)[GEP->getPointerOperand()->getName().str()]=size;
+				(*sizeArrMap)[GEP->getPointerOperand()->getName().str()] = size;
 
-				if(allocatedArraysMap.find(GEP->getPointerOperand()->getName().str())==allocatedArraysMap.end()){
-					dfgNode* memopChild = node->getChildren()[0];
-					assert(memopChild->getLeftAlignedMemOp()!=0);
-					if(memopChild->getLeftAlignedMemOp()==1){
+				if (allocatedArraysMap.find(GEP->getPointerOperand()->getName().str()) == allocatedArraysMap.end())
+				{
+					dfgNode *memopChild = node->getChildren()[0];
+					assert(memopChild->getLeftAlignedMemOp() != 0);
+					if (memopChild->getLeftAlignedMemOp() == 1)
+					{
 						node->setGEPbaseAddr(arrayAddrPtrLeft);
-						outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrLeft << ",size=" << size <<  "\n";
-						allocatedArraysMap[GEP->getPointerOperand()->getName().str()]=arrayAddrPtrLeft;
+						outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrLeft << ",size=" << size << "\n";
+						allocatedArraysMap[GEP->getPointerOperand()->getName().str()] = arrayAddrPtrLeft;
 						arrayAddrPtrLeft += size;
 					}
-					else{
+					else
+					{
 						node->setGEPbaseAddr(arrayAddrPtrRight);
-						outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrRight << ",size=" << size <<  "\n";
-						allocatedArraysMap[GEP->getPointerOperand()->getName().str()]=arrayAddrPtrRight;
+						outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrRight << ",size=" << size << "\n";
+						allocatedArraysMap[GEP->getPointerOperand()->getName().str()] = arrayAddrPtrRight;
 						arrayAddrPtrRight += size;
 					}
-
 				}
-				else{
+				else
+				{
 					node->setGEPbaseAddr(allocatedArraysMap[GEP->getPointerOperand()->getName().str()]);
-					outs() << "NodeIdx:" << node->getIdx() << ",addr=" << allocatedArraysMap[GEP->getPointerOperand()->getName().str()] << ",size=" << size <<  "\n";
+					outs() << "NodeIdx:" << node->getIdx() << ",addr=" << allocatedArraysMap[GEP->getPointerOperand()->getName().str()] << ",size=" << size << "\n";
 				}
 
 				auto printArrFunc = F.getParent()->getOrInsertFunction(
-				  "printArr",
-				  FunctionType::getVoidTy(Ctx),
-				  Type::getInt8PtrTy(Ctx),
-				  Type::getInt8PtrTy(Ctx),
-				  Type::getInt32Ty(Ctx),
-				  Type::getInt8Ty(Ctx),
-				  Type::getInt32Ty(Ctx)
-				  );
+					"printArr",
+					FunctionType::getVoidTy(Ctx),
+					Type::getInt8PtrTy(Ctx),
+					Type::getInt8PtrTy(Ctx),
+					Type::getInt32Ty(Ctx),
+					Type::getInt8Ty(Ctx),
+					Type::getInt32Ty(Ctx));
 
-				Value* st_name = builder.CreateGlobalStringPtr(ST->getName());
-				Value* argsi[] = {st_name,
+				Value *st_name = builder.CreateGlobalStringPtr(ST->getName());
+				Value *argsi[] = {st_name,
 								  bitcastedPtr,
-						          ConstantInt::get(Type::getInt32Ty(Ctx),size),
-								  ConstantInt::get(Type::getInt8Ty(Ctx),1),
-								  ConstantInt::get(Type::getInt32Ty(Ctx),node->getGEPbaseAddr())
-								  };
-				Value* argso[] = {st_name,
-						          bitcastedPtr,
-								  ConstantInt::get(Type::getInt32Ty(Ctx),size),
-				                  ConstantInt::get(Type::getInt8Ty(Ctx),0),
-								  ConstantInt::get(Type::getInt32Ty(Ctx),node->getGEPbaseAddr())};
-//				builder.CreateCall(printArrFunc,args);
+								  ConstantInt::get(Type::getInt32Ty(Ctx), size),
+								  ConstantInt::get(Type::getInt8Ty(Ctx), 1),
+								  ConstantInt::get(Type::getInt32Ty(Ctx), node->getGEPbaseAddr())};
+				Value *argso[] = {st_name,
+								  bitcastedPtr,
+								  ConstantInt::get(Type::getInt32Ty(Ctx), size),
+								  ConstantInt::get(Type::getInt8Ty(Ctx), 0),
+								  ConstantInt::get(Type::getInt32Ty(Ctx), node->getGEPbaseAddr())};
+				//				builder.CreateCall(printArrFunc,args);
 
-				builder.CreateCall(printArrFunc,argsi);
+				builder.CreateCall(printArrFunc, argsi);
 
-//				for (int i = 0; i < loopExitInsVec.size(); ++i) {
-//					builder.SetInsertPoint(loopExitInsVec[i]);
-//					builder.CreateCall(printArrFunc,argso);
-//				}
+				//				for (int i = 0; i < loopExitInsVec.size(); ++i) {
+				//					builder.SetInsertPoint(loopExitInsVec[i]);
+				//					builder.CreateCall(printArrFunc,argso);
+				//				}
 
-				for (int i = 0; i < loopExitBlocks.size(); ++i) {
-					builder.SetInsertPoint(loopExitBlocks[i],--loopExitBlocks[i]->end());
-					builder.CreateCall(printArrFunc,argso);
+				for (int i = 0; i < loopExitBlocks.size(); ++i)
+				{
+					builder.SetInsertPoint(loopExitBlocks[i], --loopExitBlocks[i]->end());
+					builder.CreateCall(printArrFunc, argso);
 				}
 
-
 				//experiment
-//				errs() << "Experiment, arraytype size = " << AT->getArrayNumElements() << "\n";
-
+				//				errs() << "Experiment, arraytype size = " << AT->getArrayNumElements() << "\n";
 			}
-			else{
-				if(dyn_cast<ArrayType>(T)){
+			else
+			{
+				if (dyn_cast<ArrayType>(T))
+				{
 
-					if(handledGEPs.find(GEP->getPointerOperand())!=handledGEPs.end()){
+					if (handledGEPs.find(GEP->getPointerOperand()) != handledGEPs.end())
+					{
 						continue;
 					}
 
-					ArrayType* AT = dyn_cast<ArrayType>(T);
-					errs() << "ArrayType="<< AT->getArrayNumElements() <<"\n";
+					ArrayType *AT = dyn_cast<ArrayType>(T);
+					errs() << "ArrayType=" << AT->getArrayNumElements() << "\n";
 					errs() << "Size = " << DL.getTypeAllocSize(AT) << "\n";
 
-//					//Insert a call to our function
-//					IRBuilder<> builder(loopStartIns);
-//					builder.SetInsertPoint(loopStartIns);
-					builder.SetInsertPoint(loopHeader,loopHeader->getFirstInsertionPt());
+					//					//Insert a call to our function
+					//					IRBuilder<> builder(loopStartIns);
+					//					builder.SetInsertPoint(loopStartIns);
+					builder.SetInsertPoint(loopHeader, loopHeader->getFirstInsertionPt());
 
-					Value* old = GEP->getPointerOperand();
-					Value* bitcastedPtr = builder.CreateBitCast(old,Type::getInt8PtrTy(Ctx));
+					Value *old = GEP->getPointerOperand();
+					Value *bitcastedPtr = builder.CreateBitCast(old, Type::getInt8PtrTy(Ctx));
 					int size = DL.getTypeAllocSize(AT);
 
-					(*sizeArrMap)[GEP->getPointerOperand()->getName().str()]=size;
-					dfgNode* memopChild = node->getChildren()[0];
-					assert(memopChild->getLeftAlignedMemOp()!=0);
-					if(memopChild->getLeftAlignedMemOp()==1){
+					(*sizeArrMap)[GEP->getPointerOperand()->getName().str()] = size;
+					dfgNode *memopChild = node->getChildren()[0];
+					assert(memopChild->getLeftAlignedMemOp() != 0);
+					if (memopChild->getLeftAlignedMemOp() == 1)
+					{
 						node->setGEPbaseAddr(arrayAddrPtrLeft);
-						outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrLeft << ",size=" << size <<  "\n";
+						outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrLeft << ",size=" << size << "\n";
 						arrayAddrPtrLeft += size;
 					}
-					else{
+					else
+					{
 						node->setGEPbaseAddr(arrayAddrPtrRight);
-						outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrRight << ",size=" << size <<  "\n";
+						outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrRight << ",size=" << size << "\n";
 						arrayAddrPtrRight += size;
 					}
 
 					auto printArrFunc = F.getParent()->getOrInsertFunction(
-					  "printArr",
-					  FunctionType::getVoidTy(Ctx),
-					  Type::getInt8PtrTy(Ctx),
-					  Type::getInt8PtrTy(Ctx),
-					  Type::getInt32Ty(Ctx),
-					  Type::getInt8Ty(Ctx),
-					  Type::getInt32Ty(Ctx)
-					  );
+						"printArr",
+						FunctionType::getVoidTy(Ctx),
+						Type::getInt8PtrTy(Ctx),
+						Type::getInt8PtrTy(Ctx),
+						Type::getInt32Ty(Ctx),
+						Type::getInt8Ty(Ctx),
+						Type::getInt32Ty(Ctx));
 
-					Value* st_name = builder.CreateGlobalStringPtr(GEP->getPointerOperand()->getName());
-					Value* argsi[] = {st_name,
-							          bitcastedPtr,
-									  ConstantInt::get(Type::getInt32Ty(Ctx),size),
-									  ConstantInt::get(Type::getInt8Ty(Ctx),1),
-									  ConstantInt::get(Type::getInt32Ty(Ctx),node->getGEPbaseAddr())};
-					Value* argso[] = {st_name,
-							          bitcastedPtr,
-									  ConstantInt::get(Type::getInt32Ty(Ctx),size),
-									  ConstantInt::get(Type::getInt8Ty(Ctx),0),
-									  ConstantInt::get(Type::getInt32Ty(Ctx),node->getGEPbaseAddr())};
+					Value *st_name = builder.CreateGlobalStringPtr(GEP->getPointerOperand()->getName());
+					Value *argsi[] = {st_name,
+									  bitcastedPtr,
+									  ConstantInt::get(Type::getInt32Ty(Ctx), size),
+									  ConstantInt::get(Type::getInt8Ty(Ctx), 1),
+									  ConstantInt::get(Type::getInt32Ty(Ctx), node->getGEPbaseAddr())};
+					Value *argso[] = {st_name,
+									  bitcastedPtr,
+									  ConstantInt::get(Type::getInt32Ty(Ctx), size),
+									  ConstantInt::get(Type::getInt8Ty(Ctx), 0),
+									  ConstantInt::get(Type::getInt32Ty(Ctx), node->getGEPbaseAddr())};
 
 					//Add a call in the begginning of the loop
-					builder.CreateCall(printArrFunc,argsi);
+					builder.CreateCall(printArrFunc, argsi);
 
-//					errs() << "loopExitInsVec.size()=" << loopExitInsVec.size() << "\n";
-//					for (int i = 0; i < loopExitInsVec.size(); ++i) {
-//						loopExitInsVec[i]->dump();
-//						builder.SetInsertPoint(loopExitInsVec[i]);
-//						builder.CreateCall(printArrFunc,argso);
-//					}
+					//					errs() << "loopExitInsVec.size()=" << loopExitInsVec.size() << "\n";
+					//					for (int i = 0; i < loopExitInsVec.size(); ++i) {
+					//						loopExitInsVec[i]->dump();
+					//						builder.SetInsertPoint(loopExitInsVec[i]);
+					//						builder.CreateCall(printArrFunc,argso);
+					//					}
 
-					for (int i = 0; i < loopExitBlocks.size(); ++i) {
-						builder.SetInsertPoint(loopExitBlocks[i],--loopExitBlocks[i]->end());
-						builder.CreateCall(printArrFunc,argso);
+					for (int i = 0; i < loopExitBlocks.size(); ++i)
+					{
+						builder.SetInsertPoint(loopExitBlocks[i], --loopExitBlocks[i]->end());
+						builder.CreateCall(printArrFunc, argso);
 					}
-
 				}
-				else{
+				else
+				{
 					assert(dyn_cast<IntegerType>(T));
-					IntegerType* IT = dyn_cast<IntegerType>(T);
+					IntegerType *IT = dyn_cast<IntegerType>(T);
 
-//					IRBuilder<> builder(GEP);
+					//					IRBuilder<> builder(GEP);
 					builder.SetInsertPoint(GEP);
-//					builder.SetInsertPoint(loopHeader,++builder.GetInsertPoint());
+					//					builder.SetInsertPoint(loopHeader,++builder.GetInsertPoint());
 
-					Value* old = GEP->getPointerOperand();
-					Value* addr = GEP;
-					Value* bitcastedPtr = builder.CreateBitCast(old,Type::getInt8PtrTy(Ctx));
+					Value *old = GEP->getPointerOperand();
+					Value *addr = GEP;
+					Value *bitcastedPtr = builder.CreateBitCast(old, Type::getInt8PtrTy(Ctx));
 					int size = DL.getTypeAllocSize(IT);
 
 					auto reportDynArrSize = F.getParent()->getOrInsertFunction(
-					"reportDynArrSize", FunctionType::getVoidTy(Ctx),
-										Type::getInt8PtrTy(Ctx),
-										Type::getInt8PtrTy(Ctx),
-										Type::getInt32Ty(Ctx),
-										Type::getInt32Ty(Ctx)
-										);
+						"reportDynArrSize", FunctionType::getVoidTy(Ctx),
+						Type::getInt8PtrTy(Ctx),
+						Type::getInt8PtrTy(Ctx),
+						Type::getInt32Ty(Ctx),
+						Type::getInt32Ty(Ctx));
 
-					Value* st_name = builder.CreateGlobalStringPtr(GEP->getPointerOperand()->getName());
-					Value* args[] = {st_name,
+					Value *st_name = builder.CreateGlobalStringPtr(GEP->getPointerOperand()->getName());
+					Value *args[] = {st_name,
 									 bitcastedPtr,
 									 GEP->getOperand(1),
 									 ConstantInt::get(Type::getInt32Ty(Ctx),
-									 size)};
-					builder.CreateCall(reportDynArrSize,args);
+													  size)};
+					builder.CreateCall(reportDynArrSize, args);
 
 					std::string ptrName = GEP->getPointerOperand()->getName().str();
 
 					//checking for user defined input sizes
-					if(sizeArrMap->find(ptrName)!=sizeArrMap->end()){
-//						builder.SetInsertPoint(loopStartIns);
-//						builder.SetInsertPoint(loopHeader,++builder.GetInsertPoint());
+					if (sizeArrMap->find(ptrName) != sizeArrMap->end())
+					{
+						//						builder.SetInsertPoint(loopStartIns);
+						//						builder.SetInsertPoint(loopHeader,++builder.GetInsertPoint());
 						int size = (*sizeArrMap)[ptrName];
 
-						if(allocatedArraysMap.find(ptrName)==allocatedArraysMap.end()){
-							dfgNode* memopChild = node->getChildren()[0];
-							assert(memopChild->getLeftAlignedMemOp()!=0);
-							if(memopChild->getLeftAlignedMemOp()==1){
+						if (allocatedArraysMap.find(ptrName) == allocatedArraysMap.end())
+						{
+							dfgNode *memopChild = node->getChildren()[0];
+							assert(memopChild->getLeftAlignedMemOp() != 0);
+							if (memopChild->getLeftAlignedMemOp() == 1)
+							{
 								node->setGEPbaseAddr(arrayAddrPtrLeft);
-								outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrLeft << ",size=" << size <<  "\n";
-								allocatedArraysMap[ptrName]=arrayAddrPtrLeft;
+								outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrLeft << ",size=" << size << "\n";
+								allocatedArraysMap[ptrName] = arrayAddrPtrLeft;
 								arrayAddrPtrLeft += size;
 							}
-							else{
+							else
+							{
 								node->setGEPbaseAddr(arrayAddrPtrRight);
-								outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrRight << ",size=" << size <<  "\n";
-								allocatedArraysMap[ptrName]=arrayAddrPtrRight;
+								outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrRight << ",size=" << size << "\n";
+								allocatedArraysMap[ptrName] = arrayAddrPtrRight;
 								arrayAddrPtrRight += size;
 							}
 						}
-						else{
+						else
+						{
 							node->setGEPbaseAddr(allocatedArraysMap[ptrName]);
-							outs() << "NodeIdx:" << node->getIdx() << ",addr=" << allocatedArraysMap[ptrName] << ",size=" << size <<  "\n";
+							outs() << "NodeIdx:" << node->getIdx() << ",addr=" << allocatedArraysMap[ptrName] << ",size=" << size << "\n";
 						}
-
 
 						auto printArrFunc = F.getParent()->getOrInsertFunction(
-						  "printArr",
-						  FunctionType::getVoidTy(Ctx),
-						  Type::getInt8PtrTy(Ctx),
-						  Type::getInt8PtrTy(Ctx),
-						  Type::getInt32Ty(Ctx),
-						  Type::getInt8Ty(Ctx),
-						  Type::getInt32Ty(Ctx)
-						  );
+							"printArr",
+							FunctionType::getVoidTy(Ctx),
+							Type::getInt8PtrTy(Ctx),
+							Type::getInt8PtrTy(Ctx),
+							Type::getInt32Ty(Ctx),
+							Type::getInt8Ty(Ctx),
+							Type::getInt32Ty(Ctx));
 
-						Value* argsi[] = {st_name,
-								          bitcastedPtr,
-										  ConstantInt::get(Type::getInt32Ty(Ctx),size),
-										  ConstantInt::get(Type::getInt8Ty(Ctx),1),
-										  ConstantInt::get(Type::getInt32Ty(Ctx),node->getGEPbaseAddr())};
-						Value* argso[] = {st_name,
-								          bitcastedPtr,
-										  ConstantInt::get(Type::getInt32Ty(Ctx),size),
-										  ConstantInt::get(Type::getInt8Ty(Ctx),0),
-										  ConstantInt::get(Type::getInt32Ty(Ctx),node->getGEPbaseAddr())};
+						Value *argsi[] = {st_name,
+										  bitcastedPtr,
+										  ConstantInt::get(Type::getInt32Ty(Ctx), size),
+										  ConstantInt::get(Type::getInt8Ty(Ctx), 1),
+										  ConstantInt::get(Type::getInt32Ty(Ctx), node->getGEPbaseAddr())};
+						Value *argso[] = {st_name,
+										  bitcastedPtr,
+										  ConstantInt::get(Type::getInt32Ty(Ctx), size),
+										  ConstantInt::get(Type::getInt8Ty(Ctx), 0),
+										  ConstantInt::get(Type::getInt32Ty(Ctx), node->getGEPbaseAddr())};
 						//Add a call in the begginning of the loop
-						builder.CreateCall(printArrFunc,argsi);
-//
-//						errs() << "loopExitInsVec.size()=" << loopExitInsVec.size() << "\n";
-//						for (int i = 0; i < loopExitInsVec.size(); ++i) {
-//							loopExitInsVec[i]->dump();
-//							builder.SetInsertPoint(loopExitInsVec[i]);
-//							builder.CreateCall(printArrFunc,argso);
-//						}
+						builder.CreateCall(printArrFunc, argsi);
+						//
+						//						errs() << "loopExitInsVec.size()=" << loopExitInsVec.size() << "\n";
+						//						for (int i = 0; i < loopExitInsVec.size(); ++i) {
+						//							loopExitInsVec[i]->dump();
+						//							builder.SetInsertPoint(loopExitInsVec[i]);
+						//							builder.CreateCall(printArrFunc,argso);
+						//						}
 
-						for (int i = 0; i < loopExitBlocks.size(); ++i) {
-							builder.SetInsertPoint(loopExitBlocks[i],--loopExitBlocks[i]->end());
-							builder.CreateCall(printArrFunc,argso);
+						for (int i = 0; i < loopExitBlocks.size(); ++i)
+						{
+							builder.SetInsertPoint(loopExitBlocks[i], --loopExitBlocks[i]->end());
+							builder.CreateCall(printArrFunc, argso);
 						}
 					}
-					else{
+					else
+					{
 						errs() << "Please provide sizes for the arrayptr : " << ptrName << "\n";
 						assert(0);
 					}
-
 				}
 			}
-
 
 			errs() << "GEPInvestigate : instrument code added!\n";
 			handledGEPs.insert(GEP->getPointerOperand());
 		}
 
-//		} // for(auto &I : *BB){
-//	} //for (auto &B : F){
+		//		} // for(auto &I : *BB){
+		//	} //for (auto &B : F){
 
 	} //Nodelist
 
 	auto printDynArrSize = F.getParent()->getOrInsertFunction(
-	  "printDynArrSize", FunctionType::getVoidTy(Ctx));
+		"printDynArrSize", FunctionType::getVoidTy(Ctx));
 
 	auto loopEndFn = F.getParent()->getOrInsertFunction(
-			  "loopEnd", FunctionType::getVoidTy(Ctx),Type::getInt8PtrTy(Ctx));
+		"loopEnd", FunctionType::getVoidTy(Ctx), Type::getInt8PtrTy(Ctx));
 
-//	for (int i = 0; i < loopExitInsVec.size(); ++i) {
-//		builder.SetInsertPoint(loopExitInsVec[i]);
-//		builder.CreateCall(clearPrintedArrs);
-//		builder.CreateCall(loopEndFn,{loopName});
-//	}
+	//	for (int i = 0; i < loopExitInsVec.size(); ++i) {
+	//		builder.SetInsertPoint(loopExitInsVec[i]);
+	//		builder.CreateCall(clearPrintedArrs);
+	//		builder.CreateCall(loopEndFn,{loopName});
+	//	}
 
-	for (int i = 0; i < loopExitBlocks.size(); ++i) {
-		builder.SetInsertPoint(loopExitBlocks[i],--loopExitBlocks[i]->end());
+	for (int i = 0; i < loopExitBlocks.size(); ++i)
+	{
+		builder.SetInsertPoint(loopExitBlocks[i], --loopExitBlocks[i]->end());
 		builder.CreateCall(clearPrintedArrs);
-		builder.CreateCall(loopEndFn,{loopName});
+		builder.CreateCall(loopEndFn, {loopName});
 	}
 
-
-
 } //End of GEPInvestigate Function
-
 
 //2017 New version for mapping unit
 
-void DFG::GEPInvestigate(Function &F, std::map<std::string,int>* sizeArrMap) {
+void DFG::GEPInvestigate(Function &F, std::map<std::string, int> *sizeArrMap)
+{
 
-	LLVMContext& Ctx = F.getContext();
-	std::set<Value*> handledGEPs;
+	LLVMContext &Ctx = F.getContext();
+	std::set<Value *> handledGEPs;
 
 	//LoopPreHeader Printf marker insertion
-	BasicBlock* loopPH = L->getLoopPreheader();
+	BasicBlock *loopPH = L->getLoopPreheader();
 	BasicBlock::iterator instIterPH = loopPH->begin();
-	Instruction* loopPHStartIns = &*instIterPH;
+	Instruction *loopPHStartIns = &*instIterPH;
 
 	IRBuilder<> builder(loopPHStartIns);
-	builder.SetInsertPoint(loopPH,loopPH->getFirstInsertionPt());
+	builder.SetInsertPoint(loopPH, loopPH->getFirstInsertionPt());
 
-	Value* printfSTARTstr = builder.CreateGlobalStringPtr((*this->loopNamesPtr)[L] + ":------------LOOP START--------------\n");
-	Value* printfENDstr = builder.CreateGlobalStringPtr((*this->loopNamesPtr)[L] + ":------------LOOP END----------------\n");
-	assert(this->loopNamesPtr->find(L)!=this->loopNamesPtr->end());
-	Value* loopName = builder.CreateGlobalStringPtr((*this->loopNamesPtr)[L]);
+	Value *printfSTARTstr = builder.CreateGlobalStringPtr((*this->loopNamesPtr)[L] + ":------------LOOP START--------------\n");
+	Value *printfENDstr = builder.CreateGlobalStringPtr((*this->loopNamesPtr)[L] + ":------------LOOP END----------------\n");
+	assert(this->loopNamesPtr->find(L) != this->loopNamesPtr->end());
+	Value *loopName = builder.CreateGlobalStringPtr((*this->loopNamesPtr)[L]);
 
-//	Constant* printfMARKER = F.getParent()->getOrInsertFunction(
-//					  "printf",
-//					  FunctionType::getVoidTy(Ctx),
-//					  Type::getInt8PtrTy(Ctx),
-//					  NULL);
+	//	Constant* printfMARKER = F.getParent()->getOrInsertFunction(
+	//					  "printf",
+	//					  FunctionType::getVoidTy(Ctx),
+	//					  Type::getInt8PtrTy(Ctx),
+	//					  NULL);
 
 	auto loopStartFn = F.getParent()->getOrInsertFunction(
-							"loopStart",
-							FunctionType::getVoidTy(Ctx),
-							Type::getInt8PtrTy(Ctx)
-							);
+		"loopStart",
+		FunctionType::getVoidTy(Ctx),
+		Type::getInt8PtrTy(Ctx));
 
-	builder.CreateCall(loopStartFn,{loopName});
-
+	builder.CreateCall(loopStartFn, {loopName});
 
 	//the entry location for instrumentation code
-	BasicBlock* loopHeader = L->getHeader();
+	BasicBlock *loopHeader = L->getHeader();
 	BasicBlock::iterator instIter = loopHeader->begin();
-	Instruction* loopStartIns = &*instIter;
+	Instruction *loopStartIns = &*instIter;
 
-	SmallVector<BasicBlock*,8> loopExitBlocksSV;
-    L->getExitBlocks(loopExitBlocksSV);
+	SmallVector<BasicBlock *, 8> loopExitBlocksSV;
+	L->getExitBlocks(loopExitBlocksSV);
 
-    std::set<BasicBlock*> s;
-    for( unsigned i = 0; i < loopExitBlocksSV.size(); ++i ) s.insert( loopExitBlocksSV[i] );
-    std::vector<BasicBlock*> loopExitBlocks;
-    loopExitBlocks.assign( s.begin(), s.end() );
+	std::set<BasicBlock *> s;
+	for (unsigned i = 0; i < loopExitBlocksSV.size(); ++i)
+		s.insert(loopExitBlocksSV[i]);
+	std::vector<BasicBlock *> loopExitBlocks;
+	loopExitBlocks.assign(s.begin(), s.end());
 
-    std::vector<Instruction*> loopExitInsVec;
-    assert(loopExitBlocks.size()!=0);
-	for (int i = 0; i < loopExitBlocks.size(); ++i) {
-		BasicBlock* LoopExitBB = loopExitBlocks[i];
-//		BasicBlock::iterator instIter = --LoopExitBB->end();
+	std::vector<Instruction *> loopExitInsVec;
+	assert(loopExitBlocks.size() != 0);
+	for (int i = 0; i < loopExitBlocks.size(); ++i)
+	{
+		BasicBlock *LoopExitBB = loopExitBlocks[i];
+		//		BasicBlock::iterator instIter = --LoopExitBB->end();
 		BasicBlock::iterator instIter = LoopExitBB->begin();
 		outs() << "LoopExit Blocks : \n";
 		LoopExitBB->dump();
 
-		if(std::find(loopExitInsVec.begin(),loopExitInsVec.end(),&*instIter)==loopExitInsVec.end()){
+		if (std::find(loopExitInsVec.begin(), loopExitInsVec.end(), &*instIter) == loopExitInsVec.end())
+		{
 			loopExitInsVec.push_back(&*instIter);
 		}
 	}
 
-//	IRBuilder<> builder(loopStartIns);
-//	builder.SetInsertPoint(loopStartIns);
-	builder.SetInsertPoint(loopHeader,loopHeader->getFirstInsertionPt());
+	//	IRBuilder<> builder(loopStartIns);
+	//	builder.SetInsertPoint(loopStartIns);
+	builder.SetInsertPoint(loopHeader, loopHeader->getFirstInsertionPt());
 	auto clearPrintedArrs = F.getParent()->getOrInsertFunction(
-	  "clearPrintedArrs", FunctionType::getVoidTy(Ctx));
+		"clearPrintedArrs", FunctionType::getVoidTy(Ctx));
 
-//	for (int i = 0; i < loopExitInsVec.size(); ++i) {
-//		builder.SetInsertPoint(loopExitInsVec[i]);
-//		builder.CreateCall(clearPrintedArrs);
-//	}
+	//	for (int i = 0; i < loopExitInsVec.size(); ++i) {
+	//		builder.SetInsertPoint(loopExitInsVec[i]);
+	//		builder.CreateCall(clearPrintedArrs);
+	//	}
 
-	for (int i = 0; i < loopExitBlocks.size(); ++i) {
-		builder.SetInsertPoint(loopExitBlocks[i],--loopExitBlocks[i]->end());
+	for (int i = 0; i < loopExitBlocks.size(); ++i)
+	{
+		builder.SetInsertPoint(loopExitBlocks[i], --loopExitBlocks[i]->end());
 		builder.CreateCall(clearPrintedArrs);
 	}
 
-	dfgNode* node;
-	for (int i = 0; i < NodeList.size(); ++i) {
+	dfgNode *node;
+	for (int i = 0; i < NodeList.size(); ++i)
+	{
 		node = NodeList[i];
 
-
-		if(node->getNameType().compare("OutLoopLOAD")==0){
-			if(!node->isTransferedByHost()){
+		if (node->getNameType().compare("OutLoopLOAD") == 0)
+		{
+			if (!node->isTransferedByHost())
+			{
 				continue;
 			}
 			errs() << "OutLoopLoad found!!\n";
-			Value* printfstr = builder.CreateGlobalStringPtr("OutLoopLoadNode:%d,val=%d,addr=%d\n");
-			assert(OutLoopNodeMapReverse[node]!=NULL);
+			Value *printfstr = builder.CreateGlobalStringPtr("OutLoopLoadNode:%d,val=%d,addr=%d\n");
+			assert(OutLoopNodeMapReverse[node] != NULL);
 			OutLoopNodeMapReverse[node]->dump();
-			Value* loadVal = OutLoopNodeMapReverse[node];
-			Value* nodeIdx = ConstantInt::get(Type::getInt32Ty(Ctx),node->getIdx());
-			Value* addrVal = ConstantInt::get(Type::getInt32Ty(Ctx),node->getoutloopAddr());
-//			Value* args[] = {printfstr,nodeIdx,loadVal,addrVal};
+			Value *loadVal = OutLoopNodeMapReverse[node];
+			Value *nodeIdx = ConstantInt::get(Type::getInt32Ty(Ctx), node->getIdx());
+			Value *addrVal = ConstantInt::get(Type::getInt32Ty(Ctx), node->getoutloopAddr());
+			//			Value* args[] = {printfstr,nodeIdx,loadVal,addrVal};
 
-//			Constant* printf = F.getParent()->getOrInsertFunction(
-//							  "printf",
-//							  FunctionType::getVoidTy(Ctx),
-//							  Type::getInt8PtrTy(Ctx),
-//							  Type::getInt32Ty(Ctx),
-//							  loadVal->getType(),
-//							  Type::getInt32Ty(Ctx),
-//							  NULL);
+			//			Constant* printf = F.getParent()->getOrInsertFunction(
+			//							  "printf",
+			//							  FunctionType::getVoidTy(Ctx),
+			//							  Type::getInt8PtrTy(Ctx),
+			//							  Type::getInt32Ty(Ctx),
+			//							  loadVal->getType(),
+			//							  Type::getInt32Ty(Ctx),
+			//							  NULL);
 
 			auto outloopReportFn = F.getParent()->getOrInsertFunction(
-									  "outloopValueReport",
-									  FunctionType::getVoidTy(Ctx),
-									  Type::getInt32Ty(Ctx), //nodeIdx
-									  loadVal->getType(), //value
-									  Type::getInt32Ty(Ctx), //addr
-									  Type::getInt8Ty(Ctx),  //isLoad
-									  Type::getInt8Ty(Ctx),  //isHostTrans
-									  Type::getInt8Ty(Ctx) //size
-									  );
+				"outloopValueReport",
+				FunctionType::getVoidTy(Ctx),
+				Type::getInt32Ty(Ctx), //nodeIdx
+				loadVal->getType(),	//value
+				Type::getInt32Ty(Ctx), //addr
+				Type::getInt8Ty(Ctx),  //isLoad
+				Type::getInt8Ty(Ctx),  //isHostTrans
+				Type::getInt8Ty(Ctx)   //size
+			);
 
-			Value* isLoad = ConstantInt::get(Type::getInt8Ty(Ctx),1);
-			Value* isHostTrans;
-			Value* size = ConstantInt::get(Type::getInt8Ty(Ctx),node->getTypeSizeBytes());
-			if(node->isTransferedByHost()){
-				isHostTrans = ConstantInt::get(Type::getInt8Ty(Ctx),1);
+			Value *isLoad = ConstantInt::get(Type::getInt8Ty(Ctx), 1);
+			Value *isHostTrans;
+			Value *size = ConstantInt::get(Type::getInt8Ty(Ctx), node->getTypeSizeBytes());
+			if (node->isTransferedByHost())
+			{
+				isHostTrans = ConstantInt::get(Type::getInt8Ty(Ctx), 1);
 			}
-			else{
-				isHostTrans = ConstantInt::get(Type::getInt8Ty(Ctx),0);
+			else
+			{
+				isHostTrans = ConstantInt::get(Type::getInt8Ty(Ctx), 0);
 			}
-			Value* args[] = {nodeIdx,loadVal,addrVal,isLoad,isHostTrans,size};
-			for (int i = 0; i < loopExitBlocks.size(); ++i) {
-				builder.SetInsertPoint(loopExitBlocks[i],--loopExitBlocks[i]->end());
-//				builder.CreateCall(printf,args);
-				builder.CreateCall(outloopReportFn,args);
-//				outs() << "its a load\n";
-//				loopExitBlocks[i]->dump();
+			Value *args[] = {nodeIdx, loadVal, addrVal, isLoad, isHostTrans, size};
+			for (int i = 0; i < loopExitBlocks.size(); ++i)
+			{
+				builder.SetInsertPoint(loopExitBlocks[i], --loopExitBlocks[i]->end());
+				//				builder.CreateCall(printf,args);
+				builder.CreateCall(outloopReportFn, args);
+				//				outs() << "its a load\n";
+				//				loopExitBlocks[i]->dump();
 			}
 		}
 
-		if(node->getNameType().compare("OutLoopSTORE")==0){
-			if(!node->isTransferedByHost()){
+		if (node->getNameType().compare("OutLoopSTORE") == 0)
+		{
+			if (!node->isTransferedByHost())
+			{
 				continue;
 			}
-			Value* printfstr = builder.CreateGlobalStringPtr("OutLoopStoreNode:%d,val=%d,addr=%d\n");
-			assert(node->getAncestors().size()==1);
-			Value* StoreVal = (node->getAncestors())[0]->getNode();
-			Value* nodeIdx = ConstantInt::get(Type::getInt32Ty(Ctx),node->getIdx());
-			Value* addrVal = ConstantInt::get(Type::getInt32Ty(Ctx),node->getoutloopAddr());
-//			Value* args[] = {printfstr,nodeIdx,StoreVal,addrVal};
+			Value *printfstr = builder.CreateGlobalStringPtr("OutLoopStoreNode:%d,val=%d,addr=%d\n");
+			assert(node->getAncestors().size() == 1);
+			Value *StoreVal = (node->getAncestors())[0]->getNode();
+			Value *nodeIdx = ConstantInt::get(Type::getInt32Ty(Ctx), node->getIdx());
+			Value *addrVal = ConstantInt::get(Type::getInt32Ty(Ctx), node->getoutloopAddr());
+			//			Value* args[] = {printfstr,nodeIdx,StoreVal,addrVal};
 
-//			Constant* printf = F.getParent()->getOrInsertFunction(
-//							  "printf",
-//							  FunctionType::getVoidTy(Ctx),
-//							  Type::getInt8PtrTy(Ctx),
-//							  Type::getInt32Ty(Ctx),
-//							  StoreVal->getType(),
-//							  Type::getInt32Ty(Ctx),
-//							  NULL);
+			//			Constant* printf = F.getParent()->getOrInsertFunction(
+			//							  "printf",
+			//							  FunctionType::getVoidTy(Ctx),
+			//							  Type::getInt8PtrTy(Ctx),
+			//							  Type::getInt32Ty(Ctx),
+			//							  StoreVal->getType(),
+			//							  Type::getInt32Ty(Ctx),
+			//							  NULL);
 
 			auto outloopReportFn = F.getParent()->getOrInsertFunction(
-									  "outloopValueReport",
-									  FunctionType::getVoidTy(Ctx),
-									  Type::getInt32Ty(Ctx), //nodeIdx
-									  StoreVal->getType(), //value
-									  Type::getInt32Ty(Ctx), //addr
-									  Type::getInt8Ty(Ctx),  //isLoad
-									  Type::getInt8Ty(Ctx),  //isHostTrans
-									  Type::getInt8Ty(Ctx)  //size
-									  );
+				"outloopValueReport",
+				FunctionType::getVoidTy(Ctx),
+				Type::getInt32Ty(Ctx), //nodeIdx
+				StoreVal->getType(),   //value
+				Type::getInt32Ty(Ctx), //addr
+				Type::getInt8Ty(Ctx),  //isLoad
+				Type::getInt8Ty(Ctx),  //isHostTrans
+				Type::getInt8Ty(Ctx)   //size
+			);
 
-			Value* isLoad = ConstantInt::get(Type::getInt8Ty(Ctx),0);
-			Value* isHostTrans;
-			Value* size = ConstantInt::get(Type::getInt8Ty(Ctx),node->getTypeSizeBytes());
-			if(node->isTransferedByHost()){
-				isHostTrans = ConstantInt::get(Type::getInt8Ty(Ctx),1);
+			Value *isLoad = ConstantInt::get(Type::getInt8Ty(Ctx), 0);
+			Value *isHostTrans;
+			Value *size = ConstantInt::get(Type::getInt8Ty(Ctx), node->getTypeSizeBytes());
+			if (node->isTransferedByHost())
+			{
+				isHostTrans = ConstantInt::get(Type::getInt8Ty(Ctx), 1);
 			}
-			else{
-				isHostTrans = ConstantInt::get(Type::getInt8Ty(Ctx),0);
+			else
+			{
+				isHostTrans = ConstantInt::get(Type::getInt8Ty(Ctx), 0);
 			}
-			Value* args[] = {nodeIdx,StoreVal,addrVal,isLoad,isHostTrans,size};
-			for (int i = 0; i < loopExitBlocks.size(); ++i) {
-				builder.SetInsertPoint(loopExitBlocks[i],--loopExitBlocks[i]->end());
-//				builder.CreateCall(printf,args);
-				builder.CreateCall(outloopReportFn,args);
-//				outs() << "its a store\n";
-//				OutLoopNodeMapReverse[node]->dump();
-//				loopExitBlocks[i]->dump();
+			Value *args[] = {nodeIdx, StoreVal, addrVal, isLoad, isHostTrans, size};
+			for (int i = 0; i < loopExitBlocks.size(); ++i)
+			{
+				builder.SetInsertPoint(loopExitBlocks[i], --loopExitBlocks[i]->end());
+				//				builder.CreateCall(printf,args);
+				builder.CreateCall(outloopReportFn, args);
+				//				outs() << "its a store\n";
+				//				OutLoopNodeMapReverse[node]->dump();
+				//				loopExitBlocks[i]->dump();
 			}
 		}
 
-		if(node->getNode()==NULL){
+		if (node->getNode() == NULL)
+		{
 			continue;
 		}
-		Instruction* ins = node->getNode();
+		Instruction *ins = node->getNode();
 
-//		for (auto &B : F){
-//			BasicBlock* BB = dyn_cast<BasicBlock>(&B);
-//			for(auto &I : *BB){
-//
-//			Instruction* ins = &I;
+		//		for (auto &B : F){
+		//			BasicBlock* BB = dyn_cast<BasicBlock>(&B);
+		//			for(auto &I : *BB){
+		//
+		//			Instruction* ins = &I;
 
+		//			errs() << "GEPInvestigate node found\n";
 
-//			errs() << "GEPInvestigate node found\n";
-
-		if(GetElementPtrInst *GEP = dyn_cast<GetElementPtrInst>(ins)){
+		if (GetElementPtrInst *GEP = dyn_cast<GetElementPtrInst>(ins))
+		{
 			const DataLayout DL = ins->getParent()->getParent()->getParent()->getDataLayout();
 
 			//number of elements
@@ -6948,732 +7732,839 @@ void DFG::GEPInvestigate(Function &F, std::map<std::string,int>* sizeArrMap) {
 			GEP->dump();
 			Type *T = GEP->getSourceElementType();
 
-			errs() << "S/A/I/P=" << T->isStructTy()<< "/";
-			errs() << T->isArrayTy()<< "/";
-			errs() << T->isIntegerTy()<< "/";
-			errs() << T->isPointerTy()<< "\n";
+			errs() << "S/A/I/P=" << T->isStructTy() << "/";
+			errs() << T->isArrayTy() << "/";
+			errs() << T->isIntegerTy() << "/";
+			errs() << T->isPointerTy() << "\n";
 
+			if (dyn_cast<StructType>(T))
+			{
 
-			if(dyn_cast<StructType>(T)){
-
-				if(handledGEPs.find(GEP->getPointerOperand())!=handledGEPs.end()){
+				if (handledGEPs.find(GEP->getPointerOperand()) != handledGEPs.end())
+				{
 					continue;
 				}
 
-				StructType* ST = dyn_cast<StructType>(T);
+				StructType *ST = dyn_cast<StructType>(T);
 				errs() << "StructType=" << ST->getName() << "\n";
 
-//				//Insert a call to our function
-//				builder(loopStartIns);
-//				builder.SetInsertPoint(loopStartIns);
-				builder.SetInsertPoint(loopHeader,loopHeader->getFirstInsertionPt());
-//				builder.SetInsertPoint(loopHeader,++builder.GetInsertPoint());
+				//				//Insert a call to our function
+				//				builder(loopStartIns);
+				//				builder.SetInsertPoint(loopStartIns);
+				builder.SetInsertPoint(loopHeader, loopHeader->getFirstInsertionPt());
+				//				builder.SetInsertPoint(loopHeader,++builder.GetInsertPoint());
 
-				Value* old = GEP->getPointerOperand();
-				Value* bitcastedPtr = builder.CreateBitCast(old,Type::getInt8PtrTy(Ctx));
+				Value *old = GEP->getPointerOperand();
+				Value *bitcastedPtr = builder.CreateBitCast(old, Type::getInt8PtrTy(Ctx));
 				int size = DL.getTypeAllocSize(ST);
 
-				(*sizeArrMap)[GEP->getPointerOperand()->getName().str()]=size;
+				(*sizeArrMap)[GEP->getPointerOperand()->getName().str()] = size;
 
-				if(allocatedArraysMap.find(GEP->getPointerOperand()->getName().str())==allocatedArraysMap.end()){
-					dfgNode* memopChild = node->getChildren()[0];
-					assert(memopChild->getLeftAlignedMemOp()!=0);
-					if(memopChild->getLeftAlignedMemOp()==1){
+				if (allocatedArraysMap.find(GEP->getPointerOperand()->getName().str()) == allocatedArraysMap.end())
+				{
+					dfgNode *memopChild = node->getChildren()[0];
+					assert(memopChild->getLeftAlignedMemOp() != 0);
+					if (memopChild->getLeftAlignedMemOp() == 1)
+					{
 						node->setGEPbaseAddr(arrayAddrPtrLeft);
-						outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrLeft << ",size=" << size <<  "\n";
-						allocatedArraysMap[GEP->getPointerOperand()->getName().str()]=arrayAddrPtrLeft;
+						outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrLeft << ",size=" << size << "\n";
+						allocatedArraysMap[GEP->getPointerOperand()->getName().str()] = arrayAddrPtrLeft;
 						arrayAddrPtrLeft += size;
 					}
-					else{
+					else
+					{
 						node->setGEPbaseAddr(arrayAddrPtrRight);
-						outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrRight << ",size=" << size <<  "\n";
-						allocatedArraysMap[GEP->getPointerOperand()->getName().str()]=arrayAddrPtrRight;
+						outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrRight << ",size=" << size << "\n";
+						allocatedArraysMap[GEP->getPointerOperand()->getName().str()] = arrayAddrPtrRight;
 						arrayAddrPtrRight += size;
 					}
-
 				}
-				else{
+				else
+				{
 					node->setGEPbaseAddr(allocatedArraysMap[GEP->getPointerOperand()->getName().str()]);
-					outs() << "NodeIdx:" << node->getIdx() << ",addr=" << allocatedArraysMap[GEP->getPointerOperand()->getName().str()] << ",size=" << size <<  "\n";
+					outs() << "NodeIdx:" << node->getIdx() << ",addr=" << allocatedArraysMap[GEP->getPointerOperand()->getName().str()] << ",size=" << size << "\n";
 				}
 
 				auto printArrFunc = F.getParent()->getOrInsertFunction(
-				  "printArr",
-				  FunctionType::getVoidTy(Ctx),
-				  Type::getInt8PtrTy(Ctx),
-				  Type::getInt8PtrTy(Ctx),
-				  Type::getInt32Ty(Ctx),
-				  Type::getInt8Ty(Ctx),
-				  Type::getInt32Ty(Ctx)
-				  );
+					"printArr",
+					FunctionType::getVoidTy(Ctx),
+					Type::getInt8PtrTy(Ctx),
+					Type::getInt8PtrTy(Ctx),
+					Type::getInt32Ty(Ctx),
+					Type::getInt8Ty(Ctx),
+					Type::getInt32Ty(Ctx));
 
-				Value* st_name = builder.CreateGlobalStringPtr(ST->getName());
-				Value* argsi[] = {st_name,
+				Value *st_name = builder.CreateGlobalStringPtr(ST->getName());
+				Value *argsi[] = {st_name,
 								  bitcastedPtr,
-						          ConstantInt::get(Type::getInt32Ty(Ctx),size),
-								  ConstantInt::get(Type::getInt8Ty(Ctx),1),
-								  ConstantInt::get(Type::getInt32Ty(Ctx),node->getGEPbaseAddr())
-								  };
-				Value* argso[] = {st_name,
-						          bitcastedPtr,
-								  ConstantInt::get(Type::getInt32Ty(Ctx),size),
-				                  ConstantInt::get(Type::getInt8Ty(Ctx),0),
-								  ConstantInt::get(Type::getInt32Ty(Ctx),node->getGEPbaseAddr())};
-//				builder.CreateCall(printArrFunc,args);
+								  ConstantInt::get(Type::getInt32Ty(Ctx), size),
+								  ConstantInt::get(Type::getInt8Ty(Ctx), 1),
+								  ConstantInt::get(Type::getInt32Ty(Ctx), node->getGEPbaseAddr())};
+				Value *argso[] = {st_name,
+								  bitcastedPtr,
+								  ConstantInt::get(Type::getInt32Ty(Ctx), size),
+								  ConstantInt::get(Type::getInt8Ty(Ctx), 0),
+								  ConstantInt::get(Type::getInt32Ty(Ctx), node->getGEPbaseAddr())};
+				//				builder.CreateCall(printArrFunc,args);
 
-				builder.CreateCall(printArrFunc,argsi);
+				builder.CreateCall(printArrFunc, argsi);
 
-//				for (int i = 0; i < loopExitInsVec.size(); ++i) {
-//					builder.SetInsertPoint(loopExitInsVec[i]);
-//					builder.CreateCall(printArrFunc,argso);
-//				}
+				//				for (int i = 0; i < loopExitInsVec.size(); ++i) {
+				//					builder.SetInsertPoint(loopExitInsVec[i]);
+				//					builder.CreateCall(printArrFunc,argso);
+				//				}
 
-				for (int i = 0; i < loopExitBlocks.size(); ++i) {
-					builder.SetInsertPoint(loopExitBlocks[i],--loopExitBlocks[i]->end());
-					builder.CreateCall(printArrFunc,argso);
+				for (int i = 0; i < loopExitBlocks.size(); ++i)
+				{
+					builder.SetInsertPoint(loopExitBlocks[i], --loopExitBlocks[i]->end());
+					builder.CreateCall(printArrFunc, argso);
 				}
 
-
 				//experiment
-//				errs() << "Experiment, arraytype size = " << AT->getArrayNumElements() << "\n";
-
+				//				errs() << "Experiment, arraytype size = " << AT->getArrayNumElements() << "\n";
 			}
-			else{
-				if(dyn_cast<ArrayType>(T)){
+			else
+			{
+				if (dyn_cast<ArrayType>(T))
+				{
 
-					if(handledGEPs.find(GEP->getPointerOperand())!=handledGEPs.end()){
+					if (handledGEPs.find(GEP->getPointerOperand()) != handledGEPs.end())
+					{
 						continue;
 					}
 
-					ArrayType* AT = dyn_cast<ArrayType>(T);
-					errs() << "ArrayType="<< AT->getArrayNumElements() <<"\n";
+					ArrayType *AT = dyn_cast<ArrayType>(T);
+					errs() << "ArrayType=" << AT->getArrayNumElements() << "\n";
 					errs() << "Size = " << DL.getTypeAllocSize(AT) << "\n";
 
-//					//Insert a call to our function
-//					IRBuilder<> builder(loopStartIns);
-//					builder.SetInsertPoint(loopStartIns);
-					builder.SetInsertPoint(loopHeader,loopHeader->getFirstInsertionPt());
+					//					//Insert a call to our function
+					//					IRBuilder<> builder(loopStartIns);
+					//					builder.SetInsertPoint(loopStartIns);
+					builder.SetInsertPoint(loopHeader, loopHeader->getFirstInsertionPt());
 
-					Value* old = GEP->getPointerOperand();
-					Value* bitcastedPtr = builder.CreateBitCast(old,Type::getInt8PtrTy(Ctx));
+					Value *old = GEP->getPointerOperand();
+					Value *bitcastedPtr = builder.CreateBitCast(old, Type::getInt8PtrTy(Ctx));
 					int size = DL.getTypeAllocSize(AT);
 
-					(*sizeArrMap)[GEP->getPointerOperand()->getName().str()]=size;
-					dfgNode* memopChild = node->getChildren()[0];
-					assert(memopChild->getLeftAlignedMemOp()!=0);
-					if(memopChild->getLeftAlignedMemOp()==1){
+					(*sizeArrMap)[GEP->getPointerOperand()->getName().str()] = size;
+					dfgNode *memopChild = node->getChildren()[0];
+					assert(memopChild->getLeftAlignedMemOp() != 0);
+					if (memopChild->getLeftAlignedMemOp() == 1)
+					{
 						node->setGEPbaseAddr(arrayAddrPtrLeft);
-						outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrLeft << ",size=" << size <<  "\n";
+						outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrLeft << ",size=" << size << "\n";
 						arrayAddrPtrLeft += size;
 					}
-					else{
+					else
+					{
 						node->setGEPbaseAddr(arrayAddrPtrRight);
-						outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrRight << ",size=" << size <<  "\n";
+						outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrRight << ",size=" << size << "\n";
 						arrayAddrPtrRight += size;
 					}
 
 					auto printArrFunc = F.getParent()->getOrInsertFunction(
-					  "printArr",
-					  FunctionType::getVoidTy(Ctx),
-					  Type::getInt8PtrTy(Ctx),
-					  Type::getInt8PtrTy(Ctx),
-					  Type::getInt32Ty(Ctx),
-					  Type::getInt8Ty(Ctx),
-					  Type::getInt32Ty(Ctx)
-					  );
+						"printArr",
+						FunctionType::getVoidTy(Ctx),
+						Type::getInt8PtrTy(Ctx),
+						Type::getInt8PtrTy(Ctx),
+						Type::getInt32Ty(Ctx),
+						Type::getInt8Ty(Ctx),
+						Type::getInt32Ty(Ctx));
 
-					Value* st_name = builder.CreateGlobalStringPtr(GEP->getPointerOperand()->getName());
-					Value* argsi[] = {st_name,
-							          bitcastedPtr,
-									  ConstantInt::get(Type::getInt32Ty(Ctx),size),
-									  ConstantInt::get(Type::getInt8Ty(Ctx),1),
-									  ConstantInt::get(Type::getInt32Ty(Ctx),node->getGEPbaseAddr())};
-					Value* argso[] = {st_name,
-							          bitcastedPtr,
-									  ConstantInt::get(Type::getInt32Ty(Ctx),size),
-									  ConstantInt::get(Type::getInt8Ty(Ctx),0),
-									  ConstantInt::get(Type::getInt32Ty(Ctx),node->getGEPbaseAddr())};
+					Value *st_name = builder.CreateGlobalStringPtr(GEP->getPointerOperand()->getName());
+					Value *argsi[] = {st_name,
+									  bitcastedPtr,
+									  ConstantInt::get(Type::getInt32Ty(Ctx), size),
+									  ConstantInt::get(Type::getInt8Ty(Ctx), 1),
+									  ConstantInt::get(Type::getInt32Ty(Ctx), node->getGEPbaseAddr())};
+					Value *argso[] = {st_name,
+									  bitcastedPtr,
+									  ConstantInt::get(Type::getInt32Ty(Ctx), size),
+									  ConstantInt::get(Type::getInt8Ty(Ctx), 0),
+									  ConstantInt::get(Type::getInt32Ty(Ctx), node->getGEPbaseAddr())};
 
 					//Add a call in the begginning of the loop
-					builder.CreateCall(printArrFunc,argsi);
+					builder.CreateCall(printArrFunc, argsi);
 
-//					errs() << "loopExitInsVec.size()=" << loopExitInsVec.size() << "\n";
-//					for (int i = 0; i < loopExitInsVec.size(); ++i) {
-//						loopExitInsVec[i]->dump();
-//						builder.SetInsertPoint(loopExitInsVec[i]);
-//						builder.CreateCall(printArrFunc,argso);
-//					}
+					//					errs() << "loopExitInsVec.size()=" << loopExitInsVec.size() << "\n";
+					//					for (int i = 0; i < loopExitInsVec.size(); ++i) {
+					//						loopExitInsVec[i]->dump();
+					//						builder.SetInsertPoint(loopExitInsVec[i]);
+					//						builder.CreateCall(printArrFunc,argso);
+					//					}
 
-					for (int i = 0; i < loopExitBlocks.size(); ++i) {
-						builder.SetInsertPoint(loopExitBlocks[i],--loopExitBlocks[i]->end());
-						builder.CreateCall(printArrFunc,argso);
+					for (int i = 0; i < loopExitBlocks.size(); ++i)
+					{
+						builder.SetInsertPoint(loopExitBlocks[i], --loopExitBlocks[i]->end());
+						builder.CreateCall(printArrFunc, argso);
 					}
-
 				}
-				else{
+				else
+				{
 					assert(dyn_cast<IntegerType>(T));
-					IntegerType* IT = dyn_cast<IntegerType>(T);
+					IntegerType *IT = dyn_cast<IntegerType>(T);
 
-//					IRBuilder<> builder(GEP);
+					//					IRBuilder<> builder(GEP);
 					builder.SetInsertPoint(GEP);
-//					builder.SetInsertPoint(loopHeader,++builder.GetInsertPoint());
+					//					builder.SetInsertPoint(loopHeader,++builder.GetInsertPoint());
 
-					Value* old = GEP->getPointerOperand();
-					Value* addr = GEP;
-					Value* bitcastedPtr = builder.CreateBitCast(old,Type::getInt8PtrTy(Ctx));
+					Value *old = GEP->getPointerOperand();
+					Value *addr = GEP;
+					Value *bitcastedPtr = builder.CreateBitCast(old, Type::getInt8PtrTy(Ctx));
 					int size = DL.getTypeAllocSize(IT);
 
 					auto reportDynArrSize = F.getParent()->getOrInsertFunction(
-					"reportDynArrSize", FunctionType::getVoidTy(Ctx),
-										Type::getInt8PtrTy(Ctx),
-										Type::getInt8PtrTy(Ctx),
-										Type::getInt32Ty(Ctx),
-										Type::getInt32Ty(Ctx)
-										);
+						"reportDynArrSize", FunctionType::getVoidTy(Ctx),
+						Type::getInt8PtrTy(Ctx),
+						Type::getInt8PtrTy(Ctx),
+						Type::getInt32Ty(Ctx),
+						Type::getInt32Ty(Ctx));
 
-					Value* st_name = builder.CreateGlobalStringPtr(GEP->getPointerOperand()->getName());
-					Value* args[] = {st_name,
+					Value *st_name = builder.CreateGlobalStringPtr(GEP->getPointerOperand()->getName());
+					Value *args[] = {st_name,
 									 bitcastedPtr,
 									 GEP->getOperand(1),
 									 ConstantInt::get(Type::getInt32Ty(Ctx),
-									 size)};
-					builder.CreateCall(reportDynArrSize,args);
+													  size)};
+					builder.CreateCall(reportDynArrSize, args);
 
 					std::string ptrName = GEP->getPointerOperand()->getName().str();
 
 					//checking for user defined input sizes
-					if(sizeArrMap->find(ptrName)!=sizeArrMap->end()){
-//						builder.SetInsertPoint(loopStartIns);
-//						builder.SetInsertPoint(loopHeader,++builder.GetInsertPoint());
+					if (sizeArrMap->find(ptrName) != sizeArrMap->end())
+					{
+						//						builder.SetInsertPoint(loopStartIns);
+						//						builder.SetInsertPoint(loopHeader,++builder.GetInsertPoint());
 						int size = (*sizeArrMap)[ptrName];
 
-						if(allocatedArraysMap.find(ptrName)==allocatedArraysMap.end()){
-							dfgNode* memopChild = node->getChildren()[0];
-							assert(memopChild->getLeftAlignedMemOp()!=0);
-							if(memopChild->getLeftAlignedMemOp()==1){
+						if (allocatedArraysMap.find(ptrName) == allocatedArraysMap.end())
+						{
+							dfgNode *memopChild = node->getChildren()[0];
+							assert(memopChild->getLeftAlignedMemOp() != 0);
+							if (memopChild->getLeftAlignedMemOp() == 1)
+							{
 								node->setGEPbaseAddr(arrayAddrPtrLeft);
-								outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrLeft << ",size=" << size <<  "\n";
-								allocatedArraysMap[ptrName]=arrayAddrPtrLeft;
+								outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrLeft << ",size=" << size << "\n";
+								allocatedArraysMap[ptrName] = arrayAddrPtrLeft;
 								arrayAddrPtrLeft += size;
 							}
-							else{
+							else
+							{
 								node->setGEPbaseAddr(arrayAddrPtrRight);
-								outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrRight << ",size=" << size <<  "\n";
-								allocatedArraysMap[ptrName]=arrayAddrPtrRight;
+								outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrRight << ",size=" << size << "\n";
+								allocatedArraysMap[ptrName] = arrayAddrPtrRight;
 								arrayAddrPtrRight += size;
 							}
 						}
-						else{
+						else
+						{
 							node->setGEPbaseAddr(allocatedArraysMap[ptrName]);
-							outs() << "NodeIdx:" << node->getIdx() << ",addr=" << allocatedArraysMap[ptrName] << ",size=" << size <<  "\n";
+							outs() << "NodeIdx:" << node->getIdx() << ",addr=" << allocatedArraysMap[ptrName] << ",size=" << size << "\n";
 						}
-
 
 						auto printArrFunc = F.getParent()->getOrInsertFunction(
-						  "printArr",
-						  FunctionType::getVoidTy(Ctx),
-						  Type::getInt8PtrTy(Ctx),
-						  Type::getInt8PtrTy(Ctx),
-						  Type::getInt32Ty(Ctx),
-						  Type::getInt8Ty(Ctx),
-						  Type::getInt32Ty(Ctx)
-						  );
+							"printArr",
+							FunctionType::getVoidTy(Ctx),
+							Type::getInt8PtrTy(Ctx),
+							Type::getInt8PtrTy(Ctx),
+							Type::getInt32Ty(Ctx),
+							Type::getInt8Ty(Ctx),
+							Type::getInt32Ty(Ctx));
 
-						Value* argsi[] = {st_name,
-								          bitcastedPtr,
-										  ConstantInt::get(Type::getInt32Ty(Ctx),size),
-										  ConstantInt::get(Type::getInt8Ty(Ctx),1),
-										  ConstantInt::get(Type::getInt32Ty(Ctx),node->getGEPbaseAddr())};
-						Value* argso[] = {st_name,
-								          bitcastedPtr,
-										  ConstantInt::get(Type::getInt32Ty(Ctx),size),
-										  ConstantInt::get(Type::getInt8Ty(Ctx),0),
-										  ConstantInt::get(Type::getInt32Ty(Ctx),node->getGEPbaseAddr())};
+						Value *argsi[] = {st_name,
+										  bitcastedPtr,
+										  ConstantInt::get(Type::getInt32Ty(Ctx), size),
+										  ConstantInt::get(Type::getInt8Ty(Ctx), 1),
+										  ConstantInt::get(Type::getInt32Ty(Ctx), node->getGEPbaseAddr())};
+						Value *argso[] = {st_name,
+										  bitcastedPtr,
+										  ConstantInt::get(Type::getInt32Ty(Ctx), size),
+										  ConstantInt::get(Type::getInt8Ty(Ctx), 0),
+										  ConstantInt::get(Type::getInt32Ty(Ctx), node->getGEPbaseAddr())};
 						//Add a call in the begginning of the loop
-						builder.CreateCall(printArrFunc,argsi);
-//
-//						errs() << "loopExitInsVec.size()=" << loopExitInsVec.size() << "\n";
-//						for (int i = 0; i < loopExitInsVec.size(); ++i) {
-//							loopExitInsVec[i]->dump();
-//							builder.SetInsertPoint(loopExitInsVec[i]);
-//							builder.CreateCall(printArrFunc,argso);
-//						}
+						builder.CreateCall(printArrFunc, argsi);
+						//
+						//						errs() << "loopExitInsVec.size()=" << loopExitInsVec.size() << "\n";
+						//						for (int i = 0; i < loopExitInsVec.size(); ++i) {
+						//							loopExitInsVec[i]->dump();
+						//							builder.SetInsertPoint(loopExitInsVec[i]);
+						//							builder.CreateCall(printArrFunc,argso);
+						//						}
 
-						for (int i = 0; i < loopExitBlocks.size(); ++i) {
-							builder.SetInsertPoint(loopExitBlocks[i],--loopExitBlocks[i]->end());
-							builder.CreateCall(printArrFunc,argso);
+						for (int i = 0; i < loopExitBlocks.size(); ++i)
+						{
+							builder.SetInsertPoint(loopExitBlocks[i], --loopExitBlocks[i]->end());
+							builder.CreateCall(printArrFunc, argso);
 						}
 					}
-					else{
+					else
+					{
 						errs() << "Please provide sizes for the arrayptr : " << ptrName << "\n";
 						assert(0);
 					}
-
 				}
 			}
-
 
 			errs() << "GEPInvestigate : instrument code added!\n";
 			handledGEPs.insert(GEP->getPointerOperand());
 		}
 
-//		} // for(auto &I : *BB){
-//	} //for (auto &B : F){
+		//		} // for(auto &I : *BB){
+		//	} //for (auto &B : F){
 
 	} //Nodelist
 
 	auto printDynArrSize = F.getParent()->getOrInsertFunction(
-	  "printDynArrSize", FunctionType::getVoidTy(Ctx));
+		"printDynArrSize", FunctionType::getVoidTy(Ctx));
 
 	auto loopEndFn = F.getParent()->getOrInsertFunction(
-			  "loopEnd", FunctionType::getVoidTy(Ctx),Type::getInt8PtrTy(Ctx));
+		"loopEnd", FunctionType::getVoidTy(Ctx), Type::getInt8PtrTy(Ctx));
 
-//	for (int i = 0; i < loopExitInsVec.size(); ++i) {
-//		builder.SetInsertPoint(loopExitInsVec[i]);
-//		builder.CreateCall(clearPrintedArrs);
-//		builder.CreateCall(loopEndFn,{loopName});
-//	}
+	//	for (int i = 0; i < loopExitInsVec.size(); ++i) {
+	//		builder.SetInsertPoint(loopExitInsVec[i]);
+	//		builder.CreateCall(clearPrintedArrs);
+	//		builder.CreateCall(loopEndFn,{loopName});
+	//	}
 
-	for (int i = 0; i < loopExitBlocks.size(); ++i) {
-		builder.SetInsertPoint(loopExitBlocks[i],--loopExitBlocks[i]->end());
+	for (int i = 0; i < loopExitBlocks.size(); ++i)
+	{
+		builder.SetInsertPoint(loopExitBlocks[i], --loopExitBlocks[i]->end());
 		builder.CreateCall(clearPrintedArrs);
-		builder.CreateCall(loopEndFn,{loopName});
+		builder.CreateCall(loopEndFn, {loopName});
 	}
-
-
 
 } //End of GEPInvestigate Function
 
-void DFG::AssignOutLoopAddr() {
+void DFG::AssignOutLoopAddr()
+{
 
-	dfgNode* node;
-	for (int i = 0; i < NodeList.size(); ++i) {
-		node=NodeList[i];
-		if((node->getNameType().compare("OutLoopLOAD") == 0)||
-		   (node->getNameType().compare("OutLoopSTORE") == 0)){
+	dfgNode *node;
+	for (int i = 0; i < NodeList.size(); ++i)
+	{
+		node = NodeList[i];
+		if ((node->getNameType().compare("OutLoopLOAD") == 0) ||
+			(node->getNameType().compare("OutLoopSTORE") == 0))
+		{
 
-			assert(node->getMappedLoc()!=NULL);
+			assert(node->getMappedLoc() != NULL);
 
 			int bytewidth;
-			if(dyn_cast<IntegerType>(OutLoopNodeMapReverse[node]->getType())){
-				bytewidth=OutLoopNodeMapReverse[node]->getType()->getIntegerBitWidth()/8;
+			if (dyn_cast<IntegerType>(OutLoopNodeMapReverse[node]->getType()))
+			{
+				bytewidth = OutLoopNodeMapReverse[node]->getType()->getIntegerBitWidth() / 8;
 			}
-			else if(dyn_cast<ArrayType>(OutLoopNodeMapReverse[node]->getType())||
-					dyn_cast<StructType>(OutLoopNodeMapReverse[node]->getType())||
-					dyn_cast<PointerType>(OutLoopNodeMapReverse[node]->getType())
-					){
-				bytewidth=4;
+			else if (dyn_cast<ArrayType>(OutLoopNodeMapReverse[node]->getType()) ||
+					 dyn_cast<StructType>(OutLoopNodeMapReverse[node]->getType()) ||
+					 dyn_cast<PointerType>(OutLoopNodeMapReverse[node]->getType()))
+			{
+				bytewidth = 4;
 			}
-			else{
+			else
+			{
 				assert(0 && "should not come here");
 			}
 
-			if(node->getMappedLoc()->getY()<=1){
-				outloopAddrPtrLeft = outloopAddrPtrLeft-bytewidth;
+			if (node->getMappedLoc()->getY() <= 1)
+			{
+				outloopAddrPtrLeft = outloopAddrPtrLeft - bytewidth;
 
-				if(bytewidth==4){
+				if (bytewidth == 4)
+				{
 					outloopAddrPtrLeft = outloopAddrPtrLeft & (~0b11);
 				}
-				else if(bytewidth==2){
+				else if (bytewidth == 2)
+				{
 					outloopAddrPtrLeft = outloopAddrPtrLeft & (~0b1);
 				}
 
 				node->setoutloopAddr(outloopAddrPtrLeft);
 				outs() << "NodeIdx:" << node->getIdx() << ",bytewidth=" << bytewidth << ",addr=" << outloopAddrPtrLeft << "\n";
 			}
-			else if(node->getMappedLoc()->getY()>=2){
-				outloopAddrPtrRight = outloopAddrPtrRight-bytewidth;
+			else if (node->getMappedLoc()->getY() >= 2)
+			{
+				outloopAddrPtrRight = outloopAddrPtrRight - bytewidth;
 
-				if(bytewidth==4){
+				if (bytewidth == 4)
+				{
 					outloopAddrPtrRight = outloopAddrPtrRight & (~0b11);
 				}
-				else if(bytewidth==2){
+				else if (bytewidth == 2)
+				{
 					outloopAddrPtrRight = outloopAddrPtrRight & (~0b1);
 				}
 
 				node->setoutloopAddr(outloopAddrPtrRight);
 				outs() << "NodeIdx:" << node->getIdx() << ",bytewidth=" << bytewidth << ",addr=" << outloopAddrPtrRight << "\n";
 			}
-			else{
+			else
+			{
 				assert(false);
 			}
-
 		}
 	}
 }
 
-int DFG::phiselectInsert() {
-
+int DFG::phiselectInsert()
+{
 }
 
-int DFG::PlaceMacro(DFG* mappedDFG, int XDim, int YDim, ArchType arch) {
-	if(this->currCGRA!=NULL){
+int DFG::PlaceMacro(DFG *mappedDFG, int XDim, int YDim, ArchType arch)
+{
+	if (this->currCGRA != NULL)
+	{
 		assert(this->currCGRA->getMapped() == false);
 	}
-	int II=0; //this will be one inititally once it gets into the following while loop
-	bool macroPlaceSuccess=false;
+	int II = 0; //this will be one inititally once it gets into the following while loop
+	bool macroPlaceSuccess = false;
 
-	while(macroPlaceSuccess==false){
+	while (macroPlaceSuccess == false)
+	{
 		II++;
 		delete currCGRA;
-		currCGRA = new CGRA(II,XDim,YDim,REGS_PER_NODE,arch);
+		currCGRA = new CGRA(II, XDim, YDim, REGS_PER_NODE, arch);
 		macroPlaceSuccess = currCGRA->PlaceMacro(mappedDFG);
 	}
 
 	return II;
 }
 
-int DFG::classifyParents() {
-	dfgNode* node;
-	for (int i = 0; i < NodeList.size(); ++i) {
+int DFG::classifyParents()
+{
+	dfgNode *node;
+	for (int i = 0; i < NodeList.size(); ++i)
+	{
 		node = NodeList[i];
 
 		outs() << "classifyParent::currentNode = " << node->getIdx() << "\n";
 		outs() << "Parents : ";
-		for (dfgNode* parent : node->getAncestors()) {
+		for (dfgNode *parent : node->getAncestors())
+		{
 			outs() << parent->getIdx() << ",";
 		}
 		outs() << "\n";
 
-			for (dfgNode* parent : node->getAncestors()) {
-				Instruction* ins;
-				Value* parentIns;
+		for (dfgNode *parent : node->getAncestors())
+		{
+			Instruction *ins;
+			Value *parentIns;
 
-
-
-				if(node->getNode()!=NULL){
-					ins=node->getNode();
+			if (node->getNode() != NULL)
+			{
+				ins = node->getNode();
+			}
+			else
+			{
+				if (node->getNameType().compare("XORNOT") == 0)
+				{
+					assert(node->parentClassification.find(1) == node->parentClassification.end());
+					node->parentClassification[1] = parent;
+					continue;
 				}
-				else{
-					if(node->getNameType().compare("XORNOT")==0){
-						assert(node->parentClassification.find(1) == node->parentClassification.end());
-						node->parentClassification[1]=parent;
-						continue;
+				if (node->getNameType().compare("ORZERO") == 0)
+				{
+					assert(node->parentClassification.find(1) == node->parentClassification.end());
+					node->parentClassification[1] = parent;
+					continue;
+				}
+				if (node->getNameType().compare("GEPLEFTSHIFT") == 0)
+				{
+					if (parent->getNode() != NULL)
+					{
+						parentIns = parent->getNode();
+						if (BranchInst *BRI = dyn_cast<BranchInst>(parentIns))
+						{
+							node->parentClassification[0] = parent;
+							continue;
+						}
+						else if (CmpInst *CMPI = dyn_cast<CmpInst>(parentIns))
+						{
+							node->parentClassification[0] = parent;
+							continue;
+						}
 					}
-					if(node->getNameType().compare("ORZERO")==0){
-						assert(node->parentClassification.find(1) == node->parentClassification.end());
-						node->parentClassification[1]=parent;
-						continue;
+					assert(node->parentClassification.find(1) == node->parentClassification.end());
+					node->parentClassification[1] = parent;
+					continue;
+				}
+				if (node->getNameType().compare("MASKAND") == 0)
+				{
+					assert(node->parentClassification.find(1) == node->parentClassification.end());
+					node->parentClassification[1] = parent;
+					continue;
+				}
+				if (node->getNameType().compare("PREDAND") == 0)
+				{
+					assert(node->parentClassification.find(1) == node->parentClassification.end());
+					node->parentClassification[1] = parent;
+					continue;
+				}
+				if (node->getNameType().compare("CTRLBrOR") == 0)
+				{
+					if (node->parentClassification.find(1) == node->parentClassification.end())
+					{
+						node->parentClassification[1] = parent;
 					}
-					if(node->getNameType().compare("GEPLEFTSHIFT")==0){
-						if(parent->getNode()!=NULL){
-							parentIns = parent->getNode();
-							if(BranchInst* BRI = dyn_cast<BranchInst>(parentIns)){
-								node->parentClassification[0]=parent;
-								continue;
-							}
-							else if(CmpInst * CMPI = dyn_cast<CmpInst>(parentIns)){
-								node->parentClassification[0]=parent;
-								continue;
-							}
-						}
-						assert(node->parentClassification.find(1) == node->parentClassification.end());
-						node->parentClassification[1]=parent;
-						continue;
+					else
+					{
+						assert(node->parentClassification.find(2) == node->parentClassification.end());
+						node->parentClassification[2] = parent;
 					}
-					if(node->getNameType().compare("MASKAND")==0){
-						assert(node->parentClassification.find(1) == node->parentClassification.end());
-						node->parentClassification[1]=parent;
-						continue;
+					continue;
+				}
+				if (node->getNameType().compare("GEPADD") == 0)
+				{
+					if (node->parentClassification.find(1) == node->parentClassification.end())
+					{
+						node->parentClassification[1] = parent;
 					}
-					if(node->getNameType().compare("PREDAND")==0){
-						assert(node->parentClassification.find(1) == node->parentClassification.end());
-						node->parentClassification[1]=parent;
-						continue;
+					else
+					{
+						assert(node->parentClassification.find(2) == node->parentClassification.end());
+						node->parentClassification[2] = parent;
 					}
-					if(node->getNameType().compare("CTRLBrOR")==0){
-						if(node->parentClassification.find(1) == node->parentClassification.end()){
-							node->parentClassification[1]=parent;
-						}
-						else{
-							assert(node->parentClassification.find(2) == node->parentClassification.end());
-							node->parentClassification[2]=parent;
-						}
-						continue;
+					continue;
+				}
+				if (node->getNameType().compare("STORESTART") == 0)
+				{
+					assert(parent->getNode() == NULL);
+					if (parent->getNameType().compare("MOVC") == 0)
+					{
+						node->parentClassification[1] = parent;
 					}
-					if(node->getNameType().compare("GEPADD")==0){
-						if(node->parentClassification.find(1) == node->parentClassification.end()){
-							node->parentClassification[1]=parent;
-						}
-						else{
-							assert(node->parentClassification.find(2) == node->parentClassification.end());
-							node->parentClassification[2]=parent;
-						}
-						continue;
+					else if (parent->getNameType().compare("LOOPSTART") == 0)
+					{
+						node->parentClassification[0] = parent;
 					}
-					if(node->getNameType().compare("STORESTART")==0){
-						assert(parent->getNode()==NULL);
-						if(parent->getNameType().compare("MOVC") == 0){
-							node->parentClassification[1]=parent;
+					else if (parent->getNameType().compare("PREDAND") == 0)
+					{
+						node->parentClassification[0] = parent;
+					}
+					else
+					{
+						assert(false);
+					}
+					continue;
+				}
+				if (node->getNameType().compare("LOOPEXIT") == 0)
+				{
+					if (parent->getNode() == NULL)
+					{
+						if (parent->getNameType().compare("MOVC") == 0)
+						{
+							assert(node->parentClassification.find(1) == node->parentClassification.end());
+							node->parentClassification[1] = parent;
 						}
-						else if(parent->getNameType().compare("LOOPSTART") == 0){
-							node->parentClassification[0]=parent;
+						else if (parent->getNameType().compare("CTRLBrOR") == 0)
+						{
+							assert(node->parentClassification.find(0) == node->parentClassification.end());
+							node->parentClassification[0] = parent;
 						}
-						else if(parent->getNameType().compare("PREDAND") == 0){
-							node->parentClassification[0]=parent;
-						}
-						else{
+						else
+						{
 							assert(false);
 						}
-						continue;
 					}
-					if(node->getNameType().compare("LOOPEXIT")==0){
-						if(parent->getNode()==NULL){
-							if(parent->getNameType().compare("MOVC") == 0){
-								assert(node->parentClassification.find(1) == node->parentClassification.end());
-								node->parentClassification[1]=parent;
-							}
-							else if(parent->getNameType().compare("CTRLBrOR") == 0){
-								assert(node->parentClassification.find(0) == node->parentClassification.end());
-								node->parentClassification[0]=parent;
-							}
-							else{
-								assert(false);
-							}
-						}
-						else{
-							assert(node->parentClassification.find(0) == node->parentClassification.end());
-							node->parentClassification[0]=parent;
-						}
-						continue;
+					else
+					{
+						assert(node->parentClassification.find(0) == node->parentClassification.end());
+						node->parentClassification[0] = parent;
 					}
-					if(node->getNameType().compare("OutLoopLOAD")==0){
-						//do nothing
-						continue;
-					}
-					if(node->getNameType().compare("OutLoopSTORE")==0){
-						assert(node->hasConstantVal());
-
-						//check for predicate parent
-						if(parent->getNode()!=NULL){
-							parentIns = parent->getNode();
-							if(BranchInst* BRI = dyn_cast<BranchInst>(parentIns)){
-								node->parentClassification[0]=parent;
-								continue;
-							}
-							else if(CmpInst * CMPI = dyn_cast<CmpInst>(parentIns)){
-								node->parentClassification[0]=parent;
-								continue;
-							}
-						}
-						else{
-							if(parent->getNameType().compare("CTRLBrOR")==0){
-								node->parentClassification[0]=parent;
-								continue;
-							}
-						}
-
-						//if it comes to this, it has to be a data parent.
-						node->parentClassification[1]=parent;
-						continue;
-					}
-					if(node->getNameType().compare("CMERGE")==0){
-
-						Value* parentIns = NULL;
-						if(parent->getNameType().compare("OutLoopLOAD")==0){
-							parentIns = OutLoopNodeMapReverse[parent];
-						}
-						else{
-							parentIns = parent->getNode();
-						}
-
-						assert(node->getChildren().size()==1);
-						dfgNode* cmergeChild = node->getChildren()[0];
-						assert(cmergeChild->getNode() != NULL);
-						Instruction* condIns;
-						if(SelectInst* SLI = dyn_cast<SelectInst>(cmergeChild->getNode()) ){
-							condIns = dyn_cast<Instruction>(SLI->getCondition());
-							assert(condIns);
-						}
-
-						if(parentIns!=NULL){
-							if((dyn_cast<BranchInst>(parentIns)) || (dyn_cast<CmpInst>(parentIns)) ){
-								assert(node->parentClassification.find(0)==node->parentClassification.end());
-								node->parentClassification[0]=parent;
-							}
-							else if(parentIns==condIns){
-								assert(node->parentClassification.find(0)==node->parentClassification.end());
-								node->parentClassification[0]=parent;
-							}
-							else{
-								if(node->parentClassification.find(1)!=node->parentClassification.end()){
-									parentIns->dump();
-								}
-								assert(node->parentClassification.find(1)==node->parentClassification.end());
-								node->parentClassification[1]=parent;
-							}
-						}
-						else{
-							if((parent->getNameType().compare("XORNOT")==0)){
-								assert(node->parentClassification.find(0)==node->parentClassification.end());
-								node->parentClassification[0]=parent;
-							}
-							else if((parent->getNameType().compare("ORZERO")==0)){
-								assert(node->parentClassification.find(0)==node->parentClassification.end());
-								node->parentClassification[0]=parent;
-							}
-							else if(parent->getNameType().compare("LOOPSTART")==0){
-								assert(node->parentClassification.find(0)==node->parentClassification.end());
-								node->parentClassification[0]=parent;
-								node->setNPB(true);
-							}
-							else if(parent->getNameType().compare("PREDAND")==0){
-								assert(node->parentClassification.find(0)==node->parentClassification.end());
-								node->parentClassification[0]=parent;
-								node->setNPB(true);
-							}
-							else{
-								outs() << "Parent :" << parent->getIdx() << ", classified as I1\n";
-								assert(node->parentClassification.find(1)==node->parentClassification.end());
-								node->parentClassification[1]=parent;
-							}
-						}
-
-
-//						if(node->parentClassification.find(1) == node->parentClassification.end()){
-//							node->parentClassification[1]=parent;
-//						}
-//						else{
-//							assert(node->parentClassification.find(2) == node->parentClassification.end());
-//							node->parentClassification[2]=parent;
-//						}
-						continue;
-					}
+					continue;
 				}
+				if (node->getNameType().compare("OutLoopLOAD") == 0)
+				{
+					//do nothing
+					continue;
+				}
+				if (node->getNameType().compare("OutLoopSTORE") == 0)
+				{
+					assert(node->hasConstantVal());
 
-
-				if(dyn_cast<PHINode>(ins) || dyn_cast<SelectInst>(ins) ){
-					if(parent->getNode() != NULL) parent->getNode()->dump();
-					outs() << "node : " << node->getIdx() << "\n";
-					outs() << "Parent : " << parent->getIdx() << "\n";
-					outs() << "Parent NameType : " << parent->getNameType() << "\n";
-
-					if(parent->getNode()){
-						if(dyn_cast<BranchInst>(parent->getNode())){
-							node->parentClassification[0]=parent;
+					//check for predicate parent
+					if (parent->getNode() != NULL)
+					{
+						parentIns = parent->getNode();
+						if (BranchInst *BRI = dyn_cast<BranchInst>(parentIns))
+						{
+							node->parentClassification[0] = parent;
+							continue;
+						}
+						else if (CmpInst *CMPI = dyn_cast<CmpInst>(parentIns))
+						{
+							node->parentClassification[0] = parent;
+							continue;
+						}
+					}
+					else
+					{
+						if (parent->getNameType().compare("CTRLBrOR") == 0)
+						{
+							node->parentClassification[0] = parent;
 							continue;
 						}
 					}
 
-					assert(parent->getNameType().compare("CMERGE")==0);
-					if(node->parentClassification.find(1) == node->parentClassification.end()){
-						node->parentClassification[1]=parent;
-					}
-					else if(node->parentClassification.find(2) == node->parentClassification.end()){
-//						assert(node->parentClassification.find(2) == node->parentClassification.end());
-						node->parentClassification[2]=parent;
-					}
-					else{
-						outs() << "Extra parent : " << parent->getIdx() << ",Nametype = " << parent->getNameType() << ",par_idx = " << node->parentClassification.size()+1 << "\n";
-						node->parentClassification[node->parentClassification.size()+1]=parent;
-					}
+					//if it comes to this, it has to be a data parent.
+					node->parentClassification[1] = parent;
 					continue;
 				}
+				if (node->getNameType().compare("CMERGE") == 0)
+				{
 
-				if(dyn_cast<BranchInst>(ins)){
-					if(node->parentClassification.find(1) == node->parentClassification.end()){
-						node->parentClassification[1]=parent;
-					}
-					else{
-						assert(node->parentClassification.find(2) == node->parentClassification.end());
-						node->parentClassification[2]=parent;
-					}
-					continue;
-				}
-
-				if(parent->getNode()!=NULL){
-					parentIns = parent->getNode();
-					if(BranchInst* BRI = dyn_cast<BranchInst>(parentIns)){
-						node->parentClassification[0]=parent;
-						continue;
-					}
-//					else if(CmpInst * CMPI = dyn_cast<CmpInst>(parentIns)){
-//						node->parentClassification[0]=parent;
-//						continue;
-//					}
-				}
-				else{
-					if(parent->getNameType().compare("CTRLBrOR")==0){
-						node->parentClassification[0]=parent;
-						continue;
-					}
-					if(parent->getNameType().compare("PREDAND")==0){
-						node->parentClassification[0]=parent;
-						continue;
-					}
-//					if(parent->getNameType().compare("GEPLEFTSHIFT")==0){
-//						assert(node->parentClassification.find(1)==node->parentClassification.end());
-//						node->parentClassification[1]=parent;
-//						continue;
-//					}
-					if(parent->getNameType().compare("GEPLEFTSHIFT")==0){
-						assert(parent->getAncestors().size()<3);
-						node->parentClassification[1]=parent;
-						continue;
-					}
-					if(parent->getNameType().compare("MASKAND")==0){
-						assert(parent->getAncestors().size()==1);
-						parentIns = parent->getAncestors()[0]->getNode();
-					}
-					if(parent->getNameType().compare("OutLoopLOAD")==0){
+					Value *parentIns = NULL;
+					if (parent->getNameType().compare("OutLoopLOAD") == 0)
+					{
 						parentIns = OutLoopNodeMapReverse[parent];
 					}
-					if(parent->getNameType().compare("CMERGE")==0){
-						if(node->parentClassification.find(1) == node->parentClassification.end()){
-							node->parentClassification[1]=parent;
+					else
+					{
+						parentIns = parent->getNode();
+					}
+
+					assert(node->getChildren().size() == 1);
+					dfgNode *cmergeChild = node->getChildren()[0];
+					assert(cmergeChild->getNode() != NULL);
+					Instruction *condIns;
+					if (SelectInst *SLI = dyn_cast<SelectInst>(cmergeChild->getNode()))
+					{
+						condIns = dyn_cast<Instruction>(SLI->getCondition());
+						assert(condIns);
+					}
+
+					if (parentIns != NULL)
+					{
+						if ((dyn_cast<BranchInst>(parentIns)) || (dyn_cast<CmpInst>(parentIns)))
+						{
+							assert(node->parentClassification.find(0) == node->parentClassification.end());
+							node->parentClassification[0] = parent;
 						}
-						else if(node->parentClassification.find(2) == node->parentClassification.end()){
-	//						assert(node->parentClassification.find(2) == node->parentClassification.end());
-							node->parentClassification[2]=parent;
+						else if (parentIns == condIns)
+						{
+							assert(node->parentClassification.find(0) == node->parentClassification.end());
+							node->parentClassification[0] = parent;
 						}
-						else{
-							outs() << "Extra parent : " << parent->getIdx() << ",Nametype = " << parent->getNameType() << ",par_idx = " << node->parentClassification.size()+1 << "\n";
-							node->parentClassification[node->parentClassification.size()+1]=parent;
+						else
+						{
+							if (node->parentClassification.find(1) != node->parentClassification.end())
+							{
+								parentIns->dump();
+							}
+							assert(node->parentClassification.find(1) == node->parentClassification.end());
+							node->parentClassification[1] = parent;
 						}
+					}
+					else
+					{
+						if ((parent->getNameType().compare("XORNOT") == 0))
+						{
+							assert(node->parentClassification.find(0) == node->parentClassification.end());
+							node->parentClassification[0] = parent;
+						}
+						else if ((parent->getNameType().compare("ORZERO") == 0))
+						{
+							assert(node->parentClassification.find(0) == node->parentClassification.end());
+							node->parentClassification[0] = parent;
+						}
+						else if (parent->getNameType().compare("LOOPSTART") == 0)
+						{
+							assert(node->parentClassification.find(0) == node->parentClassification.end());
+							node->parentClassification[0] = parent;
+							node->setNPB(true);
+						}
+						else if (parent->getNameType().compare("PREDAND") == 0)
+						{
+							assert(node->parentClassification.find(0) == node->parentClassification.end());
+							node->parentClassification[0] = parent;
+							node->setNPB(true);
+						}
+						else
+						{
+							outs() << "Parent :" << parent->getIdx() << ", classified as I1\n";
+							assert(node->parentClassification.find(1) == node->parentClassification.end());
+							node->parentClassification[1] = parent;
+						}
+					}
+
+					//						if(node->parentClassification.find(1) == node->parentClassification.end()){
+					//							node->parentClassification[1]=parent;
+					//						}
+					//						else{
+					//							assert(node->parentClassification.find(2) == node->parentClassification.end());
+					//							node->parentClassification[2]=parent;
+					//						}
+					continue;
+				}
+			}
+
+			if (dyn_cast<PHINode>(ins) || dyn_cast<SelectInst>(ins))
+			{
+				if (parent->getNode() != NULL)
+					parent->getNode()->dump();
+				outs() << "node : " << node->getIdx() << "\n";
+				outs() << "Parent : " << parent->getIdx() << "\n";
+				outs() << "Parent NameType : " << parent->getNameType() << "\n";
+
+				if (parent->getNode())
+				{
+					if (dyn_cast<BranchInst>(parent->getNode()))
+					{
+						node->parentClassification[0] = parent;
 						continue;
 					}
 				}
-				//Only ins!=NULL and non-PHI and non-BR will reach here
-				node->parentClassification[findOperandNumber(node, ins,parentIns)]=parent;
+
+				assert(parent->getNameType().compare("CMERGE") == 0);
+				if (node->parentClassification.find(1) == node->parentClassification.end())
+				{
+					node->parentClassification[1] = parent;
+				}
+				else if (node->parentClassification.find(2) == node->parentClassification.end())
+				{
+					//						assert(node->parentClassification.find(2) == node->parentClassification.end());
+					node->parentClassification[2] = parent;
+				}
+				else
+				{
+					outs() << "Extra parent : " << parent->getIdx() << ",Nametype = " << parent->getNameType() << ",par_idx = " << node->parentClassification.size() + 1 << "\n";
+					node->parentClassification[node->parentClassification.size() + 1] = parent;
+				}
+				continue;
+			}
+
+			if (dyn_cast<BranchInst>(ins))
+			{
+				if (node->parentClassification.find(1) == node->parentClassification.end())
+				{
+					node->parentClassification[1] = parent;
+				}
+				else
+				{
+					assert(node->parentClassification.find(2) == node->parentClassification.end());
+					node->parentClassification[2] = parent;
+				}
+				continue;
+			}
+
+			if (parent->getNode() != NULL)
+			{
+				parentIns = parent->getNode();
+				if (BranchInst *BRI = dyn_cast<BranchInst>(parentIns))
+				{
+					node->parentClassification[0] = parent;
+					continue;
+				}
+				//					else if(CmpInst * CMPI = dyn_cast<CmpInst>(parentIns)){
+				//						node->parentClassification[0]=parent;
+				//						continue;
+				//					}
+			}
+			else
+			{
+				if (parent->getNameType().compare("CTRLBrOR") == 0)
+				{
+					node->parentClassification[0] = parent;
+					continue;
+				}
+				if (parent->getNameType().compare("PREDAND") == 0)
+				{
+					node->parentClassification[0] = parent;
+					continue;
+				}
+				//					if(parent->getNameType().compare("GEPLEFTSHIFT")==0){
+				//						assert(node->parentClassification.find(1)==node->parentClassification.end());
+				//						node->parentClassification[1]=parent;
+				//						continue;
+				//					}
+				if (parent->getNameType().compare("GEPLEFTSHIFT") == 0)
+				{
+					assert(parent->getAncestors().size() < 3);
+					node->parentClassification[1] = parent;
+					continue;
+				}
+				if (parent->getNameType().compare("MASKAND") == 0)
+				{
+					assert(parent->getAncestors().size() == 1);
+					parentIns = parent->getAncestors()[0]->getNode();
+				}
+				if (parent->getNameType().compare("OutLoopLOAD") == 0)
+				{
+					parentIns = OutLoopNodeMapReverse[parent];
+				}
+				if (parent->getNameType().compare("CMERGE") == 0)
+				{
+					if (node->parentClassification.find(1) == node->parentClassification.end())
+					{
+						node->parentClassification[1] = parent;
+					}
+					else if (node->parentClassification.find(2) == node->parentClassification.end())
+					{
+						//						assert(node->parentClassification.find(2) == node->parentClassification.end());
+						node->parentClassification[2] = parent;
+					}
+					else
+					{
+						outs() << "Extra parent : " << parent->getIdx() << ",Nametype = " << parent->getNameType() << ",par_idx = " << node->parentClassification.size() + 1 << "\n";
+						node->parentClassification[node->parentClassification.size() + 1] = parent;
+					}
+					continue;
+				}
+			}
+			//Only ins!=NULL and non-PHI and non-BR will reach here
+			node->parentClassification[findOperandNumber(node, ins, parentIns)] = parent;
 		}
 	}
 }
 
-int DFG::findOperandNumber(dfgNode* node, Instruction* child, Value* parent) {
-//	parent->dump();
-//	child->dump();
+int DFG::findOperandNumber(dfgNode *node, Instruction *child, Value *parent)
+{
+	//	parent->dump();
+	//	child->dump();
 
-	if(LoadInst* LDI = dyn_cast<LoadInst>(child)){
+	if (LoadInst *LDI = dyn_cast<LoadInst>(child))
+	{
 		assert(parent == LDI->getPointerOperand());
 		return 2;
 	}
-	else if(StoreInst* STI = dyn_cast<StoreInst>(child)){
-		if(parent == STI->getPointerOperand()){
+	else if (StoreInst *STI = dyn_cast<StoreInst>(child))
+	{
+		if (parent == STI->getPointerOperand())
+		{
 			return 2;
 		}
-		else if(parent == STI->getValueOperand()){
+		else if (parent == STI->getValueOperand())
+		{
 			return 1;
 		}
-		else{
+		else
+		{
 			return 0;
 		}
 	}
-	else if(GetElementPtrInst* GEP = dyn_cast<GetElementPtrInst>(child)){
-		if(node->getAncestors().size() > 1){
-			outs() << "node :"; child->dump();
-			for(dfgNode* parentNode : node->getAncestors()){
-				if(parentNode->getNode()){
-					outs() << "parent :"; parentNode->getNode()->dump();
+	else if (GetElementPtrInst *GEP = dyn_cast<GetElementPtrInst>(child))
+	{
+		if (node->getAncestors().size() > 1)
+		{
+			outs() << "node :";
+			child->dump();
+			for (dfgNode *parentNode : node->getAncestors())
+			{
+				if (parentNode->getNode())
+				{
+					outs() << "parent :";
+					parentNode->getNode()->dump();
 				}
-				else{
+				else
+				{
 					outs() << "parent :" << parentNode->getDFSIdx() << "," << parentNode->getNameType() << "\n";
 				}
 			}
 
-			for (int i = 0; i < child->getNumOperands(); ++i) {
+			for (int i = 0; i < child->getNumOperands(); ++i)
+			{
 				child->getOperand(i)->dump();
-				if(child->getOperand(i) == parent){
-					return i+1;
+				if (child->getOperand(i) == parent)
+				{
+					return i + 1;
 				}
 			}
 		}
@@ -7681,83 +8572,108 @@ int DFG::findOperandNumber(dfgNode* node, Instruction* child, Value* parent) {
 		assert(node->getAncestors().size() == 1);
 		return 1;
 	}
-	else{
-		if(child->getNumOperands()==3){
-			for (int i = 0; i < 3; ++i) {
-				if(Value* chkIns = (child->getOperand(i))){
-					if(parent == chkIns){
+	else
+	{
+		if (child->getNumOperands() == 3)
+		{
+			for (int i = 0; i < 3; ++i)
+			{
+				if (Value *chkIns = (child->getOperand(i)))
+				{
+					if (parent == chkIns)
+					{
 						return i;
 					}
 				}
-				else{
-//					outs() << "child :\n";
+				else
+				{
+					//					outs() << "child :\n";
 					child->dump();
-//					outs() << "parent :\n";
+					//					outs() << "parent :\n";
 					parent->dump();
-//					outs() << child->getOperand(i)->getName() << "\n";
-					assert(i!=0);
-					ConstantInt* CI = cast<ConstantInt>(child->getOperand(i));
-					if(i==1){
-						assert(parent==(child->getOperand(2)));
+					//					outs() << child->getOperand(i)->getName() << "\n";
+					assert(i != 0);
+					ConstantInt *CI = cast<ConstantInt>(child->getOperand(i));
+					if (i == 1)
+					{
+						assert(parent == (child->getOperand(2)));
 						return 2;
 					}
-					else{ // i==2
-						assert(parent==(child->getOperand(1)));
+					else
+					{ // i==2
+						assert(parent == (child->getOperand(1)));
 						return 1;
 					}
 				}
 			}
 		}
-		else if(child->getNumOperands()==2){
-			for (int i = 0; i < 2; ++i) {
-				if(Value* chkIns = (child->getOperand(i))){
-					if(parent == chkIns){
-						return i+1;
+		else if (child->getNumOperands() == 2)
+		{
+			for (int i = 0; i < 2; ++i)
+			{
+				if (Value *chkIns = (child->getOperand(i)))
+				{
+					if (parent == chkIns)
+					{
+						return i + 1;
 					}
 				}
-				else{
-//					ConstantInt* CI = cast<ConstantInt>(child->getOperand(i));
-//					assert(node->hasConstantVal());
-					if(i==0){
-						assert(parent==(child->getOperand(1)));
+				else
+				{
+					//					ConstantInt* CI = cast<ConstantInt>(child->getOperand(i));
+					//					assert(node->hasConstantVal());
+					if (i == 0)
+					{
+						assert(parent == (child->getOperand(1)));
 						return 1;
 					}
-					else{ // i==1
-						assert(parent==(child->getOperand(0)));
+					else
+					{ // i==1
+						assert(parent == (child->getOperand(0)));
 						return 0;
 					}
 				}
 			}
 		}
-		else if(child->getNumOperands()==1){
-			assert(parent==(child->getOperand(0)) );
+		else if (child->getNumOperands() == 1)
+		{
+			assert(parent == (child->getOperand(0)));
 			return 1;
 		}
-		else{
+		else
+		{
 			assert(false);
 		}
 	}
 }
 
-int DFG::treatFalsePaths() {
-	dfgNode* node;
+int DFG::treatFalsePaths()
+{
+	dfgNode *node;
 	int NOTsadded = 0;
-	for(int i = 0 ; i < NodeList.size() ; i++){
+	for (int i = 0; i < NodeList.size(); i++)
+	{
 		node = NodeList[i];
-		for(dfgNode* parent : node->getAncestors()){
-			if(parent->getNode()!=NULL){
-				if(BranchInst* BRI = dyn_cast<BranchInst>(parent->getNode())){
-					if(node->getNameType().compare("CTRLBrOR")==0){
-						if(BRI->isConditional()){
-							if(node->BB == BRI->getSuccessor(1)){
+		for (dfgNode *parent : node->getAncestors())
+		{
+			if (parent->getNode() != NULL)
+			{
+				if (BranchInst *BRI = dyn_cast<BranchInst>(parent->getNode()))
+				{
+					if (node->getNameType().compare("CTRLBrOR") == 0)
+					{
+						if (BRI->isConditional())
+						{
+							if (node->BB == BRI->getSuccessor(1))
+							{
 								parent->removeChild(node);
 								node->removeAncestor(parent);
-								removeEdge(findEdge(parent,node));
+								removeEdge(findEdge(parent, node));
 
-								dfgNode* temp = new dfgNode(this);
+								dfgNode *temp = new dfgNode(this);
 								temp->setNameType("XORNOT");
 								temp->setIdx(NodeList.size());
-								temp->BB=node->BB;
+								temp->BB = node->BB;
 								NodeList.push_back(temp);
 
 								parent->addChildNode(temp);
@@ -7769,9 +8685,12 @@ int DFG::treatFalsePaths() {
 							}
 						}
 					}
-					else{
-						if(BRI->isConditional()){
-							if(node->BB == BRI->getSuccessor(1)){
+					else
+					{
+						if (BRI->isConditional())
+						{
+							if (node->BB == BRI->getSuccessor(1))
+							{
 								node->setNPB(true);
 							}
 						}
@@ -7784,38 +8703,50 @@ int DFG::treatFalsePaths() {
 	return 0;
 }
 
-int DFG::insertshiftGEPs() {
+int DFG::insertshiftGEPs()
+{
 	outs() << "insertshiftGEPs started!\n";
-	dfgNode* node;
-	for (int i = 0; i < NodeList.size(); ++i) {
+	dfgNode *node;
+	for (int i = 0; i < NodeList.size(); ++i)
+	{
 		node = NodeList[i];
 
-		if(node->getNode()!=NULL){
-			if(GetElementPtrInst* GEP = dyn_cast<GetElementPtrInst>(node->getNode())){
+		if (node->getNode() != NULL)
+		{
+			if (GetElementPtrInst *GEP = dyn_cast<GetElementPtrInst>(node->getNode()))
+			{
 
 				int elementSize = 0;
 				GEP->dump();
-				for (dfgNode* child : node->getChildren()) {
-					if(child->getNode()!=NULL){
-						if(child->getNode()->mayReadOrWriteMemory()){
-							elementSize = child->getTypeSizeBytes()/4;
-							outs() << "GEP element size = " << child->getTypeSizeBytes()/4 << "\n";
+				for (dfgNode *child : node->getChildren())
+				{
+					if (child->getNode() != NULL)
+					{
+						if (child->getNode()->mayReadOrWriteMemory())
+						{
+							elementSize = child->getTypeSizeBytes() / 4;
+							outs() << "GEP element size = " << child->getTypeSizeBytes() / 4 << "\n";
 							break;
 						}
 					}
 				}
 
-				std::set<dfgNode*> non_control_parents;
-				for (dfgNode* parent : node->getAncestors()){
-					if(parent->getNameType() == "CTRLBrOR"){
+				std::set<dfgNode *> non_control_parents;
+				for (dfgNode *parent : node->getAncestors())
+				{
+					if (parent->getNameType() == "CTRLBrOR")
+					{
 						continue;
 					}
-					else if(parent->getNode()!=NULL){
-						Instruction* parentIns = parent->getNode();
-						if(BranchInst* BRI = dyn_cast<BranchInst>(parentIns)){
+					else if (parent->getNode() != NULL)
+					{
+						Instruction *parentIns = parent->getNode();
+						if (BranchInst *BRI = dyn_cast<BranchInst>(parentIns))
+						{
 							continue;
 						}
-						else if(CmpInst * CMPI = dyn_cast<CmpInst>(parentIns)){
+						else if (CmpInst *CMPI = dyn_cast<CmpInst>(parentIns))
+						{
 							continue;
 						}
 					}
@@ -7823,29 +8754,32 @@ int DFG::insertshiftGEPs() {
 				}
 				assert(non_control_parents.size() <= 2);
 
-				if(non_control_parents.size() == 2){
-					dfgNode* tempADD = new dfgNode(this);
+				if (non_control_parents.size() == 2)
+				{
+					dfgNode *tempADD = new dfgNode(this);
 					tempADD->setNameType("GEPADD");
 					tempADD->setIdx(NodeList.size());
 					NodeList.push_back(tempADD);
 					tempADD->BB = node->BB;
 
-					for(dfgNode* parent : non_control_parents){
+					for (dfgNode *parent : non_control_parents)
+					{
 						parent->removeChild(node);
 						node->removeAncestor(parent);
-						removeEdge(findEdge(parent,node));
+						removeEdge(findEdge(parent, node));
 
 						parent->addChildNode(tempADD);
 						tempADD->addAncestorNode(parent);
 					}
 
-					if(elementSize > 1){
-						dfgNode* temp = new dfgNode(this);
+					if (elementSize > 1)
+					{
+						dfgNode *temp = new dfgNode(this);
 						temp->setNameType("GEPLEFTSHIFT");
 						temp->setIdx(NodeList.size());
 						NodeList.push_back(temp);
 						temp->setConstantVal(Log2_32(elementSize));
-						temp->BB=node->BB;
+						temp->BB = node->BB;
 
 						tempADD->addChildNode(temp);
 						temp->addAncestorNode(tempADD);
@@ -7854,20 +8788,23 @@ int DFG::insertshiftGEPs() {
 						node->addAncestorNode(temp);
 					}
 				}
-				else{
+				else
+				{
 					assert(non_control_parents.size() == 1);
-					if(elementSize > 1){
-						dfgNode* temp = new dfgNode(this);
+					if (elementSize > 1)
+					{
+						dfgNode *temp = new dfgNode(this);
 						temp->setNameType("GEPLEFTSHIFT");
 						temp->setIdx(NodeList.size());
 						NodeList.push_back(temp);
 						temp->setConstantVal(Log2_32(elementSize));
-						temp->BB=node->BB;
+						temp->BB = node->BB;
 
-						for (dfgNode* parent : node->getAncestors()){
+						for (dfgNode *parent : node->getAncestors())
+						{
 							parent->removeChild(node);
 							node->removeAncestor(parent);
-							removeEdge(findEdge(parent,node));
+							removeEdge(findEdge(parent, node));
 
 							parent->addChildNode(temp);
 							temp->addAncestorNode(parent);
@@ -7876,113 +8813,127 @@ int DFG::insertshiftGEPs() {
 						node->addAncestorNode(temp);
 					}
 				}
-
 			}
 		}
 	}
 	outs() << "insertshiftGEPs ended!\n";
 }
 
-int DFG::partitionMemNodes() {
-	dfgNode* node;
-	std::map<Value*,std::vector<dfgNode*>> pointerMemInsMap;
-	std::vector<Value*> pointerOperandVec;
+int DFG::partitionMemNodes()
+{
+	dfgNode *node;
+	std::map<Value *, std::vector<dfgNode *>> pointerMemInsMap;
+	std::vector<Value *> pointerOperandVec;
 
-	for (int i = 0; i < NodeList.size(); ++i) {
+	for (int i = 0; i < NodeList.size(); ++i)
+	{
 		node = NodeList[i];
-		if(node->getNode()!=NULL){
-			if(LoadInst* LDI = dyn_cast<LoadInst>(node->getNode())){
+		if (node->getNode() != NULL)
+		{
+			if (LoadInst *LDI = dyn_cast<LoadInst>(node->getNode()))
+			{
 
-				if(GetElementPtrInst* GEP = dyn_cast<GetElementPtrInst>(LDI->getPointerOperand())){
-//					GetElementPtrInst* GEP = cast<GetElementPtrInst>(LDI->getPointerOperand());
+				if (GetElementPtrInst *GEP = dyn_cast<GetElementPtrInst>(LDI->getPointerOperand()))
+				{
+					//					GetElementPtrInst* GEP = cast<GetElementPtrInst>(LDI->getPointerOperand());
 					pointerMemInsMap[GEP->getPointerOperand()].push_back(node);
 				}
-				else{
+				else
+				{
 					pointerMemInsMap[LDI->getPointerOperand()].push_back(node);
 				}
-
 			}
 
-			if(StoreInst* STI = dyn_cast<StoreInst>(node->getNode())){
+			if (StoreInst *STI = dyn_cast<StoreInst>(node->getNode()))
+			{
 
-				if(GetElementPtrInst* GEP = dyn_cast<GetElementPtrInst>(STI->getPointerOperand())){
-//					GetElementPtrInst* GEP = cast<GetElementPtrInst>(STI->getPointerOperand());
+				if (GetElementPtrInst *GEP = dyn_cast<GetElementPtrInst>(STI->getPointerOperand()))
+				{
+					//					GetElementPtrInst* GEP = cast<GetElementPtrInst>(STI->getPointerOperand());
 					pointerMemInsMap[GEP->getPointerOperand()].push_back(node);
 				}
-				else{
+				else
+				{
 					pointerMemInsMap[STI->getPointerOperand()].push_back(node);
 				}
-
 			}
 		}
 	}
 
-	int sum=0;
-	for(std::pair<Value*,std::vector<dfgNode*>> pair : pointerMemInsMap){
-		sum+=pair.second.size();
+	int sum = 0;
+	for (std::pair<Value *, std::vector<dfgNode *>> pair : pointerMemInsMap)
+	{
+		sum += pair.second.size();
 		pointerOperandVec.push_back(pair.first);
 	}
 
 	int n = pointerOperandVec.size();
 
-	bool dp[n+1][sum+1];
-	std::map<int,std::map<int,std::vector<Value*> > > dpValueMap;
+	bool dp[n + 1][sum + 1];
+	std::map<int, std::map<int, std::vector<Value *>>> dpValueMap;
 
 	//first column is true :: 0 sum is possible with all elements
-	for (int i = 0; i <= n; ++i) {
-		dp[i][0]=true;
+	for (int i = 0; i <= n; ++i)
+	{
+		dp[i][0] = true;
 	}
 
-    // Initialize top row, except dp[0][0], as false. With
-    // 0 elements, no other sum except 0 is possible
-    for (int j = 1; j <= sum; j++){
-        dp[0][j] = false;
-    }
+	// Initialize top row, except dp[0][0], as false. With
+	// 0 elements, no other sum except 0 is possible
+	for (int j = 1; j <= sum; j++)
+	{
+		dp[0][j] = false;
+	}
 
-    // Fill the partition table in bottom up manner
-     for (int i=1; i<=n; i++)
-     {
-         for (int j=1; j<=sum; j++)
-         {
-             // If i'th element is excluded
-             dp[i][j] = dp[i-1][j];
-             if(dp[i-1][j]){
-            	 dpValueMap[i][j]=dpValueMap[i-1][j];
-             }
+	// Fill the partition table in bottom up manner
+	for (int i = 1; i <= n; i++)
+	{
+		for (int j = 1; j <= sum; j++)
+		{
+			// If i'th element is excluded
+			dp[i][j] = dp[i - 1][j];
+			if (dp[i - 1][j])
+			{
+				dpValueMap[i][j] = dpValueMap[i - 1][j];
+			}
 
-             // If i'th element is included
-             int ithElement = pointerMemInsMap[pointerOperandVec[i-1]].size();
-             if(ithElement <= j){
-            	 dp[i][j] |= dp[i-1][j-ithElement];
-            	 if(dp[i-1][j-ithElement]){
-            		 dpValueMap[i][j] = dpValueMap[i-1][j-ithElement];
-            		 dpValueMap[i][j].push_back(pointerOperandVec[i-1]);
-            	 }
-             }
-         }
-     }
+			// If i'th element is included
+			int ithElement = pointerMemInsMap[pointerOperandVec[i - 1]].size();
+			if (ithElement <= j)
+			{
+				dp[i][j] |= dp[i - 1][j - ithElement];
+				if (dp[i - 1][j - ithElement])
+				{
+					dpValueMap[i][j] = dpValueMap[i - 1][j - ithElement];
+					dpValueMap[i][j].push_back(pointerOperandVec[i - 1]);
+				}
+			}
+		}
+	}
 
-     // Initialize difference of two sums.
+	// Initialize difference of two sums.
 	int diff = INT_MAX;
 
 	// Find the largest j such that dp[n][j]
 	// is true where j loops from sum/2 t0 0
-	int minsumpart=0;
-	for (int j=sum/2; j>=0; j--)
+	int minsumpart = 0;
+	for (int j = sum / 2; j >= 0; j--)
 	{
 		// Find the
 		if (dp[n][j] == true)
 		{
-			diff = sum-2*j;
+			diff = sum - 2 * j;
 			minsumpart = j;
 			break;
 		}
 	}
 
 	outs() << "Left side pointers : \n";
-	for(Value* pointerOp : dpValueMap[n][minsumpart]){
-		outs() << "("<< pointerOp->getName() << "," << pointerMemInsMap[pointerOp].size() << ");";
-		for (dfgNode* node : pointerMemInsMap[pointerOp]){
+	for (Value *pointerOp : dpValueMap[n][minsumpart])
+	{
+		outs() << "(" << pointerOp->getName() << "," << pointerMemInsMap[pointerOp].size() << ");";
+		for (dfgNode *node : pointerMemInsMap[pointerOp])
+		{
 			node->setLeftAlignedMemOp(1);
 		}
 		pointerOperandVec.erase(std::remove(pointerOperandVec.begin(), pointerOperandVec.end(), pointerOp), pointerOperandVec.end());
@@ -7990,9 +8941,11 @@ int DFG::partitionMemNodes() {
 	outs() << "\n";
 
 	outs() << "Right side pointers : \n";
-	for(Value* pointerOp : pointerOperandVec){
-		outs() << "("<< pointerOp->getName() << "," << pointerMemInsMap[pointerOp].size() << ");";
-		for (dfgNode* node : pointerMemInsMap[pointerOp]){
+	for (Value *pointerOp : pointerOperandVec)
+	{
+		outs() << "(" << pointerOp->getName() << "," << pointerMemInsMap[pointerOp].size() << ");";
+		for (dfgNode *node : pointerMemInsMap[pointerOp])
+		{
 			node->setLeftAlignedMemOp(2);
 		}
 	}
@@ -8001,18 +8954,22 @@ int DFG::partitionMemNodes() {
 	return 0;
 }
 
-int DFG::handlestartstop() {
-	dfgNode* node;
+int DFG::handlestartstop()
+{
+	dfgNode *node;
 
-	Loop* L = this->getLoop();
-	SmallVector<BasicBlock*,8> loopExitBlocks;
+	Loop *L = this->getLoop();
+	SmallVector<BasicBlock *, 8> loopExitBlocks;
 	L->getExitBlocks(loopExitBlocks);
 
-	for (int i = 0; i < NodeList.size(); ++i) {
+	for (int i = 0; i < NodeList.size(); ++i)
+	{
 		node = NodeList[i];
-		if(node->getNode()==NULL){
-			if(node->getNameType().compare("LOOPSTART")==0){
-//				assert(false);
+		if (node->getNode() == NULL)
+		{
+			if (node->getNameType().compare("LOOPSTART") == 0)
+			{
+				//				assert(false);
 			}
 		}
 	}
@@ -8020,27 +8977,30 @@ int DFG::handlestartstop() {
 	bool startFound = false;
 	bool exitFound = false;
 
-
-	for (int i = 0; i < NodeList.size(); ++i) {
+	for (int i = 0; i < NodeList.size(); ++i)
+	{
 		node = NodeList[i];
 
-		if(startFound & exitFound){
+		if (startFound & exitFound)
+		{
 			break;
 		}
 
 		//LoopStart
-		if(node->getNode()==NULL){
-			if(node->getNameType().compare("LOOPSTART")==0){
+		if (node->getNode() == NULL)
+		{
+			if (node->getNameType().compare("LOOPSTART") == 0)
+			{
 				startFound = true;
-//				dfgNode* loadStart = new dfgNode(this);
-//				loadStart->setIdx(this->getNodesPtr()->size());
-//				this->getNodesPtr()->push_back(loadStart);
-//				loadStart->setNameType("LOADSTART");
-//				loadStart->BB = node->BB;
+				//				dfgNode* loadStart = new dfgNode(this);
+				//				loadStart->setIdx(this->getNodesPtr()->size());
+				//				this->getNodesPtr()->push_back(loadStart);
+				//				loadStart->setNameType("LOADSTART");
+				//				loadStart->BB = node->BB;
 
 				node->setLeftAlignedMemOp(2);
 
-				dfgNode* storeStart = new dfgNode(this);
+				dfgNode *storeStart = new dfgNode(this);
 				storeStart->setIdx(this->getNodesPtr()->size());
 				this->getNodesPtr()->push_back(storeStart);
 				storeStart->setNameType("STORESTART");
@@ -8051,7 +9011,7 @@ int DFG::handlestartstop() {
 				node->addChildNode(storeStart);
 				storeStart->addAncestorNode(node);
 
-				dfgNode* movone = new dfgNode(this);
+				dfgNode *movone = new dfgNode(this);
 				movone->setIdx(this->getNodesPtr()->size());
 				this->getNodesPtr()->push_back(movone);
 				movone->setNameType("MOVC");
@@ -8061,129 +9021,136 @@ int DFG::handlestartstop() {
 				movone->addChildNode(storeStart);
 				storeStart->addAncestorNode(movone);
 
-//				for (dfgNode* child : node->getChildren()) {
-//					node->removeChild(child);
-//					child->removeAncestor(node);
-//					removeEdge(findEdge(node,child));
-//
-//					loadStart->addChildNode(child);
-//					child->addAncestorNode(loadStart);
-//				}
+				//				for (dfgNode* child : node->getChildren()) {
+				//					node->removeChild(child);
+				//					child->removeAncestor(node);
+				//					removeEdge(findEdge(node,child));
+				//
+				//					loadStart->addChildNode(child);
+				//					child->addAncestorNode(loadStart);
+				//				}
 			}
 		}
-		else {		//LoopExit
-//			if(std::find(loopExitBlocks.begin(),loopExitBlocks.end(),node->getNode()->getParent())!=loopExitBlocks.end()){
-//
-//				if(!dyn_cast<BranchInst>(node->getNode())){
-//					continue;
-//				}
-//
-//				//current node belong to a loop exit basic block
-//				dfgNode* loopexit = new dfgNode(this);
-//				loopexit->setIdx(this->getNodesPtr()->size());
-//				this->getNodesPtr()->push_back(loopexit);
-//				loopexit->setNameType("LOOPEXIT");
-//				loopexit->BB = node->BB;
-//				loopexit->setLeftAlignedMemOp(1);
-//
-//				assert(node->getChildren().empty());
-//				for(dfgNode* anc : node->getAncestors()){
-//					anc->removeChild(node);
-//					node->removeAncestor(anc);
-//					removeEdge(findEdge(anc,node));
-//
-//					anc->addChildNode(loopexit);
-//					loopexit->addAncestorNode(anc);
-//				}
-//
-//				dfgNode* movone = new dfgNode(this);
-//				movone->setIdx(this->getNodesPtr()->size());
-//				this->getNodesPtr()->push_back(movone);
-//				movone->setNameType("MOVC");
-//				movone->BB = node->BB;
-//				movone->setConstantVal(1);
-//
-//				movone->addChildNode(loopexit);
-//				loopexit->addAncestorNode(movone);
-//			}
+		else
+		{   //LoopExit
+			//			if(std::find(loopExitBlocks.begin(),loopExitBlocks.end(),node->getNode()->getParent())!=loopExitBlocks.end()){
+			//
+			//				if(!dyn_cast<BranchInst>(node->getNode())){
+			//					continue;
+			//				}
+			//
+			//				//current node belong to a loop exit basic block
+			//				dfgNode* loopexit = new dfgNode(this);
+			//				loopexit->setIdx(this->getNodesPtr()->size());
+			//				this->getNodesPtr()->push_back(loopexit);
+			//				loopexit->setNameType("LOOPEXIT");
+			//				loopexit->BB = node->BB;
+			//				loopexit->setLeftAlignedMemOp(1);
+			//
+			//				assert(node->getChildren().empty());
+			//				for(dfgNode* anc : node->getAncestors()){
+			//					anc->removeChild(node);
+			//					node->removeAncestor(anc);
+			//					removeEdge(findEdge(anc,node));
+			//
+			//					anc->addChildNode(loopexit);
+			//					loopexit->addAncestorNode(anc);
+			//				}
+			//
+			//				dfgNode* movone = new dfgNode(this);
+			//				movone->setIdx(this->getNodesPtr()->size());
+			//				this->getNodesPtr()->push_back(movone);
+			//				movone->setNameType("MOVC");
+			//				movone->BB = node->BB;
+			//				movone->setConstantVal(1);
+			//
+			//				movone->addChildNode(loopexit);
+			//				loopexit->addAncestorNode(movone);
+			//			}
 
 			//checking
-//			assert(false); // please comment below to remove this assertion
+			//			assert(false); // please comment below to remove this assertion
 
-//			if(std::find(loopExitBlocks.begin(),loopExitBlocks.end(),node->getNode()->g)!=loopExitBlocks.end()){
+			//			if(std::find(loopExitBlocks.begin(),loopExitBlocks.end(),node->getNode()->g)!=loopExitBlocks.end()){
 
-				if(BranchInst* BRI = dyn_cast<BranchInst>(node->getNode())){
+			if (BranchInst *BRI = dyn_cast<BranchInst>(node->getNode()))
+			{
 
-					for (int j = 0; j < BRI->getNumSuccessors(); ++j) {
-						if(std::find(loopExitBlocks.begin(),
-									 loopExitBlocks.end(),
-									 BRI->getSuccessor(j))!=loopExitBlocks.end()){
+				for (int j = 0; j < BRI->getNumSuccessors(); ++j)
+				{
+					if (std::find(loopExitBlocks.begin(),
+								  loopExitBlocks.end(),
+								  BRI->getSuccessor(j)) != loopExitBlocks.end())
+					{
 
-							//current node belong to a loop exit basic block
-							dfgNode* loopexit = new dfgNode(this);
-							loopexit->setIdx(this->getNodesPtr()->size());
-							this->getNodesPtr()->push_back(loopexit);
-							loopexit->setNameType("LOOPEXIT");
-							loopexit->BB = BRI->getSuccessor(j);
-							loopexit->setLeftAlignedMemOp(1);
+						//current node belong to a loop exit basic block
+						dfgNode *loopexit = new dfgNode(this);
+						loopexit->setIdx(this->getNodesPtr()->size());
+						this->getNodesPtr()->push_back(loopexit);
+						loopexit->setNameType("LOOPEXIT");
+						loopexit->BB = BRI->getSuccessor(j);
+						loopexit->setLeftAlignedMemOp(1);
 
-							node->addChildNode(loopexit);
-							loopexit->addAncestorNode(node);
+						node->addChildNode(loopexit);
+						loopexit->addAncestorNode(node);
 
-							dfgNode* movone = new dfgNode(this);
-							movone->setIdx(this->getNodesPtr()->size());
-							this->getNodesPtr()->push_back(movone);
-							movone->setNameType("MOVC");
-							movone->BB = node->BB;
-							movone->setConstantVal(1);
+						dfgNode *movone = new dfgNode(this);
+						movone->setIdx(this->getNodesPtr()->size());
+						this->getNodesPtr()->push_back(movone);
+						movone->setNameType("MOVC");
+						movone->BB = node->BB;
+						movone->setConstantVal(1);
 
-							movone->addChildNode(loopexit);
-							loopexit->addAncestorNode(movone);
-							exitFound = true;
-						}
+						movone->addChildNode(loopexit);
+						loopexit->addAncestorNode(movone);
+						exitFound = true;
 					}
-
-
-
-
-
 				}
+			}
 
-//			}
+			//			}
 		}
-
 	}
 }
 
-int DFG::handlestartstop_munit(std::vector<munitTransition> bbTrans) {
+int DFG::handlestartstop_munit(std::vector<munitTransition> bbTrans)
+{
 
-	std::vector<dfgNode*> startNodes;
-	std::map<dfgNode*,BasicBlock*> comingFromBBMap;
-	std::map<dfgNode*,std::vector<BasicBlock*>> exitNodesWithSucc;
-	int exitNodesWithSuccCount=0;
+	std::vector<dfgNode *> startNodes;
+	std::map<dfgNode *, BasicBlock *> comingFromBBMap;
+	std::map<dfgNode *, std::vector<BasicBlock *>> exitNodesWithSucc;
+	int exitNodesWithSuccCount = 0;
 
-	for( std::pair<Instruction*,dfgNode*> pair : LoopStartMap){
+	for (std::pair<Instruction *, dfgNode *> pair : LoopStartMap)
+	{
 		startNodes.push_back(pair.second);
-		comingFromBBMap[pair.second]=pair.first->getParent();
+		comingFromBBMap[pair.second] = pair.first->getParent();
 	}
 
-	dfgNode* realStartNode=NULL;
-	for (int i = 0; i < NodeList.size(); ++i) {
-		dfgNode* node=NodeList[i];
-		if(node->getNode()==NULL){
-			if(node->getNameType().compare("LOOPSTART")==0){
-				assert(realStartNode==NULL);
-				realStartNode=node;
+	dfgNode *realStartNode = NULL;
+	for (int i = 0; i < NodeList.size(); ++i)
+	{
+		dfgNode *node = NodeList[i];
+		if (node->getNode() == NULL)
+		{
+			if (node->getNameType().compare("LOOPSTART") == 0)
+			{
+				assert(realStartNode == NULL);
+				realStartNode = node;
 			}
 		}
-		else{
-			if(BranchInst* BRI = dyn_cast<BranchInst>(node->getNode())){
-				for (int j = 0; j < BRI->getNumSuccessors(); ++j) {
-					if(std::find(loopBB.begin(),
-							     loopBB.end(),
-								 BRI->getSuccessor(j))== loopBB.end()){
+		else
+		{
+			if (BranchInst *BRI = dyn_cast<BranchInst>(node->getNode()))
+			{
+				for (int j = 0; j < BRI->getNumSuccessors(); ++j)
+				{
+					if (std::find(loopBB.begin(),
+								  loopBB.end(),
+								  BRI->getSuccessor(j)) == loopBB.end())
+					{
 						//successor does not belong to the loop
-//						exitNodes.push_back(node);
+						//						exitNodes.push_back(node);
 						BRI->dump();
 						outs() << "Successor BB : " << BRI->getSuccessor(j)->getName() << "\n";
 						exitNodesWithSucc[node].push_back(BRI->getSuccessor(j));
@@ -8191,10 +9158,9 @@ int DFG::handlestartstop_munit(std::vector<munitTransition> bbTrans) {
 					}
 				}
 			}
-
 		}
 	}
-	assert(realStartNode!=NULL);
+	assert(realStartNode != NULL);
 
 	outs() << "munitName = " << this->name << "\n";
 	outs() << "startNodes size =" << startNodes.size() << "\n";
@@ -8203,24 +9169,27 @@ int DFG::handlestartstop_munit(std::vector<munitTransition> bbTrans) {
 	outs() << "exitNodesWithSucc size =" << exitNodesWithSuccCount << "\n";
 	outs() << "loopexitBB size =" << loopexitBB.size() << "\n";
 
-	assert(startNodes.size()==this->loopentryBB.size());
-	assert(loopexitBB.size()==exitNodesWithSuccCount);
+	assert(startNodes.size() == this->loopentryBB.size());
+	assert(loopexitBB.size() == exitNodesWithSuccCount);
 
-	std::vector<dfgNode*> connecttoRealStart;
-	for(dfgNode* startNode : startNodes){
-		dfgNode* cusBitMsk = new dfgNode(this);
+	std::vector<dfgNode *> connecttoRealStart;
+	for (dfgNode *startNode : startNodes)
+	{
+		dfgNode *cusBitMsk = new dfgNode(this);
 		cusBitMsk->setIdx(this->getNodesPtr()->size());
 		this->getNodesPtr()->push_back(cusBitMsk);
 		cusBitMsk->setNameType("PREDAND");
 		cusBitMsk->BB = realStartNode->BB;
 
-		bool found=false;
+		bool found = false;
 		uint32_t BBActiveTransBit;
-		for(munitTransition munitTrans : bbTrans){
-			if(munitTrans.srcBB  == comingFromBBMap[startNode] &&
-			   munitTrans.destBB == startNode->BB){
+		for (munitTransition munitTrans : bbTrans)
+		{
+			if (munitTrans.srcBB == comingFromBBMap[startNode] &&
+				munitTrans.destBB == startNode->BB)
+			{
 				BBActiveTransBit = 1 << munitTrans.id;
-				found=true;
+				found = true;
 				break;
 			}
 		}
@@ -8228,59 +9197,64 @@ int DFG::handlestartstop_munit(std::vector<munitTransition> bbTrans) {
 		cusBitMsk->setConstantVal(BBActiveTransBit);
 
 		//make connections
-		for(dfgNode* startNodeChild : startNode->getChildren()){
+		for (dfgNode *startNodeChild : startNode->getChildren())
+		{
 			startNode->removeChild(startNodeChild);
 			startNodeChild->removeAncestor(startNode);
-			removeEdge(findEdge(startNode,startNodeChild));
+			removeEdge(findEdge(startNode, startNodeChild));
 
 			cusBitMsk->addChildNode(startNodeChild);
 			startNodeChild->addAncestorNode(cusBitMsk);
 		}
 
 		connecttoRealStart.push_back(cusBitMsk);
-//		assert(realStartNode->getNameType().compare("LOOPSTART")==0);
-//		realStartNode->addChildNode(cusBitMsk);
-//		cusBitMsk->addAncestorNode(realStartNode);
+		//		assert(realStartNode->getNameType().compare("LOOPSTART")==0);
+		//		realStartNode->addChildNode(cusBitMsk);
+		//		cusBitMsk->addAncestorNode(realStartNode);
 	}
 
-	for(dfgNode* connectNode : connecttoRealStart){
-		assert(realStartNode->getNameType().compare("LOOPSTART")==0);
+	for (dfgNode *connectNode : connecttoRealStart)
+	{
+		assert(realStartNode->getNameType().compare("LOOPSTART") == 0);
 		realStartNode->addChildNode(connectNode);
 		connectNode->addAncestorNode(realStartNode);
 	}
 
-//	uint32_t BBActiveWord = 0;
-//	for(BasicBlock* bb : loopentryBB){
-//		int bbIdx = (*bbids)[bb];
-//		int singlebit = 1 << bbIdx;
-//		BBActiveWord = BBActiveWord | singlebit;
-//	}
+	//	uint32_t BBActiveWord = 0;
+	//	for(BasicBlock* bb : loopentryBB){
+	//		int bbIdx = (*bbids)[bb];
+	//		int singlebit = 1 << bbIdx;
+	//		BBActiveWord = BBActiveWord | singlebit;
+	//	}
 	//make connection for one mapping unit
-	uint32_t BBActiveTransWord=0;
-	for(dfgNode* startNode : startNodes){
-		bool found=false;
+	uint32_t BBActiveTransWord = 0;
+	for (dfgNode *startNode : startNodes)
+	{
+		bool found = false;
 		uint32_t BBActiveTransBit;
 
-		for(munitTransition munitTrans : bbTrans){
-			if(munitTrans.srcBB  == comingFromBBMap[startNode] &&
-			   munitTrans.destBB == startNode->BB){
+		for (munitTransition munitTrans : bbTrans)
+		{
+			if (munitTrans.srcBB == comingFromBBMap[startNode] &&
+				munitTrans.destBB == startNode->BB)
+			{
 				BBActiveTransBit = 1 << munitTrans.id;
 				BBActiveTransWord = BBActiveTransWord | BBActiveTransBit;
-				found=true;
+				found = true;
 				break;
 			}
 		}
 		assert(found);
 	}
 
-	dfgNode* cusZeroBitMsk = new dfgNode(this);
+	dfgNode *cusZeroBitMsk = new dfgNode(this);
 	cusZeroBitMsk->setIdx(this->getNodesPtr()->size());
 	this->getNodesPtr()->push_back(cusZeroBitMsk);
 	cusZeroBitMsk->setNameType("PREDAND");
 	cusZeroBitMsk->BB = realStartNode->BB;
 	cusZeroBitMsk->setConstantVal(~BBActiveTransWord);
 
-	dfgNode* storeStart = new dfgNode(this);
+	dfgNode *storeStart = new dfgNode(this);
 	storeStart->setIdx(this->getNodesPtr()->size());
 	this->getNodesPtr()->push_back(storeStart);
 	storeStart->setNameType("STORESTART");
@@ -8290,42 +9264,45 @@ int DFG::handlestartstop_munit(std::vector<munitTransition> bbTrans) {
 	cusZeroBitMsk->addChildNode(storeStart);
 	storeStart->addAncestorNode(cusZeroBitMsk);
 
-	assert(realStartNode->getNameType().compare("LOOPSTART")==0);
+	assert(realStartNode->getNameType().compare("LOOPSTART") == 0);
 	realStartNode->addChildNode(cusZeroBitMsk);
 	cusZeroBitMsk->addAncestorNode(realStartNode);
 
-
-	for(std::pair<dfgNode*,std::vector<BasicBlock*>> pair : exitNodesWithSucc){
+	for (std::pair<dfgNode *, std::vector<BasicBlock *>> pair : exitNodesWithSucc)
+	{
 		int count = 0;
-		for(BasicBlock* succBasicBlock : pair.second){
-			dfgNode* node = pair.first;
+		for (BasicBlock *succBasicBlock : pair.second)
+		{
+			dfgNode *node = pair.first;
 			assert(pair.second.size() < 3);
-			dfgNode* loopexit = new dfgNode(this);
+			dfgNode *loopexit = new dfgNode(this);
 			loopexit->setIdx(this->getNodesPtr()->size());
 			this->getNodesPtr()->push_back(loopexit);
 			loopexit->setNameType("LOOPEXIT");
-			loopexit->BB = pair.second[0];  //just putting one bb out of the loop coz it doesnt really matter
+			loopexit->BB = pair.second[0]; //just putting one bb out of the loop coz it doesnt really matter
 			loopexit->setLeftAlignedMemOp(1);
-			if(count==1){
+			if (count == 1)
+			{
 				loopexit->setNPB(true);
 			}
 			node->addChildNode(loopexit);
 			loopexit->addAncestorNode(node);
 
-
-			dfgNode* movnextbb = new dfgNode(this);
+			dfgNode *movnextbb = new dfgNode(this);
 			movnextbb->setIdx(this->getNodesPtr()->size());
 			this->getNodesPtr()->push_back(movnextbb);
 			movnextbb->setNameType("MOVC");
 			movnextbb->BB = node->BB;
 
-			bool found=false;
-			uint32_t BBActiveTransBit=0;
-			for(munitTransition munitTrans : bbTrans){
-				if(munitTrans.srcBB  == node->BB &&
-				   munitTrans.destBB == succBasicBlock){
+			bool found = false;
+			uint32_t BBActiveTransBit = 0;
+			for (munitTransition munitTrans : bbTrans)
+			{
+				if (munitTrans.srcBB == node->BB &&
+					munitTrans.destBB == succBasicBlock)
+				{
 					BBActiveTransBit = 1 << munitTrans.id;
-					found=true;
+					found = true;
 					break;
 				}
 			}
@@ -8337,46 +9314,56 @@ int DFG::handlestartstop_munit(std::vector<munitTransition> bbTrans) {
 	}
 }
 
-int DFG::nonGEPLoadStorecheck() {
-	dfgNode* node;
+int DFG::nonGEPLoadStorecheck()
+{
+	dfgNode *node;
 
-
-
-	for (int i = 0; i < NodeList.size(); ++i) {
+	for (int i = 0; i < NodeList.size(); ++i)
+	{
 		node = NodeList[i];
 
-		if(node->getNode() == NULL) continue;
-		if(node->getNode()->mayReadOrWriteMemory() != true) continue;
+		if (node->getNode() == NULL)
+			continue;
+		if (node->getNode()->mayReadOrWriteMemory() != true)
+			continue;
 
 		const DataLayout DL = node->getNode()->getParent()->getParent()->getParent()->getDataLayout();
 
 		//only comes to here when there are loads and nodes
-		bool GEPfound=false;
-		for(dfgNode* parent : node->getAncestors()){
-			if(parent->getNode()==NULL) continue;
-			if(dyn_cast<GetElementPtrInst>(parent->getNode())){
-				GEPfound=true;
+		bool GEPfound = false;
+		for (dfgNode *parent : node->getAncestors())
+		{
+			if (parent->getNode() == NULL)
+				continue;
+			if (dyn_cast<GetElementPtrInst>(parent->getNode()))
+			{
+				GEPfound = true;
 				break;
 			}
 		}
-		if(GEPfound) continue;
+		if (GEPfound)
+			continue;
 
+		Type *T;
 
-		Type* T;
-
-		if(LoadInst* LDI = dyn_cast<LoadInst>(node->getNode())){
+		if (LoadInst *LDI = dyn_cast<LoadInst>(node->getNode()))
+		{
 			T = LDI->getPointerOperand()->getType();
-			if(dyn_cast<Instruction>(LDI->getPointerOperand())){
+			if (dyn_cast<Instruction>(LDI->getPointerOperand()))
+			{
 				continue;
 			}
 		}
-		else if(StoreInst* STI = dyn_cast<StoreInst>(node->getNode())){
+		else if (StoreInst *STI = dyn_cast<StoreInst>(node->getNode()))
+		{
 			T = STI->getPointerOperand()->getType();
-			if(dyn_cast<Instruction>(STI->getPointerOperand())){
+			if (dyn_cast<Instruction>(STI->getPointerOperand()))
+			{
 				continue;
 			}
 		}
-		else{
+		else
+		{
 			assert(false);
 		}
 
@@ -8384,45 +9371,54 @@ int DFG::nonGEPLoadStorecheck() {
 		int Size = DL.getTypeAllocSize(T);
 		outs() << "Size=" << Size << ",";
 
-		if(PointerType* PT = dyn_cast<PointerType>(T)){
+		if (PointerType *PT = dyn_cast<PointerType>(T))
+		{
 			outs() << "ElementSize=" << DL.getTypeAllocSize(PT->getElementType()) << ",";
-//			PT->is
+			//			PT->is
 		}
 
-		errs() << "S/A/I/P=" << T->isStructTy()<< "/";
-		errs() << T->isArrayTy()<< "/";
-		errs() << T->isIntegerTy()<< "/";
-		errs() << T->isPointerTy()<< "\n";
+		errs() << "S/A/I/P=" << T->isStructTy() << "/";
+		errs() << T->isArrayTy() << "/";
+		errs() << T->isIntegerTy() << "/";
+		errs() << T->isPointerTy() << "\n";
 	}
 
 	assert(false);
 }
 
-int DFG::addMaskLowBitInstructions() {
-	for (dfgNode* node : NodeList){
-		if(node->getNode()!=NULL){
-			if(node->getNode()->getOpcode()==Instruction::Shl){
-				int byteWidth = node->getNode()->getType()->getIntegerBitWidth()/8;
-				if(byteWidth == 2 || byteWidth == 1){
-					dfgNode* mls = new dfgNode(this);
+int DFG::addMaskLowBitInstructions()
+{
+	for (dfgNode *node : NodeList)
+	{
+		if (node->getNode() != NULL)
+		{
+			if (node->getNode()->getOpcode() == Instruction::Shl)
+			{
+				int byteWidth = node->getNode()->getType()->getIntegerBitWidth() / 8;
+				if (byteWidth == 2 || byteWidth == 1)
+				{
+					dfgNode *mls = new dfgNode(this);
 					mls->setIdx(this->getNodesPtr()->size());
 					this->getNodesPtr()->push_back(mls);
 					mls->setNameType("MASKAND");
-					if(byteWidth == 2){
+					if (byteWidth == 2)
+					{
 						mls->setConstantVal(0xffff);
 					}
-					else{ //byteWidth == 1
+					else
+					{ //byteWidth == 1
 						mls->setConstantVal(0xff);
 					}
 					mls->BB = node->BB;
 
-					dfgNode* child;
-					for (int i = 0; i < node->getChildren().size(); ++i) {
+					dfgNode *child;
+					for (int i = 0; i < node->getChildren().size(); ++i)
+					{
 						child = node->getChildren()[i];
 
 						node->removeChild(child);
 						child->removeAncestor(node);
-						removeEdge(findEdge(node,child));
+						removeEdge(findEdge(node, child));
 
 						node->addChildNode(mls);
 						mls->addAncestorNode(node);
@@ -8431,7 +9427,8 @@ int DFG::addMaskLowBitInstructions() {
 						child->addAncestorNode(mls);
 					}
 				}
-				else{
+				else
+				{
 					assert(byteWidth == 4);
 				}
 			}
@@ -8439,40 +9436,45 @@ int DFG::addMaskLowBitInstructions() {
 	}
 }
 
-int DFG::addBreakLongerPaths() {
-	dfgNode* node;
+int DFG::addBreakLongerPaths()
+{
+	dfgNode *node;
 
-	for (int i = 0; i < NodeList.size(); ++i) {
+	for (int i = 0; i < NodeList.size(); ++i)
+	{
 		node = NodeList[i];
-		for (dfgNode* child : node->getChildren()){
+		for (dfgNode *child : node->getChildren())
+		{
 			int ASAPdistance = child->getASAPnumber() - node->getASAPnumber();
-			int internalASAPdist = ASAPdistance/4;
-			if(ASAPdistance > 5 && internalASAPdist > 0){
-				outs() << "breaking long paths adding op:OR 0 between " << ": node=" << node->getIdx() << "and node=" << child->getIdx() << "\n";
+			int internalASAPdist = ASAPdistance / 4;
+			if (ASAPdistance > 5 && internalASAPdist > 0)
+			{
+				outs() << "breaking long paths adding op:OR 0 between "
+					   << ": node=" << node->getIdx() << "and node=" << child->getIdx() << "\n";
 
-				dfgNode* orzero1 = new dfgNode(this);
+				dfgNode *orzero1 = new dfgNode(this);
 				orzero1->setIdx(this->getNodesPtr()->size());
 				this->getNodesPtr()->push_back(orzero1);
 				orzero1->BB = node->BB;
 				orzero1->setNameType("ORZERO");
 
-				orzero1->setASAPnumber(node->getASAPnumber()+internalASAPdist);
+				orzero1->setASAPnumber(node->getASAPnumber() + internalASAPdist);
 
-				dfgNode* orzero2 = new dfgNode(this);
+				dfgNode *orzero2 = new dfgNode(this);
 				orzero2->setIdx(this->getNodesPtr()->size());
 				this->getNodesPtr()->push_back(orzero2);
 				orzero2->BB = node->BB;
 				orzero2->setNameType("ORZERO");
 
-				orzero2->setASAPnumber(orzero1->getASAPnumber()+internalASAPdist);
+				orzero2->setASAPnumber(orzero1->getASAPnumber() + internalASAPdist);
 
-				dfgNode* orzero3 = new dfgNode(this);
+				dfgNode *orzero3 = new dfgNode(this);
 				orzero3->setIdx(this->getNodesPtr()->size());
 				this->getNodesPtr()->push_back(orzero3);
 				orzero3->BB = node->BB;
 				orzero3->setNameType("ORZERO");
 
-				orzero3->setASAPnumber(orzero2->getASAPnumber()+internalASAPdist);
+				orzero3->setASAPnumber(orzero2->getASAPnumber() + internalASAPdist);
 
 				orzero3->setALAPnumber(child->getALAPnumber() - 1);
 				orzero2->setALAPnumber(orzero3->getALAPnumber() - 1);
@@ -8492,94 +9494,110 @@ int DFG::addBreakLongerPaths() {
 
 				orzero3->addChildNode(child);
 				child->addAncestorNode(orzero3);
-
 			}
 		}
 	}
 }
 
-int DFG::analyzeRTpaths() {
+int DFG::analyzeRTpaths()
+{
 	assert(!nodeRouteMap.empty());
 	outs() << "analyzeRTpaths :: begin\n";
 
-	for(dfgNode* node : NodeList){
-		if(node->getAncestors().empty())continue;
-		if(node->getNode() != NULL){
-			if (dyn_cast<PHINode>( node->getNode() ) ){
+	for (dfgNode *node : NodeList)
+	{
+		if (node->getAncestors().empty())
+			continue;
+		if (node->getNode() != NULL)
+		{
+			if (dyn_cast<PHINode>(node->getNode()))
+			{
 				continue;
 			}
 		}
-		for(dfgNode* parent : node->getAncestors()){
-			if(parent->getNameType().compare("OutLoopLOAD") == 0 ||
-			   parent->getNameType().compare("MOVC") == 0	){
+		for (dfgNode *parent : node->getAncestors())
+		{
+			if (parent->getNameType().compare("OutLoopLOAD") == 0 ||
+				parent->getNameType().compare("MOVC") == 0)
+			{
 				continue;
 			}
 
-			if(std::find(node->getPHIancestors().begin(),
-					     node->getPHIancestors().begin(),
-						 parent)!=node->getPHIancestors().end()){
+			if (std::find(node->getPHIancestors().begin(),
+						  node->getPHIancestors().begin(),
+						  parent) != node->getPHIancestors().end())
+			{
 				continue;
 			}
 
 			//analyzing distance in time
-			int distanceDt=1; //it should be atleast 1
-			int parent_tplus1_2 = parent_tplus1_2 = (parent->getMappedLoc()->getT()+1)%currCGRA->getMII();
-			if(parent->getMappedLoc()->getPEType() == MEM){
-				distanceDt=2;
-				parent_tplus1_2 = (parent->getMappedLoc()->getT()+2)%currCGRA->getMII();
+			int distanceDt = 1; //it should be atleast 1
+			int parent_tplus1_2 = parent_tplus1_2 = (parent->getMappedLoc()->getT() + 1) % currCGRA->getMII();
+			if (parent->getMappedLoc()->getPEType() == MEM)
+			{
+				distanceDt = 2;
+				parent_tplus1_2 = (parent->getMappedLoc()->getT() + 2) % currCGRA->getMII();
 			}
-
 
 			outs() << "path size = " << nodeRouteMap[node][parent].size() << "\n";
 
 			int parent_y = parent->getMappedLoc()->getY();
 			int parent_x = parent->getMappedLoc()->getX();
 
-			CGRANode* startingCnode = currCGRA->getCGRANode(parent_tplus1_2,parent_y,parent_x);
+			CGRANode *startingCnode = currCGRA->getCGRANode(parent_tplus1_2, parent_y, parent_x);
 
-			for (int i = 1; i < nodeRouteMap[node][parent].size(); ++i) {
+			for (int i = 1; i < nodeRouteMap[node][parent].size(); ++i)
+			{
 
 				//this vector is going from destination to source
-				CGRANode* curr = nodeRouteMap[node][parent][i];
-				CGRANode* next = nodeRouteMap[node][parent][i-1];
+				CGRANode *curr = nodeRouteMap[node][parent][i];
+				CGRANode *next = nodeRouteMap[node][parent][i - 1];
 
-				if(curr->getT() != next->getT()){
+				if (curr->getT() != next->getT())
+				{
 					outs() << "curr=" << curr->getNameSp() << ",next=" << next->getNameSp() << "\n";
 					distanceDt++;
 				}
 
-				if(curr == startingCnode){
+				if (curr == startingCnode)
+				{
 					break;
 				}
 			}
 
 			int distanceRT = node->getmappedRealTime() - parent->getmappedRealTime();
 
-			if(distanceDt != distanceRT){
+			if (distanceDt != distanceRT)
+			{
 				outs() << "the path from " << parent->getMappedLoc()->getNameSp() << ",Node=" << parent->getIdx();
 				outs() << " to " << node->getMappedLoc()->getNameSp() << ",Node=" << node->getIdx();
 				outs() << " RealDistance=" << distanceRT << " and MappedDistance=" << distanceDt << "\n";
 			}
 
-			assert(distanceRT%currCGRA->getMII() == distanceDt%currCGRA->getMII());
+			assert(distanceRT % currCGRA->getMII() == distanceDt % currCGRA->getMII());
 		}
 	}
 	outs() << "analyzeRTpaths :: end\n";
 }
 
-std::map<BasicBlock*,std::set<BasicBlock*>> DFG::checkMutexBBs() {
+std::map<BasicBlock *, std::set<BasicBlock *>> DFG::checkMutexBBs()
+{
 	assert(NodeList.size() > 0);
-	dfgNode* firstNode = NodeList[0];
-	SmallVector<std::pair<const BasicBlock *, const BasicBlock *>,8> Result;
-	FindFunctionBackedges(*(firstNode->BB->getParent()),Result);
+	dfgNode *firstNode = NodeList[0];
+	SmallVector<std::pair<const BasicBlock *, const BasicBlock *>, 8> Result;
+	FindFunctionBackedges(*(firstNode->BB->getParent()), Result);
 	outs() << "Number of Backedges = " << Result.size() << "\n";
 
-	std::map<BasicBlock*,std::set<BasicBlock*>> mutexBBs;
+	std::map<BasicBlock *, std::set<BasicBlock *>> mutexBBs;
 
-	for(BasicBlock* BB1 : loopBB){
-		for(BasicBlock* BB2 : loopBB){
-			if(std::find(BBSuccBasicBlocks[BB1].begin(), BBSuccBasicBlocks[BB1].end(), BB2) == BBSuccBasicBlocks[BB1].end()){
-				if(std::find(BBSuccBasicBlocks[BB2].begin(), BBSuccBasicBlocks[BB2].end(), BB1) == BBSuccBasicBlocks[BB2].end()){
+	for (BasicBlock *BB1 : loopBB)
+	{
+		for (BasicBlock *BB2 : loopBB)
+		{
+			if (std::find(BBSuccBasicBlocks[BB1].begin(), BBSuccBasicBlocks[BB1].end(), BB2) == BBSuccBasicBlocks[BB1].end())
+			{
+				if (std::find(BBSuccBasicBlocks[BB2].begin(), BBSuccBasicBlocks[BB2].end(), BB1) == BBSuccBasicBlocks[BB2].end())
+				{
 					// coming here means BB2 is not a successor of BB1
 					// coming here means BB1 is not a successor of BB2
 					// then its mutually exclusive
@@ -8590,9 +9608,11 @@ std::map<BasicBlock*,std::set<BasicBlock*>> DFG::checkMutexBBs() {
 		}
 	}
 
-	for(std::pair<BasicBlock*,std::set<BasicBlock*>> pair : mutexBBs){
+	for (std::pair<BasicBlock *, std::set<BasicBlock *>> pair : mutexBBs)
+	{
 		outs() << "BB=" << pair.first->getName() << ":";
-		for(BasicBlock* BB2 : pair.second){
+		for (BasicBlock *BB2 : pair.second)
+		{
 			outs() << BB2->getName() << ",";
 		}
 		outs() << "\n";
@@ -8601,14 +9621,17 @@ std::map<BasicBlock*,std::set<BasicBlock*>> DFG::checkMutexBBs() {
 	return mutexBBs;
 }
 
-int DFG::printHyCUBEInsHist() {
+int DFG::printHyCUBEInsHist()
+{
 	outs() << "Hist--------------------\n";
-	for (std::pair<HyCUBEIns,int> pair : hyCUBEInsHist){
+	for (std::pair<HyCUBEIns, int> pair : hyCUBEInsHist)
+	{
 		outs() << "Ins:" << HyCUBEInsStrings[pair.first] << "," << pair.second << "\n";
 	}
 }
 
-void DFG::printNewDFGXML() {
+void DFG::printNewDFGXML()
+{
 	std::string fileName = name + "_DFG.xml";
 	std::ofstream xmlFile;
 	xmlFile.open(fileName.c_str());
@@ -8618,59 +9641,69 @@ void DFG::printNewDFGXML() {
 	classifyParents();
 	MergeCMerge();
 
-//    insertMOVC();
-//	scheduleASAP();
-//	scheduleALAP();
-//	balanceASAPALAP();
-//				  LoopDFG.addBreakLongerPaths();
+	//    insertMOVC();
+	//	scheduleASAP();
+	//	scheduleALAP();
+	//	balanceASAPALAP();
+	//				  LoopDFG.addBreakLongerPaths();
 	CreateSchList();
 
-	std::map<BasicBlock*,std::set<BasicBlock*>> mBBs = checkMutexBBs();
-	std::map<std::string,std::set<std::string>> mBBs_str;
+	std::map<BasicBlock *, std::set<BasicBlock *>> mBBs = checkMutexBBs();
+	std::map<std::string, std::set<std::string>> mBBs_str;
 
-	std::map<int,std::vector<dfgNode*>> asaplevelNodeList;
-	for (dfgNode* node : NodeList){
+	std::map<int, std::vector<dfgNode *>> asaplevelNodeList;
+	for (dfgNode *node : NodeList)
+	{
 		asaplevelNodeList[node->getASAPnumber()].push_back(node);
 	}
 
-	std::map<dfgNode*,std::string> nodeBBModified;
-	for(dfgNode* node : NodeList){
-		nodeBBModified[node]=node->BB->getName().str();
+	std::map<dfgNode *, std::string> nodeBBModified;
+	for (dfgNode *node : NodeList)
+	{
+		nodeBBModified[node] = node->BB->getName().str();
 	}
 
-
-	for(dfgNode* node : NodeList){
-		int cmergeParentCount=0;
+	for (dfgNode *node : NodeList)
+	{
+		int cmergeParentCount = 0;
 		std::set<std::string> mutexBBs;
-		for(dfgNode* parent: node->getAncestors()){
-			if(HyCUBEInsStrings[parent->getFinalIns()] == "CMERGE"){
-				nodeBBModified[parent]=nodeBBModified[parent]+ "_" + std::to_string(node->getIdx()) + "_" + std::to_string(cmergeParentCount);
+		for (dfgNode *parent : node->getAncestors())
+		{
+			if (HyCUBEInsStrings[parent->getFinalIns()] == "CMERGE")
+			{
+				nodeBBModified[parent] = nodeBBModified[parent] + "_" + std::to_string(node->getIdx()) + "_" + std::to_string(cmergeParentCount);
 				mutexBBs.insert(nodeBBModified[parent]);
 				cmergeParentCount++;
 			}
 		}
-		for(std::string bb_str1 : mutexBBs){
-			for(std::string bb_str2 : mutexBBs){
-				if(bb_str2==bb_str1) continue;
+		for (std::string bb_str1 : mutexBBs)
+		{
+			for (std::string bb_str2 : mutexBBs)
+			{
+				if (bb_str2 == bb_str1)
+					continue;
 				mBBs_str[bb_str1].insert(bb_str2);
 			}
 		}
 	}
 
-
 	xmlFile << "<MutexBB>\n";
-	for(std::pair<BasicBlock*,std::set<BasicBlock*>> pair : mBBs){
-		BasicBlock* first = pair.first;
+	for (std::pair<BasicBlock *, std::set<BasicBlock *>> pair : mBBs)
+	{
+		BasicBlock *first = pair.first;
 		xmlFile << "<BB1 name=\"" << first->getName().str() << "\">\n";
-		for(BasicBlock* second : pair.second){
+		for (BasicBlock *second : pair.second)
+		{
 			xmlFile << "\t<BB2 name=\"" << second->getName().str() << "\"/>\n";
 		}
 		xmlFile << "</BB1>\n";
 	}
-	for(std::pair<std::string,std::set<std::string>> pair : mBBs_str){
+	for (std::pair<std::string, std::set<std::string>> pair : mBBs_str)
+	{
 		std::string first = pair.first;
 		xmlFile << "<BB1 name=\"" << first << "\">\n";
-		for(std::string second : pair.second){
+		for (std::string second : pair.second)
+		{
 			xmlFile << "\t<BB2 name=\"" << second << "\"/>\n";
 		}
 		xmlFile << "</BB1>\n";
@@ -8679,130 +9712,143 @@ void DFG::printNewDFGXML() {
 
 	xmlFile << "<DFG count=\"" << NodeList.size() << "\">\n";
 
-	for(dfgNode* node : NodeList){
-//	for (int i = 0; i < maxASAPLevel; ++i) {
-//		for(dfgNode* node : asaplevelNodeList[i]){
-			xmlFile << "<Node idx=\"" << node->getIdx() << "\"";
-		    xmlFile << "ASAP=\"" << node->getASAPnumber() << "\"";
+	for (dfgNode *node : NodeList)
+	{
+		//	for (int i = 0; i < maxASAPLevel; ++i) {
+		//		for(dfgNode* node : asaplevelNodeList[i]){
+		xmlFile << "<Node idx=\"" << node->getIdx() << "\"";
+		xmlFile << "ASAP=\"" << node->getASAPnumber() << "\"";
 
-//		    if(node->getNameType() == "OutLoopLOAD") {
-//		    	xmlFile << "OutLoopLOAD=\"1\"";
-//		    }
-//		    else{
-//		    	xmlFile << "OutLoopLOAD=\"0\"";
-//		    }
-//
-//		    if(node->getNameType() == "OutLoopSTORE") {
-//		    	xmlFile << "OutLoopSTORE=\"1\"";
-//		    }
-//		    else{
-//		    	xmlFile << "OutLoopSTORE=\"0\"";
-//		    }
+		//		    if(node->getNameType() == "OutLoopLOAD") {
+		//		    	xmlFile << "OutLoopLOAD=\"1\"";
+		//		    }
+		//		    else{
+		//		    	xmlFile << "OutLoopLOAD=\"0\"";
+		//		    }
+		//
+		//		    if(node->getNameType() == "OutLoopSTORE") {
+		//		    	xmlFile << "OutLoopSTORE=\"1\"";
+		//		    }
+		//		    else{
+		//		    	xmlFile << "OutLoopSTORE=\"0\"";
+		//		    }
 
-//		    xmlFile << "BB=\"" << node->BB->getName().str() << "\"";
-		    xmlFile << "BB=\"" << nodeBBModified[node] << "\"";
-		    if(node->hasConstantVal()){
-		    	xmlFile << "CONST=\"" << node->getConstantVal() << "\"";
-		    }
-			xmlFile << ">\n";
+		//		    xmlFile << "BB=\"" << node->BB->getName().str() << "\"";
+		xmlFile << "BB=\"" << nodeBBModified[node] << "\"";
+		if (node->hasConstantVal())
+		{
+			xmlFile << "CONST=\"" << node->getConstantVal() << "\"";
+		}
+		xmlFile << ">\n";
 
-			xmlFile << "<OP>";
-			if((node->getNameType() == "OutLoopLOAD") || (node->getNameType() == "OutLoopSTORE") ){
-				xmlFile << "O";
+		xmlFile << "<OP>";
+		if ((node->getNameType() == "OutLoopLOAD") || (node->getNameType() == "OutLoopSTORE"))
+		{
+			xmlFile << "O";
+		}
+		xmlFile << HyCUBEInsStrings[node->getFinalIns()] << "</OP>\n";
+		//			xmlFile << "<OP>" << HyCUBEInsStrings[node->getFinalIns()] << "</OP>\n";
+
+		xmlFile << "<Inputs>\n";
+		for (dfgNode *parent : node->getAncestors())
+		{
+			//			xmlFile << "\t<Input idx=\"" << parent->getIdx() << "\" type=\"DATA\"/>\n";
+			xmlFile << "\t<Input idx=\"" << parent->getIdx() << "\"/>\n";
+		}
+		//		for(dfgNode* parentPHI : node->getPHIancestors()){
+		//			xmlFile << "\t<Input idx=\"" << parentPHI->getIdx() << "\" type=\"PHI\"/>\n";
+		//		}
+		xmlFile << "</Inputs>\n";
+
+		xmlFile << "<Outputs>\n";
+		for (dfgNode *child : node->getChildren())
+		{
+			//			xmlFile << "\t<Output idx=\"" << child->getIdx() <<"\" type=\"DATA\"/>\n";
+			xmlFile << "\t<Output idx=\"" << child->getIdx() << "\" ";
+
+			if (child->parentClassification[0] == node)
+			{
+				xmlFile << "type=\"P\"/>\n";
 			}
-			xmlFile << HyCUBEInsStrings[node->getFinalIns()] << "</OP>\n";
-//			xmlFile << "<OP>" << HyCUBEInsStrings[node->getFinalIns()] << "</OP>\n";
-
-			xmlFile << "<Inputs>\n";
-			for(dfgNode* parent : node->getAncestors()){
-	//			xmlFile << "\t<Input idx=\"" << parent->getIdx() << "\" type=\"DATA\"/>\n";
-				xmlFile << "\t<Input idx=\"" << parent->getIdx() << "\"/>\n";
+			else if (child->parentClassification[1] == node)
+			{
+				xmlFile << "type=\"I1\"/>\n";
 			}
-	//		for(dfgNode* parentPHI : node->getPHIancestors()){
-	//			xmlFile << "\t<Input idx=\"" << parentPHI->getIdx() << "\" type=\"PHI\"/>\n";
-	//		}
-			xmlFile << "</Inputs>\n";
-
-			xmlFile << "<Outputs>\n";
-			for(dfgNode* child : node->getChildren()){
-	//			xmlFile << "\t<Output idx=\"" << child->getIdx() <<"\" type=\"DATA\"/>\n";
-				xmlFile << "\t<Output idx=\"" << child->getIdx() << "\" ";
-
-				if(child->parentClassification[0]==node){
-					xmlFile << "type=\"P\"/>\n";
-				}
-				else if(child->parentClassification[1]==node){
-					xmlFile << "type=\"I1\"/>\n";
-				}
-				else if(child->parentClassification[2]==node){
-					xmlFile << "type=\"I2\"/>\n";
-				}
-				else{
-					bool found=false;
-					for(std::pair<int,dfgNode*> pair : child->parentClassification){
-						if(pair.second == node){
-							xmlFile << "type=\"I2\"/>\n";
-							found=true;
-							break;
-						}
+			else if (child->parentClassification[2] == node)
+			{
+				xmlFile << "type=\"I2\"/>\n";
+			}
+			else
+			{
+				bool found = false;
+				for (std::pair<int, dfgNode *> pair : child->parentClassification)
+				{
+					if (pair.second == node)
+					{
+						xmlFile << "type=\"I2\"/>\n";
+						found = true;
+						break;
 					}
-
-					assert(found);
 				}
+
+				assert(found);
 			}
-	//		for(dfgNode* phiChild : node->getPHIchildren()){
-	//			xmlFile << "\t<Output idx=\"" << phiChild->getIdx() << "\" type=\"PHI\"/>\n";
-	//		}
-			xmlFile << "</Outputs>\n";
+		}
+		//		for(dfgNode* phiChild : node->getPHIchildren()){
+		//			xmlFile << "\t<Output idx=\"" << phiChild->getIdx() << "\" type=\"PHI\"/>\n";
+		//		}
+		xmlFile << "</Outputs>\n";
 
-			xmlFile << "<RecParents>\n";
-			for(dfgNode* recParent : node->getRecAncestors()){
-				xmlFile << "\t<RecParent idx=\"" << recParent->getIdx() << "\"";
-				xmlFile << " type=\"" << node->RecAncestorType[recParent->getNode()] << "\"";
-				xmlFile << "/>\n";
-			}
-			xmlFile << "</RecParents>\n";
+		xmlFile << "<RecParents>\n";
+		for (dfgNode *recParent : node->getRecAncestors())
+		{
+			xmlFile << "\t<RecParent idx=\"" << recParent->getIdx() << "\"";
+			xmlFile << " type=\"" << node->RecAncestorType[recParent->getNode()] << "\"";
+			xmlFile << "/>\n";
+		}
+		xmlFile << "</RecParents>\n";
 
-			xmlFile << "</Node>\n\n";
-
+		xmlFile << "</Node>\n\n";
 	}
-//		}
-//	}
-
-
-
+	//		}
+	//	}
 
 	xmlFile << "</DFG>\n";
 	xmlFile.close();
 }
 
-void DFG::printREGIMapfiles() {
-	std::map<HyCUBEIns,int> regimapInsIdxMap;
-	regimapInsIdxMap[NOP]=32;
-	regimapInsIdxMap[ADD]=0;
-	regimapInsIdxMap[SUB]=1;
-	regimapInsIdxMap[MUL]=2;
-	regimapInsIdxMap[SEXT]=4;
-	regimapInsIdxMap[DIV]=3;
-	regimapInsIdxMap[LS]=4;
-	regimapInsIdxMap[RS]=5;
-	regimapInsIdxMap[ARS]=regimapInsIdxMap[RS];
-	regimapInsIdxMap[AND]=6;
-	regimapInsIdxMap[OR]=7;
-	regimapInsIdxMap[XOR]=8;
-	regimapInsIdxMap[SELECT]=29;
-	regimapInsIdxMap[CMERGE]=regimapInsIdxMap[OR];
-	regimapInsIdxMap[CMP]=10;
-	regimapInsIdxMap[CLT]=12;
-	regimapInsIdxMap[BR]=31;
-	regimapInsIdxMap[CGT]=9;
+void DFG::printREGIMapfiles()
+{
+	std::map<HyCUBEIns, int> regimapInsIdxMap;
+	regimapInsIdxMap[NOP] = 32;
+	regimapInsIdxMap[ADD] = 0;
+	regimapInsIdxMap[SUB] = 1;
+	regimapInsIdxMap[MUL] = 2;
+	regimapInsIdxMap[SEXT] = 4;
+	regimapInsIdxMap[DIV] = 3;
+	regimapInsIdxMap[LS] = 4;
+	regimapInsIdxMap[RS] = 5;
+	regimapInsIdxMap[ARS] = regimapInsIdxMap[RS];
+	regimapInsIdxMap[AND] = 6;
+	regimapInsIdxMap[OR] = 7;
+	regimapInsIdxMap[XOR] = 8;
+	regimapInsIdxMap[SELECT] = 29;
+	regimapInsIdxMap[CMERGE] = regimapInsIdxMap[OR];
+	regimapInsIdxMap[CMP] = 10;
+	regimapInsIdxMap[CLT] = 12;
+	regimapInsIdxMap[BR] = 31;
+	regimapInsIdxMap[CGT] = 9;
 
-	regimapInsIdxMap[Hy_LOAD]=19;regimapInsIdxMap[Hy_LOADH]=19;regimapInsIdxMap[Hy_LOADB]=19;
-	regimapInsIdxMap[Hy_STORE]=21;regimapInsIdxMap[Hy_STOREH]=21;regimapInsIdxMap[Hy_STOREB]=21;
-	regimapInsIdxMap[JUMPL]=regimapInsIdxMap[BR];
-	regimapInsIdxMap[LOADCL]=regimapInsIdxMap[Hy_LOAD];
-	regimapInsIdxMap[MOVCL]=regimapInsIdxMap[OR];
-	regimapInsIdxMap[MOVC]=regimapInsIdxMap[OR];
+	regimapInsIdxMap[Hy_LOAD] = 19;
+	regimapInsIdxMap[Hy_LOADH] = 19;
+	regimapInsIdxMap[Hy_LOADB] = 19;
+	regimapInsIdxMap[Hy_STORE] = 21;
+	regimapInsIdxMap[Hy_STOREH] = 21;
+	regimapInsIdxMap[Hy_STOREB] = 21;
+	regimapInsIdxMap[JUMPL] = regimapInsIdxMap[BR];
+	regimapInsIdxMap[LOADCL] = regimapInsIdxMap[Hy_LOAD];
+	regimapInsIdxMap[MOVCL] = regimapInsIdxMap[OR];
+	regimapInsIdxMap[MOVC] = regimapInsIdxMap[OR];
 
 	//NOP,ADD,SUB,MUL,SEXT,DIV,LS,RS,ARS,AND,OR,XOR,SELECT,CMERGE,CMP,CLT,BR,CGT,LOADCL,MOVCL,Hy_LOAD,Hy_LOADH,Hy_LOADB,Hy_STORE,Hy_STOREH,Hy_STOREB,JUMPL,MOVC
 
@@ -8817,33 +9863,42 @@ void DFG::printREGIMapfiles() {
 
 	int additionalDataNodeStartIdx = 1000;
 
-	for(dfgNode* node : NodeList){
-		if(regimapInsIdxMap[node->getFinalIns()] == 19 || regimapInsIdxMap[node->getFinalIns()] == 21){
+	for (dfgNode *node : NodeList)
+	{
+		if (regimapInsIdxMap[node->getFinalIns()] == 19 || regimapInsIdxMap[node->getFinalIns()] == 21)
+		{
 			nodeFile << node->getIdx() << "\t" << regimapInsIdxMap[node->getFinalIns()] << "\n";
 			nodeFile << additionalDataNodeStartIdx << "\t" << regimapInsIdxMap[node->getFinalIns()] + 1 << "\n";
 
-			if(regimapInsIdxMap[node->getFinalIns()] == 19){
+			if (regimapInsIdxMap[node->getFinalIns()] == 19)
+			{
 				edgeFile << node->getIdx() << "\t" << additionalDataNodeStartIdx << "\tLRE\n";
 			}
-			else{
+			else
+			{
 				assert(regimapInsIdxMap[node->getFinalIns()] == 21);
 				edgeFile << node->getIdx() << "\t" << additionalDataNodeStartIdx << "\tSRE\n";
 			}
 
-			for(dfgNode* child : node->getChildren()){
+			for (dfgNode *child : node->getChildren())
+			{
 				edgeFile << additionalDataNodeStartIdx << "\t" << child->getIdx() << "\tTRU\n";
 			}
-			for(dfgNode* child : node->getPHIchildren()){
+			for (dfgNode *child : node->getPHIchildren())
+			{
 				edgeFile << additionalDataNodeStartIdx << "\t" << child->getIdx() << "\tPRE\n";
 			}
 			additionalDataNodeStartIdx++;
 		}
-		else{
+		else
+		{
 			nodeFile << node->getIdx() << "\t" << regimapInsIdxMap[node->getFinalIns()] << "\n";
-			for(dfgNode* child : node->getChildren()){
+			for (dfgNode *child : node->getChildren())
+			{
 				edgeFile << node->getIdx() << "\t" << child->getIdx() << "\tTRU\n";
 			}
-			for(dfgNode* child : node->getPHIchildren()){
+			for (dfgNode *child : node->getPHIchildren())
+			{
 				edgeFile << node->getIdx() << "\t" << child->getIdx() << "\tPRE\n";
 			}
 		}
@@ -8853,65 +9908,75 @@ void DFG::printREGIMapfiles() {
 	edgeFile.close();
 }
 
-void DFG::MergeCMerge() {
+void DFG::MergeCMerge()
+{
 
-	std::set<dfgNode*> delNodes;
+	std::set<dfgNode *> delNodes;
 
-	for(dfgNode* node : NodeList){
-		if(node->getNameType().compare("CMERGE")==0){
-			assert(node->parentClassification.find(0)!=node->parentClassification.end());
-//			assert(node->parentClassification.find(1)!=node->parentClassification.end());
-			if(node->parentClassification.find(1)==node->parentClassification.end()){
+	for (dfgNode *node : NodeList)
+	{
+		if (node->getNameType().compare("CMERGE") == 0)
+		{
+			assert(node->parentClassification.find(0) != node->parentClassification.end());
+			//			assert(node->parentClassification.find(1)!=node->parentClassification.end());
+			if (node->parentClassification.find(1) == node->parentClassification.end())
+			{
 				continue; // no data parent
 			}
 
-			dfgNode* predParent = node->parentClassification[0];
-			dfgNode* dataParent = node->parentClassification[1];
+			dfgNode *predParent = node->parentClassification[0];
+			dfgNode *dataParent = node->parentClassification[1];
 
-			if(dataParent->getAncestors().size() > 0){
-				if(dataParent->parentClassification.find(0)!=dataParent->parentClassification.end()){
+			if (dataParent->getAncestors().size() > 0)
+			{
+				if (dataParent->parentClassification.find(0) != dataParent->parentClassification.end())
+				{
 					continue;
 				}
 			}
 
-			if(dataParent->getChildren().size() == 1){
+			if (dataParent->getChildren().size() == 1)
+			{
 				predParent->removeChild(node);
 				node->removeAncestor(predParent);
-				removeEdge(findEdge(predParent,node));
+				removeEdge(findEdge(predParent, node));
 
 				dataParent->removeChild(node);
 				node->removeAncestor(dataParent);
-				removeEdge(findEdge(dataParent,node));
+				removeEdge(findEdge(dataParent, node));
 
 				delNodes.insert(node);
 
 				predParent->addChildNode(dataParent);
 				dataParent->addAncestorNode(predParent);
-				dataParent->parentClassification[0]=predParent;
+				dataParent->parentClassification[0] = predParent;
 
-				std::vector<dfgNode*> children = node->getChildren();
-				for(dfgNode* child : children){
+				std::vector<dfgNode *> children = node->getChildren();
+				for (dfgNode *child : children)
+				{
 					dataParent->addChildNode(child);
 					child->addAncestorNode(dataParent);
 
 					outs() << "parentClassification size = " << child->parentClassification.size() << "\n";
-//					if(child->parentClassification[0]==node){
-//						child->parentClassification[0]=dataParent;
-//					}
-//					else if(child->parentClassification[1]==node){
-//						child->parentClassification[1]=dataParent;
-//					}
-//					else if(child->parentClassification[2]==node){
-//						child->parentClassification[2]=dataParent;
-//					}
-//					else{
-//						assert(false);
-//					}
-					bool found=false;
-					for(std::pair<int,dfgNode*> pair : child->parentClassification){
-						if(pair.second==node){
-							child->parentClassification[pair.first]=dataParent;
-							found=true;
+					//					if(child->parentClassification[0]==node){
+					//						child->parentClassification[0]=dataParent;
+					//					}
+					//					else if(child->parentClassification[1]==node){
+					//						child->parentClassification[1]=dataParent;
+					//					}
+					//					else if(child->parentClassification[2]==node){
+					//						child->parentClassification[2]=dataParent;
+					//					}
+					//					else{
+					//						assert(false);
+					//					}
+					bool found = false;
+					for (std::pair<int, dfgNode *> pair : child->parentClassification)
+					{
+						if (pair.second == node)
+						{
+							child->parentClassification[pair.first] = dataParent;
+							found = true;
 							break;
 						}
 					}
@@ -8919,96 +9984,113 @@ void DFG::MergeCMerge() {
 
 					node->removeChild(child);
 					child->removeAncestor(node);
-					removeEdge(findEdge(node,child));
+					removeEdge(findEdge(node, child));
 				}
 			}
 		}
 	}
 
-	for(dfgNode* del : delNodes){
-		NodeList.erase(std::find(NodeList.begin(),NodeList.end(),del));
+	for (dfgNode *del : delNodes)
+	{
+		NodeList.erase(std::find(NodeList.begin(), NodeList.end(), del));
 	}
-
 }
 
-void DFG::insertMOVC() {
+void DFG::insertMOVC()
+{
 	int beforeNodeListSize = NodeList.size();
-	std::vector<dfgNode*> tobeadded;
+	std::vector<dfgNode *> tobeadded;
 
-	for(dfgNode* node : NodeList){
-		if(node->hasConstantVal()){
-			dfgNode* temp = new dfgNode(this);
+	for (dfgNode *node : NodeList)
+	{
+		if (node->hasConstantVal())
+		{
+			dfgNode *temp = new dfgNode(this);
 			temp->setNameType("MOVC");
-			temp->setIdx(NodeList.size()+tobeadded.size());
-			temp->BB=node->BB;
+			temp->setIdx(NodeList.size() + tobeadded.size());
+			temp->BB = node->BB;
 			temp->setFinalIns(MOVC);
 			temp->setConstantVal(node->getConstantVal());
 			tobeadded.push_back(temp);
 
 			temp->addChildNode(node);
 			node->addAncestorNode(temp);
-			node->parentClassification[2]=temp;
+			node->parentClassification[2] = temp;
 		}
 	}
 
-	for(dfgNode* newNode : tobeadded){
+	for (dfgNode *newNode : tobeadded)
+	{
 		NodeList.push_back(newNode);
 	}
 
 	outs() << "NodeList Size was increased : from=" << beforeNodeListSize << ", to=" << NodeList.size() << "\n";
 }
 
+void DFG::removeDisconnectedNodes()
+{
 
-void DFG::removeDisconnectedNodes() {
+	std::set<dfgNode *> rn;
 
-	std::set<dfgNode*> rn;
-
-	for(dfgNode* n : NodeList){
+	for (dfgNode *n : NodeList)
+	{
 		bool noAncestors = true;
 		bool ps_edges_found = false;
 
-		std::vector<dfgNode*> ancestors = n->getAncestors();
-		for(dfgNode* anc : ancestors){
-			if(findEdge(anc,n)->getType() == EDGE_TYPE_PS){
+		std::vector<dfgNode *> ancestors = n->getAncestors();
+		for (dfgNode *anc : ancestors)
+		{
+			if (findEdge(anc, n)->getType() == EDGE_TYPE_PS)
+			{
 				ps_edges_found = true;
 			}
-			else{
+			else
+			{
 				noAncestors = false;
 			}
 		}
 
-		if(ps_edges_found && noAncestors){
-			for(dfgNode* anc : ancestors){
+		if (ps_edges_found && noAncestors)
+		{
+			for (dfgNode *anc : ancestors)
+			{
 				anc->removeChild(n);
 				n->removeAncestor(anc);
 			}
 		}
 
-		if(noAncestors && n->getChildren().size() == 0){
+		if (noAncestors && n->getChildren().size() == 0)
+		{
 			rn.insert(n);
 		}
 	}
 
-	for(dfgNode* n : rn){
+	for (dfgNode *n : rn)
+	{
 		std::cout << "Removing Node = " << n->getIdx() << "\n";
 		NodeList.erase(std::remove(NodeList.begin(), NodeList.end(), n), NodeList.end());
 	}
-
 }
 
-std::unordered_set<dfgNode*> DFG::getLineage(dfgNode* n){
+std::unordered_set<dfgNode *> DFG::getLineage(dfgNode *n)
+{
 
-	std::unordered_set<dfgNode*> lin;
+	std::unordered_set<dfgNode *> lin;
 
-	std::queue<dfgNode*> q;
+	std::queue<dfgNode *> q;
 	q.push(n);
 	lin.insert(n);
 
-	while(!q.empty()){
-		dfgNode* head = q.front(); q.pop();
-		for(dfgNode* anc : head->getAncestors()){
-			if(head->ancestorBackEdgeMap[anc]) continue;
-			if(lin.find(anc) == lin.end()){
+	while (!q.empty())
+	{
+		dfgNode *head = q.front();
+		q.pop();
+		for (dfgNode *anc : head->getAncestors())
+		{
+			if (head->ancestorBackEdgeMap[anc])
+				continue;
+			if (lin.find(anc) == lin.end())
+			{
 				q.push(anc);
 				lin.insert(anc);
 			}
@@ -9016,9 +10098,260 @@ std::unordered_set<dfgNode*> DFG::getLineage(dfgNode* n){
 	}
 
 	std::cout << "lineage = ";
-	for(dfgNode* n : lin) std::cout << n->getIdx() << ",";
+	for (dfgNode *n : lin)
+		std::cout << n->getIdx() << ",";
 	std::cout << "\n";
 
 	return lin;
+}
+
+void populateStructOffset(StructType *ST, std::unordered_map<int, int> &structOffset, const DataLayout &DL)
+{
+	int prev_offset = 0;
+	int ctr = 0;
+	for (auto type_el : ST->elements())
+	{
+		outs() << "\t\t";
+		type_el->dump();
+		structOffset[ctr] = prev_offset;
+		prev_offset += DL.getTypeAllocSize(type_el);
+		ctr++;
+	}
+}
+
+int DFG::CalculateGEPBaseAddr(GetElementPtrInst *GEP)
+{
+	// dfgNode* gep_node = findNode(GEP); assert(gep_node);
+	int base_addr = 0;
+	const DataLayout DL = GEP->getParent()->getParent()->getParent()->getDataLayout();
+
+	int total_size = -1;
+
+	PointerType *PT = cast<PointerType>(GEP->getPointerOperand()->getType());
+	if (StructType *ST = dyn_cast<StructType>(PT->getElementType()))
+	{
+		outs() << "\t";
+		ST->dump();
+		total_size = DL.getTypeAllocSize(ST);
+		// outs() << "\t\t sample element 2 = " ; ST->getElementType(2)->dump();
+	}
+	else if (ArrayType *AT = dyn_cast<ArrayType>(PT->getElementType()))
+	{
+		outs() << "\t";
+		AT->dump();
+		total_size = DL.getTypeAllocSize(AT);
+	}
+	else
+	{
+		//no further offset calculation is required.
+		return base_addr;
+	}
+
+	int offset = 0;
+
+	if (ConstantInt *cv_main_offset = dyn_cast<ConstantInt>(GEP->getOperand(1)))
+	{
+		int cv_main_offest_int = cv_main_offset->getSExtValue();
+		offset = cv_main_offest_int * total_size;
+		Type *currType = GEP->getSourceElementType();
+
+		if (GEP->getNumOperands() > 1)
+		{
+			for (int i = 2; i < GEP->getNumOperands(); i++)
+			{
+				outs() << "currType = ";
+				currType->dump();
+				if (ConstantInt *CV = dyn_cast<ConstantInt>(GEP->getOperand(i)))
+				{
+					int cv_int = CV->getSExtValue();
+					outs() << "\t offset_idx" << i << "=" << cv_int << "\n";
+
+					if (StructType *ST = dyn_cast<StructType>(currType))
+					{
+						outs() << "ST Type!.\n";
+						std::unordered_map<int, int> structOffset;
+						populateStructOffset(ST, structOffset, DL);
+						offset += structOffset[cv_int];
+						currType = ST->getElementType(cv_int);
+					}
+					else if (ArrayType *AT = dyn_cast<ArrayType>(currType))
+					{
+						outs() << "AT Type!.\n";
+						int element_size = DL.getTypeAllocSize(AT->getElementType());
+						offset += cv_int * element_size;
+						currType = AT->getElementType();
+					}
+					else
+					{
+						outs() << "scalar Type.\n";
+						assert(i == GEP->getNumOperands() - 1);
+					}
+				}
+			}
+		}
+	}
+
+	outs() << "\t offset = " << offset << "\n";
+
+	return offset;
+}
+
+void DFG::GEPBaseAddrCheck(Function &F)
+{
+
+	for (auto &bb : F)
+	{
+		for (auto &ins : bb)
+		{
+			if (GetElementPtrInst *GEP = dyn_cast<GetElementPtrInst>(&ins))
+			{
+				outs() << "GEP = ";
+				GEP->dump();
+				int offset = CalculateGEPBaseAddr(GEP);
+				GEPOffsetMap[GEP] = offset;
+			}
+		}
+	}
+}
+
+void checkGEPDerivatives(Instruction *root, GetElementPtrInst *GEP, std::unordered_map<Value *, GetElementPtrInst *> &deriv)
+{
+	for (User *u : root->users())
+	{
+		assert(u != GEP);
+		if (Instruction *ins = dyn_cast<Instruction>(u))
+		{
+			if (ins->mayReadOrWriteMemory())
+				continue;
+			if (deriv.find(ins) != deriv.end())
+				continue;
+
+			outs() << "\t value = ";
+			ins->dump();
+			deriv[ins] = GEP;
+			checkGEPDerivatives(ins, GEP, deriv);
+		}
+	}
+}
+
+
+void DFG::getTransferVariables(std::unordered_set<Value *> &outer_vals,
+							   std::unordered_map<Value *, GetElementPtrInst *> &mem_ptrs,
+							   std::unordered_map<Value *, int> &acc,
+							   Function &F)
+{
+
+	for (auto it = OutLoopNodeMap.begin(); it != OutLoopNodeMap.end(); it++)
+	{
+		Value *val = it->first;
+		outer_vals.insert(val);
+		acc[val] = acc[val] + 1;
+	}
+
+	std::unordered_map<Value *, GetElementPtrInst *> gep_derivatives;
+
+	for (auto &bb : F)
+	{
+		for (auto &ins : bb)
+		{
+			if (gep_derivatives.find(&ins) != gep_derivatives.end())
+				continue;
+			if (GetElementPtrInst *GEP = dyn_cast<GetElementPtrInst>(&ins))
+			{
+				outs() << "searching for GEP = ";
+				GEP->dump();
+				gep_derivatives[GEP] = GEP;
+				checkGEPDerivatives(GEP, GEP, gep_derivatives);
+			}
+		}
+	}
+
+	for (dfgNode *node : NodeList)
+	{
+		if (node->getNode())
+		{
+			if (LoadInst *LDI = dyn_cast<LoadInst>(node->getNode()))
+			{
+				outs() << "LOAD TRANSFER = ";
+				LDI->dump();
+				Value *ld_ptr = LDI->getPointerOperand();
+
+				assert(gep_derivatives.find(ld_ptr) != gep_derivatives.end());
+				mem_ptrs[ld_ptr] = gep_derivatives[ld_ptr];
+				acc[gep_derivatives[ld_ptr]->getPointerOperand()] = acc[gep_derivatives[ld_ptr]->getPointerOperand()] + 1;
+			}
+			if (StoreInst *STI = dyn_cast<StoreInst>(node->getNode()))
+			{
+				outs() << "STORE TRANSFER = ";
+				STI->dump();
+				Value *st_ptr = STI->getPointerOperand();
+
+				assert(gep_derivatives.find(st_ptr) != gep_derivatives.end());
+				mem_ptrs[st_ptr] = gep_derivatives[st_ptr];
+				acc[gep_derivatives[st_ptr]->getPointerOperand()] = acc[gep_derivatives[st_ptr]->getPointerOperand()] + 1;
+			}
+		}
+	}
+}
+
+
+void DFG::SetBasePointers(std::unordered_set<Value*>& outer_vals, 
+			              std::unordered_map<Value*,GetElementPtrInst*>& mem_ptrs, Function &F){
+
+	for(dfgNode* node : NodeList){
+
+		if(OutLoopNodeMapReverse.find(node) != OutLoopNodeMapReverse.end()){
+			assert(outer_vals.find(OutLoopNodeMapReverse[node]) != outer_vals.end());
+			outs() << "Outer LOOP value :: "; OutLoopNodeMapReverse[node]->dump();
+			outs() << "Outer LOOP name = " << OutLoopNodeMapReverse[node]->getName() << "\n";
+			node->setArrBasePtr(OutLoopNodeMapReverse[node]->getName());
+
+			DataLayout DL = F.getParent()->getDataLayout();
+			array_pointer_sizes[OutLoopNodeMapReverse[node]->getName()] = DL.getTypeAllocSize(OutLoopNodeMapReverse[node]->getType());
+		}
+		else if(node->getNode() && node->getNode()->mayReadOrWriteMemory()){
+			if(LoadInst* LDI = dyn_cast<LoadInst>(node->getNode())){
+				Value* pointer = LDI->getPointerOperand();
+				assert(mem_ptrs.find(pointer) != mem_ptrs.end());
+
+				std::string base_ptr_name = mem_ptrs[pointer]->getPointerOperand()->getName();
+				node->setArrBasePtr(base_ptr_name);
+
+				if(sizeArrMap.find(base_ptr_name) != sizeArrMap.end()){
+					array_pointer_sizes[base_ptr_name] = sizeArrMap[base_ptr_name];
+				}
+				else{
+					DataLayout DL = LDI->getParent()->getParent()->getParent()->getDataLayout();
+					PointerType* PT = cast<PointerType>(mem_ptrs[pointer]->getPointerOperand()->getType());
+					array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(PT->getElementType());
+				}
+
+			}
+			else if(StoreInst* STI = dyn_cast<StoreInst>(node->getNode())){
+				Value* pointer = STI->getPointerOperand();
+				assert(mem_ptrs.find(pointer) != mem_ptrs.end());
+
+				std::string base_ptr_name = mem_ptrs[pointer]->getPointerOperand()->getName();
+				node->setArrBasePtr(base_ptr_name);
+
+				if(sizeArrMap.find(base_ptr_name) != sizeArrMap.end()){
+					array_pointer_sizes[base_ptr_name] = sizeArrMap[base_ptr_name];
+				}
+				else{
+					DataLayout DL = LDI->getParent()->getParent()->getParent()->getDataLayout();
+					PointerType* PT = cast<PointerType>(mem_ptrs[pointer]->getPointerOperand()->getType());
+					array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(PT->getElementType());
+				}
+			}
+			else{
+				//if the instruction could read or write memory it should be a load
+				// or a store instruction.
+				assert(false);
+			}
+		}
+	}
+
+
 
 }
+

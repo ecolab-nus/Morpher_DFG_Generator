@@ -729,7 +729,7 @@ bool DFGPartPred::checkBackEdge(dfgNode* src, dfgNode* dest) {
 
 }
 
-void DFGPartPred::generateTrigDFGDOT() {
+void DFGPartPred::generateTrigDFGDOT(Function &F) {
 
 //	connectBB();
 	connectBBTrig();
@@ -752,12 +752,13 @@ void DFGPartPred::generateTrigDFGDOT() {
 	// assignALAPasASAP();
 //	balanceSched();
 
+	GEPBaseAddrCheck(F);
 	nameNodes();
 	classifyParents();
 	// RemoveInductionControlLogic();
 
 	// RemoveBackEdgePHIs();
-	removeOutLoopLoad();
+	// removeOutLoopLoad();
 	RemoveConstantCMERGEs();
 	removeDisconnectedNodes();
 
@@ -1266,6 +1267,25 @@ void DFGPartPred::printNewDFGXML() {
 				xmlFile << "O";
 			}
 			xmlFile << HyCUBEInsStrings[node->getFinalIns()] << "</OP>\n";
+
+			if(node->getArrBasePtr() != "NOT_A_MEM_OP"){
+				xmlFile << "<BasePointerName>";	
+				xmlFile << node->getArrBasePtr();
+				xmlFile << "</BasePointerName>\n";
+
+				xmlFile << "<BasePointerSize>";	
+				xmlFile << array_pointer_sizes[node->getArrBasePtr()];
+				xmlFile << "</BasePointerSize>\n";
+			}
+
+			if(node->getGEPbaseAddr() != -1){
+				GetElementPtrInst* GEP = cast<GetElementPtrInst>(node->getNode());
+				int gep_offset = GEPOffsetMap[GEP];
+				xmlFile << "<GEPOffset>";	
+				xmlFile << gep_offset;
+				xmlFile << "</GEPOffset>\n";
+			}
+
 //			xmlFile << "<OP>" << HyCUBEInsStrings[node->getFinalIns()] << "</OP>\n";
 
 			xmlFile << "<Inputs>\n";
@@ -1416,6 +1436,11 @@ void DFGPartPred::printNewDFGXML() {
 
 
 	xmlFile << "</DFG>\n";
+
+
+
+
+
 	xmlFile.close();
 
 

@@ -720,7 +720,7 @@ bool DFGDISE::checkBackEdge(dfgNode* src, dfgNode* dest) {
 
 }
 
-void DFGDISE::generateTrigDFGDOT() {
+void DFGDISE::generateTrigDFGDOT(Function &F) {
 
 //	connectBB();
 	connectBBTrig();
@@ -743,6 +743,8 @@ void DFGDISE::generateTrigDFGDOT() {
 //	assignALAPasASAP();
 //	balanceSched();
 	removeOutLoopLoad();
+
+	GEPBaseAddrCheck(F);
 	nameNodes();
 	classifyParents();
 
@@ -1238,6 +1240,16 @@ void DFGDISE::printNewDFGXML() {
 			}
 			xmlFile << HyCUBEInsStrings[node->getFinalIns()] << "</OP>\n";
 //			xmlFile << "<OP>" << HyCUBEInsStrings[node->getFinalIns()] << "</OP>\n";
+
+			if(node->getArrBasePtr() != "NOT_A_MEM_OP"){
+				xmlFile << "<BasePointerName>";	
+				xmlFile << node->getArrBasePtr();
+				xmlFile << "</BasePointerName>\n";
+
+				xmlFile << "<BasePointerSize>";	
+				xmlFile << array_pointer_sizes[node->getArrBasePtr()];
+				xmlFile << "</BasePointerSize>\n";
+			}
 
 			xmlFile << "<Inputs>\n";
 			for(dfgNode* parent : node->getAncestors()){

@@ -356,7 +356,7 @@ public :
 	void removeDisconnetedNodes();
 	void printDOT(std::string fileName);
 	void printSubPathDOT(std::string fileNamePrefix);
-	void generateTrigDFGDOT();
+	void generateTrigDFGDOT(Function &F);
 
 
 	dfgNode* combineConditionAND(dfgNode* brcond, dfgNode* selcond, dfgNode* child);

@@ -10,7 +10,7 @@ class DFGPartPred : public DFG{
 		int handleSELECTNodes();
 		void removeDisconnetedNodes();
 		void printDOT(std::string fileName);
-		void generateTrigDFGDOT();
+		void generateTrigDFGDOT(Function &F);
 
 
 		dfgNode* combineConditionAND(dfgNode* brcond, dfgNode* selcond, dfgNode* child);

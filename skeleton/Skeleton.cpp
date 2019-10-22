@@ -1911,6 +1911,24 @@ std::string getMappingUnitNameUsingTokenFunction(Function &F){
 		assert(false);
 }
 
+void NameUnnamedValues(Function &F){
+	std::string prefix = "manupa";
+
+	int ctr = 0;
+
+	for(auto& bb : F){
+		for(auto& v : bb){
+			if(Instruction* ins = dyn_cast<Instruction>(&v)){
+				if(ins->getName().empty() && !ins->getType()->isVoidTy()){
+					outs() << "setting name for = "; ins->dump();
+					std::string name = prefix + std::to_string(ctr++);
+					ins->setName(name);
+				}
+			}
+		}
+	}
+}
+
 
 namespace
 {
@@ -1952,6 +1970,7 @@ struct SkeletonFunctionPass : public FunctionPass
 		ReplaceCMPs(F);
 		RemoveSelectLeafs(F);
 		InsertORtoSingularConditionalBB(F);
+		NameUnnamedValues(F);
 		ParseSizeAttr(F, &sizeArrMap);
 
 		std::string Filename = ("cfg." + F.getName() + ".dot").str();
@@ -2090,7 +2109,15 @@ struct SkeletonFunctionPass : public FunctionPass
 			}
 
 			LoopDFG->addMemRecDepEdgesNew(DI);
-			LoopDFG->generateTrigDFGDOT();
+
+			std::unordered_set<Value*> outVals;
+			std::unordered_map<Value*,GetElementPtrInst*> arrPtrs;
+			std::unordered_map<Value*,int> mem_acceses;
+			LoopDFG->getTransferVariables(outVals,arrPtrs,mem_acceses,F);
+			LoopDFG->SetBasePointers(outVals,arrPtrs,F);
+
+			LoopDFG->generateTrigDFGDOT(F);
+
 			delete (LoopDFG);
 			outs() << "dfgType=" << dfgType << "\n";
 			return false;
