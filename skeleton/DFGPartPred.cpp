@@ -1269,13 +1269,9 @@ void DFGPartPred::printNewDFGXML() {
 			xmlFile << HyCUBEInsStrings[node->getFinalIns()] << "</OP>\n";
 
 			if(node->getArrBasePtr() != "NOT_A_MEM_OP"){
-				xmlFile << "<BasePointerName>";	
+				xmlFile << "<BasePointerName size=\"" << array_pointer_sizes[node->getArrBasePtr()] << "\">";	
 				xmlFile << node->getArrBasePtr();
 				xmlFile << "</BasePointerName>\n";
-
-				xmlFile << "<BasePointerSize>";	
-				xmlFile << array_pointer_sizes[node->getArrBasePtr()];
-				xmlFile << "</BasePointerSize>\n";
 			}
 
 			if(node->getGEPbaseAddr() != -1){

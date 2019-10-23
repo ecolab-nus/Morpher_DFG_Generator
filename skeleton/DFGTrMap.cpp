@@ -1243,13 +1243,9 @@ void DFGTrMap::printNewDFGXML() {
 //			xmlFile << "<OP>" << HyCUBEInsStrings[node->getFinalIns()] << "</OP>\n";
 
 			if(node->getArrBasePtr() != "NOT_A_MEM_OP"){
-				xmlFile << "<BasePointerName>";	
+				xmlFile << "<BasePointerName size=\"" << array_pointer_sizes[node->getArrBasePtr()] << "\">";	
 				xmlFile << node->getArrBasePtr();
 				xmlFile << "</BasePointerName>\n";
-
-				xmlFile << "<BasePointerSize>";	
-				xmlFile << array_pointer_sizes[node->getArrBasePtr()];
-				xmlFile << "</BasePointerSize>\n";
 			}
 
 			xmlFile << "<Inputs>\n";
