@@ -2082,6 +2082,7 @@ struct SkeletonFunctionPass : public FunctionPass
 				outs() << "Invalid DFG Type=" << dfgType << "\n";
 				assert(false);
 			}
+			LoopDFG->DT = DT;
 
 
 			LoopDFG->setBBSuccBasicBlocks(BBSuccBasicBlocks);

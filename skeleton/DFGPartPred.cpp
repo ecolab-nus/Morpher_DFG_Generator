@@ -746,6 +746,7 @@ void DFGPartPred::generateTrigDFGDOT(Function &F) {
 	constructCMERGETree();
 
 //	printDOT(this->name + "_PartPredDFG.dot"); return;
+	handlestartstop();
 
 	scheduleASAP();
 	scheduleALAP();
@@ -757,7 +758,7 @@ void DFGPartPred::generateTrigDFGDOT(Function &F) {
 	classifyParents();
 	// RemoveInductionControlLogic();
 
-	// RemoveBackEdgePHIs();
+	RemoveBackEdgePHIs();
 	// removeOutLoopLoad();
 	RemoveConstantCMERGEs();
 	removeDisconnectedNodes();
@@ -1306,6 +1307,7 @@ void DFGPartPred::printNewDFGXML() {
 					xmlFile << "nextiter=\"0\" ";
 				}
 
+
 				bool written=false;
 				if(findEdge(node,child)->getType() == EDGE_TYPE_PS){
 					xmlFile << "type=\"PS\"/>\n";
@@ -1321,6 +1323,12 @@ void DFGPartPred::printNewDFGXML() {
 							int operand_no = findOperandNumber(child,child->getNode(),cmergePHINodes[node]->getNode());
 							if( operand_no == 0){
 								child->parentClassification[0]=node;
+								if(child->getNPB()){
+									xmlFile << "NPB=\"1\" ";
+								}
+								else{
+									xmlFile << "NPB=\"0\" ";
+								}
 								xmlFile << "type=\"P\"/>\n";
 							}
 							else if ( operand_no == 1){
@@ -1348,6 +1356,12 @@ void DFGPartPred::printNewDFGXML() {
 						int operand_no = findOperandNumber(child,child->getNode(),selectPHIAncestorMap[node]->getNode());
 						if( operand_no == 0){
 							child->parentClassification[0]=node;
+								if(child->getNPB()){
+									xmlFile << "NPB=\"1\" ";
+								}
+								else{
+									xmlFile << "NPB=\"0\" ";
+								}
 							xmlFile << "type=\"P\"/>\n";
 						}
 						else if ( operand_no == 1){
@@ -1370,6 +1384,12 @@ void DFGPartPred::printNewDFGXML() {
 						int operand_no = Edge2OperandIdxMap[node][child];
 						if( operand_no == 0){
 							child->parentClassification[0]=node;
+								if(child->getNPB()){
+									xmlFile << "NPB=\"1\" ";
+								}
+								else{
+									xmlFile << "NPB=\"0\" ";
+								}
 							xmlFile << "type=\"P\"/>\n";
 						}
 						else if ( operand_no == 1){
@@ -1386,6 +1406,12 @@ void DFGPartPred::printNewDFGXML() {
 				if(written){
 				}
 				else if(child->parentClassification[0]==node){
+								if(child->getNPB()){
+									xmlFile << "NPB=\"1\" ";
+								}
+								else{
+									xmlFile << "NPB=\"0\" ";
+								}
 					xmlFile << "type=\"P\"/>\n";
 				}
 				else if(child->parentClassification[1]==node){
@@ -2849,3 +2875,158 @@ void DFGPartPred::RemoveConstantCMERGEs(){
 
 
 }
+
+
+void DFGPartPred::getLoopExitConditionNodes(std::set<exitNode> &exitNodes)
+{
+	bool is_ctrl_node_null = false;
+	std::unordered_set<BasicBlock *> exitSrcs;
+
+	for (auto it = loopexitBB.begin(); it != loopexitBB.end(); it++)
+	{
+
+		BasicBlock *src = it->first;
+		BasicBlock *dest = it->second;
+		exitSrcs.insert(src);
+
+		outs() << "loop exit src = " << src->getName() << ", dest = " << dest->getName() << ",";
+
+		BranchInst *BRI = static_cast<BranchInst *>(src->getTerminator());
+
+		if (BRI->isConditional())
+		{
+			dfgNode *ctrlNode = findNode(cast<Instruction>(BRI->getCondition()));
+			assert(ctrlNode);
+			for (int j = 0; j < BRI->getNumSuccessors(); ++j)
+			{
+				if (dest == BRI->getSuccessor(j))
+				{
+					if (j == 0)
+					{
+						outs() << "true path\n";
+						// exitNodes.insert(std::make_pair(ctrlNode, true));
+						exitNodes.insert(exitNode(ctrlNode, true, BRI->getParent(), dest));
+					}
+					else
+					{
+						outs() << "false path\n";
+						exitNodes.insert(exitNode(ctrlNode, false, BRI->getParent(), dest));
+					}
+				}
+			}
+		}
+		else
+		{
+			outs() << "BRI BasicBlock = " << BRI->getParent()->getName() << "\n";
+
+			auto ThisBasicBlockDTNode = DT->getNode(BRI->getParent());
+			auto IDOM_DTNode = ThisBasicBlockDTNode->getIDom();
+			BasicBlock *IDOM = IDOM_DTNode->getBlock();
+
+			BranchInst *IDOM_BRI = static_cast<BranchInst *>(IDOM->getTerminator());
+			outs() << "IDOM BRI BasicBlock = " << IDOM_BRI->getParent()->getName() << "\n";
+			assert(IDOM_BRI->isConditional());
+
+			bool isTruePath = true;
+			for (int j = 0; j < IDOM_BRI->getNumSuccessors(); ++j)
+			{
+				if (DT->dominates(IDOM_BRI->getSuccessor(j), BRI->getParent()))
+				{
+					if (j == 0)
+					{
+						outs() << "true path\n";
+						// exitNodes.insert(std::make_pair(ctrlNode, true));
+						isTruePath = true;
+					}
+					else
+					{
+						outs() << "false path\n";
+						isTruePath = false;
+					}
+				}
+			}
+
+			dfgNode *ctrlNode = findNode(cast<Instruction>(IDOM_BRI->getCondition()));
+
+			//ctrlNode could be null that means it is always executed
+			exitNodes.insert(exitNode(ctrlNode, isTruePath, BRI->getParent(), dest));
+
+			if (ctrlNode)
+			{
+			}
+			else
+			{
+				is_ctrl_node_null = true;
+			}
+		}
+	}
+
+	if (is_ctrl_node_null)
+	{
+		assert(exitSrcs.size() == 1);
+	}
+}
+
+// void DFGPartPred::addLoopExitStoreHyCUBE(std::set<exitNode> &exitNodes)
+// {
+// 	outs() << "addLoopExitStoreHyCUBE begin.\n";
+// 	for (exitNode en : exitNodes)
+// 	{
+
+// 		dfgNode *loopexit = new dfgNode(this);
+// 		loopexit->setIdx(this->getNodesPtr()->size() + 20000);
+// 		this->getNodesPtr()->push_back(loopexit);
+// 		loopexit->setNameType("LOOPEXIT");
+// 		loopexit->BB = en.dest;
+// 		loopexit->setLeftAlignedMemOp(1);
+
+// 		dfgNode *mov_const = new dfgNode(this);
+// 		mov_const->setIdx(this->getNodesPtr()->size() + 20000);
+// 		this->getNodesPtr()->push_back(mov_const);
+// 		mov_const->setNameType("MOVC");
+// 		mov_const->BB = loopexit->BB;
+
+// 		int mu_trans_id = getMUnitTransID(en.src, en.dest);
+// 		mov_const->setConstantVal(mu_trans_id);
+
+// 		mov_const->addChildNode(loopexit);
+// 		loopexit->addAncestorNode(mov_const);
+// 		loopexit->parentClassification[1] = mov_const;
+// 		outs() << "Adding connection : " << mov_const->getIdx() << " to " << loopexit->getIdx() << "\n";
+
+// 		if (en.ctrlNode)
+// 		{
+// 			en.ctrlNode->getNode()->dump();
+// 			bool isTruePath = en.ctrlVal;
+// 			en.ctrlNode->addChildNode(loopexit, EDGE_TYPE_DATA, false, true, isTruePath);
+// 			loopexit->addAncestorNode(en.ctrlNode, EDGE_TYPE_DATA, false, true, isTruePath);
+// 			loopexit->parentClassification[0] = en.ctrlNode;
+// 			if (!isTruePath)
+// 				loopexit->setNPB(true);
+// 			outs() << "Adding connection : " << en.ctrlNode->getIdx() << " to " << loopexit->getIdx() << "\n";
+// 		}
+// 		else
+// 		{
+// 			dfgNode *sample_start_node = startNodes.begin()->second;
+// 			assert(sample_start_node);
+// 			sample_start_node->addChildNode(loopexit, EDGE_TYPE_PS, false, true, true);
+// 			loopexit->addAncestorNode(sample_start_node, EDGE_TYPE_PS, false, true, true);
+
+// 			outs() << "Adding connection PS : " << sample_start_node->getIdx() << " to " << loopexit->getIdx() << "\n";
+// 		}
+// 	}
+
+// 	outs() << "addLoopExitStoreHyCUBE end.\n";
+
+// 	// for(auto it = exitNodes.begin(); it != exitNodes.end(); it++){
+// 	// 	dfgNode* control_node = it->first;
+// 	// 	bool isTruePath = it->second;
+
+// 	// 	node->addChildNode(loopexit,EDGE_TYPE_DATA,false,true,isTruePath);
+// 	// 	loopexit->addAncestorNode(node,EDGE_TYPE_DATA,false,true,isTruePath);
+
+// 	// 	//There is a problem here, we cannot have multiple nodes coming to the same store
+// 	// 	loopexit->parentClassification[0] = node;
+// 	// 	if(!isTruePath) loopexit->setNPB(true);
+// 	// }
+// }

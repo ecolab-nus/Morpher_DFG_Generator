@@ -1,6 +1,23 @@
 #include "dfg.h"
 #include <unordered_set>
 
+struct exitNode{
+	dfgNode* ctrlNode;
+	bool ctrlVal;
+	BasicBlock* src;
+	BasicBlock* dest;
+
+	const bool operator< (const exitNode& other) const{
+		if(src != other.src || dest != other.dest){
+			return true;
+		}
+		else{
+			return false;
+		}
+	}
+	exitNode(dfgNode* cn, bool cv, BasicBlock* s, BasicBlock* d) : ctrlNode(cn), ctrlVal(cv), src(s), dest(d){}
+};
+
 class DFGPartPred : public DFG{
 	public :
 		DFGPartPred(std::string name,std::map<Loop*,std::string>* lnPtr, Loop* l) : DFG(name,lnPtr), currLoop(l){}
@@ -48,6 +65,9 @@ class DFGPartPred : public DFG{
 		void RemoveConstantCMERGEs();
 
 		ScalarEvolution* SE;
+
+		void getLoopExitConditionNodes(std::set<exitNode> &exitNodes);
+		// void addLoopExitStoreHyCUBE(std::set<exitNode> &exitNodes);
 
 
 

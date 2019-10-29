@@ -6268,10 +6268,12 @@ int DFG::nameNodes()
 					GetElementPtrInst *GEP = cast<GetElementPtrInst>(node->getNode());
 					assert(GEPOffsetMap.find(GEP) != GEPOffsetMap.end());
 
-					if(node->getGEPbaseAddr() != -1){
+					if (node->getGEPbaseAddr() != -1)
+					{
 						node->setGEPbaseAddr(node->getGEPbaseAddr() + GEPOffsetMap[GEP]);
 					}
-					else{
+					else
+					{
 						node->setGEPbaseAddr(GEPOffsetMap[GEP]);
 					}
 					node->setConstantVal(node->getGEPbaseAddr());
@@ -8958,9 +8960,9 @@ int DFG::handlestartstop()
 {
 	dfgNode *node;
 
-	Loop *L = this->getLoop();
-	SmallVector<BasicBlock *, 8> loopExitBlocks;
-	L->getExitBlocks(loopExitBlocks);
+	// Loop *L = this->getLoop();
+	// SmallVector<BasicBlock *, 8> loopExitBlocks;
+	// L->getExitBlocks(loopExitBlocks);
 
 	for (int i = 0; i < NodeList.size(); ++i)
 	{
@@ -9006,7 +9008,7 @@ int DFG::handlestartstop()
 				storeStart->setNameType("STORESTART");
 				storeStart->BB = node->BB;
 				storeStart->setLeftAlignedMemOp(2);
-				storeStart->setNPB(true);
+				storeStart->setNPB(false);
 
 				node->addChildNode(storeStart);
 				storeStart->addAncestorNode(node);
@@ -9016,7 +9018,7 @@ int DFG::handlestartstop()
 				this->getNodesPtr()->push_back(movone);
 				movone->setNameType("MOVC");
 				movone->BB = node->BB;
-				movone->setConstantVal(1);
+				movone->setConstantVal(0);
 
 				movone->addChildNode(storeStart);
 				storeStart->addAncestorNode(movone);
@@ -9032,7 +9034,7 @@ int DFG::handlestartstop()
 			}
 		}
 		else
-		{   //LoopExit
+		{ //LoopExit
 			//			if(std::find(loopExitBlocks.begin(),loopExitBlocks.end(),node->getNode()->getParent())!=loopExitBlocks.end()){
 			//
 			//				if(!dyn_cast<BranchInst>(node->getNode())){
@@ -9073,40 +9075,40 @@ int DFG::handlestartstop()
 
 			//			if(std::find(loopExitBlocks.begin(),loopExitBlocks.end(),node->getNode()->g)!=loopExitBlocks.end()){
 
-			if (BranchInst *BRI = dyn_cast<BranchInst>(node->getNode()))
-			{
+			// if (BranchInst *BRI = dyn_cast<BranchInst>(node->getNode()))
+			// {
 
-				for (int j = 0; j < BRI->getNumSuccessors(); ++j)
-				{
-					if (std::find(loopExitBlocks.begin(),
-								  loopExitBlocks.end(),
-								  BRI->getSuccessor(j)) != loopExitBlocks.end())
-					{
+			// 	for (int j = 0; j < BRI->getNumSuccessors(); ++j)
+			// 	{
+			// 		if (std::find(loopExitBlocks.begin(),
+			// 					  loopExitBlocks.end(),
+			// 					  BRI->getSuccessor(j)) != loopExitBlocks.end())
+			// 		{
 
-						//current node belong to a loop exit basic block
-						dfgNode *loopexit = new dfgNode(this);
-						loopexit->setIdx(this->getNodesPtr()->size());
-						this->getNodesPtr()->push_back(loopexit);
-						loopexit->setNameType("LOOPEXIT");
-						loopexit->BB = BRI->getSuccessor(j);
-						loopexit->setLeftAlignedMemOp(1);
+			// 			//current node belong to a loop exit basic block
+			// 			dfgNode *loopexit = new dfgNode(this);
+			// 			loopexit->setIdx(this->getNodesPtr()->size());
+			// 			this->getNodesPtr()->push_back(loopexit);
+			// 			loopexit->setNameType("LOOPEXIT");
+			// 			loopexit->BB = BRI->getSuccessor(j);
+			// 			loopexit->setLeftAlignedMemOp(1);
 
-						node->addChildNode(loopexit);
-						loopexit->addAncestorNode(node);
+			// 			node->addChildNode(loopexit);
+			// 			loopexit->addAncestorNode(node);
 
-						dfgNode *movone = new dfgNode(this);
-						movone->setIdx(this->getNodesPtr()->size());
-						this->getNodesPtr()->push_back(movone);
-						movone->setNameType("MOVC");
-						movone->BB = node->BB;
-						movone->setConstantVal(1);
+			// 			dfgNode *movone = new dfgNode(this);
+			// 			movone->setIdx(this->getNodesPtr()->size());
+			// 			this->getNodesPtr()->push_back(movone);
+			// 			movone->setNameType("MOVC");
+			// 			movone->BB = node->BB;
+			// 			movone->setConstantVal(1);
 
-						movone->addChildNode(loopexit);
-						loopexit->addAncestorNode(movone);
-						exitFound = true;
-					}
-				}
-			}
+			// 			movone->addChildNode(loopexit);
+			// 			loopexit->addAncestorNode(movone);
+			// 			exitFound = true;
+			// 		}
+			// 	}
+			// }
 
 			//			}
 		}
@@ -10234,7 +10236,6 @@ void checkGEPDerivatives(Instruction *root, GetElementPtrInst *GEP, std::unorder
 	}
 }
 
-
 void DFG::getTransferVariables(std::unordered_set<Value *> &outer_vals,
 							   std::unordered_map<Value *, GetElementPtrInst *> &mem_ptrs,
 							   std::unordered_map<Value *, int> &acc,
@@ -10294,18 +10295,21 @@ void DFG::getTransferVariables(std::unordered_set<Value *> &outer_vals,
 	}
 }
 
-
-void DFG::SetBasePointers(std::unordered_set<Value*>& outer_vals, 
-			              std::unordered_map<Value*,GetElementPtrInst*>& mem_ptrs, Function &F){
+void DFG::SetBasePointers(std::unordered_set<Value *> &outer_vals,
+						  std::unordered_map<Value *, GetElementPtrInst *> &mem_ptrs, Function &F)
+{
 
 	outs() << "Outer LOOP 1 nodes = " << OutLoopNodeMapReverse.size() << "\n";
 	outs() << "Outer LOOP 2 nodes = " << OutLoopNodeMap.size() << "\n";
 
-	for(dfgNode* node : NodeList){
+	for (dfgNode *node : NodeList)
+	{
 
-		if(OutLoopNodeMapReverse.find(node) != OutLoopNodeMapReverse.end()){
+		if (OutLoopNodeMapReverse.find(node) != OutLoopNodeMapReverse.end())
+		{
 			assert(outer_vals.find(OutLoopNodeMapReverse[node]) != outer_vals.end());
-			outs() << "Outer LOOP value :: "; OutLoopNodeMapReverse[node]->dump();
+			outs() << "Outer LOOP value :: ";
+			OutLoopNodeMapReverse[node]->dump();
 			outs() << "Outer LOOP name = " << OutLoopNodeMapReverse[node]->getName() << "\n";
 			outs() << "Outer LOOP node idx = " << node->getIdx() << "\n";
 			node->setArrBasePtr(OutLoopNodeMapReverse[node]->getName());
@@ -10313,63 +10317,69 @@ void DFG::SetBasePointers(std::unordered_set<Value*>& outer_vals,
 			DataLayout DL = F.getParent()->getDataLayout();
 			array_pointer_sizes[OutLoopNodeMapReverse[node]->getName()] = DL.getTypeAllocSize(OutLoopNodeMapReverse[node]->getType());
 		}
-		else if(node->getNode() && node->getNode()->mayReadOrWriteMemory()){
-			if(LoadInst* LDI = dyn_cast<LoadInst>(node->getNode())){
-				Value* pointer = LDI->getPointerOperand();
+		else if (node->getNode() && node->getNode()->mayReadOrWriteMemory())
+		{
+			if (LoadInst *LDI = dyn_cast<LoadInst>(node->getNode()))
+			{
+				Value *pointer = LDI->getPointerOperand();
 				assert(mem_ptrs.find(pointer) != mem_ptrs.end());
 
 				std::string base_ptr_name = mem_ptrs[pointer]->getPointerOperand()->getName();
 				node->setArrBasePtr(base_ptr_name);
 
-				if(sizeArrMap.find(base_ptr_name) != sizeArrMap.end()){
+				if (sizeArrMap.find(base_ptr_name) != sizeArrMap.end())
+				{
 					array_pointer_sizes[base_ptr_name] = sizeArrMap[base_ptr_name];
 				}
-				else{
+				else
+				{
 					DataLayout DL = LDI->getParent()->getParent()->getParent()->getDataLayout();
-					PointerType* PT = cast<PointerType>(mem_ptrs[pointer]->getPointerOperand()->getType());
+					PointerType *PT = cast<PointerType>(mem_ptrs[pointer]->getPointerOperand()->getType());
 					array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(PT->getElementType());
 				}
-
 			}
-			else if(StoreInst* STI = dyn_cast<StoreInst>(node->getNode())){
-				Value* pointer = STI->getPointerOperand();
+			else if (StoreInst *STI = dyn_cast<StoreInst>(node->getNode()))
+			{
+				Value *pointer = STI->getPointerOperand();
 				assert(mem_ptrs.find(pointer) != mem_ptrs.end());
 
 				std::string base_ptr_name = mem_ptrs[pointer]->getPointerOperand()->getName();
 				node->setArrBasePtr(base_ptr_name);
 
-				if(sizeArrMap.find(base_ptr_name) != sizeArrMap.end()){
+				if (sizeArrMap.find(base_ptr_name) != sizeArrMap.end())
+				{
 					array_pointer_sizes[base_ptr_name] = sizeArrMap[base_ptr_name];
 				}
-				else{
+				else
+				{
 					DataLayout DL = LDI->getParent()->getParent()->getParent()->getDataLayout();
-					PointerType* PT = cast<PointerType>(mem_ptrs[pointer]->getPointerOperand()->getType());
+					PointerType *PT = cast<PointerType>(mem_ptrs[pointer]->getPointerOperand()->getType());
 					array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(PT->getElementType());
 				}
 			}
-			else{
+			else
+			{
 				//if the instruction could read or write memory it should be a load
 				// or a store instruction.
 				assert(false);
 			}
 		}
-		else if(node->getNode() && isa<GetElementPtrInst>(node->getNode())){
-			GetElementPtrInst* GEP = cast<GetElementPtrInst>(node->getNode());
+		else if (node->getNode() && isa<GetElementPtrInst>(node->getNode()))
+		{
+			GetElementPtrInst *GEP = cast<GetElementPtrInst>(node->getNode());
 			std::string base_ptr_name = GEP->getPointerOperand()->getName();
 			node->setArrBasePtr(base_ptr_name);
 
-			if(sizeArrMap.find(base_ptr_name) != sizeArrMap.end()){
+			if (sizeArrMap.find(base_ptr_name) != sizeArrMap.end())
+			{
 				array_pointer_sizes[base_ptr_name] = sizeArrMap[base_ptr_name];
 			}
-			else{
+			else
+			{
 				DataLayout DL = GEP->getParent()->getParent()->getParent()->getDataLayout();
-				PointerType* PT = cast<PointerType>(GEP->getPointerOperand()->getType());
+				PointerType *PT = cast<PointerType>(GEP->getPointerOperand()->getType());
 				array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(PT->getElementType());
 			}
 		}
 	}
-
-
-
 }
-

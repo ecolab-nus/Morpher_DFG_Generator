@@ -138,6 +138,7 @@ void dfgNode::addChildNode(dfgNode* node, int type, bool isBackEdge,
 		}
 		else{
 			childConditionalMap[node]=FALSE;
+			node->setNPB(true);
 		}
 	}
 	else{
@@ -186,6 +187,7 @@ void dfgNode::addAncestorNode(dfgNode* node, int type, bool isBackEdge,
 		}
 		else{
 			ancestorConditionaMap[node]=FALSE;
+			this->setNPB(true);
 		}
 	}
 	else{

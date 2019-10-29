@@ -495,6 +495,7 @@ class DFG{
 			void SetBasePointers(std::unordered_set<Value*>& outer_vals, 
 			                     std::unordered_map<Value*,GetElementPtrInst*>& mem_ptrs, Function &F);
 
+			DominatorTree* DT;
 	};
 
 
