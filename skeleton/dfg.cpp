@@ -1314,16 +1314,28 @@ int DFG::removeNode(dfgNode *n)
 
 void DFG::removeAlloc()
 {
-	Instruction *insTmp;
-	for (int i = 0; i < NodeList.size(); ++i)
-	{
-		insTmp = NodeList[i]->getNode();
-		if (insTmp->getOpcode() == Instruction::Alloca /*|| insTmp->getOpcode() == Instruction::PHI*/)
-		{
-			removeNode(NodeList[i]);
+	std::unordered_set<dfgNode*> rn;
+
+	for(dfgNode* n : NodeList){
+		if(n->getNode() && isa<AllocaInst>(n->getNode())){
+			rn.insert(n);
+		}
+		else if(OutLoopNodeMapReverse.find(n) != OutLoopNodeMapReverse.end()){
+			if(isa<AllocaInst>(OutLoopNodeMapReverse[n])){
+				rn.insert(n);
+			}
 		}
 	}
-	renumber();
+
+	for(dfgNode* n : rn){
+		for(dfgNode* chl : n->getChildren()){
+			chl->removeAncestor(n);
+		}
+		for(dfgNode* anc : n->getAncestors()){
+			anc->removeChild(n);
+		}
+		NodeList.erase(std::remove(NodeList.begin(), NodeList.end(), n), NodeList.end());
+	}
 }
 
 void DFG::traverseDFS(dfgNode *startNode, int dfsCount)
@@ -10220,7 +10232,7 @@ void checkGEPDerivatives(Instruction *root, GetElementPtrInst *GEP, std::unorder
 {
 	for (User *u : root->users())
 	{
-		assert(u != GEP);
+		if(u == GEP) continue;
 		if (Instruction *ins = dyn_cast<Instruction>(u))
 		{
 			if (ins->mayReadOrWriteMemory())
@@ -10277,9 +10289,15 @@ void DFG::getTransferVariables(std::unordered_set<Value *> &outer_vals,
 				LDI->dump();
 				Value *ld_ptr = LDI->getPointerOperand();
 
-				assert(gep_derivatives.find(ld_ptr) != gep_derivatives.end());
-				mem_ptrs[ld_ptr] = gep_derivatives[ld_ptr];
-				acc[gep_derivatives[ld_ptr]->getPointerOperand()] = acc[gep_derivatives[ld_ptr]->getPointerOperand()] + 1;
+				if(sizeArrMap.find(ld_ptr->getName().str()) != sizeArrMap.end()){
+					acc[LDI->getPointerOperand()] = acc[LDI->getPointerOperand()] + 1;
+				}
+				else{
+					assert(gep_derivatives.find(ld_ptr) != gep_derivatives.end());
+					mem_ptrs[ld_ptr] = gep_derivatives[ld_ptr];
+					acc[gep_derivatives[ld_ptr]->getPointerOperand()] = acc[gep_derivatives[ld_ptr]->getPointerOperand()] + 1;
+				}
+
 			}
 			if (StoreInst *STI = dyn_cast<StoreInst>(node->getNode()))
 			{
@@ -10287,12 +10305,19 @@ void DFG::getTransferVariables(std::unordered_set<Value *> &outer_vals,
 				STI->dump();
 				Value *st_ptr = STI->getPointerOperand();
 
-				assert(gep_derivatives.find(st_ptr) != gep_derivatives.end());
-				mem_ptrs[st_ptr] = gep_derivatives[st_ptr];
-				acc[gep_derivatives[st_ptr]->getPointerOperand()] = acc[gep_derivatives[st_ptr]->getPointerOperand()] + 1;
+				if(sizeArrMap.find(st_ptr->getName().str()) != sizeArrMap.end()){
+					acc[STI->getPointerOperand()] = acc[STI->getPointerOperand()] + 1;
+				}
+				else{
+					assert(gep_derivatives.find(st_ptr) != gep_derivatives.end());
+					mem_ptrs[st_ptr] = gep_derivatives[st_ptr];
+					acc[gep_derivatives[st_ptr]->getPointerOperand()] = acc[gep_derivatives[st_ptr]->getPointerOperand()] + 1;
+				}
+
 			}
 		}
 	}
+
 }
 
 void DFG::SetBasePointers(std::unordered_set<Value *> &outer_vals,
@@ -10322,45 +10347,56 @@ void DFG::SetBasePointers(std::unordered_set<Value *> &outer_vals,
 			if (LoadInst *LDI = dyn_cast<LoadInst>(node->getNode()))
 			{
 				Value *pointer = LDI->getPointerOperand();
-				assert(mem_ptrs.find(pointer) != mem_ptrs.end());
-
-				std::string base_ptr_name = mem_ptrs[pointer]->getPointerOperand()->getName();
-				node->setArrBasePtr(base_ptr_name);
-
-				if (sizeArrMap.find(base_ptr_name) != sizeArrMap.end())
-				{
-					array_pointer_sizes[base_ptr_name] = sizeArrMap[base_ptr_name];
+				if(sizeArrMap.find(pointer->getName().str()) != sizeArrMap.end()){
+					array_pointer_sizes[pointer->getName().str()] = sizeArrMap[pointer->getName().str()];
 				}
-				else
-				{
-					DataLayout DL = LDI->getParent()->getParent()->getParent()->getDataLayout();
-					PointerType *PT = cast<PointerType>(mem_ptrs[pointer]->getPointerOperand()->getType());
-					array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(PT->getElementType());
+				else{
+					assert(mem_ptrs.find(pointer) != mem_ptrs.end());
+
+					std::string base_ptr_name = mem_ptrs[pointer]->getPointerOperand()->getName();
+					node->setArrBasePtr(base_ptr_name);
+
+					if (sizeArrMap.find(base_ptr_name) != sizeArrMap.end())
+					{
+						array_pointer_sizes[base_ptr_name] = sizeArrMap[base_ptr_name];
+					}
+					else
+					{
+						DataLayout DL = LDI->getParent()->getParent()->getParent()->getDataLayout();
+						PointerType *PT = cast<PointerType>(mem_ptrs[pointer]->getPointerOperand()->getType());
+						array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(PT->getElementType());
+					}
 				}
 			}
 			else if (StoreInst *STI = dyn_cast<StoreInst>(node->getNode()))
 			{
 				Value *pointer = STI->getPointerOperand();
-				assert(mem_ptrs.find(pointer) != mem_ptrs.end());
-
-				std::string base_ptr_name = mem_ptrs[pointer]->getPointerOperand()->getName();
-				node->setArrBasePtr(base_ptr_name);
-
-				if (sizeArrMap.find(base_ptr_name) != sizeArrMap.end())
-				{
-					array_pointer_sizes[base_ptr_name] = sizeArrMap[base_ptr_name];
+				if(sizeArrMap.find(pointer->getName().str()) != sizeArrMap.end()){
+					array_pointer_sizes[pointer->getName().str()] = sizeArrMap[pointer->getName().str()];
 				}
-				else
-				{
-					DataLayout DL = LDI->getParent()->getParent()->getParent()->getDataLayout();
-					PointerType *PT = cast<PointerType>(mem_ptrs[pointer]->getPointerOperand()->getType());
-					array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(PT->getElementType());
+				else{
+					assert(mem_ptrs.find(pointer) != mem_ptrs.end());
+
+					std::string base_ptr_name = mem_ptrs[pointer]->getPointerOperand()->getName();
+					node->setArrBasePtr(base_ptr_name);
+
+					if (sizeArrMap.find(base_ptr_name) != sizeArrMap.end())
+					{
+						array_pointer_sizes[base_ptr_name] = sizeArrMap[base_ptr_name];
+					}
+					else
+					{
+						DataLayout DL = STI->getParent()->getParent()->getParent()->getDataLayout();
+						PointerType *PT = cast<PointerType>(mem_ptrs[pointer]->getPointerOperand()->getType());
+						array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(PT->getElementType());
+					}
 				}
 			}
 			else
 			{
 				//if the instruction could read or write memory it should be a load
 				// or a store instruction.
+				node->getNode()->dump();
 				assert(false);
 			}
 		}

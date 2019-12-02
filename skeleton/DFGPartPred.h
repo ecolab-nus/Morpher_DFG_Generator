@@ -1,3 +1,7 @@
+#ifndef DFGPARTPRED_H
+#define DFGPARTPRED_H
+
+
 #include "dfg.h"
 #include <unordered_set>
 
@@ -22,12 +26,12 @@ class DFGPartPred : public DFG{
 	public :
 		DFGPartPred(std::string name,std::map<Loop*,std::string>* lnPtr, Loop* l) : DFG(name,lnPtr), currLoop(l){}
 		void connectBB();
-		void connectBBTrig();
+		virtual void connectBBTrig();
 		int handlePHINodes(std::set<BasicBlock*> LoopBB);
 		int handleSELECTNodes();
 		void removeDisconnetedNodes();
 		void printDOT(std::string fileName);
-		void generateTrigDFGDOT(Function &F);
+		virtual void generateTrigDFGDOT(Function &F);
 
 
 		dfgNode* combineConditionAND(dfgNode* brcond, dfgNode* selcond, dfgNode* child);
@@ -50,7 +54,7 @@ class DFGPartPred : public DFG{
 
 		int maxASAPLevel=0;
 
-		void printNewDFGXML();
+		virtual void printNewDFGXML();
 		int classifyParents();
 
 		void removeOutLoopLoad();
@@ -71,7 +75,7 @@ class DFGPartPred : public DFG{
 
 
 
-	private :
+	protected :
 		dfgNode* getStartNode(BasicBlock* BB, dfgNode* PHINode);
 		dfgNode* insertMergeNode(dfgNode* PHINode, dfgNode* ctrl, bool controlVal, dfgNode* data);
 		dfgNode* insertMergeNode(dfgNode* PHINode, dfgNode* ctrl, bool controlVal, int val);
@@ -115,3 +119,6 @@ class DFGPartPred : public DFG{
 
 };
 
+
+
+#endif

@@ -732,6 +732,7 @@ bool DFGPartPred::checkBackEdge(dfgNode* src, dfgNode* dest) {
 void DFGPartPred::generateTrigDFGDOT(Function &F) {
 
 //	connectBB();
+	removeAlloc();
 	connectBBTrig();
 	createCtrlBROrTree();
 
@@ -758,7 +759,7 @@ void DFGPartPred::generateTrigDFGDOT(Function &F) {
 	classifyParents();
 	// RemoveInductionControlLogic();
 
-	RemoveBackEdgePHIs();
+	// RemoveBackEdgePHIs();
 	// removeOutLoopLoad();
 	RemoveConstantCMERGEs();
 	removeDisconnectedNodes();
@@ -1757,8 +1758,16 @@ int DFGPartPred::classifyParents() {
 						assert(parentIns);
 					}
 				}
-				//Only ins!=NULL and non-PHI and non-BR will reach here
-				node->parentClassification[findOperandNumber(node, ins,parentIns)]=parent;
+
+				if(node->ancestorConditionaMap[parent] != UNCOND){
+					node->parentClassification[0] = parent;
+				}
+				else{
+					//Only ins!=NULL and non-PHI and non-BR will reach here
+					node->parentClassification[findOperandNumber(node, ins,parentIns)]=parent;
+				}
+
+
 		}
 	}
 
@@ -2357,6 +2366,8 @@ std::map<BasicBlock*, std::set<std::pair<BasicBlock*, CondVal> > > DFGPartPred::
 		      }
 
 			  CondVal cv;
+			  assert(predecessor->getTerminator());
+			  predecessor->getTerminator()->dump();
 			  BranchInst* BRI = cast<BranchInst>(predecessor->getTerminator());
 //			  BRI->dump();
 

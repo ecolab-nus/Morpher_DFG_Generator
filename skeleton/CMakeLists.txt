@@ -21,6 +21,8 @@ add_library(SkeletonPass MODULE
     DFGTrig.cpp
     DFGPartPred.h
     DFGPartPred.cpp
+    DFGFullPred.h
+    DFGFullPred.cpp
     DFGDISE.h
     DFGDISE.cpp
     DFGBrMap.h

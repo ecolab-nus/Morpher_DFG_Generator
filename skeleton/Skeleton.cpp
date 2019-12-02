@@ -72,6 +72,7 @@
 #include "dfg.h"
 #include "DFGTrig.h"
 #include "DFGPartPred.h"
+#include "DFGFullPred.h"
 #include "DFGDISE.h"
 #include "DFGTrMap.h"
 #include "DFGBrMap.h"
@@ -262,7 +263,6 @@ void printDFGDOT(std::string fileName, DFG *currBBDFG)
 
 	if (currBBDFG->getNodes()[0]->getNode() == NULL)
 	{
-
 	}
 
 	for (int i = 0; i < currBBDFG->getNodes().size(); i++)
@@ -271,7 +271,6 @@ void printDFGDOT(std::string fileName, DFG *currBBDFG)
 
 		if (node->getNode() == NULL)
 		{
-
 		}
 
 		ofs << "\"Op_" << node->getIdx() << "\" [ fontname = \"Helvetica\" shape = box, label = \" ";
@@ -733,7 +732,6 @@ void dfsmunitTrans(std::pair<std::string, std::string> currEdge,
 		return;
 	}
 
-
 	std::string currMunit = currEdge.second;
 	for (int i = 0; i < tabs; ++i)
 	{
@@ -808,7 +806,6 @@ void dfsmunitTrans(std::pair<std::string, std::string> currEdge,
 			outs() << "\n";
 		}
 	}
-
 
 	visitedEdges.insert(currEdge);
 
@@ -1281,7 +1278,6 @@ void populateBBTrans()
 			munittrans.id = munitTransitions.size();
 			munitTransitions.push_back(munittrans);
 			munitTransitionsALL.push_back(munittrans);
-
 		}
 	}
 
@@ -1458,7 +1454,6 @@ void ReplaceCMPs(Function &F)
 		if (CmpInst *CI = dyn_cast_or_null<CmpInst>(I))
 		{
 			I->dump();
-
 
 			IRBuilder<> builder(CI);
 			assert(CI->getNumOperands() == 2);
@@ -1876,51 +1871,61 @@ void loopTrace(std::map<Loop *, std::string> loopNames, Function &F, LoopTree ro
 	}
 }
 
-std::string getMappingUnitNameUsingTokenFunction(Function &F){
-		BasicBlock *MUBB;
-		Instruction* checker_ins;
-		for (auto &BB : F)
+std::string getMappingUnitNameUsingTokenFunction(Function &F)
+{
+	BasicBlock *MUBB;
+	Instruction *checker_ins = NULL;
+	for (auto &BB : F)
+	{
+		// BB.dump();
+		for (auto &I : BB)
 		{
-			// BB.dump();
-			for (auto &I : BB)
+			if (CallInst *CI = dyn_cast<CallInst>(&I))
 			{
-				if (CallInst *CI = dyn_cast<CallInst>(&I))
+				std::string op_str;
+				raw_string_ostream rs(op_str);
+				CI->print(rs);
+				outs() << "op : " << rs.str() << "\n";
+				if (op_str.find("please_map_me") != std::string::npos)
 				{
-					std::string op_str;
-					raw_string_ostream rs (op_str);
-					CI->print(rs);
-					outs() << "op : " << rs.str() << "\n";
-					if(op_str.find("please_map_me") != std::string::npos){
-						outs() << "token found in BB = " << BB.getName() << "\n";
-						MUBB = &BB;
-						checker_ins = CI;
-					}
+					outs() << "token found in BB = " << BB.getName() << "\n";
+					MUBB = &BB;
+					checker_ins = CI;
 				}
 			}
 		}
-		assert(MUBB);
-		assert(checker_ins);
-		checker_ins->eraseFromParent();
+	}
+	assert(MUBB);
+	assert(checker_ins);
+	checker_ins->eraseFromParent();
 
-		for(auto it = mappingUnitMap.begin(); it != mappingUnitMap.end(); it++){
-			std::set<BasicBlock*> bbs = it->second.allBlocks;
-			if(bbs.find(MUBB) != bbs.end()){
-				return it->first;
-			}
+	for (auto it = mappingUnitMap.begin(); it != mappingUnitMap.end(); it++)
+	{
+		std::set<BasicBlock *> bbs = it->second.allBlocks;
+		if (bbs.find(MUBB) != bbs.end())
+		{
+			return it->first;
 		}
-		assert(false);
+	}
+	assert(false);
 }
 
-void NameUnnamedValues(Function &F){
+void NameUnnamedValues(Function &F)
+{
 	std::string prefix = "manupa";
 
 	int ctr = 0;
 
-	for(auto& bb : F){
-		for(auto& v : bb){
-			if(Instruction* ins = dyn_cast<Instruction>(&v)){
-				if(ins->getName().empty() && !ins->getType()->isVoidTy()){
-					outs() << "setting name for = "; ins->dump();
+	for (auto &bb : F)
+	{
+		for (auto &v : bb)
+		{
+			if (Instruction *ins = dyn_cast<Instruction>(&v))
+			{
+				if (ins->getName().empty() && !ins->getType()->isVoidTy())
+				{
+					outs() << "setting name for = ";
+					ins->dump();
 					std::string name = prefix + std::to_string(ctr++);
 					ins->setName(name);
 				}
@@ -1928,7 +1933,6 @@ void NameUnnamedValues(Function &F){
 		}
 	}
 }
-
 
 namespace
 {
@@ -1955,7 +1959,6 @@ struct SkeletonFunctionPass : public FunctionPass
 		clock_t end;
 		std::string loopCFGFileName;
 
-
 		if (fName != "na")
 		{
 			if (F.getName() != fName)
@@ -1964,7 +1967,6 @@ struct SkeletonFunctionPass : public FunctionPass
 				return false;
 			}
 		}
-
 
 		//TODO : DAC18
 		ReplaceCMPs(F);
@@ -2025,7 +2027,6 @@ struct SkeletonFunctionPass : public FunctionPass
 		timeFile << "Preprocessing Time = " << double(end - begin) / CLOCKS_PER_SEC << "\n";
 		insMap.clear();
 
-
 		std::vector<Loop *> innerMostLoops;
 		std::map<Loop *, std::string> loopNames;
 		std::map<Loop *, DFG *> loopDFGs;
@@ -2046,6 +2047,7 @@ struct SkeletonFunctionPass : public FunctionPass
 		populateBBTrans();
 
 		std::string munitName = getMappingUnitNameUsingTokenFunction(F);
+		// std::string munitName = "INNERMOST_LN121";
 		outs() << "--------------------------------------------------------------\n";
 		outs() << "--------MAPPING-------" << munitName << " of " << F.getName() << "---------------\n";
 		outs() << "--------------------------------------------------------------\n";
@@ -2059,6 +2061,12 @@ struct SkeletonFunctionPass : public FunctionPass
 			{
 				LoopDFG = new DFGPartPred(F.getName().str() + "_" + munitName, &loopNames, mappingUnitMap[munitName].lp);
 				DFGPartPred *LoopDFG_PP = static_cast<DFGPartPred *>(LoopDFG);
+				LoopDFG_PP->SE = SE;
+			}
+			else if (dfgType == "FullPred")
+			{
+				LoopDFG = new DFGFullPred(F.getName().str() + "_" + munitName, &loopNames, mappingUnitMap[munitName].lp);
+				DFGFullPred *LoopDFG_PP = static_cast<DFGFullPred *>(LoopDFG);
 				LoopDFG_PP->SE = SE;
 			}
 			else if (dfgType == "Trig")
@@ -2083,7 +2091,6 @@ struct SkeletonFunctionPass : public FunctionPass
 				assert(false);
 			}
 			LoopDFG->DT = DT;
-
 
 			LoopDFG->setBBSuccBasicBlocks(BBSuccBasicBlocks);
 			LoopDFG->sizeArrMap = sizeArrMap;
@@ -2111,13 +2118,20 @@ struct SkeletonFunctionPass : public FunctionPass
 
 			LoopDFG->addMemRecDepEdgesNew(DI);
 
-			std::unordered_set<Value*> outVals;
-			std::unordered_map<Value*,GetElementPtrInst*> arrPtrs;
-			std::unordered_map<Value*,int> mem_acceses;
-			LoopDFG->getTransferVariables(outVals,arrPtrs,mem_acceses,F);
-			LoopDFG->SetBasePointers(outVals,arrPtrs,F);
+			std::unordered_set<Value *> outVals;
+			std::unordered_map<Value *, GetElementPtrInst *> arrPtrs;
+			std::unordered_map<Value *, int> mem_acceses;
+			LoopDFG->getTransferVariables(outVals, arrPtrs, mem_acceses, F);
+			LoopDFG->SetBasePointers(outVals, arrPtrs, F);
 
 			LoopDFG->generateTrigDFGDOT(F);
+
+			for (auto it = mem_acceses.begin(); it != mem_acceses.end(); it++)
+			{
+				Value *base_ptr = it->first;
+				int accesses = it->second;
+				outs() << "base_ptr:" << base_ptr->getName() << ", accesses = " << accesses << "\n";
+			}
 
 			delete (LoopDFG);
 			outs() << "dfgType=" << dfgType << "\n";
