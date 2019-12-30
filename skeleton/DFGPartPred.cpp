@@ -767,8 +767,8 @@ void DFGPartPred::generateTrigDFGDOT(Function &F) {
 	addOrphanPseudoEdges();
 	addRecConnsAsPseudo();
 
-	printDOT(this->name + "_PartPredDFG.dot");
-	printNewDFGXML();
+	// printDOT(this->name + "_PartPredDFG.dot");
+	// printNewDFGXML();
 }
 
 bool DFGPartPred::checkPHILoop(dfgNode* node1, dfgNode* node2) {

@@ -10254,9 +10254,12 @@ void DFG::getTransferVariables(std::unordered_set<Value *> &outer_vals,
 							   Function &F)
 {
 
-	for (auto it = OutLoopNodeMap.begin(); it != OutLoopNodeMap.end(); it++)
+	assert(OutLoopNodeMap.size() == OutLoopNodeMapReverse.size());
+
+	for (auto it = OutLoopNodeMapReverse.begin(); it != OutLoopNodeMapReverse.end(); it++)
 	{
-		Value *val = it->first;
+		outs() << "onode = " << it->first->getIdx()  << "nametype = " << it->first->getNameType() << "\n";
+		Value *val = it->second;
 		outer_vals.insert(val);
 		acc[val] = acc[val] + 1;
 	}
@@ -10317,6 +10320,12 @@ void DFG::getTransferVariables(std::unordered_set<Value *> &outer_vals,
 			}
 		}
 	}
+
+
+	// for(auto it = OutLoopNodeMapReverse.begin(); it != OutLoopNodeMapReverse.end(); it++){
+	// 	dfgNode* on = it->first;
+	// 	acc[it->second] = 1;
+	// }
 
 }
 
@@ -10418,4 +10427,140 @@ void DFG::SetBasePointers(std::unordered_set<Value *> &outer_vals,
 			}
 		}
 	}
+}
+
+void DFG::InstrumentInOutVars(Function &F, std::unordered_map<Value *, int> mem_accesses){
+
+	LLVMContext &Ctx = F.getContext();
+
+	//Instrumentation functions
+
+	//this function should be called at the beginning of the loop.
+	auto loopStartFn = F.getParent()->getOrInsertFunction(
+						"loopStart",
+						FunctionType::getVoidTy(Ctx),
+						Type::getInt8PtrTy(Ctx) //loopname
+						);
+
+	//this should be called at the end of the loop
+	auto clearPrintedArrs = F.getParent()->getOrInsertFunction(
+		"clearPrintedArrs", 
+		FunctionType::getVoidTy(Ctx));
+
+	auto printArrFunc = F.getParent()->getOrInsertFunction(
+		"printArr",
+		FunctionType::getVoidTy(Ctx),
+		Type::getInt8PtrTy(Ctx),
+		Type::getInt8PtrTy(Ctx),
+		Type::getInt32Ty(Ctx),
+		Type::getInt8Ty(Ctx),
+		Type::getInt32Ty(Ctx));
+
+	auto reportDynArrSize = F.getParent()->getOrInsertFunction(
+		"reportDynArrSize", FunctionType::getVoidTy(Ctx),
+		Type::getInt8PtrTy(Ctx),
+		Type::getInt8PtrTy(Ctx),
+		Type::getInt32Ty(Ctx),
+		Type::getInt32Ty(Ctx));
+
+	auto printDynArrSize = F.getParent()->getOrInsertFunction(
+		"printDynArrSize", FunctionType::getVoidTy(Ctx));
+
+	auto loopEndFn = F.getParent()->getOrInsertFunction(
+		"loopEnd", FunctionType::getVoidTy(Ctx), Type::getInt8PtrTy(Ctx));
+
+	//these should be called prior to the loop start/end to report all the variables that are being accessed in the loop
+	auto live_in_report_FN = F.getParent()->getOrInsertFunction(
+		"LiveInReport",
+		FunctionType::getVoidTy(Ctx),
+		Type::getInt8PtrTy(Ctx), //variable name
+		Type::getInt8PtrTy(Ctx), //variable data
+		Type::getInt8Ty(Ctx) //size
+	);
+
+	auto live_out_report_FN = F.getParent()->getOrInsertFunction(
+		"LiveOutReport",
+		FunctionType::getVoidTy(Ctx),
+		Type::getInt8PtrTy(Ctx), //variable name
+		Type::getInt8PtrTy(Ctx), // variable data
+		Type::getInt8Ty(Ctx) //size
+	);
+
+	auto live_in_report_intvar_FN = F.getParent()->getOrInsertFunction(
+		"LiveInReportIntermediateVar",
+		FunctionType::getVoidTy(Ctx),
+		Type::getInt8PtrTy(Ctx), //variable name
+		Type::getInt32Ty(Ctx) //variable data
+	);
+
+	auto live_out_report_intvar_FN = F.getParent()->getOrInsertFunction(
+		"LiveOutReportIntermediateVar",
+		FunctionType::getVoidTy(Ctx),
+		Type::getInt8PtrTy(Ctx), //variable name
+		Type::getInt32Ty(Ctx) //variable data
+	);
+
+	//Insertion of loop start functions to all entries
+	for(auto trans : loopentryBB){
+		BasicBlock* entryBB = trans.first;
+		IRBuilder<> builder(entryBB->getTerminator());
+
+		Value *loopName = builder.CreateGlobalStringPtr(name);
+		builder.CreateCall(loopStartFn,{loopName});
+	}
+
+	// Insertion of reporting functions at entry and exit basicblocks
+	for(auto it = mem_accesses.begin(); it != mem_accesses.end(); it++){
+		IRBuilder<> builder(NodeList[0]->getNode());
+
+		Value* ptr = it->first;
+		outs() << "ptr_name = " << ptr->getName() << "\n";
+
+		
+		assert(array_pointer_sizes.find(ptr->getName()) != array_pointer_sizes.end());
+		int size = array_pointer_sizes[ptr->getName()];
+
+		Value* ptr_name_val = builder.CreateGlobalStringPtr(ptr->getName());
+		Value *size_val = ConstantInt::get(Type::getInt8Ty(Ctx), size);
+
+		for(auto trans : loopentryBB){
+			BasicBlock* entryBB = trans.first;
+			builder.SetInsertPoint(entryBB->getTerminator());
+			if(ptr->getType()->isPointerTy()){
+				Value* bitcastedptr = builder.CreateBitCast(it->first, Type::getInt8PtrTy(Ctx));
+				builder.CreateCall(live_in_report_FN,{ptr_name_val,bitcastedptr,size_val});
+			}
+			else{
+				outs() << "type = "; ptr->getType()->dump();
+				Value* bitcastedptr = builder.CreateIntCast(it->first, Type::getInt32Ty(Ctx),true);
+				builder.CreateCall(live_in_report_intvar_FN,{ptr_name_val,bitcastedptr});
+			}
+
+		}
+
+		for(auto trans : loopexitBB){
+			BasicBlock* exitBB = trans.second;
+			builder.SetInsertPoint(exitBB->getTerminator());
+			if(ptr->getType()->isPointerTy()){
+				Value* bitcastedptr = builder.CreateBitCast(it->first, Type::getInt8PtrTy(Ctx));
+				builder.CreateCall(live_out_report_FN,{ptr_name_val,bitcastedptr,size_val});
+			}
+			else{
+				outs() << "type = "; ptr->getType()->dump();
+				Value* bitcastedptr = builder.CreateIntCast(it->first, Type::getInt32Ty(Ctx),true);
+				builder.CreateCall(live_out_report_intvar_FN,{ptr_name_val,bitcastedptr});
+			}
+		}
+
+	}
+
+	//Insertion of loop end function to all exits
+	for(auto trans : loopexitBB){
+		BasicBlock* exitBB = trans.second;
+		IRBuilder<> builder(exitBB->getTerminator());
+
+		Value *loopName = builder.CreateGlobalStringPtr(name);
+		builder.CreateCall(loopEndFn,{loopName});
+	}
+
 }

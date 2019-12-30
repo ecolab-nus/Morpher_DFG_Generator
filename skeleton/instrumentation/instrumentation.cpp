@@ -88,6 +88,15 @@ typedef struct{
 
 static std::map<uint32_t,AddrDataTuple> data;
 
+
+typedef struct{
+	vector<uint8_t> pre_data;
+	vector<uint8_t> post_data;
+	std::string name;
+} AddrDataTupleMorpher;
+
+static std::map<std::string,AddrDataTupleMorpher> data_morpher;
+
 void printArr(const char* name, uint8_t* arr, int size, uint8_t io, uint32_t addr){
 
 	std::string str(name);
@@ -223,10 +232,23 @@ void PrintData(std::string ln){
 	}
 }
 
+void PrintDataMorpher(std::string ln){
+	fprintf(currentFiles[ln],"var_name,offset,pre-run-data,post-run-data\n");
+
+	for(auto it = data_morpher.begin(); it != data_morpher.end(); it++){
+		string var_name = it->first;
+		AddrDataTupleMorpher data_tuple = it->second;
+		for(int offset = 0; offset < data_tuple.pre_data.size(); offset++){
+			fprintf(currentFiles[ln],"%s,%d,%d,%d\n",var_name.c_str(),offset,data_tuple.pre_data[offset],data_tuple.post_data[offset]);
+		}
+	}
+}
+
 
 void loopStart(const char* loopName){
 	std::string ln(loopName);
 	std::stringstream ss;
+	data_morpher.clear();
 
 	if(loopRunIdx.find(ln)==loopRunIdx.end()){
 		loopRunIdx[ln]=0;
@@ -239,7 +261,7 @@ void loopStart(const char* loopName){
 
 void loopEnd(const char* loopName){
 	std::string ln(loopName);
-	PrintData(ln);
+	PrintDataMorpher(ln);
 	fclose(currentFiles[ln]);
 	loopRunIdx[ln]++;
 	cout << ln <<"------------LOOP END----------------\n";
@@ -617,6 +639,41 @@ void reportLoopEnd(const char* loopName){
 	currentPath.clear();
 	std::string loopNameStr(loopName);
 	loopPathTrace[loopNameStr].push_back(pathTrace);
+}
+
+
+void LiveInReport(const char* varname, uint8_t* value, uint8_t size){
+	std::string varname_str(varname);
+
+	for(int i=0; i<size; i++){
+		data_morpher[varname_str].pre_data.push_back(value[i]);
+		data_morpher[varname_str].post_data.push_back(value[i]);
+	}
+}
+
+void LiveOutReport(const char* varname, uint8_t* value, uint8_t size){
+	std::string varname_str(varname);
+	for(int i=0; i<size; i++){
+		data_morpher[varname_str].post_data[i] = value[i];
+	}
+}
+
+void LiveInReportIntermediateVar(const char* varname, uint32_t value){
+	std::string varname_str(varname);
+	uint8_t* value_ptr = (uint8_t*)&value;
+	for(int i=0; i<4; i++){
+		data_morpher[varname_str].pre_data.push_back(value_ptr[i]);
+		data_morpher[varname_str].post_data.push_back(value_ptr[i]);
+	}
+}
+
+
+void LiveOutReportIntermediateVar(const char* varname, uint32_t value){
+	std::string varname_str(varname);
+	uint8_t* value_ptr = (uint8_t*)&value;
+	for(int i=0; i<4; i++){
+		data_morpher[varname_str].post_data[i] = value_ptr[i];
+	}
 }
 
 

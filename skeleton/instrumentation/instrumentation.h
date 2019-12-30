@@ -43,6 +43,11 @@ void sortandPrintStats();
 void reportNewBBinPath(const char* bbName, const char* loopName);
 void reportLoopEnd(const char* loopName);
 
+void LiveInReport (const char* varname, uint8_t* value, uint8_t size);
+void LiveOutReport(const char* varname, uint8_t* value, uint8_t size);
+void LiveInReportIntermediateVar(const char* varname, uint32_t value);
+void LiveOutReportIntermediateVar(const char* varname, uint32_t value);
+
 
 #ifdef __cplusplus
 }

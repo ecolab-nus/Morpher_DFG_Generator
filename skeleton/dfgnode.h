@@ -263,7 +263,10 @@ class dfgNode{
 			//Ownership for branches
 			std::set<std::pair<BasicBlock*,CondVal>> BelongsToBr;
 
-			void setArrBasePtr(std::string abp){array_base_pointer = abp;}
+			void setArrBasePtr(std::string abp){
+				outs() << "setting base pointer for node=" << idx << ",name = " << abp << "\n";
+				array_base_pointer = abp;
+			}
 			std::string getArrBasePtr(){return array_base_pointer;}
 
 };

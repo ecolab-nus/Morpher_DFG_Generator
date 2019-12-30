@@ -482,6 +482,7 @@ class DFG{
 
 			void insertMOVC();
 			virtual void generateTrigDFGDOT(Function &F){assert(false);}
+			virtual void PrintOuts(){assert(false);}
 
 			void removeDisconnectedNodes();
 			std::unordered_set<dfgNode*> getLineage(dfgNode* n);
@@ -494,6 +495,7 @@ class DFG{
 			void GEPBaseAddrCheck(Function &F);
 			void SetBasePointers(std::unordered_set<Value*>& outer_vals, 
 			                     std::unordered_map<Value*,GetElementPtrInst*>& mem_ptrs, Function &F);
+			void InstrumentInOutVars(Function &F, std::unordered_map<Value *, int> mem_accesses);
 
 			DominatorTree* DT;
 	};

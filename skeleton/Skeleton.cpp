@@ -2117,14 +2117,16 @@ struct SkeletonFunctionPass : public FunctionPass
 			}
 
 			LoopDFG->addMemRecDepEdgesNew(DI);
+			LoopDFG->generateTrigDFGDOT(F);
 
 			std::unordered_set<Value *> outVals;
 			std::unordered_map<Value *, GetElementPtrInst *> arrPtrs;
 			std::unordered_map<Value *, int> mem_acceses;
 			LoopDFG->getTransferVariables(outVals, arrPtrs, mem_acceses, F);
 			LoopDFG->SetBasePointers(outVals, arrPtrs, F);
+			LoopDFG->InstrumentInOutVars(F,mem_acceses);
 
-			LoopDFG->generateTrigDFGDOT(F);
+			LoopDFG->PrintOuts();
 
 			for (auto it = mem_acceses.begin(); it != mem_acceses.end(); it++)
 			{
@@ -2135,7 +2137,7 @@ struct SkeletonFunctionPass : public FunctionPass
 
 			delete (LoopDFG);
 			outs() << "dfgType=" << dfgType << "\n";
-			return false;
+			return true;
 		}
 	} //END OF runOnFunction
 
