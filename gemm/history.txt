@@ -1,0 +1,34 @@
+
+ 1660  git clone https://github.com/ecolab-nus/Morpher_DFG_Generator.git
+ 1661  ls
+ 1662  cd Morpher_DFG_Generator/
+ 1663  ls
+ 1664  mkdir build
+ 1665  cd build/
+ 1666  cmake ..
+ 1667  make -j4
+ 1684  cd gemm/
+ 1685  ls
+ 1686  ./run_pass.sh gemm
+ 1687  ls
+ 1688  cd ..
+ 1689  git clone https://github.com/ecolab-nus/Morpher_CGRA_Mapper.git
+ 1690  cd Morpher_CGRA_Mapper/
+ 1691  ls
+ 1692  cd Release/
+ 1693  ls
+ 1694  make all
+ 1695  cd ..
+ 1696  ls
+ 1697  cd applications/
+ 1698  ls
+ 1699  mkdir gemm
+ 1700  cd gemm
+ 1701  ls
+ 1702  cd ..
+ 1703  cd gemm
+ 1704  ls
+ 1705  cp ../../../Morpher_DFG_Generator/gemm/gemm_INNERMOST_LN111_PartPred_DFG.xml .
+ 1706  ./CGRA_xml_compiler -d gemm_INNERMOST_LN111_PartPred_DFG.xml -j ../../json_arch/hycube_original.json  -x 4 -y 4 -t STDNOC_4REGF
+ 1707  ../../Release/CGRA_xml_compiler -d gemm_INNERMOST_LN111_PartPred_DFG.xml -j ../../json_arch/hycube_original.json  -x 4 -y 4 -t STDNOC_4REGF
+
