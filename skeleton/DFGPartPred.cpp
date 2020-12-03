@@ -731,6 +731,9 @@ bool DFGPartPred::checkBackEdge(dfgNode* src, dfgNode* dest) {
 
 void DFGPartPred::generateTrigDFGDOT(Function &F) {
 
+
+	std::set<exitNode> exitNodes;
+	getLoopExitConditionNodes(exitNodes);
 //	connectBB();
 	removeAlloc();
 	connectBBTrig();
@@ -739,7 +742,8 @@ void DFGPartPred::generateTrigDFGDOT(Function &F) {
 	handlePHINodes(this->loopBB);
 	// insertshiftGEPs();
 	addMaskLowBitInstructions();
-	removeDisconnetedNodes();
+	insertshiftGEPsCorrect();
+	//removeDisconnetedNodes();
 //	scheduleCleanBackedges();
 	fillCMergeMutexNodes();
 
@@ -747,6 +751,7 @@ void DFGPartPred::generateTrigDFGDOT(Function &F) {
 	constructCMERGETree();
 
 //	printDOT(this->name + "_PartPredDFG.dot"); return;
+	addLoopExitStoreHyCUBE(exitNodes);
 	handlestartstop();
 
 	scheduleASAP();
@@ -756,6 +761,7 @@ void DFGPartPred::generateTrigDFGDOT(Function &F) {
 
 	GEPBaseAddrCheck(F);
 	nameNodes();
+	printDOT(this->name + "_beforeclassifyPartPredDFG.dot");
 	classifyParents();
 	// RemoveInductionControlLogic();
 
@@ -769,7 +775,56 @@ void DFGPartPred::generateTrigDFGDOT(Function &F) {
 
 	// printDOT(this->name + "_PartPredDFG.dot");
 	// printNewDFGXML();
+
+	//function removeDisconnetedNodes() should be called at last, otherwise same idx would be reused
+	//when new instructions are added
+	removeDisconnetedNodes();
 }
+
+/*
+ * From hycube branch
+ *
+void DFGPartPred::generateTrigDFGDOT(Function &F)
+{
+
+	//	connectBB();
+	// std::pair<dfgNode *, bool> le_cond = getLoopExitConditionNode();
+
+	std::set<exitNode> exitNodes;
+	getLoopExitConditionNodes(exitNodes);
+
+	// evaluateMUNITTrans();
+
+	connectBBTrig();
+	handlePHINodes(this->loopBB);
+
+	createCtrlBROrTree();
+	//	insertshiftGEPs();
+	addMaskLowBitInstructions();
+	insertshiftGEPsCorrect();
+	removeDisconnetedNodes();
+	//	scheduleCleanBackedges();
+	fillCMergeMutexNodes();
+
+	constructCMERGETree();
+
+	//	printDOT(this->name + "_PartPredDFG.dot"); return;
+	classifyParents();
+	// addLoopExitStoreHyCUBE(le_cond);
+	addLoopExitStoreHyCUBE(exitNodes);
+	handlestartstop();
+
+	scheduleASAP();
+	scheduleALAP();
+	//	assignALAPasASAP();
+	//	balanceSched();
+	//	removeOutLoopLoad();
+	addOrphanPseudoEdges();
+
+	GEPBaseAddrCheck(F);
+	nameNodes();
+}
+*/
 
 bool DFGPartPred::checkPHILoop(dfgNode* node1, dfgNode* node2) {
 	if(node1->getNode()==NULL) return false;
@@ -1579,7 +1634,8 @@ int DFGPartPred::classifyParents() {
 					if(node->getNameType().compare("LOOPEXIT")==0){
 						if(parent->getNode()==NULL){
 							if(parent->getNameType().compare("MOVC") == 0){
-								assert(node->parentClassification.find(1) == node->parentClassification.end());
+								//addLoopExitStoreHyCUBE might already set the classification
+								//assert(node->parentClassification.find(1) == node->parentClassification.end());
 								node->parentClassification[1]=parent;
 							}
 							else if(parent->getNameType().compare("CTRLBrOR") == 0){
@@ -1591,7 +1647,7 @@ int DFGPartPred::classifyParents() {
 							}
 						}
 						else{
-							assert(node->parentClassification.find(0) == node->parentClassification.end());
+//							assert(node->parentClassification.find(0) == node->parentClassification.end());
 							node->parentClassification[0]=parent;
 						}
 						continue;
@@ -1715,9 +1771,19 @@ int DFGPartPred::classifyParents() {
 //						continue;
 //					}
 					if(parent->getNameType().compare("GEPLEFTSHIFT")==0){
-						assert(parent->getAncestors().size()<3);
-						node->parentClassification[1]=parent;
-						continue;
+						assert(parent->getAncestors().size() == 1);
+						dfgNode* parpar = parent->getAncestors()[0];
+						if(OutLoopNodeMapReverse.find(parpar) != OutLoopNodeMapReverse.end()
+								&& OutLoopNodeMapReverse[parpar]){
+							parentIns = OutLoopNodeMapReverse[parpar];
+						}
+						else{
+							assert(parpar->getNode());
+							parentIns = parpar->getNode();
+						}
+//						assert(parent->getAncestors().size()<3);
+//						node->parentClassification[1]=parent;
+//						continue;
 					}
 					if(parent->getNameType().compare("MASKAND")==0){
 						assert(parent->getAncestors().size()==1);
@@ -3041,3 +3107,67 @@ void DFGPartPred::getLoopExitConditionNodes(std::set<exitNode> &exitNodes)
 // 	// 	if(!isTruePath) loopexit->setNPB(true);
 // 	// }
 // }
+
+void DFGPartPred::addLoopExitStoreHyCUBE(std::set<exitNode> &exitNodes)
+{
+	outs() << "addLoopExitStoreHyCUBE begin.\n";
+	for (exitNode en : exitNodes)
+	{
+
+		dfgNode *loopexit = new dfgNode(this);
+		loopexit->setIdx(this->getNodesPtr()->size() + 20000);
+		this->getNodesPtr()->push_back(loopexit);
+		loopexit->setNameType("LOOPEXIT");
+		loopexit->BB = en.dest;
+		loopexit->setLeftAlignedMemOp(1);
+
+		dfgNode *mov_const = new dfgNode(this);
+		mov_const->setIdx(this->getNodesPtr()->size() + 20000);
+		this->getNodesPtr()->push_back(mov_const);
+		mov_const->setNameType("MOVC");
+		mov_const->BB = loopexit->BB;
+
+		int mu_trans_id = 1;//getMUnitTransID(en.src, en.dest);
+		mov_const->setConstantVal(mu_trans_id);
+
+		mov_const->addChildNode(loopexit);
+		loopexit->addAncestorNode(mov_const);
+		loopexit->parentClassification[1] = mov_const;
+		outs() << "Adding connection : " << mov_const->getIdx() << " to " << loopexit->getIdx() << "\n";
+
+		if (en.ctrlNode)
+		{
+			en.ctrlNode->getNode()->dump();
+			bool isTruePath = en.ctrlVal;
+			en.ctrlNode->addChildNode(loopexit, EDGE_TYPE_DATA, false, true, isTruePath);
+			loopexit->addAncestorNode(en.ctrlNode, EDGE_TYPE_DATA, false, true, isTruePath);
+			loopexit->parentClassification[0] = en.ctrlNode;
+			if (!isTruePath)
+				loopexit->setNPB(true);
+			outs() << "Adding connection : " << en.ctrlNode->getIdx() << " to " << loopexit->getIdx() << "\n";
+		}
+		else
+		{
+			dfgNode *sample_start_node = startNodes.begin()->second;
+			assert(sample_start_node);
+			sample_start_node->addChildNode(loopexit, EDGE_TYPE_PS, false, true, true);
+			loopexit->addAncestorNode(sample_start_node, EDGE_TYPE_PS, false, true, true);
+
+			outs() << "Adding connection PS : " << sample_start_node->getIdx() << " to " << loopexit->getIdx() << "\n";
+		}
+	}
+
+	outs() << "addLoopExitStoreHyCUBE end.\n";
+
+	// for(auto it = exitNodes.begin(); it != exitNodes.end(); it++){
+	// 	dfgNode* control_node = it->first;
+	// 	bool isTruePath = it->second;
+
+	// 	node->addChildNode(loopexit,EDGE_TYPE_DATA,false,true,isTruePath);
+	// 	loopexit->addAncestorNode(node,EDGE_TYPE_DATA,false,true,isTruePath);
+
+	// 	//There is a problem here, we cannot have multiple nodes coming to the same store
+	// 	loopexit->parentClassification[0] = node;
+	// 	if(!isTruePath) loopexit->setNPB(true);
+	// }
+}

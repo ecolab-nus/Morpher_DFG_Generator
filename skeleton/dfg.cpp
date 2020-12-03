@@ -10223,6 +10223,7 @@ void DFG::GEPBaseAddrCheck(Function &F)
 				GEP->dump();
 				int offset = CalculateGEPBaseAddr(GEP);
 				GEPOffsetMap[GEP] = offset;
+				outs() << "[dfg.cpp][GEPBaseAddrCheck] offset: " << offset << "\n";
 			}
 		}
 	}
@@ -10247,6 +10248,19 @@ void checkGEPDerivatives(Instruction *root, GetElementPtrInst *GEP, std::unorder
 		}
 	}
 }
+
+//int DFG::getMUnitTransID(BasicBlock *src, BasicBlock *dest)
+//{
+//
+//	for (munitTransition mut : munitTransitionsALL)
+//	{
+//		if (src == mut.srcBB && dest == mut.destBB)
+//		{
+//			return mut.id;
+//		}
+//	}
+//	assert(false);
+//}
 
 void DFG::getTransferVariables(std::unordered_set<Value *> &outer_vals,
 							   std::unordered_map<Value *, GetElementPtrInst *> &mem_ptrs,
@@ -10520,6 +10534,8 @@ void DFG::InstrumentInOutVars(Function &F, std::unordered_map<Value *, int> mem_
 		assert(array_pointer_sizes.find(ptr->getName()) != array_pointer_sizes.end());
 		int size = array_pointer_sizes[ptr->getName()];
 
+		outs() << "size = " << size << "\n";
+
 		Value* ptr_name_val = builder.CreateGlobalStringPtr(ptr->getName());
 		Value *size_val = ConstantInt::get(Type::getInt8Ty(Ctx), size);
 
@@ -10563,4 +10579,149 @@ void DFG::InstrumentInOutVars(Function &F, std::unordered_map<Value *, int> mem_
 		builder.CreateCall(loopEndFn,{loopName});
 	}
 
+}
+
+void DFG::UpdateSPMAllocation(std::unordered_map<Value *, int> &spm_base_address,
+							  std::unordered_map<Value *, SPM_BANK> &spm_base_allocation,
+							  std::unordered_map<Value *, GetElementPtrInst *> &arr_ptrs)
+{
+	for (dfgNode *node : NodeList)
+	{
+		if (OutLoopNodeMapReverse.find(node) != OutLoopNodeMapReverse.end() && OutLoopNodeMapReverse[node])
+		{
+			assert(spm_base_address.find(OutLoopNodeMapReverse[node]) != spm_base_address.end());
+			outs() << "SetNewGEPBaseAddresses :: setting outerloop value=" << OutLoopNodeMapReverse[node]->getName() << " to " << spm_base_address[OutLoopNodeMapReverse[node]] << "\n";
+			node->setConstantVal(spm_base_address[OutLoopNodeMapReverse[node]]);
+
+			assert(spm_base_allocation.find(OutLoopNodeMapReverse[node]) != spm_base_allocation.end());
+			if (spm_base_allocation[OutLoopNodeMapReverse[node]] == BANK0)
+			{
+				node->setLeftAlignedMemOp(1);
+			}
+			else
+			{
+				node->setLeftAlignedMemOp(2);
+			}
+		}
+		else if (node->getNode())
+		{
+			if (GetElementPtrInst *GEP = dyn_cast<GetElementPtrInst>(node->getNode()))
+			{
+				Value *gep_pointer = GEP->getPointerOperand();
+				if (spm_base_address.find(gep_pointer) != spm_base_address.end())
+				{
+					node->setGEPbaseAddr(spm_base_address[gep_pointer]);
+					outs() << "SetNewGEPBaseAddresses :: setting GEP base address for=";
+					GEP->dump();
+					outs() << "\t to " << spm_base_address[gep_pointer] << "\n";
+				}
+			}
+			else if (LoadInst *LDI = dyn_cast<LoadInst>(node->getNode()))
+			{
+				Value *ptr = LDI->getPointerOperand();
+				assert(arr_ptrs.find(ptr) != arr_ptrs.end());
+				Value *gep_ptr = arr_ptrs[ptr]->getPointerOperand();
+				assert(spm_base_allocation.find(gep_ptr) != spm_base_allocation.end());
+
+				if (spm_base_allocation[gep_ptr] == BANK0)
+				{
+					node->setLeftAlignedMemOp(1);
+				}
+				else
+				{
+					node->setLeftAlignedMemOp(2);
+				}
+			}
+			else if (StoreInst *STI = dyn_cast<StoreInst>(node->getNode()))
+			{
+				Value *ptr = STI->getPointerOperand();
+				assert(arr_ptrs.find(ptr) != arr_ptrs.end());
+				Value *gep_ptr = arr_ptrs[ptr]->getPointerOperand();
+				assert(spm_base_allocation.find(gep_ptr) != spm_base_allocation.end());
+
+				if (spm_base_allocation[gep_ptr] == BANK0)
+				{
+					node->setLeftAlignedMemOp(1);
+				}
+				else
+				{
+					node->setLeftAlignedMemOp(2);
+				}
+			}
+		}
+	}
+
+	outs() << "\n\nName nodes begin\n";
+	nameNodes();
+	outs() << "\nName nodes end\n\n";
+	// assert(false);
+}
+
+int DFG::insertshiftGEPsCorrect(){
+
+	std::unordered_set<dfgNode *> newNodes;
+
+	for(dfgNode* node : NodeList){
+		if(node->getNode()){
+			if(GetElementPtrInst* GEP = dyn_cast<GetElementPtrInst>(node->getNode())){
+				DataLayout DL = GEP->getParent()->getParent()->getParent()->getDataLayout();
+				int array_size = DL.getTypeAllocSize(GEP->getSourceElementType());
+
+				/* Find total number of elements in array */
+				Type *T = cast<PointerType>(GEP->getPointerOperandType())->getElementType();
+				int no_of_elements;
+
+				if (isa<ArrayType>(GEP->getSourceElementType())){
+					no_of_elements = cast<ArrayType>(T)->getNumElements();
+					outs() << "is an array\n";
+				}else{
+					no_of_elements = 1;
+					outs()<< "not an array\n";
+				}
+
+				int size = array_size/no_of_elements;
+
+				outs() << "total array size=" << array_size << " no_of_elements=" << no_of_elements  << " element size(bytes)=" << size << "\n" ;
+				GEP->dump();
+
+				if (size > 1)
+				{
+					for(dfgNode* anc : node->getAncestors()){
+						//ignore predicates
+						if(anc->childConditionalMap[node] != UNCOND) continue;
+
+						dfgNode *temp;
+						temp = new dfgNode(this);
+						temp->setNameType("GEPLEFTSHIFT");
+						temp->setIdx(NodeList.size() + newNodes.size());
+						newNodes.insert(temp);
+						temp->setConstantVal(Log2_32(size));
+						temp->BB = node->BB;
+						outs() << "adding node...\n";
+
+						anc->addChildNode(temp);
+						temp->addAncestorNode(anc);
+
+
+						temp->addChildNode(node);
+						node->addAncestorNode(temp);
+
+						anc->removeChild(node);
+						node->removeAncestor(anc);
+					}
+
+
+
+				}
+
+ 			}
+		}
+	}
+
+	for (dfgNode *n : newNodes)
+	{
+		NodeList.push_back(n);
+	}
+
+	// assert(false);
 }

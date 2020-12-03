@@ -72,6 +72,7 @@ class DFGPartPred : public DFG{
 
 		void getLoopExitConditionNodes(std::set<exitNode> &exitNodes);
 		// void addLoopExitStoreHyCUBE(std::set<exitNode> &exitNodes);
+		void addLoopExitStoreHyCUBE(std::set<exitNode>& exitNodes);
 
 		void PrintOuts(){
 			printDOT(this->name + "_PartPredDFG.dot");

@@ -801,6 +801,7 @@ void DFGTrig::generateTrigDFGDOT(Function &F) {
 	printNewDFGXML();
 }
 
+
 bool DFGTrig::checkPHILoop(dfgNode* node1, dfgNode* node2) {
 	if(node1->getNode()==NULL) return false;
 	if(node2->getNode()==NULL) return false;

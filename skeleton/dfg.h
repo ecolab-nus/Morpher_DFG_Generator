@@ -151,6 +151,16 @@ struct munitTransitionComparer
 enum MemOp   {LOAD,STORE,INVALID};
 enum DFGType {NOLOOP,OUTLOOP,INLOOP};
 
+//only for hycube simulation
+
+enum SPM_BANK
+{
+	BANK0,
+	BANK1
+};
+
+//only for hycube simulation
+
 class DFG{
 		protected :
 			std::vector<dfgNode*> NodeList;
@@ -447,6 +457,7 @@ class DFG{
 
 			// add shift operations before the GEPs of STOREH and STORE.
 			int insertshiftGEPs();
+			int insertshiftGEPsCorrect();
 
 
 			//add load stores which does not use GEPs with constants.
@@ -487,6 +498,9 @@ class DFG{
 			void removeDisconnectedNodes();
 			std::unordered_set<dfgNode*> getLineage(dfgNode* n);
 
+
+//			int getMUnitTransID(BasicBlock* src, BasicBlock* dest);
+
 			void getTransferVariables(std::unordered_set<Value*>& outer_vals, 
 							std::unordered_map<Value*,GetElementPtrInst*>& mem_ptrs, 
 							std::unordered_map<Value*,int>& acc,
@@ -496,6 +510,9 @@ class DFG{
 			void SetBasePointers(std::unordered_set<Value*>& outer_vals, 
 			                     std::unordered_map<Value*,GetElementPtrInst*>& mem_ptrs, Function &F);
 			void InstrumentInOutVars(Function &F, std::unordered_map<Value *, int> mem_accesses);
+			void UpdateSPMAllocation(std::unordered_map<Value *, int>& spm_base_address,
+			                         std::unordered_map<Value *, SPM_BANK>& spm_base_allocation,
+									 std::unordered_map<Value *, GetElementPtrInst *>& arr_ptrs);
 
 			DominatorTree* DT;
 	};
