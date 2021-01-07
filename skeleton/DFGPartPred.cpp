@@ -761,18 +761,15 @@ void DFGPartPred::generateTrigDFGDOT(Function &F) {
 
 	GEPBaseAddrCheck(F);
 	nameNodes();
-	printDOT(this->name + "_beforeclassifyPartPredDFG.dot");
 	classifyParents();
 	// RemoveInductionControlLogic();
 
 	// RemoveBackEdgePHIs();
 	// removeOutLoopLoad();
-	RemoveConstantCMERGEs();
+//	RemoveConstantCMERGEs(); Originally on morpher
 	removeDisconnectedNodes();
-
 	addOrphanPseudoEdges();
 	addRecConnsAsPseudo();
-
 	// printDOT(this->name + "_PartPredDFG.dot");
 	// printNewDFGXML();
 
