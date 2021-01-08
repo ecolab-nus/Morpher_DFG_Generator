@@ -772,6 +772,7 @@ void DFGPartPred::generateTrigDFGDOT(Function &F) {
 	addRecConnsAsPseudo();
 	// printDOT(this->name + "_PartPredDFG.dot");
 	// printNewDFGXML();
+	changeTypeofSingleSourceCompNodes();
 
 	//function removeDisconnetedNodes() should be called at last, otherwise same idx would be reused
 	//when new instructions are added
@@ -1473,6 +1474,9 @@ void DFGPartPred::printNewDFGXML() {
 				else if(child->parentClassification[2]==node){
 					xmlFile << "type=\"I2\"/>\n";
 				}
+				else if(child->parentClassification[3]==node){
+					xmlFile << "type=\"I3\"/>\n";// type to handle single source nodes in mapper
+				}
 				else{
 					bool found=false;
 					for(std::pair<int,dfgNode*> pair : child->parentClassification){
@@ -1526,13 +1530,16 @@ void DFGPartPred::printNewDFGXML() {
 int DFGPartPred::classifyParents() {
 
 	dfgNode* node;
+	int parent_count=0;
 	for (int i = 0; i < NodeList.size(); ++i) {
 		node = NodeList[i];
 
 		outs() << "classifyParent::currentNode = " << node->getIdx() << "\n";
 		outs() << "Parents : ";
+		parent_count=0;
 		for (dfgNode* parent : node->getAncestors()) {
 			outs() << parent->getIdx() << ",";
+			parent_count++;
 		}
 		outs() << "\n";
 
@@ -1612,6 +1619,7 @@ int DFGPartPred::classifyParents() {
 						}
 						continue;
 					}
+
 					if(node->getNameType().compare("STORESTART")==0){
 						assert(parent->getNode()==NULL);
 						if(parent->getNameType().compare("MOVC") == 0){
@@ -1830,6 +1838,13 @@ int DFGPartPred::classifyParents() {
 					node->parentClassification[findOperandNumber(node, ins,parentIns)]=parent;
 				}
 
+				//DMD: Set type I3 to handle single source nodes in mapper
+				if(parent_count < 2 && node->hasConstantVal()==false && (HyCUBEInsStrings[node->getFinalIns()].compare("MUL")==0 || HyCUBEInsStrings[node->getFinalIns()].compare("ADD")==0 || HyCUBEInsStrings[node->getFinalIns()].compare("SUB")==0)){
+					node->parentClassification.erase(1);node->parentClassification.erase(2);
+					node->parentClassification[3]=parent;
+					outs() <<"Has Const:" <<node->hasConstantVal()<<", Single source dest node:" << node->getIdx() << ", source node:" << parent->getIdx() << "\n";
+				}
+
 
 		}
 	}
@@ -1860,6 +1875,10 @@ void DFGPartPred::addRecConnsAsPseudo() {
 
 	scheduleASAP();
 	scheduleALAP();
+
+}
+void DFGPartPred::changeTypeofSingleSourceCompNodes() {
+	for(dfgNode* node : NodeList){}
 
 }
 

@@ -10585,6 +10585,12 @@ void DFG::UpdateSPMAllocation(std::unordered_map<Value *, int> &spm_base_address
 							  std::unordered_map<Value *, SPM_BANK> &spm_base_allocation,
 							  std::unordered_map<Value *, GetElementPtrInst *> &arr_ptrs)
 {
+	std::ofstream mem_alloc_txt;
+	mem_alloc_txt.open(this->name + "_mem_alloc.txt");
+	mem_alloc_txt << "var_name,base_addr\n";
+	std::string var_name;
+	int base_addr;
+	std::unordered_map<std::string, int> base_address_map;
 	for (dfgNode *node : NodeList)
 	{
 		if (OutLoopNodeMapReverse.find(node) != OutLoopNodeMapReverse.end() && OutLoopNodeMapReverse[node])
@@ -10613,7 +10619,12 @@ void DFG::UpdateSPMAllocation(std::unordered_map<Value *, int> &spm_base_address
 					node->setGEPbaseAddr(spm_base_address[gep_pointer]);
 					outs() << "SetNewGEPBaseAddresses :: setting GEP base address for=";
 					GEP->dump();
+					outs() << "\t to " << gep_pointer->getName() << "\n";
 					outs() << "\t to " << spm_base_address[gep_pointer] << "\n";
+					var_name = gep_pointer->getName();
+					base_addr = spm_base_address[gep_pointer];
+					base_address_map[var_name]=base_addr;
+//					mem_alloc_txt << var_name<<","<< base_addr<<"\n";
 				}
 			}
 			else if (LoadInst *LDI = dyn_cast<LoadInst>(node->getNode()))
@@ -10654,6 +10665,11 @@ void DFG::UpdateSPMAllocation(std::unordered_map<Value *, int> &spm_base_address
 	outs() << "\n\nName nodes begin\n";
 	nameNodes();
 	outs() << "\nName nodes end\n\n";
+
+	for(auto i = base_address_map.begin(); i != base_address_map.end(); i++){
+		mem_alloc_txt << i->first<<","<< i->second<<"\n";
+	}
+	mem_alloc_txt.close();
 	// assert(false);
 }
 

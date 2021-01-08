@@ -61,6 +61,7 @@ class DFGPartPred : public DFG{
 
 		void addRecConnsAsPseudo();
 		void addOrphanPseudoEdges();
+		void changeTypeofSingleSourceCompNodes();
 
 		void createCtrlBROrTree();
 
