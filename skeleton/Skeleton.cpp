@@ -1984,95 +1984,6 @@ void AllocateSPMBanks(std::unordered_set<Value *> &outer_vals,
 
 
 
-	//Utility struct to divide the memory accessors to 2 SPM Banks.
-	struct UtilBankAllocator
-	{
-		struct BankAllocation{
-			std::unordered_set<Value*> bank0_vars;
-			std::unordered_set<Value*> bank1_vars;
-			int diff;
-		};
-
-		std::unordered_map<int,std::unordered_map<int,BankAllocation>> dp;
-
-		BankAllocation findMinRec(std::vector<std::pair<Value *, int>> &acc,
-		               int idx,
-					   int sumCalculated,
-					   int sumTotal,
-					   BankAllocation current_allocation)
-		{
-			// If we have reached last element.  Sum of one
-			// subset is sumCalculated, sum of other subset is
-			// sumTotal-sumCalculated.  Return absolute difference
-			// of two sums.
-
-			int original_idx = idx;
-
-			if (++idx == acc.size()){
-				current_allocation.diff = abs((sumTotal - sumCalculated) - sumCalculated);
-				return current_allocation;
-			}
-
-			if(dp.find(original_idx) != dp.end() &&
-			   dp[original_idx].find(sumCalculated) != dp[original_idx].end() ){
-				return dp[original_idx][sumCalculated];
-			}
-
-			// For every item arr[i], we have two choices
-			// (1) We do not include it first set
-			// (2) We include it in first set
-			// We return minimum of two choices
-
-			int next_value = acc[idx].second;
-			Value* next_pointer = acc[idx].first;
-
-			BankAllocation included_in_bank1 = findMinRec(acc, idx, sumCalculated + next_value, sumTotal,current_allocation);
-			BankAllocation not_included_in_bank1 = findMinRec(acc, idx, sumCalculated, sumTotal,current_allocation);
-
-			if(included_in_bank1.diff < not_included_in_bank1.diff){
-				assert(included_in_bank1.bank0_vars.find(next_pointer) != included_in_bank1.bank0_vars.end());
-				included_in_bank1.bank0_vars.erase(next_pointer);
-				included_in_bank1.bank1_vars.insert(next_pointer);
-				dp[original_idx][sumCalculated] = included_in_bank1;
-				return included_in_bank1;
-			}
-			else{
-				dp[original_idx][sumCalculated] = not_included_in_bank1;
-				return not_included_in_bank1;
-			}
-		}
-
-		// Returns minimum possible difference between sums
-		// of two subsets
-		int findMin(std::unordered_map<Value *, int> &acc, std::unordered_set<Value*>& bank0_vars,std::unordered_set<Value*>& bank1_vars)
-		{
-			// Compute total sum of elements
-			int sumTotal = 0;
-			bank0_vars.clear();
-			bank1_vars.clear();
-			dp.clear();
-			std::vector<std::pair<Value *, int>> acc_vector;
-
-			for(auto it = acc.begin(); it != acc.end(); it++){
-				sumTotal += it->second;
-				bank0_vars.insert(it->first);
-				acc_vector.push_back(std::make_pair(it->first,it->second));
-			}
-
-			outs()<<"number of array:"<<acc.size()<<"\n";
-
-			BankAllocation curr_allocation;
-			curr_allocation.bank0_vars = bank0_vars;
-
-			// Compute result using recursive function
-			BankAllocation res = findMinRec(acc_vector, 0, 0, sumTotal, curr_allocation);
-			bank0_vars = res.bank0_vars;
-			bank1_vars = res.bank1_vars;
-			return res.diff;
-		}
-	};
-
-
 	std::vector<std::unordered_set<Value*>> banks_vars;
 	std::map<Value*, int> value_to_BankId;
 	std::map<int, int> data_in_bank;
@@ -2082,8 +1993,6 @@ void AllocateSPMBanks(std::unordered_set<Value *> &outer_vals,
 		data_in_bank [i] = 0;
 	}
 
-	UtilBankAllocator UBA;
-	// UBA.findMin(acc,bank0_vars,bank1_vars);
 
 	//data placement
 	{
