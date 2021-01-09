@@ -83,6 +83,8 @@ AttributeList attr21;
 
 static bool xmlRun = false;
 
+int MEM_SIZE;
+
 namespace llvm
 {
 void initializeSkeletonFunctionPassPass(PassRegistry &);
@@ -103,6 +105,9 @@ static cl::opt<std::string> fName("fn", cl::init("na"), cl::desc("the function n
 // static cl::opt<unsigned> dimX("dx", cl::init(4), cl::desc("DimX"));
 // static cl::opt<unsigned> dimY("dy", cl::init(4), cl::desc("DimY"));
 static cl::opt<std::string> dfgType("type", cl::init("PartPred"), cl::desc("The type of the dfg, valid types = PartPred, Trig, TrMap, BrMap, DFGDISE"));
+
+static cl::opt<unsigned> banks_number ("nobanks", cl::init(2), cl::desc("number of SPM banks"));
+static cl::opt<unsigned> bank_size ("banksize", cl::init(2048), cl::desc("number of bytes in a bank"));
 
 STATISTIC(LoopsAnalyzed, "Number of loops analyzed for vectorization");
 
@@ -1941,6 +1946,9 @@ void AllocateSPMBanks(std::unordered_set<Value *> &outer_vals,
 					  Function &F)
 {
 
+
+	outs()<<"number of banks: "<<banks_number<<"\n";
+	outs()<<"banks size: "<<bank_size<<"\n";
 	// Find variable sizes;
 	std::unordered_map<Value *, int> variable_sizes_bytes;
 	DataLayout DL = F.getParent()->getDataLayout();
@@ -1950,6 +1958,7 @@ void AllocateSPMBanks(std::unordered_set<Value *> &outer_vals,
 	{
 		Value *outer_val = *it;
 		int size = DL.getTypeAllocSize(outer_val->getType());
+		assert(size <= bank_size); // assume the size of each array is not bigger than the bank size
 		variable_sizes_bytes[outer_val] = size;
 	}
 
@@ -1962,129 +1971,70 @@ void AllocateSPMBanks(std::unordered_set<Value *> &outer_vals,
 		if (sizeArrMap.find(gep_pointer_name) != sizeArrMap.end())
 		{
 			variable_sizes_bytes[gep->getPointerOperand()] = sizeArrMap[gep_pointer_name];
+			assert(variable_sizes_bytes[gep->getPointerOperand()] <= bank_size);
 			outs() << gep_pointer_name << ", size = " << sizeArrMap[gep_pointer_name] << "\n";
 		}
 		else
 		{
 			int size = DL.getTypeAllocSize(gep->getSourceElementType());
+			assert(size <= bank_size);
 			variable_sizes_bytes[gep->getPointerOperand()] = size;
 		}
 	}
 
 
 
-	//Utility struct to divide the memory accessors to 2 SPM Banks.
-	struct UtilBankAllocator
+	std::vector<std::unordered_set<Value*>> banks_vars;
+	std::map<Value*, int> value_to_BankId;
+	std::map<int, int> data_in_bank;
+	for(int i = 0; i < banks_number ; i++){
+		std::unordered_set<Value*> temp;
+		banks_vars.push_back(temp);
+		data_in_bank [i] = 0;
+	}
+
+
+	//data placement
 	{
-		struct BankAllocation{
-			std::unordered_set<Value*> bank0_vars;
-			std::unordered_set<Value*> bank1_vars;
-			int diff;
-		};
-
-		std::unordered_map<int,std::unordered_map<int,BankAllocation>> dp;
-
-		BankAllocation findMinRec(std::vector<std::pair<Value *, int>> &acc,
-		               int idx,
-					   int sumCalculated,
-					   int sumTotal,
-					   BankAllocation current_allocation)
-		{
-			// If we have reached last element.  Sum of one
-			// subset is sumCalculated, sum of other subset is
-			// sumTotal-sumCalculated.  Return absolute difference
-			// of two sums.
-
-			int original_idx = idx;
-
-			if (++idx == acc.size()){
-				current_allocation.diff = abs((sumTotal - sumCalculated) - sumCalculated);
-				return current_allocation;
+		
+		for(auto it = acc.begin(); it != acc.end(); it++){
+			int size = variable_sizes_bytes[it->first];
+			int least_data = data_in_bank[0];
+			int desired_bank = 0;
+			for(int i = 0 ; i< banks_number;i++){
+				if(data_in_bank [i] < least_data ){
+					least_data = data_in_bank [i];
+					desired_bank = i;
+				}
 			}
-
-			if(dp.find(original_idx) != dp.end() &&
-			   dp[original_idx].find(sumCalculated) != dp[original_idx].end() ){
-				return dp[original_idx][sumCalculated];
-			}
-
-			// For every item arr[i], we have two choices
-			// (1) We do not include it first set
-			// (2) We include it in first set
-			// We return minimum of two choices
-
-			int next_value = acc[idx].second;
-			Value* next_pointer = acc[idx].first;
-
-			BankAllocation included_in_bank1 = findMinRec(acc, idx, sumCalculated + next_value, sumTotal,current_allocation);
-			BankAllocation not_included_in_bank1 = findMinRec(acc, idx, sumCalculated, sumTotal,current_allocation);
-
-			if(included_in_bank1.diff < not_included_in_bank1.diff){
-				assert(included_in_bank1.bank0_vars.find(next_pointer) != included_in_bank1.bank0_vars.end());
-				included_in_bank1.bank0_vars.erase(next_pointer);
-				included_in_bank1.bank1_vars.insert(next_pointer);
-				dp[original_idx][sumCalculated] = included_in_bank1;
-				return included_in_bank1;
-			}
-			else{
-				dp[original_idx][sumCalculated] = not_included_in_bank1;
-				return not_included_in_bank1;
-			}
+			outs()<<"assign"<< size << "to bank"<<desired_bank<<"\n";
+			banks_vars[desired_bank].insert(it->first);
+			value_to_BankId[it->first] = desired_bank;
+			data_in_bank[desired_bank] = size + data_in_bank[desired_bank];
+			assert(data_in_bank[desired_bank] < bank_size);
+			
 		}
+	}
+	
 
-		// Returns minimum possible difference between sums
-		// of two subsets
-		int findMin(std::unordered_map<Value *, int> &acc, std::unordered_set<Value*>& bank0_vars,std::unordered_set<Value*>& bank1_vars)
-		{
-			// Compute total sum of elements
-			int sumTotal = 0;
-			bank0_vars.clear();
-			bank1_vars.clear();
-			dp.clear();
-			std::vector<std::pair<Value *, int>> acc_vector;
-
-			for(auto it = acc.begin(); it != acc.end(); it++){
-				sumTotal += it->second;
-				bank0_vars.insert(it->first);
-				acc_vector.push_back(std::make_pair(it->first,it->second));
-			}
-
-			BankAllocation curr_allocation;
-			curr_allocation.bank0_vars = bank0_vars;
-
-			// Compute result using recursive function
-			BankAllocation res = findMinRec(acc_vector, 0, 0, sumTotal, curr_allocation);
-			bank0_vars = res.bank0_vars;
-			bank1_vars = res.bank1_vars;
-			return res.diff;
+	for(int i = 0; i < banks_vars.size(); i++){
+		auto & bank_vars = banks_vars[i];
+		outs() << "Bank"<<i<< " vars :: \n";
+		for(Value* v : bank_vars){
+			outs() << "\t" << v->getName() << " :: size = " << variable_sizes_bytes[v] << ", acceses = " << acc[v] << "\n";
+			// spm_bank_allocation[v]=BANK0;
+			// spm_base_address[v] = bank0_addr;
+			// bank0_addr += variable_sizes_bytes[v];
 		}
-	};
-
-	std::unordered_set<Value*> bank0_vars;
-	std::unordered_set<Value*> bank1_vars;
-
-	UtilBankAllocator UBA;
-	UBA.findMin(acc,bank0_vars,bank1_vars);
-
-	outs() << "Bank0 vars :: \n";
-	for(Value* v : bank0_vars){
-		outs() << "\t" << v->getName() << " :: size = " << variable_sizes_bytes[v] << ", acceses = " << acc[v] << "\n";
-		// spm_bank_allocation[v]=BANK0;
-		// spm_base_address[v] = bank0_addr;
-		// bank0_addr += variable_sizes_bytes[v];
 	}
 
-	outs() << "Bank1 vars :: \n";
-	for(Value* v : bank1_vars){
-		outs() << "\t" << v->getName() << " :: size = " << variable_sizes_bytes[v] << ", acceses = " << acc[v] << "\n";
-		// spm_bank_allocation[v]=BANK1;
-		// spm_base_address[v] = bank1_addr;
-		// bank1_addr += variable_sizes_bytes[v];
-	}
-
-	int bank0_addr = 0;
-	int bank1_addr = MEM_SIZE / 2;
+	int mem_size = banks_number * bank_size;
 
 	outs() << "FINAL ALLOCATION BEGIN.\n";
+	std::map<int, int> bank_base_address;
+	for(int i = 0; i< banks_number;i++){
+		bank_base_address.emplace(i, i * bank_size);
+	}
 	for (auto it = mem_ptrs.begin(); it != mem_ptrs.end(); it++)
 	{
 		Value* mem_ins = it->first;
@@ -2094,26 +2044,14 @@ void AllocateSPMBanks(std::unordered_set<Value *> &outer_vals,
 		outs() << "gep_pointer = " << gep->getPointerOperand()->getName() << ",";
 		outs() << "size = " << variable_sizes_bytes[gep->getPointerOperand()] << ",";
 
-		if(bank0_vars.find(gep->getPointerOperand()) != bank0_vars.end()){
+		if(value_to_BankId.find(gep->getPointerOperand()) != value_to_BankId.end()){
 			if(spm_base_address.find(gep->getPointerOperand()) == spm_base_address.end()){
-				spm_bank_allocation[gep->getPointerOperand()] = BANK0;
-				outs() << "bank=0,";
-				spm_base_address[gep->getPointerOperand()] = bank0_addr;
+				int bank_id = (value_to_BankId.find(gep->getPointerOperand()))->second;
+				spm_bank_allocation[gep->getPointerOperand()] = SPMBANKOfIndex(bank_id);
+				outs() << "bank="<<bank_id<<",";
+				spm_base_address[gep->getPointerOperand()] = bank_base_address[bank_id];
 				assert(variable_sizes_bytes.find(gep->getPointerOperand()) != variable_sizes_bytes.end());
-				bank0_addr += variable_sizes_bytes[gep->getPointerOperand()];
-				outs() << "addr=" << spm_base_address[gep->getPointerOperand()] << "\n";
-			}
-			else{
-				outs() << "array/struct already allocated \n";
-			}
-		}
-		else if(bank1_vars.find(gep->getPointerOperand()) != bank1_vars.end()){
-			if(spm_base_address.find(gep->getPointerOperand()) == spm_base_address.end()) {
-				spm_bank_allocation[gep->getPointerOperand()] = BANK1;
-				outs() << "bank=1,";
-				spm_base_address[gep->getPointerOperand()] = bank1_addr;
-				assert(variable_sizes_bytes.find(gep->getPointerOperand()) != variable_sizes_bytes.end());
-				bank1_addr += variable_sizes_bytes[gep->getPointerOperand()];
+				bank_base_address[bank_id] += variable_sizes_bytes[gep->getPointerOperand()];
 				outs() << "addr=" << spm_base_address[gep->getPointerOperand()] << "\n";
 			}
 			else{
@@ -2130,22 +2068,14 @@ void AllocateSPMBanks(std::unordered_set<Value *> &outer_vals,
 		Value* outer_value_mem = *it;
 
 		outs() << "outer value = " << outer_value_mem->getName() << ",";
-		if(bank0_vars.find(outer_value_mem) != bank0_vars.end()){
-			spm_bank_allocation[outer_value_mem] = BANK0;
-			spm_base_address[outer_value_mem] = bank0_addr;
+		if(value_to_BankId.find(outer_value_mem) != value_to_BankId.end()){
+			int bank_id = (value_to_BankId.find(outer_value_mem))->second;
+			spm_bank_allocation[outer_value_mem] = SPMBANKOfIndex(bank_id);
+			spm_base_address[outer_value_mem] = bank_base_address[bank_id];
 			assert(variable_sizes_bytes.find(outer_value_mem) != variable_sizes_bytes.end());
-			bank0_addr += variable_sizes_bytes[outer_value_mem];
+			bank_base_address[bank_id] += variable_sizes_bytes[outer_value_mem];
 
-			outs() << "bank=0,";
-			outs() << "addr=" << spm_base_address[outer_value_mem] << "\n";
-		}
-		else if(bank1_vars.find(outer_value_mem) != bank1_vars.end()){
-			spm_bank_allocation[outer_value_mem] = BANK1;
-			spm_base_address[outer_value_mem] = bank1_addr;
-			assert(variable_sizes_bytes.find(outer_value_mem) != variable_sizes_bytes.end());
-			bank1_addr += variable_sizes_bytes[outer_value_mem];
-
-			outs() << "bank=1,";
+			outs() << "bank="<<bank_id<<",";
 			outs() << "addr=" << spm_base_address[outer_value_mem] << "\n";
 		}
 		else{
@@ -2184,6 +2114,8 @@ struct SkeletonFunctionPass : public FunctionPass
 		clock_t begin = clock();
 		clock_t end;
 		std::string loopCFGFileName;
+
+		MEM_SIZE = banks_number * bank_size;
 
 		if (fName != "na")
 		{

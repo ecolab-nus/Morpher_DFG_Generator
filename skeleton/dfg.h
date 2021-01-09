@@ -21,7 +21,7 @@
 
 #define REGS_PER_NODE 4
 
-#define MEM_SIZE 4096
+extern int MEM_SIZE;
 
 class AStar;
 
@@ -156,9 +156,15 @@ enum DFGType {NOLOOP,OUTLOOP,INLOOP};
 enum SPM_BANK
 {
 	BANK0,
-	BANK1
+	BANK1,
+	BANK2,
+	BANK3,
+	BANK4,
+	BANK5,
+	BANK6,
+	BANK7
 };
-
+static SPM_BANK SPMBANKOfIndex(int i) { return static_cast<SPM_BANK>(i); }
 //only for hycube simulation
 
 class DFG{
