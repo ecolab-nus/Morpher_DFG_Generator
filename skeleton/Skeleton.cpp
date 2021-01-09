@@ -83,6 +83,8 @@ AttributeList attr21;
 
 static bool xmlRun = false;
 
+int MEM_SIZE;
+
 namespace llvm
 {
 void initializeSkeletonFunctionPassPass(PassRegistry &);
@@ -2070,8 +2072,6 @@ void AllocateSPMBanks(std::unordered_set<Value *> &outer_vals,
 		}
 	};
 
-	std::unordered_set<Value*> bank0_vars;
-	std::unordered_set<Value*> bank1_vars;
 
 	std::vector<std::unordered_set<Value*>> banks_vars;
 	std::map<Value*, int> value_to_BankId;
@@ -2079,6 +2079,7 @@ void AllocateSPMBanks(std::unordered_set<Value *> &outer_vals,
 	for(int i = 0; i < banks_number ; i++){
 		std::unordered_set<Value*> temp;
 		banks_vars.push_back(temp);
+		data_in_bank [i] = 0;
 	}
 
 	UtilBankAllocator UBA;
@@ -2086,26 +2087,23 @@ void AllocateSPMBanks(std::unordered_set<Value *> &outer_vals,
 
 	//data placement
 	{
-		int visit_bankid = 0;
-		for(auto it = acc.begin(); it != acc.end(); ){
-			if(visit_bankid == banks_number){
-				visit_bankid = 0;
+		
+		for(auto it = acc.begin(); it != acc.end(); it++){
+			int size = variable_sizes_bytes[it->first];
+			int least_data = data_in_bank[0];
+			int desired_bank = 0;
+			for(int i = 0 ; i< banks_number;i++){
+				if(data_in_bank [i] < least_data ){
+					least_data = data_in_bank [i];
+					desired_bank = i;
+				}
 			}
-			int size = it->second;
-			if (banks_vars[visit_bankid].size() == 0){
-				banks_vars[visit_bankid].insert(it->first);
-				value_to_BankId[it->first] = visit_bankid;
-				data_in_bank[visit_bankid] = size;
-				it++;
-			}else if (data_in_bank[visit_bankid] + size <= bank_size){
-				banks_vars[visit_bankid].insert(it->first);
-				value_to_BankId[it->first] = visit_bankid;
-				data_in_bank[visit_bankid] = size + data_in_bank[visit_bankid];
-				it++;
-			}
-			//fix me: what if there is no available bank?
-
-			visit_bankid++;
+			outs()<<"assign"<< size << "to bank"<<desired_bank<<"\n";
+			banks_vars[desired_bank].insert(it->first);
+			value_to_BankId[it->first] = desired_bank;
+			data_in_bank[desired_bank] = size + data_in_bank[desired_bank];
+			assert(data_in_bank[desired_bank] < bank_size);
+			
 		}
 	}
 	
@@ -2207,6 +2205,8 @@ struct SkeletonFunctionPass : public FunctionPass
 		clock_t begin = clock();
 		clock_t end;
 		std::string loopCFGFileName;
+
+		MEM_SIZE = banks_number * bank_size;
 
 		if (fName != "na")
 		{

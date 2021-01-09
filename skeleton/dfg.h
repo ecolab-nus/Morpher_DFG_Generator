@@ -21,7 +21,7 @@
 
 #define REGS_PER_NODE 4
 
-#define MEM_SIZE 4096
+extern int MEM_SIZE;
 
 class AStar;
 
