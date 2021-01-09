@@ -8,6 +8,7 @@ int B[SIZE];
 void init() {
 	int i;
 	for (i=0;i<SIZE;i++){
+	
 		A[i] = 0;
 		B[i] = 0;
 	}
@@ -21,6 +22,9 @@ int main() {
 	B[i] = 3;
 
 	for (i=1;i<SIZE;i++){
+			#ifdef CGRA_COMPILER
+           please_map_me();
+           #endif
 		A[i] = A[i-1] + 3;
 		B[i] = i^2;
 	}
