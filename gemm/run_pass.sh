@@ -9,3 +9,8 @@ opt -gvn -mem2reg -memdep -memcpyopt -lcssa -loop-simplify -licm -loop-deletion 
 opt -load ../build/skeleton/libSkeletonPass.so -fn $1 -skeleton integer_fft_gvn.ll -S -o integer_fft_gvn_instrument.ll
 
 clang -target i386-unknown-linux-gnu -c -emit-llvm -S ../skeleton/instrumentation/instrumentation.cpp -o instrumentation.ll
+
+llvm-link integer_fft_gvn_instrument.ll instrumentation.ll -o final.ll
+
+llc -filetype=obj final.ll -o final.o
+clang++ -m32 final.o -o final
