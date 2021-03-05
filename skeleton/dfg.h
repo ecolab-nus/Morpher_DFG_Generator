@@ -514,8 +514,8 @@ class DFG{
 
 			void GEPBaseAddrCheck(Function &F);
 			void SetBasePointers(std::unordered_set<Value*>& outer_vals, 
-			                     std::unordered_map<Value*,GetElementPtrInst*>& mem_ptrs, Function &F);
-			void InstrumentInOutVars(Function &F, std::unordered_map<Value *, int> mem_accesses);
+			                     std::unordered_map<Value*,GetElementPtrInst*>& mem_ptrs, std::map<dfgNode*,Value*> &OLNodesWithPtrTyUsage, Function &F);
+			void InstrumentInOutVars(Function &F, std::unordered_map<Value *, int> mem_accesses,  std::map<dfgNode*,Value*> &OLNodesWithPtrTyUsage);
 			void UpdateSPMAllocation(std::unordered_map<Value *, int>& spm_base_address,
 			                         std::unordered_map<Value *, SPM_BANK>& spm_base_allocation,
 									 std::unordered_map<Value *, GetElementPtrInst *>& arr_ptrs);

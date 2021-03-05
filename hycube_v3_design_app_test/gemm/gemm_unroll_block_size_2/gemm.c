@@ -4,7 +4,7 @@
 
 #define SIZE 8
 int n = SIZE;
-int A[SIZE][SIZE], B[SIZE][SIZE], C[SIZE][SIZE], temp[SIZE][SIZE];
+int A[SIZE*SIZE], B[SIZE*SIZE], C[SIZE*SIZE], temp[SIZE*SIZE];
 int i,j;
 void gemm(){
 
@@ -31,14 +31,15 @@ void gemm(){
                  #ifdef CGRA_COMPILER
                   please_map_me();
                   #endif
-                  A[i0+0][j0+0]=A[i0+0][j0+0]+B[i0+0][k0+0]*C[k0+0][j0+0];
-A[i0+0][j0+0]=A[i0+0][j0+0]+B[i0+0][k0+1]*C[k0+1][j0+0];
-A[i0+0][j0+1]=A[i0+0][j0+1]+B[i0+0][k0+0]*C[k0+0][j0+1];
-A[i0+0][j0+1]=A[i0+0][j0+1]+B[i0+0][k0+1]*C[k0+1][j0+1];
-A[i0+1][j0+0]=A[i0+1][j0+0]+B[i0+1][k0+0]*C[k0+0][j0+0];
-A[i0+1][j0+0]=A[i0+1][j0+0]+B[i0+1][k0+1]*C[k0+1][j0+0];
-A[i0+1][j0+1]=A[i0+1][j0+1]+B[i0+1][k0+0]*C[k0+0][j0+1];
-A[i0+1][j0+1]=A[i0+1][j0+1]+B[i0+1][k0+1]*C[k0+1][j0+1];
+                  A[(i0+0)*SIZE+(j0+0)]=A[(i0+0)*SIZE+(j0+0)]+B[(i0+0)*SIZE+(k0+0)]*C[(k0+0)*SIZE+(j0+0)];
+                  A[(i0+0)*SIZE+(j0+0)]=A[(i0+0)*SIZE+(j0+0)]+B[(i0+0)*SIZE+(k0+1)]*C[(k0+1)*SIZE+(j0+0)];
+                  A[(i0+0)*SIZE+(j0+1)]=A[(i0+0)*SIZE+(j0+1)]+B[(i0+0)*SIZE+(k0+0)]*C[(k0+0)*SIZE+(j0+1)];
+                  A[(i0+0)*SIZE+(j0+1)]=A[(i0+0)*SIZE+(j0+1)]+B[(i0+0)*SIZE+(k0+1)]*C[(k0+1)*SIZE+(j0+1)];
+                  A[(i0+1)*SIZE+(j0+0)]=A[(i0+1)*SIZE+(j0+0)]+B[(i0+1)*SIZE+(k0+0)]*C[(k0+0)*SIZE+(j0+0)];
+                  A[(i0+1)*SIZE+(j0+0)]=A[(i0+1)*SIZE+(j0+0)]+B[(i0+1)*SIZE+(k0+1)]*C[(k0+1)*SIZE+(j0+0)];
+                  A[(i0+1)*SIZE+(j0+1)]=A[(i0+1)*SIZE+(j0+1)]+B[(i0+1)*SIZE+(k0+0)]*C[(k0+0)*SIZE+(j0+1)];
+                  A[(i0+1)*SIZE+(j0+1)]=A[(i0+1)*SIZE+(j0+1)]+B[(i0+1)*SIZE+(k0+1)]*C[(k0+1)*SIZE+(j0+1)];
+// printf("Address of A[i0+0][j0+0]%pn\n", &A);
 
 //           A[i0+0][j0+0]=A[i0+0][j0+0]+B[i0+0][k0+0]*C[k0+0][j0+0];
 // A[i0+0][j0+0]=A[i0+0][j0+0]+B[i0+0][k0+1]*C[k0+1][j0+0];
@@ -149,7 +150,7 @@ void gemm_original(){
    for (i=0;i<SIZE; i++)
       for (j=0; j<SIZE; j++)
         for (k=0;k<SIZE; k++){
-           A[i][j] = A[i][j] + B[i][k]* C[k][j];
+           A[(i)*SIZE+(j)] = A[(i)*SIZE+(j)] + B[(i)*SIZE+(k)]* C[(k)*SIZE+(j)];
            //A[i][j] = A[i][j] + B[i][4*k]* C[4*k][j] + B[i][4*k+1]* C[4*k+1][j]
            //   + B[i][4*k+2]* C[4*k+2][j] + B[i][4*k+3]* C[4*k+3][j];
             }
@@ -162,9 +163,9 @@ void main(){
 int i,j;
 for (i=0;i<n; i++)
    for (j=0; j<n; j++) {
-      A[i][j]=0;
-      B[i][j] = j+i;
-      C[i][j] = j*i;
+      A[(i)*SIZE+(j)]= i;
+      B[(i)*SIZE+(j)] = j+i;
+      C[(i)*SIZE+(j)] = j*i;
     }
     
 gemm();
@@ -172,23 +173,25 @@ gemm();
 for (i=0;i<n; i++)
    for (j=0; j<n; j++) {
       // printf("%d\n", A[i][j]);
-      temp[i][j] = A[i][j];
+      temp[(i)*SIZE+(j)] = A[(i)*SIZE+(j)];
     }
 
 for (i=0;i<n; i++)
    for (j=0; j<n; j++) {
-      A[i][j]=0;
-      B[i][j] = j+i;
-      C[i][j] = j*i;
+      A[(i)*SIZE+(j)]= i;
+      B[(i)*SIZE+(j)] = j+i;
+      C[(i)*SIZE+(j)] = j*i;
     }
     
 gemm_original();
 
 for (i=0;i<n; i++)
    for (j=0; j<n; j++) {
-      if (A[i][j]!=temp[i][j])
+      if (A[(i)*SIZE+(j)]!=temp[(i)*SIZE+(j)])
       {
-        printf("INCORRECT %d,%d\n",temp[i][j],A[i][j]);
+        printf("INCORRECT %d,%d\n",temp[(i)*SIZE+(j)],A[(i)*SIZE+(j)]);
+      }else{
+        printf("CORRECT %d,%d\n",temp[(i)*SIZE+(j)],A[(i)*SIZE+(j)]);
       }
     }
 

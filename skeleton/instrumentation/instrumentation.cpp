@@ -642,21 +642,57 @@ void reportLoopEnd(const char* loopName){
 }
 
 
-void LiveInReport(const char* varname, uint8_t* value, uint8_t size){
+void LiveInReport(const char* varname, uint8_t* value, uint32_t size){
 	std::string varname_str(varname);
+
+	cout << "Call LiveInReport var name:" << varname_str << " size:" << (int)size <<"\n";
 
 	for(int i=0; i<size; i++){
 		data_morpher[varname_str].pre_data.push_back(value[i]);
 		data_morpher[varname_str].post_data.push_back(value[i]);
+		cout << "var name:" << varname_str << ",value:" <<(int)value[i] <<"\n";
 	}
 }
 
-void LiveOutReport(const char* varname, uint8_t* value, uint8_t size){
+void LiveInReportPtrTypeUsage(const char* varname,const char* varbaseaddr, uint32_t value, uint32_t size){
 	std::string varname_str(varname);
-	for(int i=0; i<size; i++){
-		data_morpher[varname_str].post_data[i] = value[i];
+	std::string varbaseaddr_str(varbaseaddr);
+	cout << "Call LiveInReportPtrTypeUsage var name:" << varname_str << " base pointer:"<< varbaseaddr_str<< " address offset:"<< value<<" size:" << (int)size <<"\n";
+
+//	for(int i=0; i<size; i++){
+////		data_morpher[varname_str].pre_data.push_back(value[i]);
+////		data_morpher[varname_str].post_data.push_back(value[i]);
+//		cout << "var name:" << varname_str << ",value:" <<(int)value[i] <<"\n";
+//	}
+//	std::string varname_str(varname);
+	uint8_t* value_ptr = (uint8_t*)&value;
+	for(int i=0; i<4; i++){
+		data_morpher[varname_str].pre_data.push_back(value_ptr[i]);
+		data_morpher[varname_str].post_data.push_back(value_ptr[i]);
 	}
 }
+
+void LiveInReport2(const char* varname, uint32_t* value, uint32_t size){
+	std::string varname_str(varname);
+
+	cout << "Call LiveInReport2 var name:" << varname_str << " size:" << (int)size <<"\n";
+
+	for(int i=0; i<size; i++){
+//		data_morpher[varname_str].pre_data.push_back(value[i]);
+//		data_morpher[varname_str].post_data.push_back(value[i]);
+		cout << "var name:" << varname_str << ",value:" <<(int)value[i] <<"\n";
+	}
+}
+
+void LiveOutReport(const char* varname, uint8_t* value, uint32_t size){
+	std::string varname_str(varname);
+	cout << "Call LiveOutReport var name:" << varname_str << " size:" << (int)size <<"\n";
+	for(int i=0; i<size; i++){
+		data_morpher[varname_str].post_data[i] = value[i];
+		cout << "var name:" << varname_str << ",value:" <<(int)value[i] <<"\n";
+	}
+}
+
 
 void LiveInReportIntermediateVar(const char* varname, uint32_t value){
 	std::string varname_str(varname);

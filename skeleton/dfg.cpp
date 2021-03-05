@@ -10344,7 +10344,7 @@ void DFG::getTransferVariables(std::unordered_set<Value *> &outer_vals,
 }
 
 void DFG::SetBasePointers(std::unordered_set<Value *> &outer_vals,
-						  std::unordered_map<Value *, GetElementPtrInst *> &mem_ptrs, Function &F)
+						  std::unordered_map<Value *, GetElementPtrInst *> &mem_ptrs, std::map<dfgNode*,Value*> &OLNodesWithPtrTyUsage, Function &F)
 {
 
 	outs() << "Outer LOOP 1 nodes = " << OutLoopNodeMapReverse.size() << "\n";
@@ -10361,6 +10361,26 @@ void DFG::SetBasePointers(std::unordered_set<Value *> &outer_vals,
 			outs() << "Outer LOOP name = " << OutLoopNodeMapReverse[node]->getName() << "\n";
 			outs() << "Outer LOOP node idx = " << node->getIdx() << "\n";
 			node->setArrBasePtr(OutLoopNodeMapReverse[node]->getName());
+			/*Detect out loop nodes with pointer type usage in the loop body
+			 * These nodes require special treatment in instrumentation
+			 * because we need to record the local memory address, not the memory address
+			 * generated in the ./final at runtime*/
+			for (User *u : OutLoopNodeMapReverse[node]->users())
+			{
+				outs() << "Users: ";
+				u->dump();
+				outs() << "\n";
+
+				for (int i = 0; i < u->getNumOperands(); ++i)
+				{
+					if (u->getOperand(i) ==  OutLoopNodeMapReverse[node] && u->getOperand(i)->getType()->isPointerTy())
+					{
+						outs() << "Have pointer type user\n";
+						OLNodesWithPtrTyUsage[node]=OutLoopNodeMapReverse[node];
+					}
+				}
+
+			}
 
 			DataLayout DL = F.getParent()->getDataLayout();
 			array_pointer_sizes[OutLoopNodeMapReverse[node]->getName()] = DL.getTypeAllocSize(OutLoopNodeMapReverse[node]->getType());
@@ -10440,11 +10460,32 @@ void DFG::SetBasePointers(std::unordered_set<Value *> &outer_vals,
 				array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(PT->getElementType());
 			}
 		}
+
+
 	}
+	outs() << "Outloop node instructions with pointer type usage in the loop body \n";
+	for (auto i : OLNodesWithPtrTyUsage)
+	{
+
+		Value* ptr = i.second;
+		ptr->dump();
+		outs() << "\n";
+
+	}
+
 }
 
-void DFG::InstrumentInOutVars(Function &F, std::unordered_map<Value *, int> mem_accesses){
+void DFG::InstrumentInOutVars(Function &F, std::unordered_map<Value *, int> mem_accesses, std::map<dfgNode*,Value*> &OLNodesWithPtrTyUsage){
 
+	outs() << "Outloop node instructions with pointer type usage in the loop body \n";
+	for (auto i : OLNodesWithPtrTyUsage)
+	{
+
+		Value* ptr = i.second;
+		ptr->dump();
+		outs() << "\n";
+
+	}
 	LLVMContext &Ctx = F.getContext();
 
 	//Instrumentation functions
@@ -10489,15 +10530,31 @@ void DFG::InstrumentInOutVars(Function &F, std::unordered_map<Value *, int> mem_
 		FunctionType::getVoidTy(Ctx),
 		Type::getInt8PtrTy(Ctx), //variable name
 		Type::getInt8PtrTy(Ctx), //variable data
-		Type::getInt8Ty(Ctx) //size
+		Type::getInt32Ty(Ctx) //size
 	);
+	auto live_in_report_FN2 = F.getParent()->getOrInsertFunction(
+			"LiveInReport2",
+			FunctionType::getVoidTy(Ctx),
+			Type::getInt8PtrTy(Ctx), //variable name
+			Type::getInt32PtrTy(Ctx), //variable data
+			Type::getInt32Ty(Ctx) //size
+		);
+
+	auto live_in_report_PtrTypeUsage = F.getParent()->getOrInsertFunction(
+			"LiveInReportPtrTypeUsage",
+			FunctionType::getVoidTy(Ctx),
+			Type::getInt8PtrTy(Ctx), //variable name
+			Type::getInt8PtrTy(Ctx),//base addr var name
+			Type::getInt32Ty(Ctx), //addr offset
+			Type::getInt32Ty(Ctx) //size
+		);
 
 	auto live_out_report_FN = F.getParent()->getOrInsertFunction(
 		"LiveOutReport",
 		FunctionType::getVoidTy(Ctx),
 		Type::getInt8PtrTy(Ctx), //variable name
 		Type::getInt8PtrTy(Ctx), // variable data
-		Type::getInt8Ty(Ctx) //size
+		Type::getInt32Ty(Ctx) //size
 	);
 
 	auto live_in_report_intvar_FN = F.getParent()->getOrInsertFunction(
@@ -10523,6 +10580,8 @@ void DFG::InstrumentInOutVars(Function &F, std::unordered_map<Value *, int> mem_
 		builder.CreateCall(loopStartFn,{loopName});
 	}
 
+
+
 	// Insertion of reporting functions at entry and exit basicblocks
 	for(auto it = mem_accesses.begin(); it != mem_accesses.end(); it++){
 		IRBuilder<> builder(NodeList[0]->getNode());
@@ -10537,14 +10596,44 @@ void DFG::InstrumentInOutVars(Function &F, std::unordered_map<Value *, int> mem_
 		outs() << "size = " << size << "\n";
 
 		Value* ptr_name_val = builder.CreateGlobalStringPtr(ptr->getName());
-		Value *size_val = ConstantInt::get(Type::getInt8Ty(Ctx), size);
-
+		Value *size_val = ConstantInt::get(Type::getInt32Ty(Ctx), size);
+		Value *size_val2 = ConstantInt::get(Type::getInt32Ty(Ctx), size/4);
+		bool isOLNodewithPtrTyUsage = false;
 		for(auto trans : loopentryBB){
 			BasicBlock* entryBB = trans.first;
 			builder.SetInsertPoint(entryBB->getTerminator());
-			if(ptr->getType()->isPointerTy()){
+
+			for (auto i : OLNodesWithPtrTyUsage)
+			{
+				/*Instrument the out-loop-nodes with pointer type usage in the loop body.
+			 * These nodes require special treatment in instrumentation
+			 * because we need to record the local memory address, not the memory address
+			 * generated in the ./final at runtime*/
+				Value* ptrs = i.second;
+//				ptrs->dump();
+				if(ptrs == ptr){
+					GetElementPtrInst *GEP = dyn_cast<GetElementPtrInst>(ptrs);
+					outs() << "GEP operand 2 =  ";
+					GEP->getOperand(2)->dump();
+					GEP->getOperand(0)->dump();
+					outs() << "ptr_name = " << GEP->getOperand(0)->getName() << "\n";
+					Value* gepop0 = builder.CreateGlobalStringPtr(GEP->getOperand(0)->getName());
+					Value * gepop2= GEP->getOperand(2);
+					outs() << "\n";
+					Value* bitcastedptr = builder.CreateIntCast(gepop2, Type::getInt32Ty(Ctx),true);
+					builder.CreateCall(live_in_report_PtrTypeUsage,{ptr_name_val,gepop0,bitcastedptr,size_val});
+					isOLNodewithPtrTyUsage = true;
+					break;
+				}
+				isOLNodewithPtrTyUsage = false;
+			}
+
+			if(isOLNodewithPtrTyUsage == true){isOLNodewithPtrTyUsage = false;}
+			else if(ptr->getType()->isPointerTy()){
 				Value* bitcastedptr = builder.CreateBitCast(it->first, Type::getInt8PtrTy(Ctx));
 				builder.CreateCall(live_in_report_FN,{ptr_name_val,bitcastedptr,size_val});
+				Value* bitcastedptr2 = builder.CreateBitCast(it->first, Type::getInt32PtrTy(Ctx));
+				builder.CreateCall(live_in_report_FN2,{ptr_name_val,bitcastedptr2,size_val2});
 			}
 			else{
 				outs() << "type = "; ptr->getType()->dump();
@@ -10608,6 +10697,11 @@ void DFG::UpdateSPMAllocation(std::unordered_map<Value *, int> &spm_base_address
 			{
 				node->setLeftAlignedMemOp(2);
 			}
+			outs() << "\t pointer " << OutLoopNodeMapReverse[node]->getName() << "\n";
+			outs() << "\t to address " << spm_base_address[OutLoopNodeMapReverse[node]] << "\n";
+			var_name = OutLoopNodeMapReverse[node]->getName();
+			base_addr = spm_base_address[OutLoopNodeMapReverse[node]];
+			base_address_map[var_name]=base_addr;
 		}
 		else if (node->getNode())
 		{
@@ -10619,8 +10713,8 @@ void DFG::UpdateSPMAllocation(std::unordered_map<Value *, int> &spm_base_address
 					node->setGEPbaseAddr(spm_base_address[gep_pointer]);
 					outs() << "SetNewGEPBaseAddresses :: setting GEP base address for=";
 					GEP->dump();
-					outs() << "\t to " << gep_pointer->getName() << "\n";
-					outs() << "\t to " << spm_base_address[gep_pointer] << "\n";
+					outs() << "\t pointer " << gep_pointer->getName() << "\n";
+					outs() << "\t to address " << spm_base_address[gep_pointer] << "\n";
 					var_name = gep_pointer->getName();
 					base_addr = spm_base_address[gep_pointer];
 					base_address_map[var_name]=base_addr;
@@ -10642,6 +10736,12 @@ void DFG::UpdateSPMAllocation(std::unordered_map<Value *, int> &spm_base_address
 				{
 					node->setLeftAlignedMemOp(2);
 				}
+
+				outs() << "\t pointer  " << gep_ptr->getName() << "\n";
+				outs() << "\t to address " << spm_base_address[gep_ptr] << "\n";
+				var_name = gep_ptr->getName();
+				base_addr = spm_base_address[gep_ptr];
+				base_address_map[var_name]=base_addr;
 			}
 			else if (StoreInst *STI = dyn_cast<StoreInst>(node->getNode()))
 			{
@@ -10658,6 +10758,12 @@ void DFG::UpdateSPMAllocation(std::unordered_map<Value *, int> &spm_base_address
 				{
 					node->setLeftAlignedMemOp(2);
 				}
+
+				outs() << "\t pointer " << gep_ptr->getName() << "\n";
+				outs() << "\t to address " << spm_base_address[gep_ptr] << "\n";
+				var_name = gep_ptr->getName();
+				base_addr = spm_base_address[gep_ptr];
+				base_address_map[var_name]=base_addr;
 			}
 		}
 	}
@@ -10666,10 +10772,14 @@ void DFG::UpdateSPMAllocation(std::unordered_map<Value *, int> &spm_base_address
 	nameNodes();
 	outs() << "\nName nodes end\n\n";
 
+	outs() << "\n\n Writing mem alloc begin \n";
+
 	for(auto i = base_address_map.begin(); i != base_address_map.end(); i++){
+		outs() << "\t pointer " << i->first<<","<< i->second<<"\n";
 		mem_alloc_txt << i->first<<","<< i->second<<"\n";
 	}
 	mem_alloc_txt.close();
+	outs() << "\n Writing mem alloc end\n\n";
 	// assert(false);
 }
 

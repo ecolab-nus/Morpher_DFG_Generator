@@ -2288,17 +2288,18 @@ struct SkeletonFunctionPass : public FunctionPass
 			std::unordered_set<Value *> outVals;
 			std::unordered_map<Value *, GetElementPtrInst *> arrPtrs;
 			std::unordered_map<Value *, int> mem_acceses;
+			 std::map<dfgNode*,Value*> OLNodesWithPtrTyUsage;
 			outs() << "\n[Skeleton.cpp][getTransferVariables begin]\n";
 			LoopDFG->getTransferVariables(outVals, arrPtrs, mem_acceses, F);
 			outs() << "[Skeleton.cpp][getTransferVariables end]\n\n";
 			outs() << "\n[Skeleton.cpp][SetBasePointers begin]\n";
-			LoopDFG->SetBasePointers(outVals, arrPtrs, F);
+			LoopDFG->SetBasePointers(outVals, arrPtrs,OLNodesWithPtrTyUsage, F);
 			outs() << "[Skeleton.cpp][SetBasePointers end]\n\n";
 			outs() << "\n[Skeleton.cpp][InstrumentInOutVars begin]\n";
-			LoopDFG->InstrumentInOutVars(F,mem_acceses);
+			LoopDFG->InstrumentInOutVars(F,mem_acceses,OLNodesWithPtrTyUsage);
 			outs() << "[Skeleton.cpp][InstrumentInOutVars end]\n\n";
 
-//			LoopDFG->PrintOuts();
+
 
 			for (auto it = mem_acceses.begin(); it != mem_acceses.end(); it++)
 			{

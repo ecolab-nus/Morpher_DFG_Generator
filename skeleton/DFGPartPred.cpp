@@ -733,6 +733,7 @@ void DFGPartPred::generateTrigDFGDOT(Function &F) {
 
 
 	std::set<exitNode> exitNodes;
+
 	getLoopExitConditionNodes(exitNodes);
 //	connectBB();
 	removeAlloc();
@@ -751,32 +752,59 @@ void DFGPartPred::generateTrigDFGDOT(Function &F) {
 	constructCMERGETree();
 
 //	printDOT(this->name + "_PartPredDFG.dot"); return;
+	outs() << "\n[DFGPartPred.cpp][addLoopExitStoreHyCUBE begin]\n";
 	addLoopExitStoreHyCUBE(exitNodes);
+	outs() << "[DFGPartPred.cpp][addLoopExitStoreHyCUBE end]\n\n";
+	outs() << "\n[DFGPartPred.cpp][handlestartstop begin]\n";
 	handlestartstop();
+	outs() << "[DFGPartPred.cpp][handlestartstop end] Nodelist size:" <<NodeList.size()<<"\n\n";
 
+//	printDOT(this->name + "afterhandlestartstop_PartPredDFG.dot");
+	outs() << "\n[DFGPartPred.cpp][scheduleASAP begin]\n";
 	scheduleASAP();
+	outs() << "[DFGPartPred.cpp][scheduleASAP end]\n\n";
+//	printDOT(this->name + "afterscheduleASAP_PartPredDFG.dot");
+//	return;
+	outs() << "\n[DFGPartPred.cpp][scheduleALAP begin]\n";
 	scheduleALAP();
+	outs() << "[DFGPartPred.cpp][scheduleALAP end]\n\n";
 	// assignALAPasASAP();
 //	balanceSched();
 
+	outs() << "\n[DFGPartPred.cpp][GEPBaseAddrCheck begin]\n";
 	GEPBaseAddrCheck(F);
+	outs() << "[DFGPartPred.cpp][GEPBaseAddrCheck end]\n\n";
+	outs() << "\n[DFGPartPred.cpp][nameNodes begin]\n";
 	nameNodes();
+	outs() << "[DFGPartPred.cpp][nameNodes end]\n\n";
+	outs() << "\n[DFGPartPred.cpp][classifyParents begin]\n";
 	classifyParents();
 	// RemoveInductionControlLogic();
 
 	// RemoveBackEdgePHIs();
 	// removeOutLoopLoad();
 //	RemoveConstantCMERGEs(); Originally on morpher
-	removeDisconnectedNodes();
+	outs() << "[DFGPartPred.cpp][classifyParents end]\n\n";
+	outs() << "\n[DFGPartPred.cpp][removeDisconnectedNodes begin]\n";
+	//removeDisconnectedNodes();
+	outs() << "[DFGPartPred.cpp][removeDisconnectedNodes end]\n\n";
+	outs() << "\n[DFGPartPred.cpp][addOrphanPseudoEdges begin]\n";
 	addOrphanPseudoEdges();
+	outs() << "[DFGPartPred.cpp][addOrphanPseudoEdges end]\n\n";
+	outs() << "\n[DFGPartPred.cpp][addRecConnsAsPseudo begin]\n";
 	addRecConnsAsPseudo();
+	outs() << "[DFGPartPred.cpp][addRecConnsAsPseudo end]\n\n";
+	outs() << "\n[DFGPartPred.cpp][changeTypeofSingleSourceCompNodes begin]\n";
 	// printDOT(this->name + "_PartPredDFG.dot");
 	// printNewDFGXML();
 	changeTypeofSingleSourceCompNodes();
+	outs() << "[DFGPartPred.cpp][changeTypeofSingleSourceCompNodes end]\n\n";
+	outs() << "\n[DFGPartPred.cpp][removeDisconnectedNodes begin]\n";
 
 	//function removeDisconnetedNodes() should be called at last, otherwise same idx would be reused
 	//when new instructions are added
 	removeDisconnetedNodes();
+	outs() << "[DFGPartPred.cpp][removeDisconnectedNodes end]\n\n";
 }
 
 /*
@@ -1110,6 +1138,9 @@ void DFGPartPred::scheduleASAP() {
 		std::vector<dfgNode*> q_element = q.front(); q.pop();
 		std::vector<dfgNode*> nqv; nqv.clear();
 
+		std::set<dfgNode*> nqv_set; nqv_set.clear();
+		std::pair<std::set<dfgNode*>::iterator,bool> ret;
+
 		if(level > maxASAPLevel) maxASAPLevel = level;
 
 
@@ -1125,14 +1156,18 @@ void DFGPartPred::scheduleASAP() {
 			for(dfgNode* child : node->getChildren()){
 				bool isBackEdge = node->childBackEdgeMap[child];
 				if(!isBackEdge){
-					nqv.push_back(child);
+//					nqv.push_back(child);
+					ret = nqv_set.insert(child);
+					if(ret.second == true){
+						nqv.push_back(child);
+					}
 				}
 			}
+
 		}
 		if(!nqv.empty()){
 			q.push(nqv);
 		}
-//		outs() << "Node Idx = " << node->getIdx();
 		level++;
 	}
 
@@ -1173,6 +1208,9 @@ void DFGPartPred::scheduleALAP() {
 		std::vector<dfgNode*> q_element = q.front(); q.pop();
 		std::vector<dfgNode*> nq; nq.clear();
 
+		std::set<dfgNode*> nq_set; nq_set.clear();
+		std::pair<std::set<dfgNode*>::iterator,bool> ret;
+
 		for(dfgNode* node : q_element){
 			visitedNodes.insert(node);
 
@@ -1182,7 +1220,12 @@ void DFGPartPred::scheduleALAP() {
 
 			for(dfgNode* parent : node->getAncestors()){
 				if(parent->childBackEdgeMap[node]) continue;
-				nq.push_back(parent);
+
+//				nq.push_back(parent);
+				ret = nq_set.insert(parent);
+				if(ret.second == true){
+					nq.push_back(parent);
+				}
 			}
 		}
 
