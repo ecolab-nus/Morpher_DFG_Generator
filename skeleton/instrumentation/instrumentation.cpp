@@ -650,7 +650,7 @@ void LiveInReport(const char* varname, uint8_t* value, uint32_t size){
 	for(int i=0; i<size; i++){
 		data_morpher[varname_str].pre_data.push_back(value[i]);
 		data_morpher[varname_str].post_data.push_back(value[i]);
-		cout << "var name:" << varname_str << ",value:" <<(int)value[i] <<"\n";
+		//cout << "var name:" << varname_str << ",value:" <<(int)value[i] <<"\n";
 	}
 }
 
@@ -680,7 +680,7 @@ void LiveInReport2(const char* varname, uint32_t* value, uint32_t size){
 	for(int i=0; i<size; i++){
 //		data_morpher[varname_str].pre_data.push_back(value[i]);
 //		data_morpher[varname_str].post_data.push_back(value[i]);
-		cout << "var name:" << varname_str << ",value:" <<(int)value[i] <<"\n";
+		//cout << "var name:" << varname_str << ",value:" <<(int)value[i] <<"\n";
 	}
 }
 
@@ -689,7 +689,7 @@ void LiveOutReport(const char* varname, uint8_t* value, uint32_t size){
 	cout << "Call LiveOutReport var name:" << varname_str << " size:" << (int)size <<"\n";
 	for(int i=0; i<size; i++){
 		data_morpher[varname_str].post_data[i] = value[i];
-		cout << "var name:" << varname_str << ",value:" <<(int)value[i] <<"\n";
+		//cout << "var name:" << varname_str << ",value:" <<(int)value[i] <<"\n";
 	}
 }
 
