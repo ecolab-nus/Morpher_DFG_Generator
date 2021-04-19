@@ -5,6 +5,10 @@
 #include "dfg.h"
 #include <unordered_set>
 
+//comment this in normal compilation
+//#define REMOVE_AGI
+
+
 struct exitNode{
 	dfgNode* ctrlNode;
 	bool ctrlVal;
@@ -23,104 +27,109 @@ struct exitNode{
 };
 
 class DFGPartPred : public DFG{
-	public :
-		DFGPartPred(std::string name,std::map<Loop*,std::string>* lnPtr, Loop* l) : DFG(name,lnPtr), currLoop(l){}
-		void connectBB();
-		virtual void connectBBTrig();
-		int handlePHINodes(std::set<BasicBlock*> LoopBB);
-		int handleSELECTNodes();
-		void removeDisconnetedNodes();
-		void printDOT(std::string fileName);
-		virtual void generateTrigDFGDOT(Function &F);
+public :
+	DFGPartPred(std::string name,std::map<Loop*,std::string>* lnPtr, Loop* l) : DFG(name,lnPtr), currLoop(l){}
+	void connectBB();
+	virtual void connectBBTrig();
+	int handlePHINodes(std::set<BasicBlock*> LoopBB);
+	int handleSELECTNodes();
+	void removeDisconnetedNodes();
+	void printDOT(std::string fileName);
+	virtual void generateTrigDFGDOT(Function &F);
 
 
-		dfgNode* combineConditionAND(dfgNode* brcond, dfgNode* selcond, dfgNode* child);
-		bool checkBackEdge(dfgNode* src, dfgNode* dest);
-		bool checkPHILoop(dfgNode* node1, dfgNode* node2);
+	dfgNode* combineConditionAND(dfgNode* brcond, dfgNode* selcond, dfgNode* child);
+	bool checkBackEdge(dfgNode* src, dfgNode* dest);
+	bool checkPHILoop(dfgNode* node1, dfgNode* node2);
 
-		bool checkBRPath(const BranchInst* BRParentBRI, const BasicBlock* currBB, bool& condVal, std::set<const BasicBlock*>& searchedSoFar);
-//		bool checkControlVal(dfgNode* brnode, const BasicBlock* destBB);
+	bool checkBRPath(const BranchInst* BRParentBRI, const BasicBlock* currBB, bool& condVal, std::set<const BasicBlock*>& searchedSoFar);
+	//		bool checkControlVal(dfgNode* brnode, const BasicBlock* destBB);
 
-		std::vector<dfgNode*> getStoreInstructions(BasicBlock* BB);
-		void scheduleCleanBackedges();
+	std::vector<dfgNode*> getStoreInstructions(BasicBlock* BB);
+	void scheduleCleanBackedges();
 
-		void fillCMergeMutexNodes();
-		void constructCMERGETree();
+	void fillCMergeMutexNodes();
+	void constructCMERGETree();
 
-		void scheduleASAP();
-		void scheduleALAP();
-		void balanceSched();
-		void assignALAPasASAP();
+	void scheduleASAP();
+	void scheduleALAP();
+	void balanceSched();
+	void assignALAPasASAP();
 
-		int maxASAPLevel=0;
+	int maxASAPLevel=0;
 
-		virtual void printNewDFGXML();
-		int classifyParents();
+	virtual void printNewDFGXML();
+	int classifyParents();
 
-		void removeOutLoopLoad();
+	void removeOutLoopLoad();
 
-		void addRecConnsAsPseudo();
-		void addOrphanPseudoEdges();
-		void changeTypeofSingleSourceCompNodes();
+	void addRecConnsAsPseudo();
+	void addOrphanPseudoEdges();
+	void changeTypeofSingleSourceCompNodes();
 
-		void createCtrlBROrTree();
+	void createCtrlBROrTree();
 
-		void RemoveInductionControlLogic();
-		void RemoveBackEdgePHIs();
-		void RemoveConstantCMERGEs();
+	void RemoveInductionControlLogic();
+	void RemoveBackEdgePHIs();
+	void RemoveConstantCMERGEs();
 
-		ScalarEvolution* SE;
+	ScalarEvolution* SE;
 
-		void getLoopExitConditionNodes(std::set<exitNode> &exitNodes);
-		// void addLoopExitStoreHyCUBE(std::set<exitNode> &exitNodes);
-		void addLoopExitStoreHyCUBE(std::set<exitNode>& exitNodes);
+	void getLoopExitConditionNodes(std::set<exitNode> &exitNodes);
+	// void addLoopExitStoreHyCUBE(std::set<exitNode> &exitNodes);
+	void addLoopExitStoreHyCUBE(std::set<exitNode>& exitNodes);
 
-		void PrintOuts(){
-			printDOT(this->name + "_PartPredDFG.dot");
-			printNewDFGXML();
-		}
-
-
-
-	protected :
-		dfgNode* getStartNode(BasicBlock* BB, dfgNode* PHINode);
-		dfgNode* insertMergeNode(dfgNode* PHINode, dfgNode* ctrl, bool controlVal, dfgNode* data);
-		dfgNode* insertMergeNode(dfgNode* PHINode, dfgNode* ctrl, bool controlVal, int val);
-
-		dfgNode* addLoadParent(Value* ins, dfgNode* child);
-
-		std::map<BasicBlock*,int> startNodeConsts;
-		std::map<BasicBlock*,dfgNode*> startNodes;
-
-		std::set<dfgNode*> backedgeChildMergeNodes;
-
-		std::map<dfgNode*,std::set<dfgNode*>> mutexNodes;
+	void PrintOuts(){
+		printDOT(this->name + "_PartPredDFG.dot");
+		printNewDFGXML();
+	}
+#ifdef REMOVE_AGI
+    void removeAGI();
+	void addParentsToRemovalNodes(dfgNode* node, std::set<dfgNode*> &removalNodes, std::set<dfgNode*> &non_agi_NodesSet);
+	void addChildsToNonAGINodes(dfgNode* node, std::set<dfgNode*> &non_agi_NodesSet, std::set<dfgNode*> &tempNodesSet);
+	void addParentsToNonAGINodes(dfgNode* node, std::set<dfgNode*> &non_agi_NodesSet, std::set<dfgNode*> &tempNodesSet);
+#endif
 
 
-		//
-		std::map<dfgNode*,dfgNode*> cmergeCtrlInputs;
-		std::map<dfgNode*,dfgNode*> cmergeDataInputs;
+protected :
+	dfgNode* getStartNode(BasicBlock* BB, dfgNode* PHINode);
+	dfgNode* insertMergeNode(dfgNode* PHINode, dfgNode* ctrl, bool controlVal, dfgNode* data);
+	dfgNode* insertMergeNode(dfgNode* PHINode, dfgNode* ctrl, bool controlVal, int val);
 
-		std::map<dfgNode*,dfgNode*> cmergePHINodes;
+	dfgNode* addLoadParent(Value* ins, dfgNode* child);
 
-		std::set<std::set<dfgNode*>> mutexSets;
-		std::map<std::set<dfgNode*>,std::set<dfgNode*>> mutexSetCommonChildren;
+	std::map<BasicBlock*,int> startNodeConsts;
+	std::map<BasicBlock*,dfgNode*> startNodes;
 
-		std::map<dfgNode*,dfgNode*> selectPHIAncestorMap;
+	std::set<dfgNode*> backedgeChildMergeNodes;
 
-		//Inherited from DFGTrig
-		std::map<BasicBlock*,dfgNode*> BrParentMap;
-		std::map<dfgNode*,BasicBlock*> BrParentMapInv;
-		std::map<dfgNode*,std::set<dfgNode*>> leafControlInputs;
-		std::map<BasicBlock*,std::set<std::pair<BasicBlock*,CondVal>>> getCtrlInfoBBMorePaths();
+	std::map<dfgNode*,std::set<dfgNode*>> mutexNodes;
 
 
-		Loop* currLoop;
+	//
+	std::map<dfgNode*,dfgNode*> cmergeCtrlInputs;
+	std::map<dfgNode*,dfgNode*> cmergeDataInputs;
 
-		std::set<dfgNode*> realphi_as_selectphi;
-		std::map<dfgNode*,std::map<Value*,dfgNode*>> PHIArgMap;
+	std::map<dfgNode*,dfgNode*> cmergePHINodes;
 
-		std::map<dfgNode*,std::map<dfgNode*,int>> Edge2OperandIdxMap;
+	std::set<std::set<dfgNode*>> mutexSets;
+	std::map<std::set<dfgNode*>,std::set<dfgNode*>> mutexSetCommonChildren;
+
+	std::map<dfgNode*,dfgNode*> selectPHIAncestorMap;
+
+	//Inherited from DFGTrig
+	std::map<BasicBlock*,dfgNode*> BrParentMap;
+	std::map<dfgNode*,BasicBlock*> BrParentMapInv;
+	std::map<dfgNode*,std::set<dfgNode*>> leafControlInputs;
+	std::map<BasicBlock*,std::set<std::pair<BasicBlock*,CondVal>>> getCtrlInfoBBMorePaths();
+
+
+	Loop* currLoop;
+
+	std::set<dfgNode*> realphi_as_selectphi;
+	std::map<dfgNode*,std::map<Value*,dfgNode*>> PHIArgMap;
+
+	std::map<dfgNode*,std::map<dfgNode*,int>> Edge2OperandIdxMap;
 
 
 

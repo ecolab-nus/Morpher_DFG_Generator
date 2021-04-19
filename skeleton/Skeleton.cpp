@@ -2284,6 +2284,9 @@ struct SkeletonFunctionPass : public FunctionPass
 			outs() << "\n[Skeleton.cpp][generateTrigDFGDOT begin]\n";
 			LoopDFG->generateTrigDFGDOT(F);
 			outs() << "[Skeleton.cpp][generateTrigDFGDOT end]\n\n";
+			#ifdef REMOVE_AGI
+				return true;
+			#endif
 
 			std::unordered_set<Value *> outVals;
 			std::unordered_map<Value *, GetElementPtrInst *> arrPtrs;
