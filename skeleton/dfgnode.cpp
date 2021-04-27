@@ -898,3 +898,18 @@ std::string dfgNode::getCondValStr(CondVal cv) {
 		return "WRONG CONDVAL!";
 	}
 }
+
+#ifdef CLUSTER_DFG
+void dfgNode::setClusterIdx(int clusterid) {
+	this->clusteridx = clusterid;
+}
+int dfgNode::getClusterIdx() {
+	return clusteridx;
+}
+void dfgNode::setTileIdx(int tileid) {
+	this->tileidx = tileid;
+}
+int dfgNode::getTileIdx() {
+	return tileidx;
+}
+#endif

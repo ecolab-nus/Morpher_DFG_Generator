@@ -2288,6 +2288,9 @@ struct SkeletonFunctionPass : public FunctionPass
 				return true;
 			#endif
 
+#ifdef CLUSTER_DFG
+			LoopDFG->manualClustering();
+#else
 			std::unordered_set<Value *> outVals;
 			std::unordered_map<Value *, GetElementPtrInst *> arrPtrs;
 			std::unordered_map<Value *, int> mem_acceses;
@@ -2323,6 +2326,8 @@ struct SkeletonFunctionPass : public FunctionPass
 			LoopDFG->UpdateSPMAllocation(spm_base_address,spm_bank_allocation,arrPtrs);
 			outs() << "[Skeleton.cpp][UpdateSPMAllocation] end\n\n";
 			//------------------------------------
+#endif
+
 
 
 			LoopDFG->PrintOuts();

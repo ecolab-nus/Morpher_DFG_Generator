@@ -2,6 +2,8 @@
 #define EDGE_H
 
 
+#define CLUSTER_DFG
+
 #include "llvm/Pass.h"
 #include "llvm/Analysis/LoopPass.h"
 #include "llvm/Support/raw_ostream.h"

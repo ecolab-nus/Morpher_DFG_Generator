@@ -9,6 +9,8 @@
 //#define REMOVE_AGI
 
 
+
+
 struct exitNode{
 	dfgNode* ctrlNode;
 	bool ctrlVal;
@@ -36,6 +38,10 @@ public :
 	void removeDisconnetedNodes();
 	void printDOT(std::string fileName);
 	virtual void generateTrigDFGDOT(Function &F);
+#ifdef CLUSTER_DFG
+	virtual void manualClustering();
+	virtual clusterNode* getClusterNode(int idx);
+#endif
 
 
 	dfgNode* combineConditionAND(dfgNode* brcond, dfgNode* selcond, dfgNode* child);

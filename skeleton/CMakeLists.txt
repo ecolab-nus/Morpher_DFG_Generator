@@ -9,6 +9,8 @@ add_library(SkeletonPass MODULE
     edge.cpp
     dfgnode.h
     dfgnode.cpp
+    clusternode.h
+    clusternode.cpp
     dfg.h
     dfg.cpp
     astar.h
@@ -39,6 +41,8 @@ target_compile_features(SkeletonPass PRIVATE cxx_range_for cxx_auto_type)
 set_target_properties(SkeletonPass PROPERTIES
     COMPILE_FLAGS "-fno-rtti -ggdb"
 )
+
+set(CMAKE_BUILD_TYOE "Debug")
 
 # Get proper shared-library behavior (where symbols are not necessarily
 # resolved when the shared library is linked) on OS X.

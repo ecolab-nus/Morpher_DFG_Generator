@@ -5,6 +5,7 @@
 #include "dfgnode.h"
 #include "CGRANode.h"
 #include "CGRA.h"
+
 #include "llvm/Analysis/ScalarEvolution.h"
 #include "llvm/Analysis/ScalarEvolutionExpander.h"
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
@@ -18,6 +19,9 @@
 #include <unordered_set>
 #include <unordered_map>
 
+#ifdef CLUSTER_DFG
+#include "clusternode.h"
+#endif
 
 #define REGS_PER_NODE 4
 
@@ -26,6 +30,7 @@ extern int MEM_SIZE;
 class AStar;
 
 using namespace llvm;
+
 
 struct less_than_schIdx{
 	inline bool operator()(dfgNode* node1, dfgNode* node2){
@@ -227,6 +232,10 @@ class DFG{
 
 			int CalculateGEPBaseAddr(GetElementPtrInst *GEP);
 			std::unordered_map<GetElementPtrInst*,int> GEPOffsetMap;
+
+#ifdef CLUSTER_DFG
+			std::vector<clusterNode*> clusterNodeList;
+#endif
 
 
 		public :
@@ -500,6 +509,11 @@ class DFG{
 			void insertMOVC();
 			virtual void generateTrigDFGDOT(Function &F){assert(false);}
 			virtual void PrintOuts(){assert(false);}
+			#ifdef CLUSTER_DFG
+				virtual void manualClustering(){assert(false);}
+
+				clusterNode* getClusterNode(int idx){assert(false);};
+			#endif
 
 			void removeDisconnectedNodes();
 			std::unordered_set<dfgNode*> getLineage(dfgNode* n);

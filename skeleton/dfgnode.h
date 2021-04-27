@@ -94,7 +94,10 @@ class dfgNode{
 
 			//served phi index
 			std::string array_base_pointer = "NOT_A_MEM_OP";
-
+#ifdef CLUSTER_DFG
+			int clusteridx=-1;
+			int tileidx=-1;
+#endif
 
 
 		public :
@@ -268,6 +271,13 @@ class dfgNode{
 				array_base_pointer = abp;
 			}
 			std::string getArrBasePtr(){return array_base_pointer;}
+
+#ifdef CLUSTER_DFG
+			void setClusterIdx(int clusterid);
+			int getClusterIdx();
+			void setTileIdx(int tileid);
+			int getTileIdx();
+#endif
 
 };
 
