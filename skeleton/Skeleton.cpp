@@ -1954,10 +1954,13 @@ void AllocateSPMBanks(std::unordered_set<Value *> &outer_vals,
 	DataLayout DL = F.getParent()->getDataLayout();
 
 	//for outer vals
+	outs()<<"For outer values \n";
 	for (auto it = outer_vals.begin(); it != outer_vals.end(); it++)
 	{
 		Value *outer_val = *it;
+		outer_val->dump();
 		int size = DL.getTypeAllocSize(outer_val->getType());
+		outs() <<" Size:" << size << "/n";
 		assert(size <= bank_size); // assume the size of each array is not bigger than the bank size
 		variable_sizes_bytes[outer_val] = size;
 	}
@@ -1979,6 +1982,7 @@ void AllocateSPMBanks(std::unordered_set<Value *> &outer_vals,
 			int size = DL.getTypeAllocSize(gep->getSourceElementType());
 			assert(size <= bank_size);
 			variable_sizes_bytes[gep->getPointerOperand()] = size;
+			outs() << gep_pointer_name << ", size = " << size << "\n";
 		}
 	}
 
@@ -2290,7 +2294,7 @@ struct SkeletonFunctionPass : public FunctionPass
 
 			std::unordered_set<Value *> outVals;
 			std::unordered_map<Value *, GetElementPtrInst *> arrPtrs;
-			std::unordered_map<Value *, int> mem_acceses;
+			std::unordered_map<Value *, int> mem_acceses; // base pointer name : number of memory accesses
 			 std::map<dfgNode*,Value*> OLNodesWithPtrTyUsage;
 			outs() << "\n[Skeleton.cpp][getTransferVariables begin]\n";
 			LoopDFG->getTransferVariables(outVals, arrPtrs, mem_acceses, F);
@@ -2303,7 +2307,35 @@ struct SkeletonFunctionPass : public FunctionPass
 			outs() << "[Skeleton.cpp][InstrumentInOutVars end]\n\n";
 
 
+			//
+			outs()<<"Outvals contains: \n" ;
+			for (auto it = outVals.begin(); it != outVals.end(); it++)
+			{
+				Value* outvl = *it;
+				outs() << "outVal:";
+			    outvl->dump();
 
+				outs() << "\n";
+			}
+
+
+			outs()<<"sizeArrMap contains: \n" ;
+			for (auto it = sizeArrMap.begin(); it != sizeArrMap.end(); it++)
+			{
+				std::string base_ptr = it->first;
+				int size = it->second;
+				outs() << "base_ptr:" << base_ptr << ", size = " << size << "\n";
+			}
+
+			outs()<<"arrPtrs contains: \n" ;
+			for (auto it = arrPtrs.begin(); it != arrPtrs.end(); it++)
+			{
+				Value *base_ptr = it->first;
+				GetElementPtrInst * gep = it->second;
+				outs() << "base_ptr:" << base_ptr->getName() << ", GEP = ";
+			    gep->dump();
+			}
+			outs()<<"mem_acceses contains: \n" ;
 			for (auto it = mem_acceses.begin(); it != mem_acceses.end(); it++)
 			{
 				Value *base_ptr = it->first;

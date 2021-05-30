@@ -10347,6 +10347,15 @@ void DFG::SetBasePointers(std::unordered_set<Value *> &outer_vals,
 						  std::unordered_map<Value *, GetElementPtrInst *> &mem_ptrs, std::map<dfgNode*,Value*> &OLNodesWithPtrTyUsage, Function &F)
 {
 
+
+	outs()<<"array_pointer_sizes contains: \n" ;
+		for (auto it = array_pointer_sizes.begin(); it != array_pointer_sizes.end(); it++)
+		{
+			std::string base_ptr = it->first;
+			int size = it->second;
+			outs() << "base_ptr:" << base_ptr << ", size = " << size << "\n";
+		}
+
 	outs() << "Outer LOOP 1 nodes = " << OutLoopNodeMapReverse.size() << "\n";
 	outs() << "Outer LOOP 2 nodes = " << OutLoopNodeMap.size() << "\n";
 
@@ -10361,7 +10370,15 @@ void DFG::SetBasePointers(std::unordered_set<Value *> &outer_vals,
 			outs() << "Outer LOOP name = " << OutLoopNodeMapReverse[node]->getName() << "\n";
 			outs() << "Outer LOOP node idx = " << node->getIdx() << "\n";
 			node->setArrBasePtr(OutLoopNodeMapReverse[node]->getName());
-			/*Detect out loop nodes with pointer type usage in the loop body
+			/*
+			 *   %arrayidx = gep , []* @sum, ... //arrayidx is the address of sum[i]
+			 *
+			 *   for.body
+			 *
+			 *      store i32 %x, i32* %arrayidx    // store to address arrayidx
+			 *
+			 *
+			 * Detect out loop nodes with pointer type usage in the loop body
 			 * These nodes require special treatment in instrumentation
 			 * because we need to record the local memory address, not the memory address
 			 * generated in the ./final at runtime*/
@@ -10392,6 +10409,7 @@ void DFG::SetBasePointers(std::unordered_set<Value *> &outer_vals,
 				Value *pointer = LDI->getPointerOperand();
 				if(sizeArrMap.find(pointer->getName().str()) != sizeArrMap.end()){
 					array_pointer_sizes[pointer->getName().str()] = sizeArrMap[pointer->getName().str()];
+					node->setArrBasePtr(pointer->getName().str());
 				}
 				else{
 					assert(mem_ptrs.find(pointer) != mem_ptrs.end());
@@ -10416,6 +10434,7 @@ void DFG::SetBasePointers(std::unordered_set<Value *> &outer_vals,
 				Value *pointer = STI->getPointerOperand();
 				if(sizeArrMap.find(pointer->getName().str()) != sizeArrMap.end()){
 					array_pointer_sizes[pointer->getName().str()] = sizeArrMap[pointer->getName().str()];
+					node->setArrBasePtr(pointer->getName().str());
 				}
 				else{
 					assert(mem_ptrs.find(pointer) != mem_ptrs.end());
@@ -10472,6 +10491,15 @@ void DFG::SetBasePointers(std::unordered_set<Value *> &outer_vals,
 		outs() << "\n";
 
 	}
+
+	outs()<<"array_pointer_sizes contains: \n" ;
+	for (auto it = array_pointer_sizes.begin(); it != array_pointer_sizes.end(); it++)
+	{
+		std::string base_ptr = it->first;
+		int size = it->second;
+		outs() << "base_ptr:" << base_ptr << ", size = " << size << "\n";
+	}
+
 
 }
 
@@ -10588,6 +10616,7 @@ void DFG::InstrumentInOutVars(Function &F, std::unordered_map<Value *, int> mem_
 
 		Value* ptr = it->first;
 		outs() << "ptr_name = " << ptr->getName() << "\n";
+		ptr->dump();
 
 		
 		assert(array_pointer_sizes.find(ptr->getName()) != array_pointer_sizes.end());
@@ -10724,6 +10753,13 @@ void DFG::UpdateSPMAllocation(std::unordered_map<Value *, int> &spm_base_address
 			else if (LoadInst *LDI = dyn_cast<LoadInst>(node->getNode()))
 			{
 				Value *ptr = LDI->getPointerOperand();
+				ptr->dump();
+
+				if(arr_ptrs.find(ptr) == arr_ptrs.end()){
+				outs() << "\t pointer  " << ptr->getName() << "\n";
+				outs() << "\t to address " << spm_base_address[ptr] << "\n";
+				}
+
 				assert(arr_ptrs.find(ptr) != arr_ptrs.end());
 				Value *gep_ptr = arr_ptrs[ptr]->getPointerOperand();
 				assert(spm_base_allocation.find(gep_ptr) != spm_base_allocation.end());
@@ -10746,6 +10782,7 @@ void DFG::UpdateSPMAllocation(std::unordered_map<Value *, int> &spm_base_address
 			else if (StoreInst *STI = dyn_cast<StoreInst>(node->getNode()))
 			{
 				Value *ptr = STI->getPointerOperand();
+				ptr->dump();
 				assert(arr_ptrs.find(ptr) != arr_ptrs.end());
 				Value *gep_ptr = arr_ptrs[ptr]->getPointerOperand();
 				assert(spm_base_allocation.find(gep_ptr) != spm_base_allocation.end());
