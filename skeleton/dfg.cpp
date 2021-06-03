@@ -256,12 +256,12 @@ void DFG::connectBB()
 		workingSet.clear();
 		nextWorkingSet.clear();
 		errs() << "ConnectBB :: "
-			   << "Init Round\n";
+				<< "Init Round\n";
 
 		if (BBPredicate.find(it->first->BB) != BBPredicate.end())
 		{
 			if (BrBackEdgeSuccessors[node].find(BBPredicate[node->BB]) ==
-				BrBackEdgeSuccessors[node].end())
+					BrBackEdgeSuccessors[node].end())
 			{
 				BBPredicate[node->BB]->addChildNode(node);
 				node->addAncestorNode(BBPredicate[node->BB]);
@@ -272,7 +272,7 @@ void DFG::connectBB()
 				node->addPHIAncestorNode(BBPredicate[node->BB]);
 			}
 			errs() << "ConnectBB :: "
-				   << "BB already done\n";
+					<< "BB already done\n";
 			continue;
 		}
 
@@ -280,7 +280,7 @@ void DFG::connectBB()
 		{
 
 			if (BrBackEdgeSuccessors[node].find(BrSuccesors[node][0]) ==
-				BrBackEdgeSuccessors[node].end())
+					BrBackEdgeSuccessors[node].end())
 			{
 				BrSuccesors[node][0]->addChildNode(node);
 				node->addAncestorNode(BrSuccesors[node][0]);
@@ -304,7 +304,7 @@ void DFG::connectBB()
 			NodeList.push_back(temp);
 
 			if (BrBackEdgeSuccessors[node].find(BrSuccesors[node][i]) ==
-				BrBackEdgeSuccessors[node].end())
+					BrBackEdgeSuccessors[node].end())
 			{
 				temp->addAncestorNode(BrSuccesors[node][i]);
 				BrSuccesors[node][i]->addChildNode(temp);
@@ -316,7 +316,7 @@ void DFG::connectBB()
 			}
 
 			if (BrBackEdgeSuccessors[node].find(BrSuccesors[node][i + 1]) ==
-				BrBackEdgeSuccessors[node].end())
+					BrBackEdgeSuccessors[node].end())
 			{
 				temp->addAncestorNode(BrSuccesors[node][i + 1]);
 				BrSuccesors[node][i + 1]->addChildNode(temp);
@@ -334,11 +334,11 @@ void DFG::connectBB()
 			workingSet.push_back(BrSuccesors[node][numberofbrs - 1]);
 		}
 		errs() << "ConnectBB :: "
-			   << "Rest Rounds\n";
+				<< "Rest Rounds\n";
 		while (workingSet.size() > 1)
 		{
 			errs() << "ConnectBB :: "
-				   << "workingSet.size() = " << workingSet.size() << "\n";
+					<< "workingSet.size() = " << workingSet.size() << "\n";
 			for (int i = 0; i < workingSet.size() - 1; i = i + 2)
 			{
 				temp = new dfgNode(this);
@@ -347,10 +347,10 @@ void DFG::connectBB()
 				temp->setNameType("CTRLBrOR");
 				temp->BB = node->BB;
 				errs() << "ConnectBB :: "
-					   << "workingSet[i+1] = " << workingSet[i + 1]->getIdx() << "\n";
+						<< "workingSet[i+1] = " << workingSet[i + 1]->getIdx() << "\n";
 
 				if (BrBackEdgeSuccessors[node].find(workingSet[i]) ==
-					BrBackEdgeSuccessors[node].end())
+						BrBackEdgeSuccessors[node].end())
 				{
 					workingSet[i]->addChildNode(temp);
 					temp->addAncestorNode(workingSet[i]);
@@ -362,7 +362,7 @@ void DFG::connectBB()
 				}
 
 				if (BrBackEdgeSuccessors[node].find(workingSet[i + 1]) ==
-					BrBackEdgeSuccessors[node].end())
+						BrBackEdgeSuccessors[node].end())
 				{
 					workingSet[i + 1]->addChildNode(temp);
 					temp->addAncestorNode(workingSet[i + 1]);
@@ -391,7 +391,7 @@ void DFG::connectBB()
 		assert(workingSet.size() == 1);
 
 		if (BrBackEdgeSuccessors[node].find(workingSet[0]) ==
-			BrBackEdgeSuccessors[node].end())
+				BrBackEdgeSuccessors[node].end())
 		{
 			workingSet[0]->addChildNode(node);
 			node->addAncestorNode(workingSet[0]);
@@ -457,7 +457,7 @@ int DFG::handlePHINodeFanIn()
 		while (workingSet.size() > 1)
 		{
 			errs() << "handlePHINodeFanIn :: "
-				   << "workingSet.size() = " << workingSet.size() << "\n";
+					<< "workingSet.size() = " << workingSet.size() << "\n";
 			for (int i = 0; i < workingSet.size() - 1; i = i + 2)
 			{
 				temp = new dfgNode(this);
@@ -466,7 +466,7 @@ int DFG::handlePHINodeFanIn()
 				temp->setNameType("SELECTPHI");
 				workingSet[i]->addChildNode(temp);
 				errs() << "handlePHINodeFanIn :: "
-					   << "workingSet[i+1] = " << workingSet[i + 1]->getIdx() << "\n";
+						<< "workingSet[i+1] = " << workingSet[i + 1]->getIdx() << "\n";
 				workingSet[i + 1]->addChildNode(temp);
 				temp->addAncestorNode(workingSet[i]);
 				temp->addAncestorNode(workingSet[i + 1]);
@@ -798,14 +798,14 @@ void DFG::addMemRecDepEdges(DependenceInfo *DI)
 			if (auto D = DI->depends(Src, Des, true))
 			{
 				log << "addMemRecDepEdges :"
-					<< "Found Dependency between Src=" << memNodes[i]->getIdx() << " Des=" << memNodes[j]->getIdx() << "\n";
+						<< "Found Dependency between Src=" << memNodes[i]->getIdx() << " Des=" << memNodes[j]->getIdx() << "\n";
 
 				if (D->isFlow())
 				{
 					// TODO: Handle Flow dependence.Check if it is sufficient to populate
 					// the Dependence Matrix with the direction reversed.
 					log << "addMemRecDepEdges :"
-						<< "Flow dependence not handled\n";
+							<< "Flow dependence not handled\n";
 					continue;
 					//					  return;
 				}
@@ -984,9 +984,9 @@ void DFG::addMemRecDepEdgesNew(DependenceInfo *DI)
 			if (auto D = DI->depends(Src, Des, true))
 			{
 				log << "addMemRecDepEdges :"
-					<< "Found Dependency between Src=" << memNodes[i]->getIdx() << " Des=" << memNodes[j]->getIdx() << "\n";
+						<< "Found Dependency between Src=" << memNodes[i]->getIdx() << " Des=" << memNodes[j]->getIdx() << "\n";
 				outs() << "addMemRecDepEdges :"
-					   << "Found Dependency between Src=" << memNodes[i]->getIdx() << " Des=" << memNodes[j]->getIdx() << "\n";
+						<< "Found Dependency between Src=" << memNodes[i]->getIdx() << " Des=" << memNodes[j]->getIdx() << "\n";
 
 				if (D->isLoopIndependent())
 				{
@@ -1040,7 +1040,7 @@ void DFG::addMemRecDepEdgesNew(DependenceInfo *DI)
 					// TODO: Handle Anit dependence.Check if it is sufficient to populate
 					// the Dependence Matrix with the direction reversed.
 					log << "addMemRecDepEdges :"
-						<< "Anti dependence not handled\n";
+							<< "Anti dependence not handled\n";
 					continue;
 					//					  return;
 				}
@@ -1536,7 +1536,7 @@ std::vector<dfgNode *> DFG::getLeafs()
 }
 
 std::vector<std::vector<unsigned char>> DFG::selfMulConMat(
-	std::vector<std::vector<unsigned char>> in)
+		std::vector<std::vector<unsigned char>> in)
 {
 
 	std::vector<std::vector<unsigned char>> out;
@@ -1851,7 +1851,7 @@ int DFG::AddRoutingEdges(dfgNode *node)
 }
 
 std::map<dfgNode *, std::vector<CGRANode *>> DFG::getPrimarySlots(
-	std::vector<dfgNode *> nodes)
+		std::vector<dfgNode *> nodes)
 {
 
 	dfgNode *node;
@@ -1975,11 +1975,11 @@ std::map<dfgNode *, std::vector<CGRANode *>> DFG::getPrimarySlots(
 }
 
 bool DFG::MapMultiDestRec(
-	std::map<dfgNode *, std::vector<std::pair<CGRANode *, int>>> *nodeDestMap,
-	std::map<CGRANode *, std::vector<dfgNode *>> *destNodeMap,
-	std::map<dfgNode *, std::vector<std::pair<CGRANode *, int>>>::iterator it,
-	std::map<CGRANode *, std::vector<CGRAEdge>> cgraEdges,
-	int index)
+		std::map<dfgNode *, std::vector<std::pair<CGRANode *, int>>> *nodeDestMap,
+		std::map<CGRANode *, std::vector<dfgNode *>> *destNodeMap,
+		std::map<dfgNode *, std::vector<std::pair<CGRANode *, int>>>::iterator it,
+		std::map<CGRANode *, std::vector<CGRAEdge>> cgraEdges,
+		int index)
 {
 
 	std::map<dfgNode *, std::vector<std::pair<CGRANode *, int>>> localNodeDestMap = *nodeDestMap;
@@ -2028,9 +2028,9 @@ bool DFG::MapMultiDestRec(
 		errs() << ",ParentType=" << parent->getNameType();
 		errs() << ",ParentRT=" << parent->getmappedRealTime();
 		errs() << ",Path = "
-			   << "(" << parentExt->getT() << ","
-			   << parentExt->getY() << ","
-			   << parentExt->getX() << ") to ...\n";
+				<< "(" << parentExt->getT() << ","
+				<< parentExt->getY() << ","
+				<< parentExt->getX() << ") to ...\n";
 		parents.push_back(parent);
 	}
 
@@ -2067,11 +2067,11 @@ bool DFG::MapMultiDestRec(
 		}
 		assert(chosenCnode != NULL);
 		mappingOutFile << "nodeIdx=" << node->getIdx() << ", placed=(" << chosenCnode->getT() << "," << chosenCnode->getY() << "," << chosenCnode->getX() << ")"
-					   << "\n";
+				<< "\n";
 		mappingOutFile << "routing success, keeping the current edges\n";
 
 		errs() << "Placed = "
-			   << "(" << chosenCnode->getT() << "," << chosenCnode->getY() << "," << chosenCnode->getX() << ")\n";
+				<< "(" << chosenCnode->getT() << "," << chosenCnode->getY() << "," << chosenCnode->getX() << ")\n";
 		node->setMappedLoc(chosenCnode);
 		chosenCnode->setMappedDFGNode(node);
 		node->setMappedRealTime(destllMap[chosenCnode]);
@@ -2082,11 +2082,11 @@ bool DFG::MapMultiDestRec(
 		if (index + 1 < nodeDestMap->size())
 		{
 			success = MapMultiDestRec(
-				&localNodeDestMap,
-				&localdestNodeMap,
-				itlocal,
-				localCGRAEdges,
-				index + 1);
+					&localNodeDestMap,
+					&localdestNodeMap,
+					itlocal,
+					localCGRAEdges,
+					index + 1);
 		}
 		else
 		{
@@ -2356,7 +2356,7 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim, ArchType arch)
 
 				errs() << " (Id=" << parent->getIdx() <<
 
-					",rt=" << parent->getmappedRealTime() << ",t=" << parent->getMappedLoc()->getT() << "),";
+						",rt=" << parent->getmappedRealTime() << ",t=" << parent->getMappedLoc()->getT() << "),";
 
 				mappingOutFile << " (Id=" << parent->getIdx() << ",rt=" << parent->getmappedRealTime() << ",t=" << parent->getMappedLoc()->getT() << "),";
 
@@ -2625,9 +2625,9 @@ bool DFG::MapCGRA_SMART(int XDim, int YDim, ArchType arch, int bTrack, int initM
 						for (int c = 0; c < connections.size(); ++c)
 						{
 							if ((connections[c].SrcPort == R0) ||
-								(connections[c].SrcPort == R1) ||
-								(connections[c].SrcPort == R2) ||
-								(connections[c].SrcPort == R3))
+									(connections[c].SrcPort == R1) ||
+									(connections[c].SrcPort == R2) ||
+									(connections[c].SrcPort == R3))
 							{
 								if (connections[c].mappedDFGEdge == NULL)
 								{
@@ -2636,7 +2636,7 @@ bool DFG::MapCGRA_SMART(int XDim, int YDim, ArchType arch, int bTrack, int initM
 							}
 						}
 						mappingOutFile << "(" << t << "," << y << "," << x << ")"
-									   << "=" << count << "\n";
+								<< "=" << count << "\n";
 						count = 0;
 					}
 				}
@@ -2700,7 +2700,7 @@ void DFG::MapCGRA(int XDim, int YDim)
 		{
 			temp = NodeList[nodeListSequencer];
 			errs() << "Mapping " << nodeListSequencer << "/" << NodeList.size() << "..."
-				   << ", with MII = " << MII << "\n";
+					<< ", with MII = " << MII << "\n";
 
 			if (nodeListSequencer == NodeList.size())
 			{
@@ -2761,8 +2761,8 @@ void DFG::MapCGRA(int XDim, int YDim)
 
 				errs() << "Mapped node with sequence =" << nodeListSequencer << "\n";
 				errs() << "(t,y,x) = (" << candidateCGRANodes[chosenCandidates[nodeListSequencer].curr].node->getT() << ","
-					   << candidateCGRANodes[chosenCandidates[nodeListSequencer].curr].node->getY() << ","
-					   << candidateCGRANodes[chosenCandidates[nodeListSequencer].curr].node->getX() << ")\n";
+						<< candidateCGRANodes[chosenCandidates[nodeListSequencer].curr].node->getY() << ","
+						<< candidateCGRANodes[chosenCandidates[nodeListSequencer].curr].node->getX() << ")\n";
 				//				errs() << "(t,y,x) = (" << currCGRA->getCGRANode(temp->getMappedLoc()->getT(),temp->getMappedLoc()->getY(),temp->getMappedLoc()->getX())->getT()  << ","
 				//									    << currCGRA->getCGRANode(temp->getMappedLoc()->getT(),temp->getMappedLoc()->getY(),temp->getMappedLoc()->getX())->getY()   << ","
 				//									    << currCGRA->getCGRANode(temp->getMappedLoc()->getT(),temp->getMappedLoc()->getY(),temp->getMappedLoc()->getX())->getX()   << ")\n";
@@ -2813,7 +2813,7 @@ void DFG::CreateSchList()
 		temp = NodeList[i];
 		temp->setSchIdx(i);
 
-		errs() << "NodeIdx=" << temp->getIdx() << ", ASAP =" << temp->getASAPnumber() << ", ALAP =" << temp->getALAPnumber() << "\n";
+		errs() << "NodeIdx=" << temp->getIdx() << ", ASAP =" << temp->getASAPnumber() << ", ALAP =" << temp->getALAPnumber() << ", CONST VAL =" << (temp->hasConstantVal()? temp->getConstantVal():0) << "\n";
 	}
 	errs() << "#################End :: The Schedule List#################\n";
 }
@@ -2917,7 +2917,7 @@ void DFG::backTrack(int nodeSeq)
 }
 
 std::vector<ConnectedCGRANode> DFG::ExpandCandidatesAddingRoutingNodes(
-	std::vector<std::pair<Instruction *, int>> *candidateNumbers)
+		std::vector<std::pair<Instruction *, int>> *candidateNumbers)
 {
 
 	dfgNode *temp;
@@ -3211,7 +3211,7 @@ void DFG::MapCGRA_EMS(int XDim, int YDim, std::string mapfileName)
 							}
 						}
 						mappingOutFile << "(" << t << "," << y << "," << x << ")"
-									   << "=" << count << "\n";
+								<< "=" << count << "\n";
 						count = 0;
 					}
 				}
@@ -3234,8 +3234,8 @@ bool DFG::MapCGRA_EMS_ASAPLevel(int MII, int XDim, int YDim)
 
 	std::map<CGRANode *, std::vector<CGRAEdge>>::iterator edgeIt;
 	for (edgeIt = currCGRA->getCGRAEdges()->begin();
-		 edgeIt != currCGRA->getCGRAEdges()->end();
-		 edgeIt++)
+			edgeIt != currCGRA->getCGRAEdges()->end();
+			edgeIt++)
 	{
 		mappingOutFile << "DEBUG:: Node=" << edgeIt->first->getName() << ", NumberOfEdges=" << edgeIt->second.size() << std::endl;
 	}
@@ -3435,8 +3435,8 @@ bool DFG::MapCGRA_EMS_ASAPLevel(int MII, int XDim, int YDim)
 			globalNodesWithCost.push_back(nodesWithCost[0]);
 			nodeDestMap[node].clear();
 			for (std::vector<nodeWithCost>::iterator it = nodesWithCost.begin();
-				 it != nodesWithCost.end();
-				 it++)
+					it != nodesWithCost.end();
+					it++)
 			{
 				nodeDestMap[node].push_back(std::make_pair(it->cnode, it->mappedRealTime));
 			}
@@ -3457,11 +3457,11 @@ bool DFG::MapCGRA_EMS_ASAPLevel(int MII, int XDim, int YDim)
 }
 
 bool DFG::MAPCGRA_EMS_MultDest(std::map<dfgNode *, std::vector<std::pair<CGRANode *, int>>> *nodeDestMap,
-							   std::map<CGRANode *, std::vector<dfgNode *>> *destNodeMap,
-							   //							   std::map<dfgNode*,std::vector< std::pair<CGRANode*,int> > >::iterator it,
-							   const std::vector<nodeWithCost>::iterator it,
-							   std::map<CGRANode *, std::vector<CGRAEdge>> cgraEdges,
-							   int index)
+		std::map<CGRANode *, std::vector<dfgNode *>> *destNodeMap,
+		//							   std::map<dfgNode*,std::vector< std::pair<CGRANode*,int> > >::iterator it,
+		const std::vector<nodeWithCost>::iterator it,
+		std::map<CGRANode *, std::vector<CGRAEdge>> cgraEdges,
+		int index)
 {
 
 	std::map<dfgNode *, std::vector<std::pair<CGRANode *, int>>> localNodeDestMap = *nodeDestMap;
@@ -3510,9 +3510,9 @@ bool DFG::MAPCGRA_EMS_MultDest(std::map<dfgNode *, std::vector<std::pair<CGRANod
 		if ((*nodeDestMap)[node][i].first->getmappedDFGNode() == NULL)
 		{
 			errs() << "Possible Dest = "
-				   << "(" << (*nodeDestMap)[node][i].first->getT() << ","
-				   << (*nodeDestMap)[node][i].first->getY() << ","
-				   << (*nodeDestMap)[node][i].first->getX() << "), Index=" << i + 1 << "/" << (*nodeDestMap)[node].size() << "\n";
+					<< "(" << (*nodeDestMap)[node][i].first->getT() << ","
+					<< (*nodeDestMap)[node][i].first->getY() << ","
+					<< (*nodeDestMap)[node][i].first->getX() << "), Index=" << i + 1 << "/" << (*nodeDestMap)[node].size() << "\n";
 			cnode = (*nodeDestMap)[node][i].first;
 			cnodePair = (*nodeDestMap)[node][i];
 			for (int j = 0; j < node->getAncestors().size(); ++j)
@@ -3538,7 +3538,7 @@ bool DFG::MAPCGRA_EMS_MultDest(std::map<dfgNode *, std::vector<std::pair<CGRANod
 
 			localCGRAEdges = cgraEdges;
 			mappingOutFile << "nodeIdx=" << node->getIdx() << ", placed=(" << cnode->getT() << "," << cnode->getY() << "," << cnode->getX() << ")"
-						   << "\n";
+					<< "\n";
 			//			astar->EMSRoute(parents,paths,&localCGRAEdges,&pathsNotRouted);
 			astar->EMSRoute(node, parents, dests, &localCGRAEdges, &pathsNotRouted, &deadEndReached);
 			dests.clear();
@@ -3575,7 +3575,7 @@ bool DFG::MAPCGRA_EMS_MultDest(std::map<dfgNode *, std::vector<std::pair<CGRANod
 			localdestNodeMap[cnode].clear();
 
 			errs() << "Placed = "
-				   << "(" << cnode->getT() << "," << cnode->getY() << "," << cnode->getX() << ")\n";
+					<< "(" << cnode->getT() << "," << cnode->getY() << "," << cnode->getX() << ")\n";
 			node->setMappedLoc(cnode);
 			cnode->setMappedDFGNode(node);
 			node->setMappedRealTime(cnodePair.second);
@@ -3599,11 +3599,11 @@ bool DFG::MAPCGRA_EMS_MultDest(std::map<dfgNode *, std::vector<std::pair<CGRANod
 					itlocal = globalNodesWithCost.begin() + index + 1;
 					errs() << "&& EMSSortNodeDest Done \n";
 					success = MAPCGRA_EMS_MultDest(
-						&localNodeDestMap,
-						&localdestNodeMap,
-						itlocal,
-						localCGRAEdges,
-						index + 1);
+							&localNodeDestMap,
+							&localdestNodeMap,
+							itlocal,
+							localCGRAEdges,
+							index + 1);
 				}
 			}
 			else
@@ -3999,14 +3999,14 @@ void DFG::printOutSMARTRoutes()
 	std::map<dfgNode *, std::vector<CGRANode *>>::iterator ParentIt;
 
 	for (nodeIt = nodeRouteMap.begin();
-		 nodeIt != nodeRouteMap.end();
-		 nodeIt++)
+			nodeIt != nodeRouteMap.end();
+			nodeIt++)
 	{
 
 		node = nodeIt->first;
 		for (ParentIt = nodeRouteMap[node].begin();
-			 ParentIt != nodeRouteMap[node].end();
-			 ParentIt++)
+				ParentIt != nodeRouteMap[node].end();
+				ParentIt++)
 		{
 
 			parent = ParentIt->first;
@@ -4058,9 +4058,9 @@ int DFG::convertToPhyLoc(int y, int x)
 //This function should be called on the incremented pointers, i.e. Nodes upto index are mapped
 //This function should reorder nodeDestMap, i.e. nodes that are not yet mapped considering the tree based routing
 bool DFG::EMSSortNodeDest(
-	std::map<dfgNode *, std::vector<std::pair<CGRANode *, int>>> *nodeDestMap,
-	std::map<CGRANode *, std::vector<CGRAEdge>> cgraEdges,
-	int index)
+		std::map<dfgNode *, std::vector<std::pair<CGRANode *, int>>> *nodeDestMap,
+		std::map<CGRANode *, std::vector<CGRAEdge>> cgraEdges,
+		int index)
 {
 
 	//Nodes upto index are mapped
@@ -4227,7 +4227,7 @@ int DFG::getStaticRoutingCost(dfgNode *node, CGRANode *dest, std::map<CGRANode *
 			while (cnode != tp.sources[j])
 			{
 				if ((cnode->getX() == cameFrom[currNodePortPair].first->getX()) &&
-					(cnode->getY() == cameFrom[currNodePortPair].first->getY()))
+						(cnode->getY() == cameFrom[currNodePortPair].first->getY()))
 				{
 					currCost++;
 				}
@@ -4305,16 +4305,16 @@ MemOp DFG::isMemoryOp(dfgNode *node)
 
 #ifndef XMLCheckResult
 #define XMLCheckResult(a_eResult)           \
-	if (a_eResult != tinyxml2::XML_SUCCESS) \
-	{                                       \
-		printf("Error: %i\n", a_eResult);   \
-		return a_eResult;                   \
-	}
+		if (a_eResult != tinyxml2::XML_SUCCESS) \
+		{                                       \
+			printf("Error: %i\n", a_eResult);   \
+			return a_eResult;                   \
+		}
 #endif
 
 #ifndef XMLCheckNULL
 #define XMLCheckNULL(xmlNode) \
-	if (xmlNode == NULL)      \
+		if (xmlNode == NULL)      \
 		return tinyxml2::XML_ERROR_FILE_READ_ERROR;
 #endif
 
@@ -4539,7 +4539,7 @@ int DFG::printREGIMapOuts()
 		edgeFile << std::to_string(edge->getSrc()->getIdx()) << "\t";
 		edgeFile << std::to_string(edge->getDest()->getIdx()) << "\t";
 		edgeFile << "0"
-				 << "\t";
+				<< "\t";
 		edgeFile << "TRU" << std::endl;
 	}
 	edgeFile.close();
@@ -4591,8 +4591,8 @@ int DFG::printTurns()
 		parentRouteMap = node->getMergeRoutingLocs();
 
 		for (parentRouteMapIt = parentRouteMap.begin();
-			 parentRouteMapIt != parentRouteMap.end();
-			 ++parentRouteMapIt)
+				parentRouteMapIt != parentRouteMap.end();
+				++parentRouteMapIt)
 		{
 
 			parent = parentRouteMapIt->first;
@@ -4724,8 +4724,8 @@ int DFG::printRegStats()
 				outFileRegStats << cnode->getName() << ",";
 
 				for (it = cnode->regAllocation.begin();
-					 it != cnode->regAllocation.end();
-					 it++)
+						it != cnode->regAllocation.end();
+						it++)
 				{
 
 					nextCnode = it->first;
@@ -4821,7 +4821,7 @@ int DFG::printRegStats()
 }
 
 int DFG::sortPossibleDests(
-	std::vector<std::pair<CGRANode *, int>> *possibleDests)
+		std::vector<std::pair<CGRANode *, int>> *possibleDests)
 {
 }
 
@@ -4967,7 +4967,7 @@ int DFG::addCMERGEtoSELECT()
 }
 
 int DFG::printJUMPLHeader(std::ofstream &binFile,
-						  std::ofstream &binOpNameFile)
+		std::ofstream &binOpNameFile)
 {
 
 	binOp currBinOp;
@@ -5225,7 +5225,7 @@ int DFG::printMapping()
 
 									bool found = false;
 									if (currCnodeNode->parentClassification.find(0) !=
-										currCnodeNode->parentClassification.end())
+											currCnodeNode->parentClassification.end())
 									{
 										if (currCnodeNode->parentClassification[0] == cnodeParent)
 										{
@@ -5240,7 +5240,7 @@ int DFG::printMapping()
 									}
 
 									if (currCnodeNode->parentClassification.find(1) !=
-										currCnodeNode->parentClassification.end())
+											currCnodeNode->parentClassification.end())
 									{
 										if (currCnodeNode->parentClassification[1] == cnodeParent)
 										{
@@ -5255,7 +5255,7 @@ int DFG::printMapping()
 									}
 
 									if (currCnodeNode->parentClassification.find(2) !=
-										currCnodeNode->parentClassification.end())
+											currCnodeNode->parentClassification.end())
 									{
 										if (currCnodeNode->parentClassification[2] == cnodeParent)
 										{
@@ -5332,7 +5332,7 @@ int DFG::printMapping()
 
 										bool found = false;
 										if (currCnodeNode->parentClassification.find(0) !=
-											currCnodeNode->parentClassification.end())
+												currCnodeNode->parentClassification.end())
 										{
 											if (currCnodeNode->parentClassification[0] == cnodeParent)
 											{
@@ -5347,7 +5347,7 @@ int DFG::printMapping()
 										}
 
 										if (currCnodeNode->parentClassification.find(1) !=
-											currCnodeNode->parentClassification.end())
+												currCnodeNode->parentClassification.end())
 										{
 											if (currCnodeNode->parentClassification[1] == cnodeParent)
 											{
@@ -5362,7 +5362,7 @@ int DFG::printMapping()
 										}
 
 										if (currCnodeNode->parentClassification.find(2) !=
-											currCnodeNode->parentClassification.end())
+												currCnodeNode->parentClassification.end())
 										{
 											if (currCnodeNode->parentClassification[2] == cnodeParent)
 											{
@@ -5516,7 +5516,7 @@ int DFG::printMapping()
 
 							bool found = false;
 							if (currCnodeNode->parentClassification.find(0) !=
-								currCnodeNode->parentClassification.end())
+									currCnodeNode->parentClassification.end())
 							{
 								if (currCnodeNode->parentClassification[0] == cnodeParent)
 								{
@@ -5533,7 +5533,7 @@ int DFG::printMapping()
 							}
 
 							if (currCnodeNode->parentClassification.find(1) !=
-								currCnodeNode->parentClassification.end())
+									currCnodeNode->parentClassification.end())
 							{
 								if (currCnodeNode->parentClassification[1] == cnodeParent)
 								{
@@ -5550,7 +5550,7 @@ int DFG::printMapping()
 							}
 
 							if (currCnodeNode->parentClassification.find(2) !=
-								currCnodeNode->parentClassification.end())
+									currCnodeNode->parentClassification.end())
 							{
 								if (currCnodeNode->parentClassification[2] == cnodeParent)
 								{
@@ -5833,15 +5833,15 @@ int DFG::updateBinOp(binOp *binOpIns, Port outPort, Port inPort)
 			break;
 		}
 		break;
-	case TREG:
-		if (inPort != TREG)
-		{
-			binOpIns->tregwen = 0b1;
-		}
-		break;
-	default:
-		assert(false);
-		break;
+		case TREG:
+			if (inPort != TREG)
+			{
+				binOpIns->tregwen = 0b1;
+			}
+			break;
+		default:
+			assert(false);
+			break;
 	}
 }
 
@@ -6026,12 +6026,12 @@ int DFG::handleMEMops()
 		else
 		{
 			if ((node->getNameType().compare("LOAD") == 0) ||
-				(node->getNameType().compare("STORE") == 0) ||
-				(node->getNameType().compare("LOOPSTART") == 0) ||
-				(node->getNameType().compare("STORESTART") == 0) ||
-				(node->getNameType().compare("LOOPEXIT") == 0) ||
-				(node->getNameType().compare("OutLoopSTORE") == 0) ||
-				(node->getNameType().compare("OutLoopLOAD") == 0))
+					(node->getNameType().compare("STORE") == 0) ||
+					(node->getNameType().compare("LOOPSTART") == 0) ||
+					(node->getNameType().compare("STORESTART") == 0) ||
+					(node->getNameType().compare("LOOPEXIT") == 0) ||
+					(node->getNameType().compare("OutLoopSTORE") == 0) ||
+					(node->getNameType().compare("OutLoopLOAD") == 0))
 			{
 				node->setIsMemOp(true);
 			}
@@ -6064,7 +6064,7 @@ int DFG::getOutLoopMEMOps()
 	for (dfgNode *node : NodeList)
 	{
 		if (node->getNameType().compare("OutLoopLOAD") == 0 ||
-			node->getNameType().compare("OutLoopSTORE") == 0)
+				node->getNameType().compare("OutLoopSTORE") == 0)
 		{
 			outloopMEMOps++;
 		}
@@ -6696,8 +6696,8 @@ int DFG::handlePHINodes(std::set<BasicBlock *> LoopBB)
 				if (processedPhiNodes.find(node) != processedPhiNodes.end())
 				{
 					if (std::find(processedPhiNodes[node].begin(),
-								  processedPhiNodes[node].end(),
-								  bb) != processedPhiNodes[node].end())
+							processedPhiNodes[node].end(),
+							bb) != processedPhiNodes[node].end())
 					{
 						continue;
 					}
@@ -7027,9 +7027,9 @@ void DFG::GEPInvestigate(Function &F, Loop *L, std::map<std::string, int> *sizeA
 	//					  NULL);
 
 	auto loopStartFn = F.getParent()->getOrInsertFunction(
-		"loopStart",
-		FunctionType::getVoidTy(Ctx),
-		Type::getInt8PtrTy(Ctx));
+			"loopStart",
+			FunctionType::getVoidTy(Ctx),
+			Type::getInt8PtrTy(Ctx));
 
 	builder.CreateCall(loopStartFn, {loopName});
 
@@ -7067,7 +7067,7 @@ void DFG::GEPInvestigate(Function &F, Loop *L, std::map<std::string, int> *sizeA
 	//	builder.SetInsertPoint(loopStartIns);
 	builder.SetInsertPoint(loopHeader, loopHeader->getFirstInsertionPt());
 	auto clearPrintedArrs = F.getParent()->getOrInsertFunction(
-		"clearPrintedArrs", FunctionType::getVoidTy(Ctx));
+			"clearPrintedArrs", FunctionType::getVoidTy(Ctx));
 
 	//	for (int i = 0; i < loopExitInsVec.size(); ++i) {
 	//		builder.SetInsertPoint(loopExitInsVec[i]);
@@ -7110,14 +7110,14 @@ void DFG::GEPInvestigate(Function &F, Loop *L, std::map<std::string, int> *sizeA
 			//							  NULL);
 
 			auto outloopReportFn = F.getParent()->getOrInsertFunction(
-				"outloopValueReport",
-				FunctionType::getVoidTy(Ctx),
-				Type::getInt32Ty(Ctx), //nodeIdx
-				loadVal->getType(),	//value
-				Type::getInt32Ty(Ctx), //addr
-				Type::getInt8Ty(Ctx),  //isLoad
-				Type::getInt8Ty(Ctx),  //isHostTrans
-				Type::getInt8Ty(Ctx)   //size
+					"outloopValueReport",
+					FunctionType::getVoidTy(Ctx),
+					Type::getInt32Ty(Ctx), //nodeIdx
+					loadVal->getType(),	//value
+					Type::getInt32Ty(Ctx), //addr
+					Type::getInt8Ty(Ctx),  //isLoad
+					Type::getInt8Ty(Ctx),  //isHostTrans
+					Type::getInt8Ty(Ctx)   //size
 			);
 
 			Value *isLoad = ConstantInt::get(Type::getInt8Ty(Ctx), 1);
@@ -7165,14 +7165,14 @@ void DFG::GEPInvestigate(Function &F, Loop *L, std::map<std::string, int> *sizeA
 			//							  NULL);
 
 			auto outloopReportFn = F.getParent()->getOrInsertFunction(
-				"outloopValueReport",
-				FunctionType::getVoidTy(Ctx),
-				Type::getInt32Ty(Ctx), //nodeIdx
-				StoreVal->getType(),   //value
-				Type::getInt32Ty(Ctx), //addr
-				Type::getInt8Ty(Ctx),  //isLoad
-				Type::getInt8Ty(Ctx),  //isHostTrans
-				Type::getInt8Ty(Ctx)   //size
+					"outloopValueReport",
+					FunctionType::getVoidTy(Ctx),
+					Type::getInt32Ty(Ctx), //nodeIdx
+					StoreVal->getType(),   //value
+					Type::getInt32Ty(Ctx), //addr
+					Type::getInt8Ty(Ctx),  //isLoad
+					Type::getInt8Ty(Ctx),  //isHostTrans
+					Type::getInt8Ty(Ctx)   //size
 			);
 
 			Value *isLoad = ConstantInt::get(Type::getInt8Ty(Ctx), 0);
@@ -7275,25 +7275,25 @@ void DFG::GEPInvestigate(Function &F, Loop *L, std::map<std::string, int> *sizeA
 				}
 
 				auto printArrFunc = F.getParent()->getOrInsertFunction(
-					"printArr",
-					FunctionType::getVoidTy(Ctx),
-					Type::getInt8PtrTy(Ctx),
-					Type::getInt8PtrTy(Ctx),
-					Type::getInt32Ty(Ctx),
-					Type::getInt8Ty(Ctx),
-					Type::getInt32Ty(Ctx));
+						"printArr",
+						FunctionType::getVoidTy(Ctx),
+						Type::getInt8PtrTy(Ctx),
+						Type::getInt8PtrTy(Ctx),
+						Type::getInt32Ty(Ctx),
+						Type::getInt8Ty(Ctx),
+						Type::getInt32Ty(Ctx));
 
 				Value *st_name = builder.CreateGlobalStringPtr(ST->getName());
 				Value *argsi[] = {st_name,
-								  bitcastedPtr,
-								  ConstantInt::get(Type::getInt32Ty(Ctx), size),
-								  ConstantInt::get(Type::getInt8Ty(Ctx), 1),
-								  ConstantInt::get(Type::getInt32Ty(Ctx), node->getGEPbaseAddr())};
+						bitcastedPtr,
+						ConstantInt::get(Type::getInt32Ty(Ctx), size),
+						ConstantInt::get(Type::getInt8Ty(Ctx), 1),
+						ConstantInt::get(Type::getInt32Ty(Ctx), node->getGEPbaseAddr())};
 				Value *argso[] = {st_name,
-								  bitcastedPtr,
-								  ConstantInt::get(Type::getInt32Ty(Ctx), size),
-								  ConstantInt::get(Type::getInt8Ty(Ctx), 0),
-								  ConstantInt::get(Type::getInt32Ty(Ctx), node->getGEPbaseAddr())};
+						bitcastedPtr,
+						ConstantInt::get(Type::getInt32Ty(Ctx), size),
+						ConstantInt::get(Type::getInt8Ty(Ctx), 0),
+						ConstantInt::get(Type::getInt32Ty(Ctx), node->getGEPbaseAddr())};
 				//				builder.CreateCall(printArrFunc,args);
 
 				builder.CreateCall(printArrFunc, argsi);
@@ -7352,25 +7352,25 @@ void DFG::GEPInvestigate(Function &F, Loop *L, std::map<std::string, int> *sizeA
 					}
 
 					auto printArrFunc = F.getParent()->getOrInsertFunction(
-						"printArr",
-						FunctionType::getVoidTy(Ctx),
-						Type::getInt8PtrTy(Ctx),
-						Type::getInt8PtrTy(Ctx),
-						Type::getInt32Ty(Ctx),
-						Type::getInt8Ty(Ctx),
-						Type::getInt32Ty(Ctx));
+							"printArr",
+							FunctionType::getVoidTy(Ctx),
+							Type::getInt8PtrTy(Ctx),
+							Type::getInt8PtrTy(Ctx),
+							Type::getInt32Ty(Ctx),
+							Type::getInt8Ty(Ctx),
+							Type::getInt32Ty(Ctx));
 
 					Value *st_name = builder.CreateGlobalStringPtr(GEP->getPointerOperand()->getName());
 					Value *argsi[] = {st_name,
-									  bitcastedPtr,
-									  ConstantInt::get(Type::getInt32Ty(Ctx), size),
-									  ConstantInt::get(Type::getInt8Ty(Ctx), 1),
-									  ConstantInt::get(Type::getInt32Ty(Ctx), node->getGEPbaseAddr())};
+							bitcastedPtr,
+							ConstantInt::get(Type::getInt32Ty(Ctx), size),
+							ConstantInt::get(Type::getInt8Ty(Ctx), 1),
+							ConstantInt::get(Type::getInt32Ty(Ctx), node->getGEPbaseAddr())};
 					Value *argso[] = {st_name,
-									  bitcastedPtr,
-									  ConstantInt::get(Type::getInt32Ty(Ctx), size),
-									  ConstantInt::get(Type::getInt8Ty(Ctx), 0),
-									  ConstantInt::get(Type::getInt32Ty(Ctx), node->getGEPbaseAddr())};
+							bitcastedPtr,
+							ConstantInt::get(Type::getInt32Ty(Ctx), size),
+							ConstantInt::get(Type::getInt8Ty(Ctx), 0),
+							ConstantInt::get(Type::getInt32Ty(Ctx), node->getGEPbaseAddr())};
 
 					//Add a call in the begginning of the loop
 					builder.CreateCall(printArrFunc, argsi);
@@ -7403,18 +7403,18 @@ void DFG::GEPInvestigate(Function &F, Loop *L, std::map<std::string, int> *sizeA
 					int size = DL.getTypeAllocSize(IT);
 
 					auto reportDynArrSize = F.getParent()->getOrInsertFunction(
-						"reportDynArrSize", FunctionType::getVoidTy(Ctx),
-						Type::getInt8PtrTy(Ctx),
-						Type::getInt8PtrTy(Ctx),
-						Type::getInt32Ty(Ctx),
-						Type::getInt32Ty(Ctx));
+							"reportDynArrSize", FunctionType::getVoidTy(Ctx),
+							Type::getInt8PtrTy(Ctx),
+							Type::getInt8PtrTy(Ctx),
+							Type::getInt32Ty(Ctx),
+							Type::getInt32Ty(Ctx));
 
 					Value *st_name = builder.CreateGlobalStringPtr(GEP->getPointerOperand()->getName());
 					Value *args[] = {st_name,
-									 bitcastedPtr,
-									 GEP->getOperand(1),
-									 ConstantInt::get(Type::getInt32Ty(Ctx),
-													  size)};
+							bitcastedPtr,
+							GEP->getOperand(1),
+							ConstantInt::get(Type::getInt32Ty(Ctx),
+									size)};
 					builder.CreateCall(reportDynArrSize, args);
 
 					std::string ptrName = GEP->getPointerOperand()->getName().str();
@@ -7452,24 +7452,24 @@ void DFG::GEPInvestigate(Function &F, Loop *L, std::map<std::string, int> *sizeA
 						}
 
 						auto printArrFunc = F.getParent()->getOrInsertFunction(
-							"printArr",
-							FunctionType::getVoidTy(Ctx),
-							Type::getInt8PtrTy(Ctx),
-							Type::getInt8PtrTy(Ctx),
-							Type::getInt32Ty(Ctx),
-							Type::getInt8Ty(Ctx),
-							Type::getInt32Ty(Ctx));
+								"printArr",
+								FunctionType::getVoidTy(Ctx),
+								Type::getInt8PtrTy(Ctx),
+								Type::getInt8PtrTy(Ctx),
+								Type::getInt32Ty(Ctx),
+								Type::getInt8Ty(Ctx),
+								Type::getInt32Ty(Ctx));
 
 						Value *argsi[] = {st_name,
-										  bitcastedPtr,
-										  ConstantInt::get(Type::getInt32Ty(Ctx), size),
-										  ConstantInt::get(Type::getInt8Ty(Ctx), 1),
-										  ConstantInt::get(Type::getInt32Ty(Ctx), node->getGEPbaseAddr())};
+								bitcastedPtr,
+								ConstantInt::get(Type::getInt32Ty(Ctx), size),
+								ConstantInt::get(Type::getInt8Ty(Ctx), 1),
+								ConstantInt::get(Type::getInt32Ty(Ctx), node->getGEPbaseAddr())};
 						Value *argso[] = {st_name,
-										  bitcastedPtr,
-										  ConstantInt::get(Type::getInt32Ty(Ctx), size),
-										  ConstantInt::get(Type::getInt8Ty(Ctx), 0),
-										  ConstantInt::get(Type::getInt32Ty(Ctx), node->getGEPbaseAddr())};
+								bitcastedPtr,
+								ConstantInt::get(Type::getInt32Ty(Ctx), size),
+								ConstantInt::get(Type::getInt8Ty(Ctx), 0),
+								ConstantInt::get(Type::getInt32Ty(Ctx), node->getGEPbaseAddr())};
 						//Add a call in the begginning of the loop
 						builder.CreateCall(printArrFunc, argsi);
 						//
@@ -7504,10 +7504,10 @@ void DFG::GEPInvestigate(Function &F, Loop *L, std::map<std::string, int> *sizeA
 	} //Nodelist
 
 	auto printDynArrSize = F.getParent()->getOrInsertFunction(
-		"printDynArrSize", FunctionType::getVoidTy(Ctx));
+			"printDynArrSize", FunctionType::getVoidTy(Ctx));
 
 	auto loopEndFn = F.getParent()->getOrInsertFunction(
-		"loopEnd", FunctionType::getVoidTy(Ctx), Type::getInt8PtrTy(Ctx));
+			"loopEnd", FunctionType::getVoidTy(Ctx), Type::getInt8PtrTy(Ctx));
 
 	//	for (int i = 0; i < loopExitInsVec.size(); ++i) {
 	//		builder.SetInsertPoint(loopExitInsVec[i]);
@@ -7552,9 +7552,9 @@ void DFG::GEPInvestigate(Function &F, std::map<std::string, int> *sizeArrMap)
 	//					  NULL);
 
 	auto loopStartFn = F.getParent()->getOrInsertFunction(
-		"loopStart",
-		FunctionType::getVoidTy(Ctx),
-		Type::getInt8PtrTy(Ctx));
+			"loopStart",
+			FunctionType::getVoidTy(Ctx),
+			Type::getInt8PtrTy(Ctx));
 
 	builder.CreateCall(loopStartFn, {loopName});
 
@@ -7592,7 +7592,7 @@ void DFG::GEPInvestigate(Function &F, std::map<std::string, int> *sizeArrMap)
 	//	builder.SetInsertPoint(loopStartIns);
 	builder.SetInsertPoint(loopHeader, loopHeader->getFirstInsertionPt());
 	auto clearPrintedArrs = F.getParent()->getOrInsertFunction(
-		"clearPrintedArrs", FunctionType::getVoidTy(Ctx));
+			"clearPrintedArrs", FunctionType::getVoidTy(Ctx));
 
 	//	for (int i = 0; i < loopExitInsVec.size(); ++i) {
 	//		builder.SetInsertPoint(loopExitInsVec[i]);
@@ -7635,14 +7635,14 @@ void DFG::GEPInvestigate(Function &F, std::map<std::string, int> *sizeArrMap)
 			//							  NULL);
 
 			auto outloopReportFn = F.getParent()->getOrInsertFunction(
-				"outloopValueReport",
-				FunctionType::getVoidTy(Ctx),
-				Type::getInt32Ty(Ctx), //nodeIdx
-				loadVal->getType(),	//value
-				Type::getInt32Ty(Ctx), //addr
-				Type::getInt8Ty(Ctx),  //isLoad
-				Type::getInt8Ty(Ctx),  //isHostTrans
-				Type::getInt8Ty(Ctx)   //size
+					"outloopValueReport",
+					FunctionType::getVoidTy(Ctx),
+					Type::getInt32Ty(Ctx), //nodeIdx
+					loadVal->getType(),	//value
+					Type::getInt32Ty(Ctx), //addr
+					Type::getInt8Ty(Ctx),  //isLoad
+					Type::getInt8Ty(Ctx),  //isHostTrans
+					Type::getInt8Ty(Ctx)   //size
 			);
 
 			Value *isLoad = ConstantInt::get(Type::getInt8Ty(Ctx), 1);
@@ -7690,14 +7690,14 @@ void DFG::GEPInvestigate(Function &F, std::map<std::string, int> *sizeArrMap)
 			//							  NULL);
 
 			auto outloopReportFn = F.getParent()->getOrInsertFunction(
-				"outloopValueReport",
-				FunctionType::getVoidTy(Ctx),
-				Type::getInt32Ty(Ctx), //nodeIdx
-				StoreVal->getType(),   //value
-				Type::getInt32Ty(Ctx), //addr
-				Type::getInt8Ty(Ctx),  //isLoad
-				Type::getInt8Ty(Ctx),  //isHostTrans
-				Type::getInt8Ty(Ctx)   //size
+					"outloopValueReport",
+					FunctionType::getVoidTy(Ctx),
+					Type::getInt32Ty(Ctx), //nodeIdx
+					StoreVal->getType(),   //value
+					Type::getInt32Ty(Ctx), //addr
+					Type::getInt8Ty(Ctx),  //isLoad
+					Type::getInt8Ty(Ctx),  //isHostTrans
+					Type::getInt8Ty(Ctx)   //size
 			);
 
 			Value *isLoad = ConstantInt::get(Type::getInt8Ty(Ctx), 0);
@@ -7800,25 +7800,25 @@ void DFG::GEPInvestigate(Function &F, std::map<std::string, int> *sizeArrMap)
 				}
 
 				auto printArrFunc = F.getParent()->getOrInsertFunction(
-					"printArr",
-					FunctionType::getVoidTy(Ctx),
-					Type::getInt8PtrTy(Ctx),
-					Type::getInt8PtrTy(Ctx),
-					Type::getInt32Ty(Ctx),
-					Type::getInt8Ty(Ctx),
-					Type::getInt32Ty(Ctx));
+						"printArr",
+						FunctionType::getVoidTy(Ctx),
+						Type::getInt8PtrTy(Ctx),
+						Type::getInt8PtrTy(Ctx),
+						Type::getInt32Ty(Ctx),
+						Type::getInt8Ty(Ctx),
+						Type::getInt32Ty(Ctx));
 
 				Value *st_name = builder.CreateGlobalStringPtr(ST->getName());
 				Value *argsi[] = {st_name,
-								  bitcastedPtr,
-								  ConstantInt::get(Type::getInt32Ty(Ctx), size),
-								  ConstantInt::get(Type::getInt8Ty(Ctx), 1),
-								  ConstantInt::get(Type::getInt32Ty(Ctx), node->getGEPbaseAddr())};
+						bitcastedPtr,
+						ConstantInt::get(Type::getInt32Ty(Ctx), size),
+						ConstantInt::get(Type::getInt8Ty(Ctx), 1),
+						ConstantInt::get(Type::getInt32Ty(Ctx), node->getGEPbaseAddr())};
 				Value *argso[] = {st_name,
-								  bitcastedPtr,
-								  ConstantInt::get(Type::getInt32Ty(Ctx), size),
-								  ConstantInt::get(Type::getInt8Ty(Ctx), 0),
-								  ConstantInt::get(Type::getInt32Ty(Ctx), node->getGEPbaseAddr())};
+						bitcastedPtr,
+						ConstantInt::get(Type::getInt32Ty(Ctx), size),
+						ConstantInt::get(Type::getInt8Ty(Ctx), 0),
+						ConstantInt::get(Type::getInt32Ty(Ctx), node->getGEPbaseAddr())};
 				//				builder.CreateCall(printArrFunc,args);
 
 				builder.CreateCall(printArrFunc, argsi);
@@ -7877,25 +7877,25 @@ void DFG::GEPInvestigate(Function &F, std::map<std::string, int> *sizeArrMap)
 					}
 
 					auto printArrFunc = F.getParent()->getOrInsertFunction(
-						"printArr",
-						FunctionType::getVoidTy(Ctx),
-						Type::getInt8PtrTy(Ctx),
-						Type::getInt8PtrTy(Ctx),
-						Type::getInt32Ty(Ctx),
-						Type::getInt8Ty(Ctx),
-						Type::getInt32Ty(Ctx));
+							"printArr",
+							FunctionType::getVoidTy(Ctx),
+							Type::getInt8PtrTy(Ctx),
+							Type::getInt8PtrTy(Ctx),
+							Type::getInt32Ty(Ctx),
+							Type::getInt8Ty(Ctx),
+							Type::getInt32Ty(Ctx));
 
 					Value *st_name = builder.CreateGlobalStringPtr(GEP->getPointerOperand()->getName());
 					Value *argsi[] = {st_name,
-									  bitcastedPtr,
-									  ConstantInt::get(Type::getInt32Ty(Ctx), size),
-									  ConstantInt::get(Type::getInt8Ty(Ctx), 1),
-									  ConstantInt::get(Type::getInt32Ty(Ctx), node->getGEPbaseAddr())};
+							bitcastedPtr,
+							ConstantInt::get(Type::getInt32Ty(Ctx), size),
+							ConstantInt::get(Type::getInt8Ty(Ctx), 1),
+							ConstantInt::get(Type::getInt32Ty(Ctx), node->getGEPbaseAddr())};
 					Value *argso[] = {st_name,
-									  bitcastedPtr,
-									  ConstantInt::get(Type::getInt32Ty(Ctx), size),
-									  ConstantInt::get(Type::getInt8Ty(Ctx), 0),
-									  ConstantInt::get(Type::getInt32Ty(Ctx), node->getGEPbaseAddr())};
+							bitcastedPtr,
+							ConstantInt::get(Type::getInt32Ty(Ctx), size),
+							ConstantInt::get(Type::getInt8Ty(Ctx), 0),
+							ConstantInt::get(Type::getInt32Ty(Ctx), node->getGEPbaseAddr())};
 
 					//Add a call in the begginning of the loop
 					builder.CreateCall(printArrFunc, argsi);
@@ -7928,18 +7928,18 @@ void DFG::GEPInvestigate(Function &F, std::map<std::string, int> *sizeArrMap)
 					int size = DL.getTypeAllocSize(IT);
 
 					auto reportDynArrSize = F.getParent()->getOrInsertFunction(
-						"reportDynArrSize", FunctionType::getVoidTy(Ctx),
-						Type::getInt8PtrTy(Ctx),
-						Type::getInt8PtrTy(Ctx),
-						Type::getInt32Ty(Ctx),
-						Type::getInt32Ty(Ctx));
+							"reportDynArrSize", FunctionType::getVoidTy(Ctx),
+							Type::getInt8PtrTy(Ctx),
+							Type::getInt8PtrTy(Ctx),
+							Type::getInt32Ty(Ctx),
+							Type::getInt32Ty(Ctx));
 
 					Value *st_name = builder.CreateGlobalStringPtr(GEP->getPointerOperand()->getName());
 					Value *args[] = {st_name,
-									 bitcastedPtr,
-									 GEP->getOperand(1),
-									 ConstantInt::get(Type::getInt32Ty(Ctx),
-													  size)};
+							bitcastedPtr,
+							GEP->getOperand(1),
+							ConstantInt::get(Type::getInt32Ty(Ctx),
+									size)};
 					builder.CreateCall(reportDynArrSize, args);
 
 					std::string ptrName = GEP->getPointerOperand()->getName().str();
@@ -7977,24 +7977,24 @@ void DFG::GEPInvestigate(Function &F, std::map<std::string, int> *sizeArrMap)
 						}
 
 						auto printArrFunc = F.getParent()->getOrInsertFunction(
-							"printArr",
-							FunctionType::getVoidTy(Ctx),
-							Type::getInt8PtrTy(Ctx),
-							Type::getInt8PtrTy(Ctx),
-							Type::getInt32Ty(Ctx),
-							Type::getInt8Ty(Ctx),
-							Type::getInt32Ty(Ctx));
+								"printArr",
+								FunctionType::getVoidTy(Ctx),
+								Type::getInt8PtrTy(Ctx),
+								Type::getInt8PtrTy(Ctx),
+								Type::getInt32Ty(Ctx),
+								Type::getInt8Ty(Ctx),
+								Type::getInt32Ty(Ctx));
 
 						Value *argsi[] = {st_name,
-										  bitcastedPtr,
-										  ConstantInt::get(Type::getInt32Ty(Ctx), size),
-										  ConstantInt::get(Type::getInt8Ty(Ctx), 1),
-										  ConstantInt::get(Type::getInt32Ty(Ctx), node->getGEPbaseAddr())};
+								bitcastedPtr,
+								ConstantInt::get(Type::getInt32Ty(Ctx), size),
+								ConstantInt::get(Type::getInt8Ty(Ctx), 1),
+								ConstantInt::get(Type::getInt32Ty(Ctx), node->getGEPbaseAddr())};
 						Value *argso[] = {st_name,
-										  bitcastedPtr,
-										  ConstantInt::get(Type::getInt32Ty(Ctx), size),
-										  ConstantInt::get(Type::getInt8Ty(Ctx), 0),
-										  ConstantInt::get(Type::getInt32Ty(Ctx), node->getGEPbaseAddr())};
+								bitcastedPtr,
+								ConstantInt::get(Type::getInt32Ty(Ctx), size),
+								ConstantInt::get(Type::getInt8Ty(Ctx), 0),
+								ConstantInt::get(Type::getInt32Ty(Ctx), node->getGEPbaseAddr())};
 						//Add a call in the begginning of the loop
 						builder.CreateCall(printArrFunc, argsi);
 						//
@@ -8029,10 +8029,10 @@ void DFG::GEPInvestigate(Function &F, std::map<std::string, int> *sizeArrMap)
 	} //Nodelist
 
 	auto printDynArrSize = F.getParent()->getOrInsertFunction(
-		"printDynArrSize", FunctionType::getVoidTy(Ctx));
+			"printDynArrSize", FunctionType::getVoidTy(Ctx));
 
 	auto loopEndFn = F.getParent()->getOrInsertFunction(
-		"loopEnd", FunctionType::getVoidTy(Ctx), Type::getInt8PtrTy(Ctx));
+			"loopEnd", FunctionType::getVoidTy(Ctx), Type::getInt8PtrTy(Ctx));
 
 	//	for (int i = 0; i < loopExitInsVec.size(); ++i) {
 	//		builder.SetInsertPoint(loopExitInsVec[i]);
@@ -8057,7 +8057,7 @@ void DFG::AssignOutLoopAddr()
 	{
 		node = NodeList[i];
 		if ((node->getNameType().compare("OutLoopLOAD") == 0) ||
-			(node->getNameType().compare("OutLoopSTORE") == 0))
+				(node->getNameType().compare("OutLoopSTORE") == 0))
 		{
 
 			assert(node->getMappedLoc() != NULL);
@@ -8068,8 +8068,8 @@ void DFG::AssignOutLoopAddr()
 				bytewidth = OutLoopNodeMapReverse[node]->getType()->getIntegerBitWidth() / 8;
 			}
 			else if (dyn_cast<ArrayType>(OutLoopNodeMapReverse[node]->getType()) ||
-					 dyn_cast<StructType>(OutLoopNodeMapReverse[node]->getType()) ||
-					 dyn_cast<PointerType>(OutLoopNodeMapReverse[node]->getType()))
+					dyn_cast<StructType>(OutLoopNodeMapReverse[node]->getType()) ||
+					dyn_cast<PointerType>(OutLoopNodeMapReverse[node]->getType()))
 			{
 				bytewidth = 4;
 			}
@@ -9160,8 +9160,8 @@ int DFG::handlestartstop_munit(std::vector<munitTransition> bbTrans)
 				for (int j = 0; j < BRI->getNumSuccessors(); ++j)
 				{
 					if (std::find(loopBB.begin(),
-								  loopBB.end(),
-								  BRI->getSuccessor(j)) == loopBB.end())
+							loopBB.end(),
+							BRI->getSuccessor(j)) == loopBB.end())
 					{
 						//successor does not belong to the loop
 						//						exitNodes.push_back(node);
@@ -9200,7 +9200,7 @@ int DFG::handlestartstop_munit(std::vector<munitTransition> bbTrans)
 		for (munitTransition munitTrans : bbTrans)
 		{
 			if (munitTrans.srcBB == comingFromBBMap[startNode] &&
-				munitTrans.destBB == startNode->BB)
+					munitTrans.destBB == startNode->BB)
 			{
 				BBActiveTransBit = 1 << munitTrans.id;
 				found = true;
@@ -9250,7 +9250,7 @@ int DFG::handlestartstop_munit(std::vector<munitTransition> bbTrans)
 		for (munitTransition munitTrans : bbTrans)
 		{
 			if (munitTrans.srcBB == comingFromBBMap[startNode] &&
-				munitTrans.destBB == startNode->BB)
+					munitTrans.destBB == startNode->BB)
 			{
 				BBActiveTransBit = 1 << munitTrans.id;
 				BBActiveTransWord = BBActiveTransWord | BBActiveTransBit;
@@ -9313,7 +9313,7 @@ int DFG::handlestartstop_munit(std::vector<munitTransition> bbTrans)
 			for (munitTransition munitTrans : bbTrans)
 			{
 				if (munitTrans.srcBB == node->BB &&
-					munitTrans.destBB == succBasicBlock)
+						munitTrans.destBB == succBasicBlock)
 				{
 					BBActiveTransBit = 1 << munitTrans.id;
 					found = true;
@@ -9464,7 +9464,7 @@ int DFG::addBreakLongerPaths()
 			if (ASAPdistance > 5 && internalASAPdist > 0)
 			{
 				outs() << "breaking long paths adding op:OR 0 between "
-					   << ": node=" << node->getIdx() << "and node=" << child->getIdx() << "\n";
+						<< ": node=" << node->getIdx() << "and node=" << child->getIdx() << "\n";
 
 				dfgNode *orzero1 = new dfgNode(this);
 				orzero1->setIdx(this->getNodesPtr()->size());
@@ -9532,14 +9532,14 @@ int DFG::analyzeRTpaths()
 		for (dfgNode *parent : node->getAncestors())
 		{
 			if (parent->getNameType().compare("OutLoopLOAD") == 0 ||
-				parent->getNameType().compare("MOVC") == 0)
+					parent->getNameType().compare("MOVC") == 0)
 			{
 				continue;
 			}
 
 			if (std::find(node->getPHIancestors().begin(),
-						  node->getPHIancestors().begin(),
-						  parent) != node->getPHIancestors().end())
+					node->getPHIancestors().begin(),
+					parent) != node->getPHIancestors().end())
 			{
 				continue;
 			}
@@ -10262,10 +10262,45 @@ void checkGEPDerivatives(Instruction *root, GetElementPtrInst *GEP, std::unorder
 //	assert(false);
 //}
 
+/*
+ *
+ * Outputs:
+ * 1) outer_vals
+ *
+ * contains values loaded from outerLoopStore/outerLoopLoads. These loads are scalar
+ * load/stores corresponds to live in and out values such as outer loop induction variables
+ * Eg:
+ *
+ *  %i.022 = phi i32 [ 0, %entry ], [ %inc8, %for.end ] (%i.022 is an induction variable passed in
+ * as a live in variable)
+ *
+ *  %add = add nsw i32 %mul, %sum.021 (%add is a temp variable generated within loop and passed out
+ *  as a live out variable)
+ *
+ * 2) mem_ptrs
+ *
+ * contains pointer operands of array loads/stores (??). Pointer operand is a GEP instruction.
+ *
+ * Eg: Value name:arrayidx4,
+ * GEP =   %arrayidx4 = getelementptr inbounds [4 x [4 x i32]], [4 x [4 x i32]]* @A, i32 0, i32 %i.022, i32 %j.020
+ *
+ * 3) acc
+ *
+ * contains the number of memory accesses for each array/ scalars.
+ * Value represent the array base pointer or scalar pointer (??)
+ * Eg:
+ * base_ptr:A, accesses = 1 (array)
+ * base_ptr:x, accesses = 1 (array)
+ * base_ptr:add, accesses = 1 (outloopstore scalar)
+ * base_ptr:i.022, accesses = 1 (outloopload scalar)
+ *
+ *
+ * */
+
 void DFG::getTransferVariables(std::unordered_set<Value *> &outer_vals,
-							   std::unordered_map<Value *, GetElementPtrInst *> &mem_ptrs,
-							   std::unordered_map<Value *, int> &acc,
-							   Function &F)
+		std::unordered_map<Value *, GetElementPtrInst *> &mem_ptrs,
+		std::unordered_map<Value *, int> &acc,
+		Function &F)
 {
 
 	assert(OutLoopNodeMap.size() == OutLoopNodeMapReverse.size());
@@ -10275,8 +10310,21 @@ void DFG::getTransferVariables(std::unordered_set<Value *> &outer_vals,
 		outs() << "onode = " << it->first->getIdx()  << "nametype = " << it->first->getNameType() << "\n";
 		Value *val = it->second;
 		outer_vals.insert(val);
+
+		if(it->first->getNameType().compare("OutLoopSTORE")){
+			outVals_inorout[val]=1;//load
+		}else{
+			outVals_inorout[val]=0;//store
+		}
 		acc[val] = acc[val] + 1;
 	}
+
+	/*
+	 * gep_derivatives:
+	 *
+	 * Value: pointer operand of array loads/stores (??). Pointer operand is a GEP instruction.
+	 * GetElementPtrInst: corresponding GEP instruction
+	 * */
 
 	std::unordered_map<Value *, GetElementPtrInst *> gep_derivatives;
 
@@ -10295,7 +10343,15 @@ void DFG::getTransferVariables(std::unordered_set<Value *> &outer_vals,
 			}
 		}
 	}
-
+	/*
+	 * sizeArrMap:
+	 *
+	 * Contains the array sizes passed from function annotations.
+	 *
+	 * Eg:
+	 * __attribute__((annotate("fr:128,fi:128")))
+	 * int fix_fft(short fr[], short fi[], short m1, short inverse){
+	 * */
 	for (dfgNode *node : NodeList)
 	{
 		if (node->getNode())
@@ -10341,23 +10397,43 @@ void DFG::getTransferVariables(std::unordered_set<Value *> &outer_vals,
 	// 	acc[it->second] = 1;
 	// }
 
-}
+	outs()<<"\nOutvals_inorout contains: \n" ;
+	for (auto it = outVals_inorout.begin(); it != outVals_inorout.end(); it++)
+	{
+		Value* outvl = it->first;
+		outs() << "outVal:";
+		outvl->dump();
+		outs() << "\n";
+		outs() << "load(1)/store(0):"<<it->second <<"\n";
+	}
 
+}
+/*
+ * Set base pointer names of DFG nodes
+ * Record sizes of each array/ scalar
+ *
+ * base_ptr:i.022, size = 4
+ * base_ptr:add, size = 4
+ * base_ptr:A, size = 64
+ * base_ptr:x, size = 16
+ *
+ *
+ * */
 void DFG::SetBasePointers(std::unordered_set<Value *> &outer_vals,
-						  std::unordered_map<Value *, GetElementPtrInst *> &mem_ptrs, std::map<dfgNode*,Value*> &OLNodesWithPtrTyUsage, Function &F)
+		std::unordered_map<Value *, GetElementPtrInst *> &mem_ptrs, std::map<dfgNode*,Value*> &OLNodesWithPtrTyUsage, Function &F)
 {
 
 
 	outs()<<"array_pointer_sizes contains: \n" ;
-		for (auto it = array_pointer_sizes.begin(); it != array_pointer_sizes.end(); it++)
-		{
-			std::string base_ptr = it->first;
-			int size = it->second;
-			outs() << "base_ptr:" << base_ptr << ", size = " << size << "\n";
-		}
+	for (auto it = array_pointer_sizes.begin(); it != array_pointer_sizes.end(); it++)
+	{
+		std::string base_ptr = it->first;
+		int size = it->second;
+		outs() << "base_ptr:" << base_ptr << ", size = " << size << "\n";
+	}
 
-	outs() << "Outer LOOP 1 nodes = " << OutLoopNodeMapReverse.size() << "\n";
-	outs() << "Outer LOOP 2 nodes = " << OutLoopNodeMap.size() << "\n";
+	outs() << "OutLoopNodeMapReverse size = " << OutLoopNodeMapReverse.size() << "\n";
+	outs() << "OutLoopNodeMap size = " << OutLoopNodeMap.size() << "\n";
 
 	for (dfgNode *node : NodeList)
 	{
@@ -10502,8 +10578,12 @@ void DFG::SetBasePointers(std::unordered_set<Value *> &outer_vals,
 
 
 }
-
-void DFG::InstrumentInOutVars(Function &F, std::unordered_map<Value *, int> mem_accesses, std::map<dfgNode*,Value*> &OLNodesWithPtrTyUsage){
+/*
+ * Instrument the code to save live in and live out data for simulation
+ *
+ *
+ * */
+void DFG::InstrumentInOutVars(Function &F, std::unordered_map<Value *, int> mem_accesses, std::map<dfgNode*,Value*> &OLNodesWithPtrTyUsage, std::unordered_map<Value *, int> &spm_base_address){
 
 	outs() << "Outloop node instructions with pointer type usage in the loop body \n";
 	for (auto i : OLNodesWithPtrTyUsage)
@@ -10520,45 +10600,45 @@ void DFG::InstrumentInOutVars(Function &F, std::unordered_map<Value *, int> mem_
 
 	//this function should be called at the beginning of the loop.
 	auto loopStartFn = F.getParent()->getOrInsertFunction(
-						"loopStart",
-						FunctionType::getVoidTy(Ctx),
-						Type::getInt8PtrTy(Ctx) //loopname
-						);
+			"loopStart",
+			FunctionType::getVoidTy(Ctx),
+			Type::getInt8PtrTy(Ctx) //loopname
+	);
 
 	//this should be called at the end of the loop
 	auto clearPrintedArrs = F.getParent()->getOrInsertFunction(
-		"clearPrintedArrs", 
-		FunctionType::getVoidTy(Ctx));
+			"clearPrintedArrs",
+			FunctionType::getVoidTy(Ctx));
 
 	auto printArrFunc = F.getParent()->getOrInsertFunction(
-		"printArr",
-		FunctionType::getVoidTy(Ctx),
-		Type::getInt8PtrTy(Ctx),
-		Type::getInt8PtrTy(Ctx),
-		Type::getInt32Ty(Ctx),
-		Type::getInt8Ty(Ctx),
-		Type::getInt32Ty(Ctx));
+			"printArr",
+			FunctionType::getVoidTy(Ctx),
+			Type::getInt8PtrTy(Ctx),
+			Type::getInt8PtrTy(Ctx),
+			Type::getInt32Ty(Ctx),
+			Type::getInt8Ty(Ctx),
+			Type::getInt32Ty(Ctx));
 
 	auto reportDynArrSize = F.getParent()->getOrInsertFunction(
-		"reportDynArrSize", FunctionType::getVoidTy(Ctx),
-		Type::getInt8PtrTy(Ctx),
-		Type::getInt8PtrTy(Ctx),
-		Type::getInt32Ty(Ctx),
-		Type::getInt32Ty(Ctx));
+			"reportDynArrSize", FunctionType::getVoidTy(Ctx),
+			Type::getInt8PtrTy(Ctx),
+			Type::getInt8PtrTy(Ctx),
+			Type::getInt32Ty(Ctx),
+			Type::getInt32Ty(Ctx));
 
 	auto printDynArrSize = F.getParent()->getOrInsertFunction(
-		"printDynArrSize", FunctionType::getVoidTy(Ctx));
+			"printDynArrSize", FunctionType::getVoidTy(Ctx));
 
 	auto loopEndFn = F.getParent()->getOrInsertFunction(
-		"loopEnd", FunctionType::getVoidTy(Ctx), Type::getInt8PtrTy(Ctx));
+			"loopEnd", FunctionType::getVoidTy(Ctx), Type::getInt8PtrTy(Ctx));
 
 	//these should be called prior to the loop start/end to report all the variables that are being accessed in the loop
 	auto live_in_report_FN = F.getParent()->getOrInsertFunction(
-		"LiveInReport",
-		FunctionType::getVoidTy(Ctx),
-		Type::getInt8PtrTy(Ctx), //variable name
-		Type::getInt8PtrTy(Ctx), //variable data
-		Type::getInt32Ty(Ctx) //size
+			"LiveInReport",
+			FunctionType::getVoidTy(Ctx),
+			Type::getInt8PtrTy(Ctx), //variable name
+			Type::getInt8PtrTy(Ctx), //variable data
+			Type::getInt32Ty(Ctx) //size
 	);
 	auto live_in_report_FN2 = F.getParent()->getOrInsertFunction(
 			"LiveInReport2",
@@ -10566,7 +10646,7 @@ void DFG::InstrumentInOutVars(Function &F, std::unordered_map<Value *, int> mem_
 			Type::getInt8PtrTy(Ctx), //variable name
 			Type::getInt32PtrTy(Ctx), //variable data
 			Type::getInt32Ty(Ctx) //size
-		);
+	);
 
 	auto live_in_report_PtrTypeUsage = F.getParent()->getOrInsertFunction(
 			"LiveInReportPtrTypeUsage",
@@ -10575,28 +10655,28 @@ void DFG::InstrumentInOutVars(Function &F, std::unordered_map<Value *, int> mem_
 			Type::getInt8PtrTy(Ctx),//base addr var name
 			Type::getInt32Ty(Ctx), //addr offset
 			Type::getInt32Ty(Ctx) //size
-		);
+	);
 
 	auto live_out_report_FN = F.getParent()->getOrInsertFunction(
-		"LiveOutReport",
-		FunctionType::getVoidTy(Ctx),
-		Type::getInt8PtrTy(Ctx), //variable name
-		Type::getInt8PtrTy(Ctx), // variable data
-		Type::getInt32Ty(Ctx) //size
+			"LiveOutReport",
+			FunctionType::getVoidTy(Ctx),
+			Type::getInt8PtrTy(Ctx), //variable name
+			Type::getInt8PtrTy(Ctx), // variable data
+			Type::getInt32Ty(Ctx) //size
 	);
 
 	auto live_in_report_intvar_FN = F.getParent()->getOrInsertFunction(
-		"LiveInReportIntermediateVar",
-		FunctionType::getVoidTy(Ctx),
-		Type::getInt8PtrTy(Ctx), //variable name
-		Type::getInt32Ty(Ctx) //variable data
+			"LiveInReportIntermediateVar",
+			FunctionType::getVoidTy(Ctx),
+			Type::getInt8PtrTy(Ctx), //variable name
+			Type::getInt32Ty(Ctx) //variable data
 	);
 
 	auto live_out_report_intvar_FN = F.getParent()->getOrInsertFunction(
-		"LiveOutReportIntermediateVar",
-		FunctionType::getVoidTy(Ctx),
-		Type::getInt8PtrTy(Ctx), //variable name
-		Type::getInt32Ty(Ctx) //variable data
+			"LiveOutReportIntermediateVar",
+			FunctionType::getVoidTy(Ctx),
+			Type::getInt8PtrTy(Ctx), //variable name
+			Type::getInt32Ty(Ctx) //variable data
 	);
 
 	//Insertion of loop start functions to all entries
@@ -10618,7 +10698,7 @@ void DFG::InstrumentInOutVars(Function &F, std::unordered_map<Value *, int> mem_
 		outs() << "ptr_name = " << ptr->getName() << "\n";
 		ptr->dump();
 
-		
+
 		assert(array_pointer_sizes.find(ptr->getName()) != array_pointer_sizes.end());
 		int size = array_pointer_sizes[ptr->getName()];
 
@@ -10635,22 +10715,28 @@ void DFG::InstrumentInOutVars(Function &F, std::unordered_map<Value *, int> mem_
 			for (auto i : OLNodesWithPtrTyUsage)
 			{
 				/*Instrument the out-loop-nodes with pointer type usage in the loop body.
-			 * These nodes require special treatment in instrumentation
-			 * because we need to record the local memory address, not the memory address
-			 * generated in the ./final at runtime*/
+				 * These nodes require special treatment in instrumentation
+				 * because we need to record the local memory address, not the memory address
+				 * generated in the ./final at runtime
+				 * Works only for single dim arrays (required to flatten mem access in multi-dim arrays)
+				 *
+				 * */
 				Value* ptrs = i.second;
-//				ptrs->dump();
+				//				ptrs->dump();
 				if(ptrs == ptr){
 					GetElementPtrInst *GEP = dyn_cast<GetElementPtrInst>(ptrs);
-					outs() << "GEP operand 2 =  ";
+//					outs() << "GEP operand 2 =  ";
 					GEP->getOperand(2)->dump();
 					GEP->getOperand(0)->dump();
-					outs() << "ptr_name = " << GEP->getOperand(0)->getName() << "\n";
-					Value* gepop0 = builder.CreateGlobalStringPtr(GEP->getOperand(0)->getName());
-					Value * gepop2= GEP->getOperand(2);
-					outs() << "\n";
+//					outs() << "array base = " << GEP->getOperand(0)->getName() << "\n";
+					Value* gepop0 = builder.CreateGlobalStringPtr(GEP->getOperand(0)->getName());//base ptr of array
+					Value * gepop2= GEP->getOperand(2);// array offset
+//					outs() << "\n";
+
+					Value* ptr_spm_address_val = builder.CreateGlobalStringPtr(std::to_string(spm_base_address[GEP->getOperand(0)]));
+
 					Value* bitcastedptr = builder.CreateIntCast(gepop2, Type::getInt32Ty(Ctx),true);
-					builder.CreateCall(live_in_report_PtrTypeUsage,{ptr_name_val,gepop0,bitcastedptr,size_val});
+					builder.CreateCall(live_in_report_PtrTypeUsage,{ptr_name_val,ptr_spm_address_val,bitcastedptr,size_val});
 					isOLNodewithPtrTyUsage = true;
 					break;
 				}
@@ -10661,13 +10747,21 @@ void DFG::InstrumentInOutVars(Function &F, std::unordered_map<Value *, int> mem_
 			else if(ptr->getType()->isPointerTy()){
 				Value* bitcastedptr = builder.CreateBitCast(it->first, Type::getInt8PtrTy(Ctx));
 				builder.CreateCall(live_in_report_FN,{ptr_name_val,bitcastedptr,size_val});
-				Value* bitcastedptr2 = builder.CreateBitCast(it->first, Type::getInt32PtrTy(Ctx));
-				builder.CreateCall(live_in_report_FN2,{ptr_name_val,bitcastedptr2,size_val2});
+			//	Value* bitcastedptr2 = builder.CreateBitCast(it->first, Type::getInt32PtrTy(Ctx));
+			//	builder.CreateCall(live_in_report_FN2,{ptr_name_val,bitcastedptr2,size_val2});
 			}
 			else{
 				outs() << "type = "; ptr->getType()->dump();
-				Value* bitcastedptr = builder.CreateIntCast(it->first, Type::getInt32Ty(Ctx),true);
-				builder.CreateCall(live_in_report_intvar_FN,{ptr_name_val,bitcastedptr});
+				if(outVals_inorout.find(ptr)!=outVals_inorout.end()){
+					if(outVals_inorout[ptr]==1){//outLoopLoad
+						outs() << "Adding live_in_report_intermediatevariable() call for OutloopLoad\n";
+						Value* bitcastedptr = builder.CreateIntCast(it->first, Type::getInt32Ty(Ctx),true);
+						builder.CreateCall(live_in_report_intvar_FN,{ptr_name_val,bitcastedptr});
+					}
+				}else{
+					Value* bitcastedptr = builder.CreateIntCast(it->first, Type::getInt32Ty(Ctx),true);
+					builder.CreateCall(live_in_report_intvar_FN,{ptr_name_val,bitcastedptr});
+				}
 			}
 
 		}
@@ -10681,8 +10775,36 @@ void DFG::InstrumentInOutVars(Function &F, std::unordered_map<Value *, int> mem_
 			}
 			else{
 				outs() << "type = "; ptr->getType()->dump();
-				Value* bitcastedptr = builder.CreateIntCast(it->first, Type::getInt32Ty(Ctx),true);
-				builder.CreateCall(live_out_report_intvar_FN,{ptr_name_val,bitcastedptr});
+
+				if(outVals_inorout.find(ptr)!=outVals_inorout.end()){
+					if(outVals_inorout[ptr]==0){//outLoopStore
+						outs() << "Adding live_out_report_intermediatevariable() call for OutloopStore\n";
+						for (auto &I : *exitBB){
+
+							I.dump();
+							Value *val = dyn_cast<Value>(&I);
+							val->dump();
+							if(I.getOperand(0)==ptr){
+								outs() << "lcssa use\n";
+//								ptr_name_val = builder.CreateGlobalStringPtr(val->getName());
+								Value* bitcastedptr = builder.CreateIntCast(val, Type::getInt32Ty(Ctx),true);
+								builder.CreateCall(live_out_report_intvar_FN,{ptr_name_val,bitcastedptr});
+							}
+						}
+
+
+						for (User *u : ptr->users()){
+							outs() << "Users: ";
+							u->dump();
+							outs() << "\n";
+						}
+//						Value* bitcastedptr = builder.CreateIntCast(it->first, Type::getInt32Ty(Ctx),true);
+//						builder.CreateCall(live_out_report_intvar_FN,{ptr_name_val,bitcastedptr});
+					}
+				}else{
+					Value* bitcastedptr = builder.CreateIntCast(it->first, Type::getInt32Ty(Ctx),true);
+					builder.CreateCall(live_out_report_intvar_FN,{ptr_name_val,bitcastedptr});
+				}
 			}
 		}
 
@@ -10700,8 +10822,8 @@ void DFG::InstrumentInOutVars(Function &F, std::unordered_map<Value *, int> mem_
 }
 
 void DFG::UpdateSPMAllocation(std::unordered_map<Value *, int> &spm_base_address,
-							  std::unordered_map<Value *, SPM_BANK> &spm_base_allocation,
-							  std::unordered_map<Value *, GetElementPtrInst *> &arr_ptrs)
+		std::unordered_map<Value *, SPM_BANK> &spm_base_allocation,
+		std::unordered_map<Value *, GetElementPtrInst *> &arr_ptrs)
 {
 	std::ofstream mem_alloc_txt;
 	mem_alloc_txt.open(this->name + "_mem_alloc.txt");
@@ -10714,9 +10836,10 @@ void DFG::UpdateSPMAllocation(std::unordered_map<Value *, int> &spm_base_address
 		if (OutLoopNodeMapReverse.find(node) != OutLoopNodeMapReverse.end() && OutLoopNodeMapReverse[node])
 		{
 			assert(spm_base_address.find(OutLoopNodeMapReverse[node]) != spm_base_address.end());
-			outs() << "SetNewGEPBaseAddresses :: setting outerloop value=" << OutLoopNodeMapReverse[node]->getName() << " to " << spm_base_address[OutLoopNodeMapReverse[node]] << "\n";
+			outs() << "SetOutLoopLOAD/STORE BaseAddresses :: setting outerloop value=" << OutLoopNodeMapReverse[node]->getName() << " to " << spm_base_address[OutLoopNodeMapReverse[node]] << "\n";
 			node->setConstantVal(spm_base_address[OutLoopNodeMapReverse[node]]);
-
+			node->setoutloopAddr(spm_base_address[OutLoopNodeMapReverse[node]]);//this is assigned to constval in Namenodes()
+//			outs() << "Const val: " << node->getConstantVal() << "/n";
 			assert(spm_base_allocation.find(OutLoopNodeMapReverse[node]) != spm_base_allocation.end());
 			if (spm_base_allocation[OutLoopNodeMapReverse[node]] == BANK0)
 			{
@@ -10747,7 +10870,7 @@ void DFG::UpdateSPMAllocation(std::unordered_map<Value *, int> &spm_base_address
 					var_name = gep_pointer->getName();
 					base_addr = spm_base_address[gep_pointer];
 					base_address_map[var_name]=base_addr;
-//					mem_alloc_txt << var_name<<","<< base_addr<<"\n";
+					//					mem_alloc_txt << var_name<<","<< base_addr<<"\n";
 				}
 			}
 			else if (LoadInst *LDI = dyn_cast<LoadInst>(node->getNode()))
@@ -10756,8 +10879,8 @@ void DFG::UpdateSPMAllocation(std::unordered_map<Value *, int> &spm_base_address
 				ptr->dump();
 
 				if(arr_ptrs.find(ptr) == arr_ptrs.end()){
-				outs() << "\t pointer  " << ptr->getName() << "\n";
-				outs() << "\t to address " << spm_base_address[ptr] << "\n";
+					outs() << "\t pointer  " << ptr->getName() << "\n";
+					outs() << "\t to address " << spm_base_address[ptr] << "\n";
 				}
 
 				assert(arr_ptrs.find(ptr) != arr_ptrs.end());
@@ -10877,7 +11000,7 @@ int DFG::insertshiftGEPsCorrect(){
 
 				}
 
- 			}
+			}
 		}
 	}
 

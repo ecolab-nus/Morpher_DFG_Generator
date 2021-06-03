@@ -657,7 +657,10 @@ void LiveInReport(const char* varname, uint8_t* value, uint32_t size){
 void LiveInReportPtrTypeUsage(const char* varname,const char* varbaseaddr, uint32_t value, uint32_t size){
 	std::string varname_str(varname);
 	std::string varbaseaddr_str(varbaseaddr);
-	cout << "Call LiveInReportPtrTypeUsage var name:" << varname_str << " base pointer:"<< varbaseaddr_str<< " address offset:"<< value<<" size:" << (int)size <<"\n";
+
+	uint32_t baseaddr_int =static_cast<uint32_t>(std::stoul(varbaseaddr_str));// *(uint32_t *)varbaseaddr;
+	uint32_t addr= baseaddr_int+4*value;//4 is to get the byte address
+	cout << "Call LiveInReportPtrTypeUsage var name:" << varname_str << " local base address(str):"<< varbaseaddr_str<< " address offset:"<< value<< " local address:"<< addr<<" size:" << (int)size <<"\n";
 
 //	for(int i=0; i<size; i++){
 ////		data_morpher[varname_str].pre_data.push_back(value[i]);
@@ -665,7 +668,7 @@ void LiveInReportPtrTypeUsage(const char* varname,const char* varbaseaddr, uint3
 //		cout << "var name:" << varname_str << ",value:" <<(int)value[i] <<"\n";
 //	}
 //	std::string varname_str(varname);
-	uint8_t* value_ptr = (uint8_t*)&value;
+	uint8_t* value_ptr = (uint8_t*)&addr;
 	for(int i=0; i<4; i++){
 		data_morpher[varname_str].pre_data.push_back(value_ptr[i]);
 		data_morpher[varname_str].post_data.push_back(value_ptr[i]);
@@ -706,9 +709,12 @@ void LiveInReportIntermediateVar(const char* varname, uint32_t value){
 
 void LiveOutReportIntermediateVar(const char* varname, uint32_t value){
 	std::string varname_str(varname);
+	cout << "Call LiveOutReportIntermediateVar var name:" << varname_str << "Value:" <<value << "\n";
 	uint8_t* value_ptr = (uint8_t*)&value;
 	for(int i=0; i<4; i++){
-		data_morpher[varname_str].post_data[i] = value_ptr[i];
+		data_morpher[varname_str].pre_data.push_back(0);
+		data_morpher[varname_str].post_data.push_back(value_ptr[i]);
+//		data_morpher[varname_str].post_data[i] = value_ptr[i];
 	}
 }
 

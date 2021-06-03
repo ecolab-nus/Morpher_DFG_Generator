@@ -623,6 +623,7 @@ void dfgNode::setoutloopAddr(int addr) {
 	assert((this->getNameType().compare("OutLoopLOAD") == 0)||(this->getNameType().compare("OutLoopSTORE") == 0));
 	outloopAddr = addr;
 	constValFlag = true;
+	outs() << "setoutloopAddr setting const val=" << addr << "\n";
 	constVal = addr;
 }
 
@@ -637,6 +638,7 @@ void dfgNode::setGEPbaseAddr(int addr) {
 	assert(dyn_cast<GetElementPtrInst>(this->getNode()));
 	GEPbaseAddr = addr;
 	constValFlag = true;
+	outs() << "setGEPbaseAddr setting const val=" << addr << "\n";
 	constVal = addr;
 }
 

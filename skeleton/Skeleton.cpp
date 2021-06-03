@@ -78,6 +78,7 @@
 #include "DFGBrMap.h"
 
 //#define CDFG
+#define DEFAULT_DATA_PLACEMENT
 
 AttributeList attr21;
 
@@ -108,6 +109,7 @@ static cl::opt<std::string> dfgType("type", cl::init("PartPred"), cl::desc("The 
 
 static cl::opt<unsigned> banks_number ("nobanks", cl::init(2), cl::desc("number of SPM banks"));
 static cl::opt<unsigned> bank_size ("banksize", cl::init(2048), cl::desc("number of bytes in a bank"));
+static cl::opt<unsigned> dp_policy ("dppolicy", cl::init(0), cl::desc("data placement policy"));
 
 STATISTIC(LoopsAnalyzed, "Number of loops analyzed for vectorization");
 
@@ -142,11 +144,11 @@ std::vector<munitTransition> munitTransitions;
 std::vector<munitTransition> munitTransitionsALL;
 
 void traverseDefTree(Instruction *I,
-					 int depth,
-					 DFG *currBBDFG, std::map<Instruction *, int> *insMapIn,
-					 std::map<const BasicBlock *, std::vector<const BasicBlock *>> BBSuccBasicBlocks,
-					 std::set<BasicBlock *> validBB,
-					 MemoryDependenceAnalysis *MD = NULL)
+		int depth,
+		DFG *currBBDFG, std::map<Instruction *, int> *insMapIn,
+		std::map<const BasicBlock *, std::vector<const BasicBlock *>> BBSuccBasicBlocks,
+		std::set<BasicBlock *> validBB,
+		MemoryDependenceAnalysis *MD = NULL)
 {
 
 	SmallVector<std::pair<const BasicBlock *, const BasicBlock *>, 1> BackEdgesBB;
@@ -287,13 +289,13 @@ void printDFGDOT(std::string fileName, DFG *currBBDFG)
 			if (node->hasConstantVal())
 			{
 				ofs << " C="
-					<< "0x" << std::hex << node->getConstantVal() << std::dec;
+						<< "0x" << std::hex << node->getConstantVal() << std::dec;
 			}
 
 			if (node->isGEP())
 			{
 				ofs << " C="
-					<< "0x" << std::hex << node->getGEPbaseAddr() << std::dec;
+						<< "0x" << std::hex << node->getGEPbaseAddr() << std::dec;
 			}
 
 			ofs << " BB" << node->getNode()->getParent()->getName().str();
@@ -304,13 +306,13 @@ void printDFGDOT(std::string fileName, DFG *currBBDFG)
 			if (node->isOutLoop())
 			{
 				ofs << " C="
-					<< "0x" << node->getoutloopAddr() << std::dec;
+						<< "0x" << node->getoutloopAddr() << std::dec;
 			}
 
 			if (node->hasConstantVal())
 			{
 				ofs << " C="
-					<< "0x" << node->getConstantVal() << std::dec;
+						<< "0x" << node->getConstantVal() << std::dec;
 			}
 		}
 
@@ -322,18 +324,18 @@ void printDFGDOT(std::string fileName, DFG *currBBDFG)
 		if (node->getMappedLoc() != NULL)
 		{
 			ofs << ",\n"
-				<< node->getIdx() << ", ASAP=" << node->getASAPnumber()
-				<< ", ALAP=" << node->getALAPnumber()
-				<< ", (t,y,x)=(" << node->getMappedLoc()->getT() << "," << node->getMappedLoc()->getY() << "," << node->getMappedLoc()->getX() << ")"
-				<< ",RT=" << node->getmappedRealTime()
-				<< "\"]" << std::endl;
+					<< node->getIdx() << ", ASAP=" << node->getASAPnumber()
+					<< ", ALAP=" << node->getALAPnumber()
+					<< ", (t,y,x)=(" << node->getMappedLoc()->getT() << "," << node->getMappedLoc()->getY() << "," << node->getMappedLoc()->getX() << ")"
+					<< ",RT=" << node->getmappedRealTime()
+					<< "\"]" << std::endl;
 		}
 		else
 		{
 			ofs << ",\n"
-				<< node->getIdx() << ", ASAP=" << node->getASAPnumber()
-				<< ", ALAP=" << node->getALAPnumber()
-				<< "\"]" << std::endl;
+					<< node->getIdx() << ", ASAP=" << node->getASAPnumber()
+					<< ", ALAP=" << node->getALAPnumber()
+					<< "\"]" << std::endl;
 		}
 	}
 
@@ -402,9 +404,9 @@ Instruction *checkMemDepedency(Instruction *I, MemoryDependenceResults *MD)
 }
 
 void dfsBB(SmallVector<std::pair<const BasicBlock *, const BasicBlock *>, 1> BackEdgesBB,
-		   std::map<const BasicBlock *, std::vector<const BasicBlock *>> *BBSuccBasicBlocksPtr,
-		   BasicBlock *currBB,
-		   const BasicBlock *startBB)
+		std::map<const BasicBlock *, std::vector<const BasicBlock *>> *BBSuccBasicBlocksPtr,
+		BasicBlock *currBB,
+		const BasicBlock *startBB)
 {
 	errs() << "currBB : " << currBB->getName() << "\n";
 
@@ -431,7 +433,7 @@ void dfsBB(SmallVector<std::pair<const BasicBlock *, const BasicBlock *>, 1> Bac
 }
 
 void printBBSuccMap(Function &F,
-					std::map<const BasicBlock *, std::vector<const BasicBlock *>> BBSuccBasicBlocks)
+		std::map<const BasicBlock *, std::vector<const BasicBlock *>> BBSuccBasicBlocks)
 {
 
 	std::map<const BasicBlock *, std::vector<const BasicBlock *>>::iterator it;
@@ -551,8 +553,8 @@ void printLoopTree(LoopTree rootLoop, std::map<Loop *, std::string> *loopNames, 
 			BasicBlock *lp1Header = lptree1.lp->getHeader();
 			BasicBlock *lp2Header = lptree2.lp->getHeader();
 			if (std::find(BBSuccBasicBlocks[lp1Header].begin(),
-						  BBSuccBasicBlocks[lp1Header].end(),
-						  lp2Header) != BBSuccBasicBlocks[lp1Header].end())
+					BBSuccBasicBlocks[lp1Header].end(),
+					lp2Header) != BBSuccBasicBlocks[lp1Header].end())
 			{
 				//this means lp2 is a succesor of lp1
 				return true;
@@ -598,8 +600,8 @@ void printLoopTree(LoopTree rootLoop, std::map<Loop *, std::string> *loopNames, 
 				std::stringstream ss;
 				BasicBlock *lpHeader = lt.lp->getHeader();
 				if (std::find(BBSuccBasicBlocks[bb].begin(),
-							  BBSuccBasicBlocks[bb].end(),
-							  lpHeader) != BBSuccBasicBlocks[bb].end())
+						BBSuccBasicBlocks[bb].end(),
+						lpHeader) != BBSuccBasicBlocks[bb].end())
 				{
 					outs() << "PRE_" << (*loopNames)[lt.lp] << ",";
 					ss << "PRE_" << (*loopNames)[lt.lp];
@@ -623,8 +625,8 @@ void printLoopTree(LoopTree rootLoop, std::map<Loop *, std::string> *loopNames, 
 				std::stringstream ss;
 				BasicBlock *lpHeader = lt.lp->getHeader();
 				if (std::find(BBSuccBasicBlocks[lpHeader].begin(),
-							  BBSuccBasicBlocks[lpHeader].end(),
-							  bb) != BBSuccBasicBlocks[lpHeader].end())
+						BBSuccBasicBlocks[lpHeader].end(),
+						bb) != BBSuccBasicBlocks[lpHeader].end())
 				{
 					outs() << "POST_" << (*loopNames)[lt.lp] << ",";
 					ss << "POST_" << (*loopNames)[lt.lp];
@@ -648,8 +650,8 @@ void printLoopTree(LoopTree rootLoop, std::map<Loop *, std::string> *loopNames, 
 				{
 					BasicBlock *predBB = *it;
 					if (std::find(mappingUnitMap[name].allBlocks.begin(),
-								  mappingUnitMap[name].allBlocks.end(),
-								  predBB) == mappingUnitMap[name].allBlocks.end())
+							mappingUnitMap[name].allBlocks.end(),
+							predBB) == mappingUnitMap[name].allBlocks.end())
 					{
 						mappingUnitMap[name].entryBlocks.insert(std::make_pair(predBB, BB));
 					}
@@ -663,8 +665,8 @@ void printLoopTree(LoopTree rootLoop, std::map<Loop *, std::string> *loopNames, 
 				{
 					BasicBlock *succBB = *it;
 					if (std::find(mappingUnitMap[name].allBlocks.begin(),
-								  mappingUnitMap[name].allBlocks.end(),
-								  succBB) == mappingUnitMap[name].allBlocks.end())
+							mappingUnitMap[name].allBlocks.end(),
+							succBB) == mappingUnitMap[name].allBlocks.end())
 					{
 						mappingUnitMap[name].exitBlocks.insert(std::make_pair(BB, succBB));
 					}
@@ -722,14 +724,14 @@ std::string findMUofBB(BasicBlock *BB)
 }
 
 void dfsmunitTrans(std::pair<std::string, std::string> currEdge,
-				   std::vector<std::string> currPath,
-				   std::map<std::string, std::map<std::string, std::set<std::string>>> &transbasedScalarTransfers,
-				   std::map<std::string, std::map<std::string, std::set<std::vector<std::string>>>> &transbasedNextMunit,
-				   std::map<std::string, std::string> varOwner,
-				   std::set<std::pair<std::string, std::string>> visitedEdges,
-				   std::map<std::string, std::set<std::string>> &munitTrans,
-				   std::map<std::string, std::set<std::string>> &varNeeds,
-				   int tabs = 0)
+		std::vector<std::string> currPath,
+		std::map<std::string, std::map<std::string, std::set<std::string>>> &transbasedScalarTransfers,
+		std::map<std::string, std::map<std::string, std::set<std::vector<std::string>>>> &transbasedNextMunit,
+		std::map<std::string, std::string> varOwner,
+		std::set<std::pair<std::string, std::string>> visitedEdges,
+		std::map<std::string, std::set<std::string>> &munitTrans,
+		std::map<std::string, std::set<std::string>> &varNeeds,
+		int tabs = 0)
 {
 
 	if (visitedEdges.find(currEdge) != visitedEdges.end())
@@ -827,8 +829,8 @@ void dfsmunitTrans(std::pair<std::string, std::string> currEdge,
 }
 
 void printFileOutMappingUnitVars(Function &F,
-								 std::map<std::string, int> *sizeArrMap,
-								 std::map<Loop *, std::string> loopNames)
+		std::map<std::string, int> *sizeArrMap,
+		std::map<Loop *, std::string> loopNames)
 {
 
 	std::ofstream outVarMapFile;
@@ -1465,21 +1467,21 @@ void ReplaceCMPs(Function &F)
 			switch (CI->getPredicate())
 			{
 			case CmpInst::ICMP_EQ:
-			//TODO : DAC18
+				//TODO : DAC18
 			case CmpInst::FCMP_OEQ:
 			case CmpInst::FCMP_UEQ:
 
 				break;
 			case CmpInst::ICMP_NE:
 				//TODO : DAC18
-				{
-					CmpInst *cmpEqNew = cast<CmpInst>(builder.CreateICmpEQ(CI->getOperand(0), CI->getOperand(1)));
-					Instruction *notIns = cast<Instruction>(builder.CreateNot(cmpEqNew));
-					BasicBlock::iterator ii(CI);
-					notIns->removeFromParent();
-					ReplaceInstWithInst(CI->getParent()->getInstList(), ii, notIns);
-					break;
-				}
+			{
+				CmpInst *cmpEqNew = cast<CmpInst>(builder.CreateICmpEQ(CI->getOperand(0), CI->getOperand(1)));
+				Instruction *notIns = cast<Instruction>(builder.CreateNot(cmpEqNew));
+				BasicBlock::iterator ii(CI);
+				notIns->removeFromParent();
+				ReplaceInstWithInst(CI->getParent()->getInstList(), ii, notIns);
+				break;
+			}
 			case CmpInst::FCMP_ONE:
 			case CmpInst::FCMP_UNE:
 			{
@@ -1493,7 +1495,7 @@ void ReplaceCMPs(Function &F)
 
 			case CmpInst::ICMP_SGE:
 			case CmpInst::ICMP_UGE:
-			//TODO : DAC18
+				//TODO : DAC18
 			case CmpInst::FCMP_OGE:
 			case CmpInst::FCMP_UGE:
 			{
@@ -1557,7 +1559,7 @@ void ReplaceCMPs(Function &F)
 }
 
 void analyzeAllMappingUnits(Function &F,
-							std::map<Loop *, std::string> loopNames)
+		std::map<Loop *, std::string> loopNames)
 {
 
 	struct basicblockInfo
@@ -1583,8 +1585,8 @@ void analyzeAllMappingUnits(Function &F,
 		DFG LoopDFG("test" + F.getName().str() + "_" + munitName, &loopNames);
 		LoopDFG.sizeArrMap = sizeArrMap;
 		LoopDFG.setLoopBB(mappingUnitMap[munitName].allBlocks,
-						  mappingUnitMap[munitName].entryBlocks,
-						  mappingUnitMap[munitName].exitBlocks);
+				mappingUnitMap[munitName].entryBlocks,
+				mappingUnitMap[munitName].exitBlocks);
 
 		insMap.clear();
 		for (BasicBlock *B : *LoopDFG.getLoopBB())
@@ -1688,76 +1690,76 @@ void loopTrace(std::map<Loop *, std::string> loopNames, Function &F, LoopTree ro
 	//Function Calls
 
 	auto traceStartFn = F.getParent()->getOrInsertFunction(
-		"loopTraceOpen",
-		FunctionType::getVoidTy(Ctx),
-		Type::getInt8PtrTy(Ctx));
+			"loopTraceOpen",
+			FunctionType::getVoidTy(Ctx),
+			Type::getInt8PtrTy(Ctx));
 
 	auto traceEndFn = F.getParent()->getOrInsertFunction(
-		"loopTraceClose",
-		FunctionType::getVoidTy(Ctx));
+			"loopTraceClose",
+			FunctionType::getVoidTy(Ctx));
 
 	auto loopInvFn = F.getParent()->getOrInsertFunction(
-		"loopInvoke",
-		FunctionType::getVoidTy(Ctx),
-		Type::getInt8PtrTy(Ctx));
+			"loopInvoke",
+			FunctionType::getVoidTy(Ctx),
+			Type::getInt8PtrTy(Ctx));
 
 	auto loopInsUpdateFn = F.getParent()->getOrInsertFunction(
-		"loopInsUpdate",
-		FunctionType::getVoidTy(Ctx),
-		Type::getInt8PtrTy(Ctx),
-		Type::getInt32Ty(Ctx));
+			"loopInsUpdate",
+			FunctionType::getVoidTy(Ctx),
+			Type::getInt8PtrTy(Ctx),
+			Type::getInt32Ty(Ctx));
 
 	auto loopBBInsUpdateFn = F.getParent()->getOrInsertFunction(
-		"loopBBInsUpdate",
-		FunctionType::getVoidTy(Ctx),
-		Type::getInt8PtrTy(Ctx),
-		Type::getInt8PtrTy(Ctx),
-		Type::getInt32Ty(Ctx));
+			"loopBBInsUpdate",
+			FunctionType::getVoidTy(Ctx),
+			Type::getInt8PtrTy(Ctx),
+			Type::getInt8PtrTy(Ctx),
+			Type::getInt32Ty(Ctx));
 
 	auto loopInsClearFn = F.getParent()->getOrInsertFunction(
-		"loopInsClear",
-		FunctionType::getVoidTy(Ctx),
-		Type::getInt8PtrTy(Ctx));
+			"loopInsClear",
+			FunctionType::getVoidTy(Ctx),
+			Type::getInt8PtrTy(Ctx));
 
 	auto loopBBInsClearFn = F.getParent()->getOrInsertFunction(
-		"loopBBInsClear",
-		FunctionType::getVoidTy(Ctx));
+			"loopBBInsClear",
+			FunctionType::getVoidTy(Ctx));
 
 	auto loopInvokeEndFn = F.getParent()->getOrInsertFunction(
-		"loopInvokeEnd",
-		FunctionType::getVoidTy(Ctx),
-		Type::getInt8PtrTy(Ctx));
+			"loopInvokeEnd",
+			FunctionType::getVoidTy(Ctx),
+			Type::getInt8PtrTy(Ctx));
 
 	auto reportExecInsCountFn = F.getParent()->getOrInsertFunction(
-		"reportExecInsCount",
-		FunctionType::getVoidTy(Ctx),
-		Type::getInt32Ty(Ctx));
+			"reportExecInsCount",
+			FunctionType::getVoidTy(Ctx),
+			Type::getInt32Ty(Ctx));
 
 	auto updateLoopPreHeaderFn = F.getParent()->getOrInsertFunction(
-		"updateLoopPreHeader",
-		FunctionType::getVoidTy(Ctx),
-		Type::getInt8PtrTy(Ctx),
-		Type::getInt8PtrTy(Ctx));
+			"updateLoopPreHeader",
+			FunctionType::getVoidTy(Ctx),
+			Type::getInt8PtrTy(Ctx),
+			Type::getInt8PtrTy(Ctx));
 
 	auto loopBBMappingUnitUpdate = F.getParent()->getOrInsertFunction(
-		"loopBBMappingUnitUpdate",
-		FunctionType::getVoidTy(Ctx),
-		Type::getInt8PtrTy(Ctx),
-		Type::getInt8PtrTy(Ctx));
+			"loopBBMappingUnitUpdate",
+			FunctionType::getVoidTy(Ctx),
+			Type::getInt8PtrTy(Ctx),
+			Type::getInt8PtrTy(Ctx));
 
 	auto recordUncondMunitTransition = F.getParent()->getOrInsertFunction(
-		"recordUncondMunitTransition",
-		FunctionType::getVoidTy(Ctx),
-		Type::getInt8PtrTy(Ctx),
-		Type::getInt8PtrTy(Ctx));
+			"recordUncondMunitTransition",
+			FunctionType::getVoidTy(Ctx),
+			Type::getInt8PtrTy(Ctx),
+			Type::getInt8PtrTy(Ctx));
 
 	auto recordCondMunitTransition = F.getParent()->getOrInsertFunction(
-		"recordCondMunitTransition",
-		FunctionType::getVoidTy(Ctx),
-		Type::getInt8PtrTy(Ctx),
-		Type::getInt8PtrTy(Ctx),
-		Type::getInt8PtrTy(Ctx),
-		Type::getInt1Ty(Ctx));
+			"recordCondMunitTransition",
+			FunctionType::getVoidTy(Ctx),
+			Type::getInt8PtrTy(Ctx),
+			Type::getInt8PtrTy(Ctx),
+			Type::getInt8PtrTy(Ctx),
+			Type::getInt1Ty(Ctx));
 
 	for (std::pair<Loop *, std::string> lnPair : loopNames)
 	{
@@ -1939,16 +1941,17 @@ void NameUnnamedValues(Function &F)
 	}
 }
 void AllocateSPMBanks(std::unordered_set<Value *> &outer_vals,
-					  std::unordered_map<Value *, GetElementPtrInst *> &mem_ptrs,
-					  std::unordered_map<Value *, int> &acc,
-					  std::unordered_map<Value *, SPM_BANK> &spm_bank_allocation,
-					  std::unordered_map<Value *, int> &spm_base_address,
-					  Function &F)
+		std::unordered_map<Value *, GetElementPtrInst *> &mem_ptrs,
+		std::unordered_map<Value *, int> &acc,
+		std::unordered_map<Value *, SPM_BANK> &spm_bank_allocation,
+		std::unordered_map<Value *, int> &spm_base_address,
+		Function &F)
 {
 
 
 	outs()<<"number of banks: "<<banks_number<<"\n";
 	outs()<<"banks size: "<<bank_size<<"\n";
+	outs()<<"Data placement policy: "<<dp_policy<<"\n";
 	// Find variable sizes;
 	std::unordered_map<Value *, int> variable_sizes_bytes;
 	DataLayout DL = F.getParent()->getDataLayout();
@@ -1999,27 +2002,41 @@ void AllocateSPMBanks(std::unordered_set<Value *> &outer_vals,
 
 
 	//data placement
+	/*assign acc (arrays and scalars) to memories. It balances the data amount (size) of each bank.
+	Currently don't consider number of accesses for each array. */
 	{
-		
+
+		int desired_bank = 0;
 		for(auto it = acc.begin(); it != acc.end(); it++){
 			int size = variable_sizes_bytes[it->first];
 			int least_data = data_in_bank[0];
-			int desired_bank = 0;
-			for(int i = 0 ; i< banks_number;i++){
-				if(data_in_bank [i] < least_data ){
-					least_data = data_in_bank [i];
-					desired_bank = i;
+			if(dp_policy ==0){ //Data placement policy 0 : balances the data amount (size) of each bank.
+				desired_bank = 0;
+				for(int i = 0 ; i< banks_number;i++){
+					if(data_in_bank [i] < least_data ){
+						least_data = data_in_bank [i];
+						desired_bank = i;
+					}
+				}
+
+			}else{ //Data placement policy 1 : place arrays on alternative banks
+
+				if(desired_bank == banks_number-1){
+					desired_bank = 0;
+				}else{
+					desired_bank = desired_bank + 1;
 				}
 			}
+
 			outs()<<"assign"<< size << "to bank"<<desired_bank<<"\n";
 			banks_vars[desired_bank].insert(it->first);
 			value_to_BankId[it->first] = desired_bank;
 			data_in_bank[desired_bank] = size + data_in_bank[desired_bank];
 			assert(data_in_bank[desired_bank] < bank_size);
-			
+
 		}
 	}
-	
+
 
 	for(int i = 0; i < banks_vars.size(); i++){
 		auto & bank_vars = banks_vars[i];
@@ -2259,8 +2276,8 @@ struct SkeletonFunctionPass : public FunctionPass
 			outs() << "Currently mapping unit : " << munitName << "\n";
 			assert(!mappingUnitMap[munitName].allBlocks.empty());
 			LoopDFG->setLoopBB(mappingUnitMap[munitName].allBlocks,
-							   mappingUnitMap[munitName].entryBlocks,
-							   mappingUnitMap[munitName].exitBlocks);
+					mappingUnitMap[munitName].entryBlocks,
+					mappingUnitMap[munitName].exitBlocks);
 			insMap.clear();
 			outs() << "\n[Skeleton.cpp][traverseDefTree begin]\n";
 			for (BasicBlock *B : *LoopDFG->getLoopBB())
@@ -2288,38 +2305,39 @@ struct SkeletonFunctionPass : public FunctionPass
 			outs() << "\n[Skeleton.cpp][generateTrigDFGDOT begin]\n";
 			LoopDFG->generateTrigDFGDOT(F);
 			outs() << "[Skeleton.cpp][generateTrigDFGDOT end]\n\n";
-			#ifdef REMOVE_AGI
-				return true;
-			#endif
+#ifdef REMOVE_AGI
+			return true;
+#endif
 
 			std::unordered_set<Value *> outVals;
 			std::unordered_map<Value *, GetElementPtrInst *> arrPtrs;
 			std::unordered_map<Value *, int> mem_acceses; // base pointer name : number of memory accesses
-			 std::map<dfgNode*,Value*> OLNodesWithPtrTyUsage;
+			std::map<dfgNode*,Value*> OLNodesWithPtrTyUsage;
 			outs() << "\n[Skeleton.cpp][getTransferVariables begin]\n";
 			LoopDFG->getTransferVariables(outVals, arrPtrs, mem_acceses, F);
 			outs() << "[Skeleton.cpp][getTransferVariables end]\n\n";
 			outs() << "\n[Skeleton.cpp][SetBasePointers begin]\n";
 			LoopDFG->SetBasePointers(outVals, arrPtrs,OLNodesWithPtrTyUsage, F);
 			outs() << "[Skeleton.cpp][SetBasePointers end]\n\n";
-			outs() << "\n[Skeleton.cpp][InstrumentInOutVars begin]\n";
-			LoopDFG->InstrumentInOutVars(F,mem_acceses,OLNodesWithPtrTyUsage);
-			outs() << "[Skeleton.cpp][InstrumentInOutVars end]\n\n";
+
+			//			std::unordered_map<Value *, int> spm_base_address;
+			//			LoopDFG->InstrumentInOutVars(F,mem_acceses,OLNodesWithPtrTyUsage,spm_base_address);
+			//			outs() << "[Skeleton.cpp][InstrumentInOutVars end]\n\n";
 
 
 			//
-			outs()<<"Outvals contains: \n" ;
+			outs()<<"\nOutvals contains: \n" ;
 			for (auto it = outVals.begin(); it != outVals.end(); it++)
 			{
 				Value* outvl = *it;
 				outs() << "outVal:";
-			    outvl->dump();
+				outvl->dump();
 
 				outs() << "\n";
 			}
 
 
-			outs()<<"sizeArrMap contains: \n" ;
+			outs()<<"\nsizeArrMap contains: \n" ;
 			for (auto it = sizeArrMap.begin(); it != sizeArrMap.end(); it++)
 			{
 				std::string base_ptr = it->first;
@@ -2327,15 +2345,15 @@ struct SkeletonFunctionPass : public FunctionPass
 				outs() << "base_ptr:" << base_ptr << ", size = " << size << "\n";
 			}
 
-			outs()<<"arrPtrs contains: \n" ;
+			outs()<<"\narrPtrs contains: \n" ;
 			for (auto it = arrPtrs.begin(); it != arrPtrs.end(); it++)
 			{
 				Value *base_ptr = it->first;
 				GetElementPtrInst * gep = it->second;
 				outs() << "base_ptr:" << base_ptr->getName() << ", GEP = ";
-			    gep->dump();
+				gep->dump();
 			}
-			outs()<<"mem_acceses contains: \n" ;
+			outs()<<"\nmem_acceses contains: \n" ;
 			for (auto it = mem_acceses.begin(); it != mem_acceses.end(); it++)
 			{
 				Value *base_ptr = it->first;
@@ -2343,7 +2361,7 @@ struct SkeletonFunctionPass : public FunctionPass
 				outs() << "base_ptr:" << base_ptr->getName() << ", accesses = " << accesses << "\n";
 			}
 
-		    //for hycube binary generation-----------------
+			//for hycube binary generation-----------------
 			std::unordered_map<Value *, SPM_BANK> spm_bank_allocation;
 			std::unordered_map<Value *, int> spm_base_address;
 			outs() << "\n[Skeleton.cpp][AllocateSPMBanks] begin\n";
@@ -2356,8 +2374,13 @@ struct SkeletonFunctionPass : public FunctionPass
 			outs() << "[Skeleton.cpp][UpdateSPMAllocation] end\n\n";
 			//------------------------------------
 
+			outs() << "\n[Skeleton.cpp][InstrumentInOutVars begin]\n";
+			LoopDFG->InstrumentInOutVars(F,mem_acceses,OLNodesWithPtrTyUsage,spm_base_address);
+			outs() << "[Skeleton.cpp][InstrumentInOutVars end]\n\n";
 
+			outs() << "\n[Skeleton.cpp][PrintOuts] begin\n";
 			LoopDFG->PrintOuts();
+			outs() << "\n[Skeleton.cpp][PrintOuts] end\n";
 			delete (LoopDFG);
 			outs() << "dfgType=" << dfgType << "\n";
 			return true;

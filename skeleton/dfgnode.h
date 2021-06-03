@@ -234,7 +234,10 @@ class dfgNode{
 
 			//ConstantVal
 			int getConstantVal(){assert(constValFlag);return constVal;}
-			void setConstantVal(int val){constVal = val;constValFlag = true;}
+			void setConstantVal(int val){
+
+//				outs() << "setting const val=" << val << "\n";
+				constVal = val;constValFlag = true;}
 			bool hasConstantVal(){return constValFlag;}
 			bool isTransferedByHost() const {return transferedByHost;}
 			void setTransferedByHost(bool transferedByHost = false) {this->transferedByHost = transferedByHost;}
