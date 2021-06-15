@@ -2373,6 +2373,165 @@ void DFGPartPred::printDOT(std::string fileName) {
 	ofs << "}" << std::endl;
 	ofs.close();
 }
+/*
+ * DOT file with only operation name inside nodes
+ * */
+void DFGPartPred::printDOTsimple(std::string fileName) {
+	std::ofstream ofs;
+	ofs.open(fileName.c_str());
+
+	//Write the initial info
+	ofs << "digraph Region_18 {\n";
+	ofs << "\tgraph [ nslimit = \"1000.0\",\n";
+	ofs <<	"\torientation = landscape,\n";
+	ofs <<	"\t\tcenter = true,\n";
+	ofs <<	"\tpage = \"8.5,11\",\n";
+	ofs << "\tcompound=true,\n";
+	ofs <<	"\tsize = \"10,7.5\" ] ;" << std::endl;
+
+	assert(NodeList.size() != 0);
+
+	std::map<const BasicBlock*,std::set<dfgNode*>> BBNodeList;
+
+	for(dfgNode* node : NodeList){
+		BBNodeList[node->BB].insert(node);
+	}
+
+	int cluster_idx=0;
+	for(std::pair<const BasicBlock*,std::set<dfgNode*>> BBNodeSet : BBNodeList){
+		const BasicBlock* BB = BBNodeSet.first;
+
+		//		  subgraph cluster_0 {
+		//		        node [style=filled];
+		//		        "Item 1" "Item 2";
+		//		        label = "Container A";
+		//		        color=blue;
+		//		    }
+
+		//		ofs << "subgraph cluster_" << cluster_idx << " {\n";
+		//		ofs << "node [style=filled]";
+		for(dfgNode* node : BBNodeSet.second){
+			ofs << "\""; //BEGIN NODE NAME
+			ofs << "Op_" << node->getIdx();
+			ofs << "\" [ fontname = \"Helvetica\" shape = box, label = \" ";
+//			if(node->getNode() != NULL){
+//				ofs << node->getNode()->getOpcodeName();
+//				ofs << " " << node->getNode()->getName().str() << " ";
+//
+//				if(node->hasConstantVal()){
+//					ofs << " C=" << "0x" << std::hex << node->getConstantVal() << std::dec;
+//				}
+//
+//				if(node->isGEP()){
+//					ofs << " C=" << "0x" << std::hex << node->getGEPbaseAddr() << std::dec;
+//				}
+//
+//			}
+//			else{
+//				ofs << node->getNameType();
+//
+//				if(node->getNameType() == "OuterLoopLOAD"){
+//					ofs << " " << OutLoopNodeMapReverse[node]->getName().str() << " ";
+//				}
+//
+//				if(node->isOutLoop()){
+//					ofs << " C=" << "0x" << node->getoutloopAddr() << std::dec;
+//				}
+//
+//				if(node->hasConstantVal()){
+//					ofs << " C=" << "0x" << node->getConstantVal() << std::dec;
+//				}
+//			}
+
+//			ofs << "BB=" << node->BB->getName().str();
+
+//			if(!mutexNodes[node].empty()){
+////				ofs << ",mutex={";
+////				for(dfgNode* m : mutexNodes[node]){
+////					ofs << m->getIdx() << ",";
+////				}
+////				ofs << "}";
+//			}
+
+			if(node->getFinalIns() != NOP){
+				ofs << "" << HyCUBEInsStrings[node->getFinalIns()];
+			}
+//			ofs << ",\n";
+//			ofs << node->getIdx() << ", ASAP=" << node->getASAPnumber();
+//			ofs << ", ALAP=" << node->getALAPnumber();
+
+			ofs << "\"]\n"; //END NODE NAME
+		}
+
+		//		ofs << "label = " << "\"" << BB->getName().str() << "\"" << ";\n";
+		//		ofs << "color = purple;\n";
+		//		ofs << "}\n";
+		cluster_idx++;
+	}
+
+
+	//The EDGES
+
+	for(dfgNode* node : NodeList){
+
+		for(dfgNode* child : node->getChildren()){
+			bool isCondtional=false;
+			bool condition=true;
+
+			isCondtional= node->childConditionalMap[child] != UNCOND;
+			condition = (node->childConditionalMap[child] == TRUE);
+
+			bool isBackEdge = node->childBackEdgeMap[child];
+			if(findEdge(node,child)->getType() == EDGE_TYPE_PS){
+				continue;
+			}
+
+			ofs << "\"" << "Op_" << node->getIdx() << "\"";
+			ofs << " -> ";
+			ofs << "\"" << "Op_" << child->getIdx() << "\"";
+			ofs << " [style = ";
+
+			if(isBackEdge){
+				ofs << "dashed";
+			}
+			else{
+				ofs << "bold";
+			}
+			ofs << ", ";
+
+			ofs << "color = ";
+			if(isCondtional){
+				if(findEdge(node,child)->getType() == EDGE_TYPE_PS){
+					ofs << "black";
+				}
+				else if(condition==true){
+					ofs << "black";
+				}
+				else{
+					ofs << "black";
+				}
+			}
+			else{
+				ofs << "black";
+
+			}
+
+			//			ofs << ", headport=n, tailport=s";
+			ofs << "];\n";
+		}
+
+//		for(dfgNode* recChild : node->getRecChildren()){
+//			ofs << "\"" << "Op_" << node->getIdx() << "\"";
+//			ofs << " -> ";
+//			ofs << "\"" << "Op_" << recChild->getIdx() << "\"";
+//			ofs << "[style = bold, color = black];\n";
+//		}
+	}
+
+	ofs << "}" << std::endl;
+	ofs.close();
+}
+
 
 void DFGPartPred::connectBBTrig() {
 

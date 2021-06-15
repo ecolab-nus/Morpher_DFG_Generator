@@ -35,6 +35,7 @@ public :
 	int handleSELECTNodes();
 	void removeDisconnetedNodes();
 	void printDOT(std::string fileName);
+	void printDOTsimple(std::string fileName);
 	virtual void generateTrigDFGDOT(Function &F);
 
 
@@ -81,6 +82,7 @@ public :
 
 	void PrintOuts(){
 		printDOT(this->name + "_PartPredDFG.dot");
+		printDOTsimple(this->name + "_PartPredDFG_simple.dot");
 		printNewDFGXML();
 	}
 #ifdef REMOVE_AGI

@@ -812,31 +812,12 @@ for(rnd1 = 0;  rnd1 < cx->Nrnd - 2; ++rnd1)
 #ifdef CGRA_COMPILER
 	please_map_me();
 #endif
-  //          round(fwd_rnd, b1, b0, kp);
-//#define round(rm,y,x,k) rm(y,x,k,0); rm(y,x,k,1); rm(y,x,k,2); rm(y,x,k,3)
 
-            //fwd_rnd(b1,b0, kp,0); fwd_rnd(b1,b0, kp,1); fwd_rnd(b1,b0, kp,2); fwd_rnd(b1,b0, kp,3);
-
-//#define fwd_rnd(y,x,k,c)    s(y,c)= (k)[c] ^ one_table(x,upr,ft_tab,fwd_var,rf1,c)
-	     //  s(b1,0)= (kp)[0] ^ one_table(b0,upr,ft_tab,fwd_var,rf1,0);
-	     //  s(b1,1)= (kp)[1] ^ one_table(b0,upr,ft_tab,fwd_var,rf1,1);
-	     //  s(b1,2)= (kp)[2] ^ one_table(b0,upr,ft_tab,fwd_var,rf1,2);
-	     //  s(b1,3)= (kp)[3] ^ one_table(b0,upr,ft_tab,fwd_var,rf1,3);
-
-//#define one_table(x,op,tab,vf,rf,c)  (     tab[bval(vf(x,0,c),rf(0,c))]   ^ op(tab[bval(vf(x,1,c),rf(1,c))],1)   ^ op(tab[bval(vf(x,2,c),rf(2,c))],2)   ^ op(tab[bval(vf(x,3,c),rf(3,c))],3))
-
-//	printf("kptab index:%u,%u,%u,%u,%u,%u\n",0+rnd*nc,kp_tab[0+rnd*nc],
-//	    	          ft_tab[bval(fwd_var(b0,0,0),rf1(0,0))],
-//	    	    		   upr(ft_tab[bval(fwd_var(b0,1,0),rf1(1,0))],1),
-//	    				   upr(ft_tab[bval(fwd_var(b0,2,0),rf1(2,0))],2),
-//	    				   upr(ft_tab[bval(fwd_var(b0,3,0),rf1(3,0))],3)
-//);
 			b1[0]= kp_tab[0+rnd*nc] ^
 	       (     ft_tab[bval(fwd_var(b0,0,0),rf1(0,0))]   ^
 	    		   upr(ft_tab[bval(fwd_var(b0,1,0),rf1(1,0))],1)   ^
 				   upr(ft_tab[bval(fwd_var(b0,2,0),rf1(2,0))],2)   ^
 				   upr(ft_tab[bval(fwd_var(b0,3,0),rf1(3,0))],3))  ;
-//			printf("b1[0]:%d,%u\n",b1[0],b1[0]);
 
 	       b1[1]= kp_tab[1+rnd*nc] ^
 	   	       (     ft_tab[bval(fwd_var(b0,0,1),rf1(0,1))]   ^
@@ -857,10 +838,28 @@ for(rnd1 = 0;  rnd1 < cx->Nrnd - 2; ++rnd1)
 					upr(ft_tab[bval(fwd_var(b0,3,3),rf1(3,3))],3))  ;
 
 
+	       b0[0] = b1[0]; b0[1] = b1[1];                         b0[2] = b1[2]; b0[3] = b1[3];
+  //          round(fwd_rnd, b1, b0, kp);
+//#define round(rm,y,x,k) rm(y,x,k,0); rm(y,x,k,1); rm(y,x,k,2); rm(y,x,k,3)
+
+            //fwd_rnd(b1,b0, kp,0); fwd_rnd(b1,b0, kp,1); fwd_rnd(b1,b0, kp,2); fwd_rnd(b1,b0, kp,3);
+
+//#define fwd_rnd(y,x,k,c)    s(y,c)= (k)[c] ^ one_table(x,upr,ft_tab,fwd_var,rf1,c)
+	     //  s(b1,0)= (kp)[0] ^ one_table(b0,upr,ft_tab,fwd_var,rf1,0);
+	     //  s(b1,1)= (kp)[1] ^ one_table(b0,upr,ft_tab,fwd_var,rf1,1);
+	     //  s(b1,2)= (kp)[2] ^ one_table(b0,upr,ft_tab,fwd_var,rf1,2);
+	     //  s(b1,3)= (kp)[3] ^ one_table(b0,upr,ft_tab,fwd_var,rf1,3);
+
+//#define one_table(x,op,tab,vf,rf,c)  (     tab[bval(vf(x,0,c),rf(0,c))]   ^ op(tab[bval(vf(x,1,c),rf(1,c))],1)   ^ op(tab[bval(vf(x,2,c),rf(2,c))],2)   ^ op(tab[bval(vf(x,3,c),rf(3,c))],3))
+
+//	printf("kptab index:%u,%u,%u,%u,%u,%u\n",0+rnd*nc,kp_tab[0+rnd*nc],
+//	    	          ft_tab[bval(fwd_var(b0,0,0),rf1(0,0))],
+//	    	    		   upr(ft_tab[bval(fwd_var(b0,1,0),rf1(1,0))],1),
+//	    				   upr(ft_tab[bval(fwd_var(b0,2,0),rf1(2,0))],2),
+//	    				   upr(ft_tab[bval(fwd_var(b0,3,0),rf1(3,0))],3)
+//);
             //l_copy(b0, b1);
 //#define l_copy(y, x)    s(y,0) = s(x,0); s(y,1) = s(x,1);                         s(y,2) = s(x,2); s(y,3) = s(x,3);
-	       b0[0] = b1[0]; b0[1] = b1[1];                         b0[2] = b1[2]; b0[3] = b1[3];
-
            // kp += nc;
           
         }
