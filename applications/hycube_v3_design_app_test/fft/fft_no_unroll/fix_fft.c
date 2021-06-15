@@ -191,13 +191,13 @@ int fix_fft(short fr[], short fi[], short m1, short inverse)
 
 		do {
 #ifdef CGRA_COMPILER1
-		please_map_me();
+		//please_map_me();
 #endif
 			l >>= 1;
 		} while (mr+l > nn);
 
 #ifdef CGRA_COMPILER1
-		please_map_me();
+		//please_map_me();
 #endif
 		mr = (mr & (l-1)) + l;
 
@@ -249,7 +249,7 @@ int fix_fft(short fr[], short fi[], short m1, short inverse)
 
 		for (m=0; m<l; ++m) {
 #ifdef CGRA_COMPILER1
-		please_map_me();
+		//please_map_me();
 #endif
 			j = m << k;
 			/* 0 <= j < N_WAVE/2 */

@@ -490,6 +490,9 @@ class DFG{
 			std::map<std::string,int> sizeArrMap;
 			std::unordered_map<std::string,int> array_pointer_sizes;
 
+
+			std::unordered_map<Value *, int> outVals_inorout; // load:0 store:1
+
 			void printNewDFGXML();
 			void printREGIMapfiles();
 			std::map<Edge*,int> xmlEdgeIdxMap;
@@ -507,15 +510,15 @@ class DFG{
 
 //			int getMUnitTransID(BasicBlock* src, BasicBlock* dest);
 
-			void getTransferVariables(std::unordered_set<Value*>& outer_vals, 
+			void getTransferVariables(std::unordered_set<Value*>& outer_vals,
 							std::unordered_map<Value*,GetElementPtrInst*>& mem_ptrs, 
 							std::unordered_map<Value*,int>& acc,
 							Function& F);
 
 			void GEPBaseAddrCheck(Function &F);
-			void SetBasePointers(std::unordered_set<Value*>& outer_vals, 
+			void SetBasePointers(std::unordered_set<Value*>& outer_vals,
 			                     std::unordered_map<Value*,GetElementPtrInst*>& mem_ptrs, std::map<dfgNode*,Value*> &OLNodesWithPtrTyUsage, Function &F);
-			void InstrumentInOutVars(Function &F, std::unordered_map<Value *, int> mem_accesses,  std::map<dfgNode*,Value*> &OLNodesWithPtrTyUsage);
+			void InstrumentInOutVars(Function &F, std::unordered_map<Value *, int> mem_accesses,  std::map<dfgNode*,Value*> &OLNodesWithPtrTyUsage,std::unordered_map<Value *, int>& spm_base_address);
 			void UpdateSPMAllocation(std::unordered_map<Value *, int>& spm_base_address,
 			                         std::unordered_map<Value *, SPM_BANK>& spm_base_allocation,
 									 std::unordered_map<Value *, GetElementPtrInst *>& arr_ptrs);
