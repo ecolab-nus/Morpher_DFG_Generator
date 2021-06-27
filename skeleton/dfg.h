@@ -5,6 +5,7 @@
 #include "dfgnode.h"
 #include "CGRANode.h"
 #include "CGRA.h"
+
 #include "llvm/Analysis/ScalarEvolution.h"
 #include "llvm/Analysis/ScalarEvolutionExpander.h"
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
@@ -20,7 +21,8 @@
 
 
 #define REGS_PER_NODE 4
-
+//Uncomment this if compiling for PACE0.5
+//#define ARCHI_16BIT 
 extern int MEM_SIZE;
 
 class AStar;

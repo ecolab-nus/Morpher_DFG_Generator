@@ -1415,6 +1415,14 @@ void DFGPartPred::printNewDFGXML() {
 			xmlFile << "</BasePointerName>\n";
 		}
 
+#ifdef ARCHI_16BIT
+		if(node->getNameType() == "LOOPSTART") 
+			xmlFile << "<BasePointerName size=\"1\">loopstart</BasePointerName>\n";
+		if(node->getNameType() == "LOOPEXIT") 
+			xmlFile << "<BasePointerName size=\"1\">loopend</BasePointerName>\n";
+		if(node->getNameType() == "STORESTART") 
+			xmlFile << "<BasePointerName size=\"1\">storestart</BasePointerName>\n";
+#endif	
 		if(node->getGEPbaseAddr() != -1){
 			GetElementPtrInst* GEP = cast<GetElementPtrInst>(node->getNode());
 			int gep_offset = GEPOffsetMap[GEP];

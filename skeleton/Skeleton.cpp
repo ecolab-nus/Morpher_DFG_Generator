@@ -108,7 +108,12 @@ static cl::opt<std::string> fName("fn", cl::init("na"), cl::desc("the function n
 static cl::opt<std::string> dfgType("type", cl::init("PartPred"), cl::desc("The type of the dfg, valid types = PartPred, Trig, TrMap, BrMap, DFGDISE"));
 
 static cl::opt<unsigned> banks_number ("nobanks", cl::init(2), cl::desc("number of SPM banks"));
+
+#ifdef ARCHI_16BIT
+static cl::opt<unsigned> bank_size ("banksize", cl::init(8192), cl::desc("number of bytes in a bank"));
+#else
 static cl::opt<unsigned> bank_size ("banksize", cl::init(2048), cl::desc("number of bytes in a bank"));
+#endif
 static cl::opt<unsigned> dp_policy ("dppolicy", cl::init(0), cl::desc("data placement policy"));
 
 STATISTIC(LoopsAnalyzed, "Number of loops analyzed for vectorization");

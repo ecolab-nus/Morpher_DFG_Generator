@@ -6512,22 +6512,38 @@ int DFG::nameNodes()
 			{
 				//				node->setFinalIns(BR);
 				node->setFinalIns(Hy_LOADB);
+#ifdef ARCHI_16BIT
+				node->setConstantVal(MEM_SIZE - 1);
+#else
 				node->setConstantVal(MEM_SIZE - 2);
+#endif
 			}
 			else if (node->getNameType().compare("LOADSTART") == 0)
 			{
 				node->setFinalIns(Hy_LOADB);
+#ifdef ARCHI_16BIT
+				node->setConstantVal(MEM_SIZE - 1);
+#else
 				node->setConstantVal(MEM_SIZE - 2);
+#endif
 			}
 			else if (node->getNameType().compare("STORESTART") == 0)
 			{
 				node->setFinalIns(Hy_STOREB);
+#ifdef ARCHI_16BIT
+				node->setConstantVal(MEM_SIZE - 1);
+#else
 				node->setConstantVal(MEM_SIZE - 2);
+#endif		
 			}
 			else if (node->getNameType().compare("LOOPEXIT") == 0)
 			{
 				node->setFinalIns(Hy_STOREB);
-				node->setConstantVal(MEM_SIZE / 2 - 1);
+#ifdef ARCHI_16BIT
+				node->setConstantVal(MEM_SIZE  - 2);
+#else
+				node->setConstantVal(MEM_SIZE/2  - 1);
+#endif	
 			}
 			else if (node->getNameType().compare("MOVC") == 0)
 			{
@@ -10938,6 +10954,11 @@ void DFG::UpdateSPMAllocation(std::unordered_map<Value *, int> &spm_base_address
 		outs() << "\t pointer " << i->first<<","<< i->second<<"\n";
 		mem_alloc_txt << i->first<<","<< i->second<<"\n";
 	}
+#ifdef ARCHI_16BIT
+		mem_alloc_txt << "loopstart" <<","<<(MEM_SIZE - 1)<<"\n";
+		mem_alloc_txt << "storestart" <<","<<(MEM_SIZE - 1)<<"\n";
+		mem_alloc_txt << "loopend" <<","<<(MEM_SIZE - 2)<<"\n";
+#endif
 	mem_alloc_txt.close();
 	outs() << "\n Writing mem alloc end\n\n";
 	// assert(false);
@@ -10981,7 +11002,12 @@ int DFG::insertshiftGEPsCorrect(){
 						temp->setNameType("GEPLEFTSHIFT");
 						temp->setIdx(NodeList.size() + newNodes.size());
 						newNodes.insert(temp);
+#ifdef ARCHI_16BIT				
+						temp->setConstantVal(Log2_32(size)-1);
+#else
 						temp->setConstantVal(Log2_32(size));
+#endif
+
 						temp->BB = node->BB;
 						outs() << "adding node...\n";
 
