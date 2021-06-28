@@ -8,6 +8,8 @@
 extern "C" {
 #endif
 
+//Uncomment this for pace8x8_16bit
+//#define ARCHI_16BIT
 void printArr(const char* name, uint8_t* arr, int size, uint8_t io, uint32_t addr);
 void reportDynArrSize(const char* name, uint8_t* arr, uint32_t idx_i, int size);
 void printDynArrSize();
