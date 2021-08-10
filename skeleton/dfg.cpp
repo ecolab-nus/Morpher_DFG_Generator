@@ -2813,7 +2813,7 @@ void DFG::CreateSchList()
 		temp = NodeList[i];
 		temp->setSchIdx(i);
 
-		errs() << "NodeIdx=" << temp->getIdx() << ", ASAP =" << temp->getASAPnumber() << ", ALAP =" << temp->getALAPnumber() << ", CONST VAL =" << (temp->hasConstantVal()? temp->getConstantVal():0) << "\n";
+		errs() << "NodeIdx=" << temp->getIdx() <<  ", NameType=" << temp->getNameType() << ", ASAP =" << temp->getASAPnumber() << ", ALAP =" << temp->getALAPnumber() << ", CONST VAL =" << (temp->hasConstantVal()? temp->getConstantVal():0) << "\n";
 	}
 	errs() << "#################End :: The Schedule List#################\n";
 }

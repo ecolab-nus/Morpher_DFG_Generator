@@ -98,6 +98,8 @@ protected :
 	dfgNode* getStartNode(BasicBlock* BB, dfgNode* PHINode);
 	dfgNode* insertMergeNode(dfgNode* PHINode, dfgNode* ctrl, bool controlVal, dfgNode* data);
 	dfgNode* insertMergeNode(dfgNode* PHINode, dfgNode* ctrl, bool controlVal, int val);
+	dfgNode* insertMergeNodeBeforeSEL(dfgNode* SELNode, dfgNode* ctrl, bool controlVal, dfgNode* data);
+	dfgNode* insertMergeNodeBeforeSEL(dfgNode* SELNode, dfgNode* ctrl, bool controlVal, int val);
 
 	dfgNode* addLoadParent(Value* ins, dfgNode* child);
 

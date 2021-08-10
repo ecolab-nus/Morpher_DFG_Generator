@@ -238,6 +238,10 @@ class dfgNode{
 
 //				outs() << "setting const val=" << val << "\n";
 				constVal = val;constValFlag = true;}
+			void removeConstantVal(){
+				constVal=-1;
+				constValFlag=false;
+			}
 			bool hasConstantVal(){return constValFlag;}
 			bool isTransferedByHost() const {return transferedByHost;}
 			void setTransferedByHost(bool transferedByHost = false) {this->transferedByHost = transferedByHost;}

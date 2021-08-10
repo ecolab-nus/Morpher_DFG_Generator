@@ -171,7 +171,20 @@ std::vector<dfgNode*> DFGPartPred::getStoreInstructions(BasicBlock* BB) {
 	}
 	return res;
 }
-
+/*
+ * This function
+ * 1) connects PHI nodes with its parents by analyzing PHI instruction[value,basic block][value, basic block]
+ * 2) add CMERGE nodes between PHI nodes and their parents (+control conditions)
+ * 3) add LOOPSTART control node
+ *
+ * PHI is implemented as SELECT instruction in HyCUBE
+ *
+ * SELECT nodes select a valid data input and forward it to output
+ * CMERGE nodes generate valid data based on a branch outcome
+ *
+ * Therefore SELECT nodes should be connected through CMERGE nodes
+ *
+ * */
 int DFGPartPred::handlePHINodes(std::set<BasicBlock*> LoopBB) {
 
 	std::vector<dfgNode*> phiNodes;
@@ -568,6 +581,89 @@ dfgNode* DFGPartPred::insertMergeNode(dfgNode* PHINode, dfgNode* ctrl, bool cont
 	return temp;
 }
 
+dfgNode* DFGPartPred::insertMergeNodeBeforeSEL(dfgNode* SELNode, dfgNode* ctrl, bool controlVal, dfgNode* data) {//for select Node
+	dfgNode* temp = new dfgNode(this);
+
+	SmallVector<std::pair<const BasicBlock *, const BasicBlock *>,8> BackedgeBBs;
+	//FindFunctionBackedges(*(PHINode->getNode()->getFunction()),BackedgeBBs);
+	const BasicBlock* ctrlBB = ctrl->BB;
+	const BasicBlock* dataBB = data->BB;
+	const BasicBlock* selBB  = SELNode->BB;
+
+	bool isCTRL2PHIBackEdge=false;
+	bool isDATA2PHIBackEdge=false;
+
+	isCTRL2PHIBackEdge=false;
+
+	cmergePHINodes[temp]=SELNode;//create cmergeSELNodes?
+
+	isDATA2PHIBackEdge = isCTRL2PHIBackEdge;
+
+	temp->setNameType("CMERGE");
+
+//	if(startNodes.find((BasicBlock*)ctrl->BB) != startNodes.end()){
+//		temp->BB = PHINode->BB;
+//	}
+//	else{
+//		temp->BB = ctrl->BB;
+//		if(checkBackEdge(ctrl,PHINode) || ctrl->BB == PHINode->BB) backedgeChildMergeNodes.insert(temp);
+//	}
+	temp->BB = SELNode->BB;
+
+	temp->setIdx(NodeList.size());
+	NodeList.push_back(temp);
+
+	cmergeCtrlInputs[temp]=ctrl;
+	cmergeDataInputs[temp]=data;
+
+	temp->addAncestorNode(ctrl,EDGE_TYPE_DATA,isCTRL2PHIBackEdge,true,controlVal);
+	ctrl->addChildNode(temp,EDGE_TYPE_DATA,isCTRL2PHIBackEdge,true,controlVal);
+
+	temp->addAncestorNode(data,EDGE_TYPE_DATA,isDATA2PHIBackEdge,false);
+	data->addChildNode(temp,EDGE_TYPE_DATA,isDATA2PHIBackEdge,false);
+	return temp;
+}
+
+dfgNode* DFGPartPred::insertMergeNodeBeforeSEL(dfgNode* SELNode, dfgNode* ctrl,
+		bool controlVal, int val) {
+
+	dfgNode* temp = new dfgNode(this);
+
+	SmallVector<std::pair<const BasicBlock *, const BasicBlock *>,8> BackedgeBBs;
+	FindFunctionBackedges(*(SELNode->getNode()->getFunction()),BackedgeBBs);
+	const BasicBlock* ctrlBB = ctrl->BB;
+	const BasicBlock* selBB  = SELNode->BB;
+
+	bool isCTRL2PHIBackEdge=false;
+
+	cmergePHINodes[temp]=SELNode;
+
+
+	temp->setNameType("CMERGE");
+
+	cmergeCtrlInputs[temp]=ctrl;
+
+
+//	if(startNodes.find((BasicBlock*)ctrl->BB) != startNodes.end()){
+//		temp->BB = SELNode->BB;
+//	}
+//	else{
+//		temp->BB = ctrl->BB;
+//		if(checkBackEdge(ctrl,PHINode) || ctrl->BB == PHINode->BB) backedgeChildMergeNodes.insert(temp);
+//	}
+	temp->BB = SELNode->BB;
+
+
+	temp->setIdx(NodeList.size());
+	NodeList.push_back(temp);
+
+	temp->addAncestorNode(ctrl,EDGE_TYPE_DATA,isCTRL2PHIBackEdge,true,controlVal);
+	ctrl->addChildNode(temp,EDGE_TYPE_DATA,isCTRL2PHIBackEdge,true,controlVal);
+	temp->setConstantVal(val);
+	return temp;
+}
+
+
 dfgNode* DFGPartPred::insertMergeNode(dfgNode* PHINode, dfgNode* ctrl,
 		bool controlVal, int val) {
 
@@ -639,12 +735,23 @@ void DFGPartPred::removeDisconnetedNodes() {
 	}
 	outs() << "POST REMOVAL NODE COUNT = " << NodeList.size() << "\n";
 }
-
+/*
+ * This function add CMERGE nodes between SELECT node and its non-CMERGE parents.
+ * SELECT nodes select a valid data input and forward it to output
+ * CMERGE nodes generate valid data based on a branch outcome
+ *
+ * Therefore SELECT nodes should be connected through CMERGE nodes
+ *
+ *
+ * */
 int DFGPartPred::handleSELECTNodes() {
+
+	std::vector<dfgNode*> selectNodes;
 	for(dfgNode* node : NodeList){
 		if(node->getNode()==NULL) continue;
 		if(SelectInst* SLI = dyn_cast<SelectInst>(node->getNode())){
 			bool isLeafIns=true;
+			SLI->dump();
 			for(dfgNode* parent : node->getAncestors()){
 				if(parent->BB == node->BB){
 					isLeafIns=false;
@@ -658,6 +765,7 @@ int DFGPartPred::handleSELECTNodes() {
 					if(node->ancestorConditionaMap.find(parent)!=node->ancestorConditionaMap.end()){
 						// the condition parent
 						Instruction* selCondIns = cast<Instruction>(SLI->getCondition());
+						selCondIns->dump();
 						dfgNode* selCond = findNode(selCondIns);
 						assert(selCond != NULL);
 						combineConditionAND(parent,selCond,node);
@@ -669,8 +777,53 @@ int DFGPartPred::handleSELECTNodes() {
 				/// if its not a leaf instruction, I dont have to do anything
 
 			}
+			selectNodes.push_back(node);
 		}
 	}
+
+	for(dfgNode* node : selectNodes){
+
+		if(SelectInst* SLI = dyn_cast<SelectInst>(node->getNode())){
+
+			std::vector<dfgNode*> mergeNodes;
+			std::map<dfgNode*,std::pair<dfgNode*,bool>> mergeNodeControl;
+			SLI->getCondition()->dump();
+			SLI->getFalseValue()->dump();
+			SLI->getTrueValue()->dump();
+			dfgNode* mergeNode;
+			//Instruction* ins = dyn_cast<Instruction>(V)
+			Instruction* ctrlins = dyn_cast<Instruction>(SLI->getCondition());
+			Instruction* datains = dyn_cast<Instruction>(SLI->getFalseValue());
+			dfgNode* ctrl = findNode(ctrlins);
+			dfgNode* data = findNode(datains);
+			node->removeAncestor(data);
+			data->removeChild(node);
+			node->removeAncestor(ctrl);
+			ctrl->removeChild(node);
+
+			mergeNode = insertMergeNodeBeforeSEL(node,ctrl,false,data);
+			mergeNodes.push_back(mergeNode);
+			bool isBackEdge = false;
+			node->addAncestorNode(mergeNode,EDGE_TYPE_DATA,isBackEdge);
+			mergeNode->addChildNode(node,EDGE_TYPE_DATA,isBackEdge);
+
+			//Original SELECT instruction has constant,remove the constant value from instruction and supply it from
+			//CMERGE node
+			ConstantInt* CI = dyn_cast<ConstantInt>(SLI->getTrueValue());
+			int constant = CI->getSExtValue();
+			mergeNode = insertMergeNodeBeforeSEL(node,ctrl,true,constant);
+			 isBackEdge = false;
+			node->addAncestorNode(mergeNode,EDGE_TYPE_DATA,isBackEdge);
+			mergeNode->addChildNode(node,EDGE_TYPE_DATA,isBackEdge);
+
+			node->removeConstantVal();
+			//node->removeChild(child);
+
+		}
+
+	}
+	return 0;
+
 
 
 }
@@ -739,17 +892,33 @@ void DFGPartPred::generateTrigDFGDOT(Function &F) {
 	removeAlloc();
 	connectBBTrig();
 	createCtrlBROrTree();
-
+	printDOT(this->name + "bef_handlePHINodes_PartPredDFG.dot");
+	outs() << "\n[DFGPartPred.cpp][handlePHINodes begin]\n";
 	handlePHINodes(this->loopBB);
+
+	outs() << "\n[DFGPartPred.cpp][handlePHINodes end]\n";
+	printDOT(this->name + "after_handlePHINodes_PartPredDFG.dot");
+	outs() << "\n[DFGPartPred.cpp][handleSELECTNodes begin]\n";
+	handleSELECTNodes();
+
+	outs() << "\n[DFGPartPred.cpp][handleSELECTNodes end]\n";
+	printDOT(this->name + "after_handleSELECTNodes_PartPredDFG.dot");
+
+	//exit(true);
+
 	// insertshiftGEPs();
 	addMaskLowBitInstructions();
 	insertshiftGEPsCorrect();
 	//removeDisconnetedNodes();
 	//	scheduleCleanBackedges();
+	outs() << "\n[DFGPartPred.cpp][fillCMergeMutexNodes begin]\n";
 	fillCMergeMutexNodes();
+	outs() << "\n[DFGPartPred.cpp][fillCMergeMutexNodes end]\n";
 
 
+	outs() << "\n[DFGPartPred.cpp][constructCMERGETree begin]\n";
 	constructCMERGETree();
+	outs() << "\n[DFGPartPred.cpp][constructCMERGETree end]\n";
 
 	//	printDOT(this->name + "_PartPredDFG.dot"); return;
 	outs() << "\n[DFGPartPred.cpp][addLoopExitStoreHyCUBE begin]\n";
@@ -979,11 +1148,21 @@ void DFGPartPred::scheduleCleanBackedges() {
 	}
 
 }
+/*
+ *
+ *
+ * */
 
 void DFGPartPred::fillCMergeMutexNodes() {
 
 	for(dfgNode* node : NodeList){
 		std::set<dfgNode*> currMutexSet;
+		if(node->getNode()!=NULL){
+			if(SelectInst* SLI = dyn_cast<SelectInst>(node->getNode())){
+				std::cout<< "SELECT instruction. No need to add SELECTPHI instruction through constructCMERGETree function\n" ;
+				continue;
+			}
+		}
 		for(dfgNode* parent : node->getAncestors()){
 			if(parent->getNameType() == "CMERGE"){
 				currMutexSet.insert(parent);
@@ -1003,6 +1182,10 @@ void DFGPartPred::fillCMergeMutexNodes() {
 
 }
 
+/* If a node has two CMERGE instruction as parents, this function add SELECTPHI instruction between that node and
+ * two CMERGE instructions.
+ *
+ */
 void DFGPartPred::constructCMERGETree() {
 	// assert(!mutexSets.empty());
 
@@ -1030,7 +1213,7 @@ void DFGPartPred::constructCMERGETree() {
 
 			if(mutexSetCommonChildren[cmergeSet].size() == 1){
 				dfgNode* singleChild = *mutexSetCommonChildren[cmergeSet].begin();
-				if(singleChild->getNode() && dyn_cast<PHINode>(singleChild->getNode())){
+				if(singleChild->getNode() && (dyn_cast<PHINode>(singleChild->getNode()) || dyn_cast<SelectInst>(singleChild->getNode()))){
 					realphi_as_selectphi.insert(singleChild);
 					outs() << "Only single child is a phi node, hence marking it as a SELECTPHI\n";
 				}
@@ -1088,6 +1271,16 @@ void DFGPartPred::constructCMERGETree() {
 
 					cmerge_left->removeChild(left_child); left_child->removeAncestor(cmerge_left);
 					cmerge_right->removeChild(right_child); right_child->removeAncestor(cmerge_right);
+
+//					if(child->getNode()!=NULL){//remove original select instruction, and replace it with new SELECTPHI
+//						if(SelectInst* SLI = dyn_cast<SelectInst>(child->getNode())){
+//							for(dfgNode* selects_child : child->getChildren() ){
+//								selects_child->removeAncestor(child);child->removeChild(selects_child);
+//								selects_child->addAncestorNode(temp); temp->addChildNode(selects_child);
+//							}
+//							continue;
+//						}
+//					}
 					left_child->addAncestorNode(temp); temp->addChildNode(left_child);
 				}
 				thisIterSet.push(temp);
@@ -1466,6 +1659,9 @@ void DFGPartPred::printNewDFGXML() {
 					if(dyn_cast<PHINode>(child->getNode())){
 
 					}
+					else if(dyn_cast<SelectInst>(child->getNode())){
+
+					}
 					else{ // if not phi
 						written = true;
 						int operand_no = findOperandNumber(child,child->getNode(),cmergePHINodes[node]->getNode());
@@ -1582,7 +1778,7 @@ void DFGPartPred::printNewDFGXML() {
 				}
 
 				if(!found){
-					outs() << "node = " << node->getIdx() << ", child = " << child->getIdx() << "\n";
+					outs() << "node = " << node->getIdx() <<"child getNameType= " << child->getNameType() << ", child = " << child->getIdx() << "\n";
 				}
 
 				assert(found);
@@ -1830,7 +2026,30 @@ int DFGPartPred::classifyParents() {
 
 			if( dyn_cast<SelectInst>(ins) ){
 
+				outs() << "node : " << node->getIdx() << "\n";
+				outs() << "Parent : " << parent->getIdx() << "\n";
+				outs() << "Parent NameType : " << parent->getNameType() << "\n";
 
+				if(parent->getNode()){
+					if(dyn_cast<BranchInst>(parent->getNode())){
+						node->parentClassification[0]=parent;
+						continue;
+					}
+				}
+
+				assert(parent->getNameType().compare("CMERGE")==0 || parent->getNameType().compare("SELECTPHI")==0);
+				if(node->parentClassification.find(1) == node->parentClassification.end()){
+					node->parentClassification[1]=parent;
+				}
+				else if(node->parentClassification.find(2) == node->parentClassification.end()){
+					//						assert(node->parentClassification.find(2) == node->parentClassification.end());
+					node->parentClassification[2]=parent;
+				}
+				else{
+					outs() << "Extra parent : " << parent->getIdx() << ",Nametype = " << parent->getNameType() << ",par_idx = " << node->parentClassification.size()+1 << "\n";
+					node->parentClassification[node->parentClassification.size()+1]=parent;
+				}
+				continue;
 			}
 
 			if(dyn_cast<BranchInst>(ins)){
