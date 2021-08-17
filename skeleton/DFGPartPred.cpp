@@ -809,10 +809,18 @@ int DFGPartPred::handleSELECTNodes() {
 
 			//Original SELECT instruction has constant,remove the constant value from instruction and supply it from
 			//CMERGE node
+			outs() << "WOODEN:\n";
+			outs() << SLI->getCondition()<<"\n";
+			outs() << SLI->getTrueValue()<<"\n";
+			outs() << SLI->getFalseValue()<<"\n";
 			ConstantInt* CI = dyn_cast<ConstantInt>(SLI->getTrueValue());
-			int constant = CI->getSExtValue();
+			outs() << CI<<"\n";
+			int constant = 0;
+			if(CI){
+				constant = CI->getSExtValue();
+			}
 			mergeNode = insertMergeNodeBeforeSEL(node,ctrl,true,constant);
-			 isBackEdge = false;
+			isBackEdge = false;
 			node->addAncestorNode(mergeNode,EDGE_TYPE_DATA,isBackEdge);
 			mergeNode->addChildNode(node,EDGE_TYPE_DATA,isBackEdge);
 

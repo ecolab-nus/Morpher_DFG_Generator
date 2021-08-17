@@ -10382,6 +10382,8 @@ void DFG::getTransferVariables(std::unordered_set<Value *> &outer_vals,
 					acc[LDI->getPointerOperand()] = acc[LDI->getPointerOperand()] + 1;
 				}
 				else{
+					outs()<<"ld_ptr:" ;
+					ld_ptr->dump();
 					assert(gep_derivatives.find(ld_ptr) != gep_derivatives.end());
 					mem_ptrs[ld_ptr] = gep_derivatives[ld_ptr];
 					acc[gep_derivatives[ld_ptr]->getPointerOperand()] = acc[gep_derivatives[ld_ptr]->getPointerOperand()] + 1;
