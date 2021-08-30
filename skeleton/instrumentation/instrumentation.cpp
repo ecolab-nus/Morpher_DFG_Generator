@@ -652,6 +652,14 @@ void LiveInReport(const char* varname, uint8_t* value, uint32_t size){
 		data_morpher[varname_str].post_data.push_back(value[i]);
 		//cout << "var name:" << varname_str << ",value:" <<(int)value[i] <<"\n";
 	}
+	if(data_morpher["loopstart"].pre_data.empty()){
+		data_morpher["loopstart"].pre_data.push_back(1);
+		data_morpher["loopstart"].post_data.push_back(0);
+	//data_morpher["storestart"].pre_data.push_back(1);
+		data_morpher["loopend"].pre_data.push_back(0);
+		data_morpher["loopend"].post_data.push_back(1);	
+		
+	}
 }
 
 void LiveInReportPtrTypeUsage(const char* varname,const char* varbaseaddr, uint32_t value, uint32_t size){

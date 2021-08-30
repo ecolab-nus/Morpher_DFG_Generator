@@ -10960,6 +10960,10 @@ void DFG::UpdateSPMAllocation(std::unordered_map<Value *, int> &spm_base_address
 		mem_alloc_txt << "loopstart" <<","<<(MEM_SIZE - 1)<<"\n";
 		mem_alloc_txt << "storestart" <<","<<(MEM_SIZE - 1)<<"\n";
 		mem_alloc_txt << "loopend" <<","<<(MEM_SIZE - 2)<<"\n";
+#else
+		mem_alloc_txt << "loopend" <<","<<(MEM_SIZE/2 - 1)<<"\n";
+//		mem_alloc_txt << "storestart" <<","<<(MEM_SIZE/2 - 1)<<"\n";
+		mem_alloc_txt << "loopstart" <<","<<(MEM_SIZE - 2)<<"\n";
 #endif
 	mem_alloc_txt.close();
 	outs() << "\n Writing mem alloc end\n\n";
