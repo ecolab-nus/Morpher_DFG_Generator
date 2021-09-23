@@ -2289,7 +2289,7 @@ struct SkeletonFunctionPass : public FunctionPass
 			#endif
 
 #ifdef CLUSTER_DFG
-			LoopDFG->manualClustering();
+			//LoopDFG->manualClustering();
 #else
 			std::unordered_set<Value *> outVals;
 			std::unordered_map<Value *, GetElementPtrInst *> arrPtrs;

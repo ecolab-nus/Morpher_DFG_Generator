@@ -65,6 +65,7 @@ public :
 	int maxASAPLevel=0;
 
 	virtual void printNewDFGXML();
+	virtual void printNewDFGXML_forclustering();
 	int classifyParents();
 
 	void removeOutLoopLoad();
@@ -88,6 +89,7 @@ public :
 	void PrintOuts(){
 		printDOT(this->name + "_PartPredDFG.dot");
 		printNewDFGXML();
+		printNewDFGXML_forclustering();
 	}
 #ifdef REMOVE_AGI
     void removeAGI();

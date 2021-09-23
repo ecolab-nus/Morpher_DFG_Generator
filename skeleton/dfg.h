@@ -500,6 +500,7 @@ class DFG{
 			std::unordered_map<std::string,int> array_pointer_sizes;
 
 			void printNewDFGXML();
+			void printNewDFGXML_forclustering();
 			void printREGIMapfiles();
 			std::map<Edge*,int> xmlEdgeIdxMap;
 			int xmlEdgeCount=0;

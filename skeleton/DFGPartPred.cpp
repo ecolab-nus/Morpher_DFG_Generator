@@ -1382,7 +1382,7 @@ void DFGPartPred::printNewDFGXML() {
 		xmlFile << " ASAP=\"" << node->getASAPnumber() << "\"";
 		xmlFile << " ALAP=\"" << node->getALAPnumber() << "\"";
 #ifdef CLUSTER_DFG
-		xmlFile << " TILE=\"" << node->getTileIdx() << "\"";
+		//xmlFile << " TILE=\"" << node->getTileIdx() << "\"";
 #endif
 
 		//		    if(node->getNameType() == "OutLoopLOAD") {
@@ -1400,9 +1400,324 @@ void DFGPartPred::printNewDFGXML() {
 		//		    }
 
 		//		    xmlFile << "BB=\"" << node->BB->getName().str() << "\"";
-		xmlFile << "BB=\"" << nodeBBModified[node] << "\"";
+		xmlFile << " BB=\"" << nodeBBModified[node] << "\"";
 		if(node->hasConstantVal()){
-			xmlFile << "CONST=\"" << node->getConstantVal() << "\"";
+			xmlFile << " CONST=\"" << node->getConstantVal() << "\"";
+		}
+		xmlFile << ">\n";
+
+		xmlFile << "<OP>";
+		if((node->getNameType() == "OutLoopLOAD") || (node->getNameType() == "OutLoopSTORE") ){
+			xmlFile << "O";
+		}
+		xmlFile << HyCUBEInsStrings[node->getFinalIns()] << "</OP>\n";
+
+		if(node->getArrBasePtr() != "NOT_A_MEM_OP"){
+			xmlFile << "<BasePointerName size=\"" << array_pointer_sizes[node->getArrBasePtr()] << "\">";
+			xmlFile << node->getArrBasePtr();
+			xmlFile << "</BasePointerName>\n";
+		}
+
+		if(node->getGEPbaseAddr() != -1){
+			GetElementPtrInst* GEP = cast<GetElementPtrInst>(node->getNode());
+			int gep_offset = GEPOffsetMap[GEP];
+			xmlFile << "<GEPOffset>";
+			xmlFile << gep_offset;
+			xmlFile << "</GEPOffset>\n";
+		}
+
+		//			xmlFile << "<OP>" << HyCUBEInsStrings[node->getFinalIns()] << "</OP>\n";
+
+		xmlFile << "<Inputs>\n";
+		for(dfgNode* parent : node->getAncestors()){
+			//			xmlFile << "\t<Input idx=\"" << parent->getIdx() << "\" type=\"DATA\"/>\n";
+			xmlFile << "\t<Input idx=\"" << parent->getIdx() << "\"/>\n";
+		}
+		//		for(dfgNode* parentPHI : node->getPHIancestors()){
+		//			xmlFile << "\t<Input idx=\"" << parentPHI->getIdx() << "\" type=\"PHI\"/>\n";
+		//		}
+		xmlFile << "</Inputs>\n";
+
+		xmlFile << "<Outputs>\n";
+		for(dfgNode* child : node->getChildren()){
+			//			xmlFile << "\t<Output idx=\"" << child->getIdx() <<"\" type=\"DATA\"/>\n";
+			xmlFile << "\t<Output idx=\"" << child->getIdx() << "\" ";
+
+			if(node->childBackEdgeMap[child]){
+				xmlFile << "nextiter=\"1\" ";
+			}
+			else{
+				xmlFile << "nextiter=\"0\" ";
+			}
+
+
+			bool written=false;
+			if(findEdge(node,child)->getType() == EDGE_TYPE_PS){
+				xmlFile << "type=\"PS\"/>\n";
+				written=true;
+			}
+			else if(node->getNameType()=="CMERGE"){
+				if(child->getNode()){
+					if(dyn_cast<PHINode>(child->getNode())){
+
+					}
+					else{ // if not phi
+						written = true;
+						int operand_no = findOperandNumber(child,child->getNode(),cmergePHINodes[node]->getNode());
+						if( operand_no == 0){
+							child->parentClassification[0]=node;
+							if(child->getNPB()){
+								xmlFile << "NPB=\"1\" ";
+							}
+							else{
+								xmlFile << "NPB=\"0\" ";
+							}
+							xmlFile << "type=\"P\"/>\n";
+						}
+						else if ( operand_no == 1){
+							child->parentClassification[1]=node;
+							xmlFile << "type=\"I1\"/>\n";
+						}
+						else if(( operand_no == 2)){
+							child->parentClassification[2]=node;
+							xmlFile << "type=\"I2\"/>\n";
+						}
+						else{
+							outs() << "node=" << node->getIdx() << ",child=" << child->getIdx() << "\n";
+							assert(false);
+						}
+					}
+				}
+			}
+			else if(node->getNameType()=="SELECTPHI" && (child != selectPHIAncestorMap[node])){
+				if(child->getNode()){
+					written = true;
+					outs() << "SELECTPHI :: " << node->getIdx();
+					outs() << ",child = " << child->getIdx() << " | "; child->getNode()->dump();
+					outs() << ",phiancestor = " << selectPHIAncestorMap[node]->getIdx() << " | "; selectPHIAncestorMap[node]->getNode()->dump();
+
+					int operand_no = findOperandNumber(child,child->getNode(),selectPHIAncestorMap[node]->getNode());
+					if( operand_no == 0){
+						child->parentClassification[0]=node;
+						if(child->getNPB()){
+							xmlFile << "NPB=\"1\" ";
+						}
+						else{
+							xmlFile << "NPB=\"0\" ";
+						}
+						xmlFile << "type=\"P\"/>\n";
+					}
+					else if ( operand_no == 1){
+						child->parentClassification[1]=node;
+						xmlFile << "type=\"I1\"/>\n";
+					}
+					else if(( operand_no == 2)){
+						child->parentClassification[2]=node;
+						xmlFile << "type=\"I2\"/>\n";
+					}
+					else{
+						outs() << "node = " << node->getIdx() << ", child = " << child->getIdx() << "\n";
+						assert(false);
+					}
+				}
+			}
+
+			if(Edge2OperandIdxMap.find(node) != Edge2OperandIdxMap.end()
+					&& Edge2OperandIdxMap[node].find(child) != Edge2OperandIdxMap[node].end()){
+				int operand_no = Edge2OperandIdxMap[node][child];
+				if( operand_no == 0){
+					child->parentClassification[0]=node;
+					if(child->getNPB()){
+						xmlFile << "NPB=\"1\" ";
+					}
+					else{
+						xmlFile << "NPB=\"0\" ";
+					}
+					xmlFile << "type=\"P\"/>\n";
+				}
+				else if ( operand_no == 1){
+					child->parentClassification[1]=node;
+					xmlFile << "type=\"I1\"/>\n";
+				}
+				else if(( operand_no == 2)){
+					child->parentClassification[2]=node;
+					xmlFile << "type=\"I2\"/>\n";
+				}
+				written = true;
+			}
+
+			if(written){
+			}
+			else if(child->parentClassification[0]==node){
+				if(child->getNPB()){
+					xmlFile << "NPB=\"1\" ";
+				}
+				else{
+					xmlFile << "NPB=\"0\" ";
+				}
+				xmlFile << "type=\"P\"/>\n";
+			}
+			else if(child->parentClassification[1]==node){
+				xmlFile << "type=\"I1\"/>\n";
+			}
+			else if(child->parentClassification[2]==node){
+				xmlFile << "type=\"I2\"/>\n";
+			}
+			else if(child->parentClassification[3]==node){
+				xmlFile << "type=\"I3\"/>\n";// type to handle single source nodes in mapper
+			}
+			else{
+				bool found=false;
+				for(std::pair<int,dfgNode*> pair : child->parentClassification){
+					if(pair.second == node){
+						xmlFile << "type=\"I2\"/>\n";
+						found=true;
+						break;
+					}
+				}
+
+				if(!found){
+					outs() << "node = " << node->getIdx() << ", child = " << child->getIdx() << "\n";
+				}
+
+				assert(found);
+			}
+		}
+		//		for(dfgNode* phiChild : node->getPHIchildren()){
+		//			xmlFile << "\t<Output idx=\"" << phiChild->getIdx() << "\" type=\"PHI\"/>\n";
+		//		}
+		xmlFile << "</Outputs>\n";
+
+		xmlFile << "<RecParents>\n";
+		for(dfgNode* recParent : node->getRecAncestors()){
+			xmlFile << "\t<RecParent idx=\"" << recParent->getIdx() << "\"/>\n";
+		}
+		xmlFile << "</RecParents>\n";
+
+		xmlFile << "</Node>\n\n";
+
+	}
+	//		}
+	//	}
+
+
+
+
+	xmlFile << "</DFG>\n";
+
+
+
+
+
+	xmlFile.close();
+
+
+
+
+}
+
+
+void DFGPartPred::printNewDFGXML_forclustering() {
+
+
+	std::string fileName = name + "_PartPred_DFG_forclustering.xml";
+#ifdef REMOVE_AGI
+	fileName = name + "_PartPred_AGI_REMOVED_DFG.xml";
+#endif
+	std::ofstream xmlFile;
+	xmlFile.open(fileName.c_str());
+
+
+
+	//    insertMOVC();
+	//	scheduleASAP();
+	//	scheduleALAP();
+	//	balanceASAPALAP();
+	//				  LoopDFG.addBreakLongerPaths();
+	CreateSchList();
+
+	std::map<BasicBlock*,std::set<BasicBlock*>> mBBs = checkMutexBBs();
+	std::map<std::string,std::set<std::string>> mBBs_str;
+
+	std::map<int,std::vector<dfgNode*>> asaplevelNodeList;
+	for (dfgNode* node : NodeList){
+		asaplevelNodeList[node->getASAPnumber()].push_back(node);
+	}
+
+	std::map<dfgNode*,std::string> nodeBBModified;
+	for(dfgNode* node : NodeList){
+		nodeBBModified[node]=node->BB->getName().str();
+	}
+
+
+	for(dfgNode* node : NodeList){
+		int cmergeParentCount=0;
+		std::set<std::string> mutexBBs;
+		for(dfgNode* parent: node->getAncestors()){
+			if(HyCUBEInsStrings[parent->getFinalIns()] == "CMERGE" || parent->getNameType() == "SELECTPHI"){
+				nodeBBModified[parent]=nodeBBModified[parent]+ "_" + std::to_string(node->getIdx()) + "_" + std::to_string(cmergeParentCount);
+				mutexBBs.insert(nodeBBModified[parent]);
+				cmergeParentCount++;
+			}
+		}
+		for(std::string bb_str1 : mutexBBs){
+			for(std::string bb_str2 : mutexBBs){
+				if(bb_str2==bb_str1) continue;
+				mBBs_str[bb_str1].insert(bb_str2);
+			}
+		}
+	}
+
+
+//	xmlFile << "<MutexBB>\n";
+//	for(std::pair<BasicBlock*,std::set<BasicBlock*>> pair : mBBs){
+//		BasicBlock* first = pair.first;
+//		xmlFile << "<BB1 name=\"" << first->getName().str() << "\">\n";
+//		for(BasicBlock* second : pair.second){
+//			xmlFile << "\t<BB2 name=\"" << second->getName().str() << "\"/>\n";
+//		}
+//		xmlFile << "</BB1>\n";
+//	}
+//	for(std::pair<std::string,std::set<std::string>> pair : mBBs_str){
+//		std::string first = pair.first;
+//		xmlFile << "<BB1 name=\"" << first << "\">\n";
+//		for(std::string second : pair.second){
+//			xmlFile << "\t<BB2 name=\"" << second << "\"/>\n";
+//		}
+//		xmlFile << "</BB1>\n";
+//	}
+//	xmlFile << "</MutexBB>\n";
+
+	xmlFile << "<DFG count=\"" << NodeList.size() << "\">\n";
+
+	for(dfgNode* node : NodeList){
+		//	for (int i = 0; i < maxASAPLevel; ++i) {
+		//		for(dfgNode* node : asaplevelNodeList[i]){
+		xmlFile << "<Node idx=\"" << node->getIdx() << "\"";
+		xmlFile << " ASAP=\"" << node->getASAPnumber() << "\"";
+		xmlFile << " ALAP=\"" << node->getALAPnumber() << "\"";
+#ifdef CLUSTER_DFG
+		//xmlFile << " TILE=\"" << node->getTileIdx() << "\"";
+#endif
+
+		//		    if(node->getNameType() == "OutLoopLOAD") {
+		//		    	xmlFile << "OutLoopLOAD=\"1\"";
+		//		    }
+		//		    else{
+		//		    	xmlFile << "OutLoopLOAD=\"0\"";
+		//		    }
+		//
+		//		    if(node->getNameType() == "OutLoopSTORE") {
+		//		    	xmlFile << "OutLoopSTORE=\"1\"";
+		//		    }
+		//		    else{
+		//		    	xmlFile << "OutLoopSTORE=\"0\"";
+		//		    }
+
+		//		    xmlFile << "BB=\"" << node->BB->getName().str() << "\"";
+		xmlFile << " BB=\"" << nodeBBModified[node] << "\"";
+		if(node->hasConstantVal()){
+			xmlFile << " CONST=\"" << node->getConstantVal() << "\"";
 		}
 		xmlFile << ">\n";
 
@@ -3820,6 +4135,7 @@ void DFGPartPred::addParentsToRemovalNodes(dfgNode* node, std::set<dfgNode*> &re
 void DFGPartPred::manualClustering() {
 
 	std::map<int, int> dfgnode2clusternode;
+	//Clustering-1
 	dfgnode2clusternode.insert(pair<int, int>(171, 0));
 	dfgnode2clusternode.insert(pair<int, int>(137, 0));
 	dfgnode2clusternode.insert(pair<int, int>(146, 0));
@@ -4022,8 +4338,208 @@ void DFGPartPred::manualClustering() {
 	dfgnode2clusternode.insert(pair<int, int>(35, 7));
 	dfgnode2clusternode.insert(pair<int, int>(36, 7));
 
-
-
+//all in one cluster
+//	dfgnode2clusternode.insert(pair<int, int>(171, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(137, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(146, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(134, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(143, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(140, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(170, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(138, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(147, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(135, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(144, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(141, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(0, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(1, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(3, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(2, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(20169, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(133, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(136, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(20168, 0));
+//
+//		dfgnode2clusternode.insert(pair<int, int>(37, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(52, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(38, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(45, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(154, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(39, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(46, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(53, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(152, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(153, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(54, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(40, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(47, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(55, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(57, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(41, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(48, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(56, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(44, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(42, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(49, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(51, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(43, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(50, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(10, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(11, 0));
+//
+//		dfgnode2clusternode.insert(pair<int, int>(58, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(5, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(155, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(151, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(22, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(127, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(59, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(30, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(150, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(167, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(60, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(31, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(128, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(23, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(32, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(129, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(132, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(130, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(131, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(24, 0));
+//
+//		dfgnode2clusternode.insert(pair<int, int>(12, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(13, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(145, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(109, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(6, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(120, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(110, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(113, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(148, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(121, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(164, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(114, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(166, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(7, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(111, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(165, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(122, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(14, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(8, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(112, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(115, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(123, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(149, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(9, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(116, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(126, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(124, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(117, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(119, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(125, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(15, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(118, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(16, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(18, 0));
+//
+//
+//		dfgnode2clusternode.insert(pair<int, int>(19, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(20, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(21, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(142, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(85, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(102, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(92, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(95, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(86, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(103, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(161, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(96, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(160, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(163, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(93, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(162, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(87, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(94, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(97, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(88, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(17, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(98, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(91, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(89, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(101, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(99, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(90, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(100, 0));
+//
+//		dfgnode2clusternode.insert(pair<int, int>(104, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(105, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(108, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(106, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(107, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(26, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(27, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(28, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(29, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(77, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(64, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(25, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(65, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(68, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(66, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(67, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(33, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(34, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(35, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(36, 0));
+//
+//
+//		dfgnode2clusternode.insert(pair<int, int>(139, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(61, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(75, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(62, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(69, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(78, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(158, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(63, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(157, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(79, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(76, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(156, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(70, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(159, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(71, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(80, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(74, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(72, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(81, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(73, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(82, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(84, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(83, 0));
+//
+//
+//		dfgnode2clusternode.insert(pair<int, int>(104, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(105, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(108, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(106, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(107, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(26, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(27, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(28, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(29, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(77, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(64, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(25, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(65, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(68, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(66, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(67, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(33, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(34, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(35, 0));
+//		dfgnode2clusternode.insert(pair<int, int>(36, 0));
 
 
 
