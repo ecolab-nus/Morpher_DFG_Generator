@@ -1,0 +1,9 @@
+Adding Backedge
+('305', '0')
+Cycle list
+['244', '305', '0', '243']
+['0', '243', '305']
+Cycle len
+4
+3
+Recurrence II:4

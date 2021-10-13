@@ -12,11 +12,13 @@ int op[1000];
     void corrFilter_1()
     {  
       int sum = 0;
+int i;
       for (int j=0; j < nPts; j++)
       {
         sum = 0;
-        for (int i = 0; i < M; i=i+50)
-        {    
+        i=0;
+       // for (int i = 0; i < M; i=i+50)
+       // {    
           #ifdef CGRA_COMPILER
            please_map_me();
            #endif
@@ -70,7 +72,7 @@ int op[1000];
           sum += (H[i+47]) * (ip[j+i+47]);
           sum += (H[i+48]) * (ip[j+i+48]);
           sum += (H[i+49]) * (ip[j+i+49]);
-        }
+     //   }
         op[j] = sum;      
       }
     }
