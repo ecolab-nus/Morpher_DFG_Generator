@@ -2874,8 +2874,9 @@ void kmeans_01 ( int dim_num, int point_num, int cluster_num, int it_max,
   for ( j = 0; j < point_num; j++ )
   {
     k = cluster[j];
-    for ( i = 0; i < dim_num; i=i+40 )
-    {
+   // for ( i = 0; i < dim_num; i=i+40 )
+    //{
+    int i = 0;
     #ifdef CGRA_COMPILER
            please_map_me();
            #endif
@@ -2929,7 +2930,7 @@ void kmeans_01 ( int dim_num, int point_num, int cluster_num, int it_max,
 
 
 
-    }
+    //}
   }
 /*
   Set the cluster energies.
