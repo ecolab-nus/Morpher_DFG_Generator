@@ -1988,7 +1988,11 @@ void AllocateSPMBanks(std::unordered_set<Value *> &outer_vals,
 		else
 		{
 			int size = DL.getTypeAllocSize(gep->getSourceElementType());
+#ifdef ARCHI_16BIT
+			assert(size/2 <= bank_size);
+#else
 			assert(size <= bank_size);
+#endif
 			variable_sizes_bytes[gep->getPointerOperand()] = size;
 			outs() << gep_pointer_name << ", size = " << size << "\n";
 		}
@@ -2037,7 +2041,11 @@ void AllocateSPMBanks(std::unordered_set<Value *> &outer_vals,
 			banks_vars[desired_bank].insert(it->first);
 			value_to_BankId[it->first] = desired_bank;
 			data_in_bank[desired_bank] = size + data_in_bank[desired_bank];
+#ifdef ARCHI_16BIT
+			assert(data_in_bank[desired_bank]/2 < bank_size);
+#else
 			assert(data_in_bank[desired_bank] < bank_size);
+#endif
 
 		}
 	}

@@ -668,7 +668,7 @@ void LiveInReportPtrTypeUsage(const char* varname,const char* varbaseaddr, uint3
 
 	uint32_t baseaddr_int =static_cast<uint32_t>(std::stoul(varbaseaddr_str));// *(uint32_t *)varbaseaddr;
 #ifdef ARCHI_16BIT
-	uint32_t addr= baseaddr_int+2*value;//4 is to get the byte address
+	uint32_t addr= baseaddr_int+2*value;//2 is to get the byte address
 #else
 	uint32_t addr= baseaddr_int+4*value;//4 is to get the byte address
 #endif
