@@ -1518,6 +1518,144 @@ idctRows (void)
     }
 }
 
+__attribute__((annotate("pSrc:128,gCoeffBuf:64")))
+ void
+idctRows_unrolled_2 (void)
+{
+  uint8 i;
+  int16 *pSrc = gCoeffBuf;
+
+  for (i = 0; i < 8; i=i+2)
+    {
+          #ifdef CGRA_COMPILER
+           please_map_me();
+           #endif
+      if ((pSrc[1] | pSrc[2] | pSrc[3] | pSrc[4] | pSrc[5] | pSrc[6] |
+     pSrc[7] | pSrc[8] | pSrc[9] | pSrc[10] | pSrc[11] | pSrc[12] | pSrc[13] |
+     pSrc[14]) == 0)
+  {
+    // Short circuit the 1D IDCT if only the DC component is non-zero
+    int16 src0 = *pSrc;
+
+    *(pSrc + 1) = src0;
+    *(pSrc + 2) = src0;
+    *(pSrc + 3) = src0;
+    *(pSrc + 4) = src0;
+    *(pSrc + 5) = src0;
+    *(pSrc + 6) = src0;
+    *(pSrc + 7) = src0;   
+    *(pSrc + 8) = src0;
+    *(pSrc + 9) = src0;
+    *(pSrc + 10) = src0;
+    *(pSrc + 11) = src0;
+    *(pSrc + 12) = src0;
+    *(pSrc + 13) = src0;
+    *(pSrc + 14) = src0;
+  }
+      else
+  {
+    int16 src4 = *(pSrc + 5);
+    int16 src7 = *(pSrc + 3);
+    int16 x4 = src4 - src7;
+    int16 x7 = src4 + src7;
+
+    int16 src4_ = *(pSrc + 5+8);
+    int16 src7_ = *(pSrc + 3+8);
+    int16 x4_ = src4_ - src7_;
+    int16 x7_ = src4_ + src7_;
+
+    int16 src5 = *(pSrc + 1);
+    int16 src6 = *(pSrc + 7);
+    int16 x5 = src5 + src6;
+    int16 x6 = src5 - src6;
+
+    int16 src5_ = *(pSrc + 1 + 8);
+    int16 src6_ = *(pSrc + 7 + 8);
+    int16 x5_ = src5_ + src6_;
+    int16 x6_ = src5_ - src6_;
+
+    int16 tmp1 = imul_b5 (x4 - x6);
+    int16 stg26 = imul_b4 (x6) - tmp1;
+
+    int16 tmp1_ = imul_b5 (x4_ - x6_);
+    int16 stg26_ = imul_b4 (x6_) - tmp1_;
+
+    int16 x24 = tmp1 - imul_b2 (x4);
+    int16 x24_ = tmp1_ - imul_b2 (x4_);
+
+
+    int16 x15 = x5 - x7;
+    int16 x17 = x5 + x7;
+
+    int16 x15_ = x5_ - x7_;
+    int16 x17_ = x5_ + x7_;
+
+    int16 tmp2 = stg26 - x17;
+    int16 tmp3 = imul_b1_b3 (x15) - tmp2;
+    int16 x44 = tmp3 + x24;
+
+    int16 tmp2_ = stg26_ - x17_;
+    int16 tmp3_ = imul_b1_b3 (x15_) - tmp2_;
+    int16 x44_ = tmp3_ + x24_;
+
+    int16 src0 = *(pSrc + 0);
+    int16 src1 = *(pSrc + 4);
+    int16 x30 = src0 + src1;
+    int16 x31 = src0 - src1;    
+
+    int16 src0_ = *(pSrc + 0+8);
+    int16 src1_ = *(pSrc + 4+8);
+    int16 x30_ = src0_ + src1_;
+    int16 x31_ = src0_ - src1_;
+
+    int16 src2 = *(pSrc + 2);
+    int16 src3 = *(pSrc + 6);
+    int16 x12 = src2 - src3;
+    int16 x13 = src2 + src3;
+
+    int16 src2_ = *(pSrc + 2 + 8);
+    int16 src3_ = *(pSrc + 6 + 8);
+    int16 x12_ = src2_ - src3_;
+    int16 x13_ = src2_ + src3_;
+
+
+    int16 x32 = imul_b1_b3 (x12) - x13;
+
+    int16 x32_ = imul_b1_b3 (x12_) - x13_;
+
+    int16 x40 = x30 + x13;
+    int16 x43 = x30 - x13;
+    int16 x41 = x31 + x32;
+    int16 x42 = x31 - x32;
+
+    int16 x40_ = x30_ + x13_;
+    int16 x43_ = x30_ - x13_;
+    int16 x41_ = x31_ + x32_;
+    int16 x42_ = x31_ - x32_;
+
+    *(pSrc + 0) = x40 + x17;
+    *(pSrc + 1) = x41 + tmp2;
+    *(pSrc + 2) = x42 + tmp3;
+    *(pSrc + 3) = x43 - x44;
+    *(pSrc + 4) = x43 + x44;
+    *(pSrc + 5) = x42 - tmp3;
+    *(pSrc + 6) = x41 - tmp2;
+    *(pSrc + 7) = x40 - x17;
+
+    *(pSrc + 0 + 8) = x40_ + x17_;
+    *(pSrc + 1 + 8) = x41_ + tmp2_;
+    *(pSrc + 2 + 8) = x42_ + tmp3_;
+    *(pSrc + 3 + 8) = x43_ - x44_;
+    *(pSrc + 4 + 8) = x43_ + x44_;
+    *(pSrc + 5 + 8) = x42_ - tmp3_;
+    *(pSrc + 6 + 8) = x41_ - tmp2_;
+    *(pSrc + 7 + 8) = x40_ - x17_;
+  }
+
+      pSrc += (8+8);
+    }
+}
+
 __attribute__((annotate("pSrc:64,gCoeffBuf:64")))
 static void
 idctCols (void)
