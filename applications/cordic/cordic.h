@@ -115,6 +115,271 @@ int cordic(int theta, int *s, int *c, int n)
  return x+y+z;
  //*c = x; *s = y;
 }
+
+
+int cordic_unrolled_24(int theta, int *s, int *c, int n)
+{
+  int k, d, tx, ty, tz;
+  int x=cordic_1K,y=0,z=theta;
+  n = (n>CORDIC_NTAB) ? CORDIC_NTAB : n;
+  for (k=0; k<n; k=k+24)
+  {
+          #ifdef CGRA_COMPILER
+           please_map_me();
+           #endif
+    d = z>>31;
+    //get sign. for other architectures, you might want to use the more portable version
+    //d = z>=0 ? 0 : -1;
+    tx = x - (((y>>k) ^ d) - d);
+    ty = y + (((x>>k) ^ d) - d);
+    tz = z - ((cordic_ctab[k] ^ d) - d);
+    x = tx; 
+    y = ty; 
+    z = tz;
+
+    d = z>>31;
+    //get sign. for other architectures, you might want to use the more portable version
+    //d = z>=0 ? 0 : -1;
+    tx = x - (((y>>k+1) ^ d) - d);
+    ty = y + (((x>>k+1) ^ d) - d);
+    tz = z - ((cordic_ctab[k+1] ^ d) - d);
+    x = tx; 
+    y = ty; 
+    z = tz;
+
+    d = z>>31;
+    //get sign. for other architectures, you might want to use the more portable version
+    //d = z>=0 ? 0 : -1;
+    tx = x - (((y>>k+2) ^ d) - d);
+    ty = y + (((x>>k+2) ^ d) - d);
+    tz = z - ((cordic_ctab[k+2] ^ d) - d);
+    x = tx; 
+    y = ty; 
+    z = tz;
+
+    d = z>>31;
+    //get sign. for other architectures, you might want to use the more portable version
+    //d = z>=0 ? 0 : -1;
+    tx = x - (((y>>k+3) ^ d) - d);
+    ty = y + (((x>>k+3) ^ d) - d);
+    tz = z - ((cordic_ctab[k+3] ^ d) - d);
+    x = tx; 
+    y = ty; 
+    z = tz;
+
+    d = z>>31;
+    //get sign. for other architectures, you might want to use the more portable version
+    //d = z>=0 ? 0 : -1;
+    tx = x - (((y>>k+4) ^ d) - d);
+    ty = y + (((x>>k+4) ^ d) - d);
+    tz = z - ((cordic_ctab[k+4] ^ d) - d);
+    x = tx; 
+    y = ty; 
+    z = tz;
+
+    d = z>>31;
+    //get sign. for other architectures, you might want to use the more portable version
+    //d = z>=0 ? 0 : -1;
+    tx = x - (((y>>k+5) ^ d) - d);
+    ty = y + (((x>>k+5) ^ d) - d);
+    tz = z - ((cordic_ctab[k+5] ^ d) - d);
+    x = tx; 
+    y = ty; 
+    z = tz;
+
+    d = z>>31;
+    //get sign. for other architectures, you might want to use the more portable version
+    //d = z>=0 ? 0 : -1;
+    tx = x - (((y>>k+6) ^ d) - d);
+    ty = y + (((x>>k+6) ^ d) - d);
+    tz = z - ((cordic_ctab[k+6] ^ d) - d);
+    x = tx; 
+    y = ty; 
+    z = tz;
+
+    d = z>>31;
+    //get sign. for other architectures, you might want to use the more portable version
+    //d = z>=0 ? 0 : -1;
+    tx = x - (((y>>k+7) ^ d) - d);
+    ty = y + (((x>>k+7) ^ d) - d);
+    tz = z - ((cordic_ctab[k+7] ^ d) - d);
+    x = tx; 
+    y = ty; 
+    z = tz;
+
+    d = z>>31;
+    //get sign. for other architectures, you might want to use the more portable version
+    //d = z>=0 ? 0 : -1;
+    tx = x - (((y>>k+8) ^ d) - d);
+    ty = y + (((x>>k+8) ^ d) - d);
+    tz = z - ((cordic_ctab[k+8] ^ d) - d);
+    x = tx; 
+    y = ty; 
+    z = tz;
+
+    d = z>>31;
+    //get sign. for other architectures, you might want to use the more portable version
+    //d = z>=0 ? 0 : -1;
+    tx = x - (((y>>k+9) ^ d) - d);
+    ty = y + (((x>>k+9) ^ d) - d);
+    tz = z - ((cordic_ctab[k+9] ^ d) - d);
+    x = tx; 
+    y = ty; 
+    z = tz;
+
+    d = z>>31;
+    //get sign. for other architectures, you might want to use the more portable version
+    //d = z>=0 ? 0 : -1;
+    tx = x - (((y>>k+10) ^ d) - d);
+    ty = y + (((x>>k+10) ^ d) - d);
+    tz = z - ((cordic_ctab[k+10] ^ d) - d);
+    x = tx; 
+    y = ty; 
+    z = tz;
+
+    d = z>>31;
+    //get sign. for other architectures, you might want to use the more portable version
+    //d = z>=0 ? 0 : -1;
+    tx = x - (((y>>k+11) ^ d) - d);
+    ty = y + (((x>>k+11) ^ d) - d);
+    tz = z - ((cordic_ctab[k+11] ^ d) - d);
+    x = tx; 
+    y = ty; 
+    z = tz;
+
+    d = z>>31;
+    //get sign. for other architectures, you might want to use the more portable version
+    //d = z>=0 ? 0 : -1;
+    tx = x - (((y>>k+12) ^ d) - d);
+    ty = y + (((x>>k+12) ^ d) - d);
+    tz = z - ((cordic_ctab[k+12] ^ d) - d);
+    x = tx; 
+    y = ty; 
+    z = tz;
+
+    d = z>>31;
+    //get sign. for other architectures, you might want to use the more portable version
+    //d = z>=0 ? 0 : -1;
+    tx = x - (((y>>k+13) ^ d) - d);
+    ty = y + (((x>>k+13) ^ d) - d);
+    tz = z - ((cordic_ctab[k+13] ^ d) - d);
+    x = tx; 
+    y = ty; 
+    z = tz;
+
+    d = z>>31;
+    //get sign. for other architectures, you might want to use the more portable version
+    //d = z>=0 ? 0 : -1;
+    tx = x - (((y>>k+14) ^ d) - d);
+    ty = y + (((x>>k+14) ^ d) - d);
+    tz = z - ((cordic_ctab[k+14] ^ d) - d);
+    x = tx; 
+    y = ty; 
+    z = tz;
+
+    d = z>>31;
+    //get sign. for other architectures, you might want to use the more portable version
+    //d = z>=0 ? 0 : -1;
+    tx = x - (((y>>k+15) ^ d) - d);
+    ty = y + (((x>>k+15) ^ d) - d);
+    tz = z - ((cordic_ctab[k+15] ^ d) - d);
+    x = tx; 
+    y = ty; 
+    z = tz;
+
+    d = z>>31;
+    //get sign. for other architectures, you might want to use the more portable version
+    //d = z>=0 ? 0 : -1;
+    tx = x - (((y>>k+16) ^ d) - d);
+    ty = y + (((x>>k+16) ^ d) - d);
+    tz = z - ((cordic_ctab[k+16] ^ d) - d);
+    x = tx; 
+    y = ty; 
+    z = tz;
+
+    d = z>>31;
+    //get sign. for other architectures, you might want to use the more portable version
+    //d = z>=0 ? 0 : -1;
+    tx = x - (((y>>k+17) ^ d) - d);
+    ty = y + (((x>>k+17) ^ d) - d);
+    tz = z - ((cordic_ctab[k+17] ^ d) - d);
+    x = tx; 
+    y = ty; 
+    z = tz;
+
+    d = z>>31;
+    //get sign. for other architectures, you might want to use the more portable version
+    //d = z>=0 ? 0 : -1;
+    tx = x - (((y>>k+18) ^ d) - d);
+    ty = y + (((x>>k+18) ^ d) - d);
+    tz = z - ((cordic_ctab[k+18] ^ d) - d);
+    x = tx; 
+    y = ty; 
+    z = tz;
+
+    d = z>>31;
+    //get sign. for other architectures, you might want to use the more portable version
+    //d = z>=0 ? 0 : -1;
+    tx = x - (((y>>k+19) ^ d) - d);
+    ty = y + (((x>>k+19) ^ d) - d);
+    tz = z - ((cordic_ctab[k+19] ^ d) - d);
+    x = tx; 
+    y = ty; 
+    z = tz;
+
+    d = z>>31;
+    //get sign. for other architectures, you might want to use the more portable version
+    //d = z>=0 ? 0 : -1;
+    tx = x - (((y>>k+20) ^ d) - d);
+    ty = y + (((x>>k+20) ^ d) - d);
+    tz = z - ((cordic_ctab[k+20] ^ d) - d);
+    x = tx; 
+    y = ty; 
+    z = tz;
+
+    d = z>>31;
+    //get sign. for other architectures, you might want to use the more portable version
+    //d = z>=0 ? 0 : -1;
+    tx = x - (((y>>k+21) ^ d) - d);
+    ty = y + (((x>>k+21) ^ d) - d);
+    tz = z - ((cordic_ctab[k+21] ^ d) - d);
+    x = tx; 
+    y = ty; 
+    z = tz;
+
+    d = z>>31;
+    //get sign. for other architectures, you might want to use the more portable version
+    //d = z>=0 ? 0 : -1;
+    tx = x - (((y>>k+22) ^ d) - d);
+    ty = y + (((x>>k+22) ^ d) - d);
+    tz = z - ((cordic_ctab[k+22] ^ d) - d);
+    x = tx; 
+    y = ty; 
+    z = tz;
+
+    d = z>>31;
+    //get sign. for other architectures, you might want to use the more portable version
+    //d = z>=0 ? 0 : -1;
+    tx = x - (((y>>k+23) ^ d) - d);
+    ty = y + (((x>>k+23) ^ d) - d);
+    tz = z - ((cordic_ctab[k+23] ^ d) - d);
+    x = tx; 
+    y = ty; 
+    z = tz;
+
+    d = z>>31;
+    //get sign. for other architectures, you might want to use the more portable version
+    //d = z>=0 ? 0 : -1;
+    tx = x - (((y>>k+24) ^ d) - d);
+    ty = y + (((x>>k+24) ^ d) - d);
+    tz = z - ((cordic_ctab[k+24] ^ d) - d);
+    x = tx; 
+    y = ty; 
+    z = tz;
+  }  
+ return x+y+z;
+ //*c = x; *s = y;
+}
 /*
 original
 void cordic(int theta, int *s, int *c, int n)

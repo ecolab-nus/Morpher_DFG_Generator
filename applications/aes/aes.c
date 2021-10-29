@@ -895,6 +895,176 @@ for(rnd1 = 0;  rnd1 < cx->Nrnd - 2; ++rnd1)
 } 
 
 
+__attribute__((annotate("in_blk:128,out_blk:128,cx:128")))
+cf_dec c_name(encrypt_unrolled_2)(const byte in_blk[], byte out_blk[], const c_name(aes) *cx)
+{   word        locals(b0, b1);
+    word rnd;
+
+//    word kp_tab[KS_LENGTH];
+
+    const word  *kp = cx->e_key;
+    word trip_count = cx->Nrnd-1;//cx->Nrnd-1;not sure why Nrnd-1 = 9 works
+
+
+
+
+#if !defined(ONE_TABLE) && !defined(FOUR_TABLES)
+    word        f2;
+#endif
+
+    if(!(cx->mode & 0x01)) return aes_bad;
+
+    state_in(b0, in_blk, kp); kp += nc;
+
+    for (rnd = 0; rnd < 9; ++rnd)
+    {
+      kp_tab[0+rnd*nc] = (kp)[0];
+      kp_tab[1+rnd*nc] = (kp)[1];
+      kp_tab[2+rnd*nc] = (kp)[2];
+      kp_tab[3+rnd*nc] = (kp)[3];
+       kp += nc;
+    }
+
+#if defined(UNROLL)
+
+    switch(cx->Nrnd)
+    {
+    case 14:    round(fwd_rnd,  b1, b0, kp         ); 
+                round(fwd_rnd,  b0, b1, kp + nc    ); kp += 2 * nc;
+    case 12:    round(fwd_rnd,  b1, b0, kp         ); 
+                round(fwd_rnd,  b0, b1, kp + nc    ); kp += 2 * nc;
+    case 10:    round(fwd_rnd,  b1, b0, kp         );             
+                round(fwd_rnd,  b0, b1, kp +     nc);
+                round(fwd_rnd,  b1, b0, kp + 2 * nc); 
+                round(fwd_rnd,  b0, b1, kp + 3 * nc);
+                round(fwd_rnd,  b1, b0, kp + 4 * nc); 
+                round(fwd_rnd,  b0, b1, kp + 5 * nc);
+                round(fwd_rnd,  b1, b0, kp + 6 * nc); 
+                round(fwd_rnd,  b0, b1, kp + 7 * nc);
+                round(fwd_rnd,  b1, b0, kp + 8 * nc);
+                round(fwd_lrnd, b0, b1, kp + 9 * nc);
+    }
+#elif defined(PARTIAL_UNROLL)
+    {   word    rnd;
+
+        for(rnd = 0; rnd < (cx->Nrnd >> 1) - 1; ++rnd)
+        {
+            round(fwd_rnd, b1, b0, kp); 
+            round(fwd_rnd, b0, b1, kp + nc); kp += 2 * nc;
+        }
+
+        round(fwd_rnd,  b1, b0, kp);
+        round(fwd_lrnd, b0, b1, kp + nc);
+    }
+
+
+#else
+    {   word    rnd;
+//        word kp_0 = (kp)[0];
+//        word kp_1 = (kp)[1];
+//        word kp_2 = (kp)[2];
+//        word kp_3 = (kp)[3];
+//        word kp_tab[64];
+
+    for(rnd = 0; rnd < trip_count ; rnd=rnd+2)
+        {
+#ifdef CGRA_COMPILER
+  please_map_me();
+#endif
+//);
+      b1[0]= kp_tab[0+rnd*nc] ^
+         (     ft_tab[bval(fwd_var(b0,0,0),rf1(0,0))]   ^
+             upr(ft_tab[bval(fwd_var(b0,1,0),rf1(1,0))],1)   ^
+           upr(ft_tab[bval(fwd_var(b0,2,0),rf1(2,0))],2)   ^
+           upr(ft_tab[bval(fwd_var(b0,3,0),rf1(3,0))],3))  ;
+//      printf("b1[0]:%d,%u\n",b1[0],b1[0]);
+
+         b1[1]= kp_tab[1+rnd*nc] ^
+             (     ft_tab[bval(fwd_var(b0,0,1),rf1(0,1))]   ^
+              upr(ft_tab[bval(fwd_var(b0,1,1),rf1(1,1))],1)   ^
+          upr(ft_tab[bval(fwd_var(b0,2,1),rf1(2,1))],2)   ^
+          upr(ft_tab[bval(fwd_var(b0,3,1),rf1(3,1))],3))  ;
+
+         b1[2]= kp_tab[2+rnd*nc] ^
+             (     ft_tab[bval(fwd_var(b0,0,2),rf1(0,2))]   ^
+              upr(ft_tab[bval(fwd_var(b0,1,2),rf1(1,2))],1)   ^
+          upr(ft_tab[bval(fwd_var(b0,2,2),rf1(2,2))],2)   ^
+          upr(ft_tab[bval(fwd_var(b0,3,2),rf1(3,2))],3))  ;
+
+         b1[3]= kp_tab[3+rnd*nc] ^
+             (     ft_tab[bval(fwd_var(b0,0,3),rf1(0,3))]   ^
+              upr(ft_tab[bval(fwd_var(b0,1,3),rf1(1,3))],1)   ^
+          upr(ft_tab[bval(fwd_var(b0,2,3),rf1(2,3))],2)   ^
+          upr(ft_tab[bval(fwd_var(b0,3,3),rf1(3,3))],3))  ;
+
+
+            //l_copy(b0, b1);
+//#define l_copy(y, x)    s(y,0) = s(x,0); s(y,1) = s(x,1);                         s(y,2) = s(x,2); s(y,3) = s(x,3);
+         b0[0] = b1[0]; b0[1] = b1[1];                         b0[2] = b1[2]; b0[3] = b1[3];
+
+               b1[0]= kp_tab[0+(rnd+1)*nc] ^
+         (     ft_tab[bval(fwd_var(b0,0,0),rf1(0,0))]   ^
+             upr(ft_tab[bval(fwd_var(b0,1,0),rf1(1,0))],1)   ^
+           upr(ft_tab[bval(fwd_var(b0,2,0),rf1(2,0))],2)   ^
+           upr(ft_tab[bval(fwd_var(b0,3,0),rf1(3,0))],3))  ;
+//      printf("b1[0]:%d,%u\n",b1[0],b1[0]);
+
+         b1[1]= kp_tab[1+(rnd+1)*nc] ^
+             (     ft_tab[bval(fwd_var(b0,0,1),rf1(0,1))]   ^
+              upr(ft_tab[bval(fwd_var(b0,1,1),rf1(1,1))],1)   ^
+          upr(ft_tab[bval(fwd_var(b0,2,1),rf1(2,1))],2)   ^
+          upr(ft_tab[bval(fwd_var(b0,3,1),rf1(3,1))],3))  ;
+
+         b1[2]= kp_tab[2+(rnd+1)*nc] ^
+             (     ft_tab[bval(fwd_var(b0,0,2),rf1(0,2))]   ^
+              upr(ft_tab[bval(fwd_var(b0,1,2),rf1(1,2))],1)   ^
+          upr(ft_tab[bval(fwd_var(b0,2,2),rf1(2,2))],2)   ^
+          upr(ft_tab[bval(fwd_var(b0,3,2),rf1(3,2))],3))  ;
+
+         b1[3]= kp_tab[3+(rnd+1)*nc] ^
+             (     ft_tab[bval(fwd_var(b0,0,3),rf1(0,3))]   ^
+              upr(ft_tab[bval(fwd_var(b0,1,3),rf1(1,3))],1)   ^
+          upr(ft_tab[bval(fwd_var(b0,2,3),rf1(2,3))],2)   ^
+          upr(ft_tab[bval(fwd_var(b0,3,3),rf1(3,3))],3))  ;
+
+
+            //l_copy(b0, b1);
+//#define l_copy(y, x)    s(y,0) = s(x,0); s(y,1) = s(x,1);                         s(y,2) = s(x,2); s(y,3) = s(x,3);
+         b0[0] = b1[0]; b0[1] = b1[1];                         b0[2] = b1[2]; b0[3] = b1[3];
+
+           // kp += nc;
+          
+        }
+
+        round(fwd_lrnd, b0, b1, kp);
+
+    }
+#endif 
+
+    /*#else
+    {   word    rnd;
+        
+    for(rnd = 0; rnd < cx->Nrnd ; ++rnd)
+        {
+#ifdef CGRA_COMPILER
+  please_map_me();
+#endif
+            if ( rnd == cx->Nrnd - 1) {
+                round(fwd_lrnd, b0, b1, kp);
+            } else {
+
+                round(fwd_rnd, b1, b0, kp); 
+            l_copy(b0, b1); kp += nc;
+            }
+        }
+
+    }
+#endif */
+
+    state_out(out_blk, b0);
+    return aes_good;
+} 
+
 
 
 __attribute__((annotate("in_blk:128,out_blk:128,cx:128")))
