@@ -15,7 +15,10 @@
 
 #define R3 4000
 #define C3 4
-
+//#define R1C1C24P R1*C1*C2/(4*P)
+//#define C2P C2/P
+#define R1C1C24P 6720
+#define C2P 42
 int8_t WEIGHT_MATRIX[R1*C1];
 int8_t INPUT_MATRIX[R2*C2];
 int16_t OUTPUT_MATRIX_[R1*C2];
@@ -477,7 +480,8 @@ int32_t O0[R1*(C2/P)], W0[R1*C1], I0[R2*(C2/P)];
 int32_t O1[R1*(C2/P)], W1[R1*C1], I1[R2*(C2/P)];
 int32_t O2[R1*(C2/P)], W2[R1*C1], I2[R2*(C2/P)];
 int32_t O3[R1*(C2/P)], W3[R1*C1], I3[R2*(C2/P)];
-
+//int32_t R1C1C24P=R1*C1*C2/(4*P);
+//int32_t C2P=C2/P;
 //12 partitions
 void microspeech_conv_layer_hycube(){
 	int i,j,k,ijk;
@@ -519,7 +523,7 @@ void microspeech_conv_layer_hycube(){
 			}
 */
 
-i=0;j=0;k=0;
+/*i=0;j=0;k=0;
         for (ijk=0;ijk<R1*C1*C2/(4*P); ijk++){
            #ifdef CGRA_COMPILER
            please_map_me();
@@ -531,6 +535,23 @@ i=0;j=0;k=0;
 				++j;
 			}
 			if(j == C2/P){
+  				j=0;
+				++i;
+			}
+	}*/
+
+i=0;j=0;k=0;
+        for (ijk=0;ijk<R1C1C24P; ijk++){
+           #ifdef CGRA_COMPILER
+           please_map_me();
+           #endif
+	   O0[i*C2P+j] = O0[i*C2P+j] + W0[i*C1+k]* I0[k*C2P+j]+ W0[i*C1+k+1]* I0[(k+1)*C2P+j]+ W0[i*C1+k+2]* I0[(k+2)*C2P+j]+W0[i*C1+k+3]* I0[(k+3)*C2P+j];
+	   k=k+4;
+			if(k+1 >= C1){
+				k=0;
+				++j;
+			}
+			if(j == C2P){
   				j=0;
 				++i;
 			}
