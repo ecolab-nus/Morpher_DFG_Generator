@@ -27,7 +27,7 @@
 #define R1C1C24P 6720
 #define C2P 42
 
-//#define INTEGRATION_WITH_FPGA_EMULATION
+#define INTEGRATION_WITH_FPGA_EMULATION
 
 #ifdef INTEGRATION_WITH_FPGA_EMULATION
 
@@ -47,10 +47,13 @@
 #endif
 
 
-#define BYTE_OFFSET_BETWEEN_TWO_CLUSTERS 8000// check this with thilini
-#define CLUSTER0_BASE_ADDRESS_O0 18944
-#define CLUSTER0_BASE_ADDRESS_I0 0
-#define CLUSTER0_BASE_ADDRESS_W0 16384
+#define BYTE_OFFSET_BETWEEN_TWO_CLUSTERS 16384 //8192*2// check this with thilini
+
+//https://github.com/ecolab-nus/HyCUBE_RTL/blob/main/HyCUBE_8x8_8bit_22nm/rtl/design/microspeech_single/mem_alloc.txt
+#define CLUSTER0_BASE_ADDRESS_O0 2560 
+#define CLUSTER0_BASE_ADDRESS_I0 8192
+#define CLUSTER0_BASE_ADDRESS_W0 0
+
 #define CLUSTER1_BASE_ADDRESS_O1 (CLUSTER0_BASE_ADDRESS_O0 + BYTE_OFFSET_BETWEEN_TWO_CLUSTERS)
 #define CLUSTER1_BASE_ADDRESS_I1 (CLUSTER0_BASE_ADDRESS_I0 + BYTE_OFFSET_BETWEEN_TWO_CLUSTERS )
 #define CLUSTER1_BASE_ADDRESS_W1 (CLUSTER0_BASE_ADDRESS_W0 + BYTE_OFFSET_BETWEEN_TWO_CLUSTERS)
@@ -534,12 +537,150 @@ void spi_receive(){
 
 }
 */
+void send_pre_compiled_config_data_trace(){
+    // Time functions
+    clock_t start, end;
+    double time_used;
+
+
+    //SPI data vars
+    uint32 sizeOfRead;
+    //uint16 sizeOfRead;
+    uint8 wdata[file_len*size], rdata[file_len*size];
+ 	
+
+/* Invocation 2 */
+        // Chip enable and resetn set to 0
+        wdata[0]=0x18; //{Opcode,Addr(MSB)}
+        wdata[1]=0x00; //Addr
+        wdata[2]=0x00; //Addr
+        wdata[3]=0x00; //Size
+        wdata[4]=0x00;
+	wdata[5]=0x00;
+        
+        ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], 4+2,  &sizeOfRead, true);
+        if (FT_OK != ftStatus) f_exit("Write failed!\n");
+        
+        wdata[0]=0x08; //{Opcode,Addr(MSB)}
+        //SPI read
+        ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], 4+2,  &sizeOfRead, true);
+        if (FT_OK != ftStatus) f_exit("Read failed!\n");
+
+        //Read
+        printf("S1: Error: %2x%2x (expected) != %2x%2x (read)\n",wdata[4],wdata[5],rdata[4],rdata[5]);
+
+
+
+        // Resentn set to 1
+        wdata[0]=0x18; //{Opcode,Addr(MSB)}
+        wdata[1]=0x00; //Addr
+        wdata[2]=0x00; //Addr
+        wdata[3]=0x00; //Size
+        wdata[4]=0x01;
+	wdata[5]=0x00;
+        
+        ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], 4+2,  &sizeOfRead, true);
+        if (FT_OK != ftStatus) f_exit("Write failed!\n");
+        
+        wdata[0]=0x08; //{Opcode,Addr(MSB)}
+        //SPI read
+        ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], 4+2,  &sizeOfRead, true);
+        if (FT_OK != ftStatus) f_exit("Read failed!\n");
+
+        //Read
+        printf("S2: Error: %2x%2x (expected) != %2x%2x (read)\n",wdata[4],wdata[5],rdata[4],rdata[5]);
+
+
+
+        // Chip_en set to 1
+        wdata[0]=0x18; //{Opcode,Addr(MSB)}
+        wdata[1]=0x00; //Addr
+        wdata[2]=0x00; //Addr
+        wdata[3]=0x00; //Size
+        wdata[4]=0x01;
+	wdata[5]=0x10;
+        
+        ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], 4+2,  &sizeOfRead, true);
+        if (FT_OK != ftStatus) f_exit("Write failed!\n");
+        
+        wdata[0]=0x08; //{Opcode,Addr(MSB)}
+        //SPI read
+        ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], 4+2,  &sizeOfRead, true);
+        if (FT_OK != ftStatus) f_exit("Read failed!\n");
+
+        //Read
+        printf("S3: Error: %2x%2x (expected) != %2x%2x (read)\n",wdata[4],wdata[5],rdata[4],rdata[5]);
+
+    //RW loop
+    #include "../../../../invocation2/invocation2.h"
+    
+
+    start = clock();
+    for (int i=0; i<file_len; i++) {
+    	// Write data
+	ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[size*i], &wdata[size*i], size,  &sizeOfRead, true);
+    	if (FT_OK != ftStatus) f_exit("Write failed!\n");
+
+    //printf("Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\n", wdata[size*i], wdata[size*i + 1], wdata[size*i + 2], wdata[size*i+3], wdata[size*i + 4], wdata[size*i + 5]);
+
+    }
+    end = clock();
+    time_used = (double)(end-start)/CLOCKS_PER_SEC;
+    printf("pre_compiled_config_data_trace is completely written through spi in %f seconds\n\n", time_used);
+
+}
+//send 1 2B data elements with one address
+void send_data_1_spi(int * data, int address){
+
+    uint32 sizeOfRead;
+    uint8_t databyte1,databyte2,databyte3,databyte4,databyte5,databyte6,databyte7,databyte8;
+    uint8_t wdata[6];
+    uint8_t rdata[6];
+    uint8_t addrbyte1,addrbyte2;
+
+    databyte1 = (*data & 0xFF00) >> 8;
+    databyte2 = *data & 0x00FF;
+
+            
+    addrbyte1 = (address & 0xFF00) >> 8;
+    addrbyte2 = address &  0x00FF;
+    //printf("I0[%d]:%d : addr: %d data B1: %x B2: %x addr B1:%x B2:%x  \n", i, I0[i], addr, databyte1, databyte2, addrbyte1, addrbyte2);
+    // printf("addr: %x | %x\n",addrbyte1,addrbyte2);
+    // printf("data: %x | %x\n",databyte1,databyte2);
+    /*
+    printf("addr: %x | %x\n",addrbyte1,addrbyte2);
+    printf("data: %x | %x\n",databyte1,databyte2);
+    printf("data: %x | %x\n",databyte3,databyte4);
+    printf("data: %x | %x\n",databyte5,databyte6);
+    printf("data: %x | %x\n",databyte7,databyte8);
+    */
+    #ifdef INTEGRATION_WITH_FPGA_EMULATION
+
+    // Write data
+    wdata[0] = 0x12; // {Opcode, Addr(MSB)}
+    wdata[1] = addrbyte1; // Addr // Check endianess with Rohan
+    wdata[2] = addrbyte2; // Addr
+    wdata[3] = 0x00; // Size
+    wdata[4] = databyte1; // Data
+    wdata[5] = databyte2; // Data
+
+    //printf("send_data_1_spi Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\t address %d\n",wdata[0],wdata[1],wdata[2],wdata[3],wdata[4],wdata[5], address );
+
+    ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], size,  &sizeOfRead, true);
+    if (FT_OK != ftStatus) f_exit("send_data_1_spi Write failed!\n");
+
+    #endif
+        
+
+}
 
 //send 4 2B data elements with one address
 void send_data_4_spi(int * data, int address){
 
+    uint32 sizeOfRead;
     uint8_t databyte1,databyte2,databyte3,databyte4,databyte5,databyte6,databyte7,databyte8;
     uint8_t wdata[12];
+    uint8_t rdata[12];
     uint8_t addrbyte1,addrbyte2;
 
     databyte1 = (*data & 0xFF00) >> 8;
@@ -568,7 +709,7 @@ void send_data_4_spi(int * data, int address){
     #ifdef INTEGRATION_WITH_FPGA_EMULATION
 
     // Write data
-    wdata[0] = 0x10; // {Opcode, Addr(MSB)}
+    wdata[0] = 0x12; // {Opcode, Addr(MSB)}
     wdata[1] = addrbyte1; // Addr // Check endianess with Rohan
     wdata[2] = addrbyte2; // Addr
     wdata[3] = 0x3; // Size
@@ -580,8 +721,8 @@ void send_data_4_spi(int * data, int address){
     wdata[9] = databyte6; // Data
     wdata[10] = databyte7; // Data
     wdata[11] = databyte8; // Data
-    ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[size*i], &wdata[size*i], size,  &sizeOfRead, true);
-    if (FT_OK != ftStatus) f_exit("Write failed!\n");
+    ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], size,  &sizeOfRead, true);
+    if (FT_OK != ftStatus) f_exit("send_data_4_spi Write failed!\n");
 
     #endif
         
@@ -590,8 +731,64 @@ void send_data_4_spi(int * data, int address){
 
 void read_spi_data(){
     #ifdef INTEGRATION_WITH_FPGA_EMULATION
+    //SPI data vars
+    uint32 sizeOfRead;
+    uint8 wdata[file_len*size], rdata[file_len*size];
 
-    #include "invocation3/invocation3.h"
+///////////////////////////////////////////////////////////////
+
+   
+
+    wdata[0] = 0x18;
+    wdata[1] = 0x00;	
+    wdata[2] = 0x00;
+    wdata[3] = 0x00;
+    wdata[4] = 0x01;
+    wdata[5] = 0x10;
+	
+    // Write start execution
+    ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], size,  &sizeOfRead, true);
+    if (FT_OK != ftStatus) f_exit("Write failed!\n");
+	
+    printf("Start execution bit is written\n\n");
+    
+    
+    
+
+    printf("Reading the start execution bit\n");
+    wdata[0] = 0x08;
+    wdata[1] = 0x00;	
+    wdata[2] = 0x00;
+    wdata[3] = 0x00;
+    wdata[4] = 0x01;
+    wdata[5] = 0x10;
+
+    // Read start execution
+    ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], size,  &sizeOfRead, true);
+    if (FT_OK != ftStatus) f_exit("Read failed!\n");
+
+    printf("Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\t Rdata %2x %2x\n\n", wdata[0], wdata[1], wdata[2], wdata[3], wdata[4], wdata[5], rdata[4], rdata[5]);
+
+
+
+    printf("Reading config register now.\n");
+    wdata[0] = 0x00;
+    wdata[1] = 0x00;
+    wdata[2] = 0x06;
+    wdata[3] = 0x00;
+    wdata[4] = 0x40;
+    wdata[5] = 0x00;
+    
+    // Read config register
+    ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], size,  &sizeOfRead, true);
+    if (FT_OK != ftStatus) f_exit("Read failed!\n");
+    
+    printf("Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\t Rdata %2x %2x\n\n", wdata[0], wdata[1], wdata[2], wdata[3], wdata[4], wdata[5], rdata[4], rdata[5]);
+    
+
+
+
+    #include "../../../../invocation1/invocation1.h"
     printf("Reading the data from the memories now.\n");
     wdata[0] = 0x10;
     wdata[1] = 0x00;
@@ -599,6 +796,7 @@ void read_spi_data(){
     wdata[3] = 0x00;
     wdata[4] = 0x40;
     wdata[5] = 0x00;
+    
     
     /*printf("Printing array A.\n");
     for (int i=7680/6; i<=7794/6; i++) {
@@ -633,36 +831,50 @@ void read_spi_data(){
     }*/
 
     printf("\n\ndata.\n");
-    for (int i=0; i<file_len; i++) {
-    wdata[size*i] -= 0x10;
-    // printf("%d, %x\t", i*6, wdata[i*6]);
-    printf("i %d ", i); 
-
-        //Read data
-    ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[size*i], &wdata[size*i], size,  &sizeOfRead, true);
-        if (FT_OK != ftStatus) f_exit("Read failed!\n");
-
-    printf("Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\t Rdata %2x %2x\n", wdata[size*i], wdata[size*i + 1], wdata[size*i + 2], wdata[size*i+3], wdata[size*i + 4], wdata[size*i + 5], rdata[size*i + 4], rdata[size*i + 5]);
+    for (int i=0; i<file_len; i++) {//file_len
+    	wdata[size*i] -= 0x10;
+    	// printf("%d, %x\t", i*6, wdata[i*6]);
+	
+    	    //Read data
+    	ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[size*i], &wdata[size*i], size,  &sizeOfRead, true);
+    	    if (FT_OK != ftStatus) f_exit("Read failed!\n");
+	
+    	uint32 address_msb = wdata[size*i + 1]<<8;
+    	uint32 address = address_msb + wdata[size*i + 2];
+    	if(address == 2560){// && address < 2560+50){
+    		printf("i %d ", i); 
+    		printf("Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\t Rdata %2x %2x\n", wdata[size*i], wdata[size*i + 1], wdata[size*i + 2], wdata[size*i+3], wdata[size*i + 4], wdata[size*i + 5], rdata[size*i + 4], rdata[size*i + 5]);
+   	
+    		printf("%d\n",address );
+		}
     }
     
 
     #endif
 }
 
-void start_execution_and_wait(){
-#ifdef INTEGRATION_WITH_FPGA_EMULATION
+void read_spi_data_range(int start_addr, int range, int * array){
+    #ifdef INTEGRATION_WITH_FPGA_EMULATION
+    //SPI data vars
+    uint32 sizeOfRead;
+    uint8 wdata[size], rdata[size];
+    uint8_t addrbyte1,addrbyte2;
+
+///////////////////////////////////////////////////////////////
+
+   
 
     wdata[0] = 0x18;
-    wdata[1] = 0x00;    
+    wdata[1] = 0x00;	
     wdata[2] = 0x00;
     wdata[3] = 0x00;
-    wdata[4] = 0x00;
-    wdata[5] = 0x01;
-    
+    wdata[4] = 0x01;
+    wdata[5] = 0x10;
+	
     // Write start execution
     ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], size,  &sizeOfRead, true);
     if (FT_OK != ftStatus) f_exit("Write failed!\n");
-    
+	
     printf("Start execution bit is written\n\n");
     
     
@@ -670,11 +882,192 @@ void start_execution_and_wait(){
 
     printf("Reading the start execution bit\n");
     wdata[0] = 0x08;
-    wdata[1] = 0x00;    
+    wdata[1] = 0x00;	
     wdata[2] = 0x00;
     wdata[3] = 0x00;
-    wdata[4] = 0x00;
-    wdata[5] = 0x01;
+    wdata[4] = 0x01;
+    wdata[5] = 0x10;
+
+    // Read start execution
+    ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], size,  &sizeOfRead, true);
+    if (FT_OK != ftStatus) f_exit("Read failed!\n");
+
+    printf("Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\t Rdata %2x %2x\n\n", wdata[0], wdata[1], wdata[2], wdata[3], wdata[4], wdata[5], rdata[4], rdata[5]);
+
+
+
+    printf("Reading config register now.\n");
+    wdata[0] = 0x00;
+    wdata[1] = 0x00;
+    wdata[2] = 0x06;
+    wdata[3] = 0x00;
+    wdata[4] = 0x40;
+    wdata[5] = 0x00;
+    
+    // Read config register
+    ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], size,  &sizeOfRead, true);
+    if (FT_OK != ftStatus) f_exit("Read failed!\n");
+    
+    printf("Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\t Rdata %2x %2x\n\n", wdata[0], wdata[1], wdata[2], wdata[3], wdata[4], wdata[5], rdata[4], rdata[5]);
+    
+
+
+
+    //#include "../../../../invocation1/invocation1.h"
+    printf("Reading the data from the memories now.\n");
+    wdata[0] = 0x10;
+    wdata[1] = 0x00;
+    wdata[2] = 0x06;
+    wdata[3] = 0x00;
+    wdata[4] = 0x40;
+    wdata[5] = 0x00;
+    
+    
+    /*printf("Printing array A.\n");
+    for (int i=7680/6; i<=7794/6; i++) {
+    wdata[size*i] -= 0x10;
+    // printf("%d, %x\t", i*6, wdata[i*6]);
+    
+        //Read data
+    ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[size*i], &wdata[size*i], size,  &sizeOfRead, true);
+        if (FT_OK != ftStatus) f_exit("Read failed!\n");
+    printf("Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\t Rdata %2x %2x\n", wdata[size*i], wdata[size*i + 1], wdata[size*i + 2], wdata[size*i+3], wdata[size*i + 4], wdata[size*i + 5], rdata[size*i + 4], rdata[size*i + 5]);
+    }
+    
+    printf("\n\nPrinting array B.\n");
+    for (int i=7800/6; i<=7914/6; i++) {
+    wdata[size*i] -= 0x10;
+    // printf("%d, %x\t", i*6, wdata[i*6]);
+    
+        //Read data
+    ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[size*i], &wdata[size*i], size,  &sizeOfRead, true);
+        if (FT_OK != ftStatus) f_exit("Read failed!\n");
+    printf("Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\t Rdata %2x %2x\n", wdata[size*i], wdata[size*i + 1], wdata[size*i + 2], wdata[size*i+3], wdata[size*i + 4], wdata[size*i + 5], rdata[size*i + 4], rdata[size*i + 5]);
+    }
+    printf("\n\nPrinting array C.\n");
+    for (int i=32256/6; i<=32370/6; i++) {
+    wdata[size*i] -= 0x10;
+    // printf("%d, %x\t", i*6, wdata[i*6]);
+    
+        //Read data
+    ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[size*i], &wdata[size*i], size,  &sizeOfRead, true);
+        if (FT_OK != ftStatus) f_exit("Read failed!\n");
+    printf("Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\t Rdata %2x %2x\n", wdata[size*i], wdata[size*i + 1], wdata[size*i + 2], wdata[size*i+3], wdata[size*i + 4], wdata[size*i + 5], rdata[size*i + 4], rdata[size*i + 5]);
+    }*/
+
+    printf("\n\ndata.\n");
+
+    int address = start_addr;
+            
+    addrbyte1 = (address & 0xFF00) >> 8;
+    addrbyte2 = address &  0x00FF;
+
+    for (int i=0; i<range; i++) {//file_len
+
+
+    	wdata[0] = 0x02;
+    	wdata[1] = addrbyte1;
+    	wdata[2] = addrbyte2;
+    	wdata[3] = 0x00;
+    	wdata[4] = 0x00;
+    	wdata[5] = 0x00;
+
+
+
+    	
+    	
+    	// printf("%d, %x\t", i*6, wdata[i*6]);
+	
+    	    //Read data
+    	ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], size,  &sizeOfRead, true);
+    	    if (FT_OK != ftStatus) f_exit("Read failed!\n");
+	
+
+    	if(address == 2560){// && address < 2560+50){
+    		printf("i %d ", i); 
+    		printf("Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\t Rdata %2x %2x\n", wdata[0], wdata[1], wdata[2], wdata[3], wdata[4], wdata[5], rdata[4], rdata[5]);
+   	
+    		printf("%d\n",address );
+		}
+
+
+
+        address = address + 2;    
+    	addrbyte1 = (address & 0xFF00) >> 8;
+    	addrbyte2 = address &  0x00FF;
+
+    	uint32 data_msb = rdata[4] << 8;
+
+    	*array = data_msb + rdata[5];
+    	array++;
+    }
+    
+
+    #endif
+}
+
+
+void start_execution_and_wait(){
+#ifdef INTEGRATION_WITH_FPGA_EMULATION
+	uint32 sizeOfRead;
+	uint8_t wdata[12];
+    uint8_t rdata[12];
+
+// //WRITE LOOPSTART (16383 = 3fff) 1
+// 	wdata[0] = 0x10; // {Opcode, Addr(MSB)}
+// 	wdata[1] = 0x3f; // Addr
+// 	wdata[2] = 0xff; // Addr
+// 	wdata[3] = 0x00; // Size
+// 	wdata[4] = 0x00; // Data
+// 	wdata[5] = 0x01; // Data    
+// 	ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], size,  &sizeOfRead, true);
+//     if (FT_OK != ftStatus) f_exit("Write failed!\n");
+
+//     printf("LOOPSTART bit is written\n\n");
+	
+
+    printf("Reading the start execution bit\n");
+    wdata[0] = 0x08;
+    wdata[1] = 0x00;	
+    wdata[2] = 0x00;
+    wdata[3] = 0x00;
+    wdata[4] = 0x01;
+    wdata[5] = 0x10;
+
+    // Read start execution
+    ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], size,  &sizeOfRead, true);
+    if (FT_OK != ftStatus) f_exit("Read failed!\n");
+
+    
+    printf("Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\t Rdata %2x %2x\n\n", wdata[0], wdata[1], wdata[2], wdata[3], wdata[4], wdata[5], rdata[4], rdata[5]);
+
+
+
+
+
+    wdata[0] = 0x18;
+    wdata[1] = 0x00;	
+    wdata[2] = 0x00;
+    wdata[3] = 0x00;
+    wdata[4] = 0x01;
+    wdata[5] = 0x11;
+	
+    // Write start execution
+    ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], size,  &sizeOfRead, true);
+    if (FT_OK != ftStatus) f_exit("Write failed!\n");
+	
+    printf("Start execution bit is written\n\n");
+    
+    
+    
+
+    printf("Reading the start execution bit\n");
+    wdata[0] = 0x08;
+    wdata[1] = 0x00;	
+    wdata[2] = 0x00;
+    wdata[3] = 0x00;
+    wdata[4] = 0x01;
+    wdata[5] = 0x11;
 
     // Read start execution
     ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], size,  &sizeOfRead, true);
@@ -690,34 +1083,35 @@ void start_execution_and_wait(){
     wdata[1] = 0x00;
     wdata[2] = 0x00;
     wdata[3] = 0x00;
-    wdata[4] = 0x00;
-    wdata[5] = 0x01;
+    wdata[4] = 0x01;
+    wdata[5] = 0x11;
     uint8_t end_exec;
 
     int counter = 0;
     while(1) {
-    
-    // Read the execution end bit
-    ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], size,  &sizeOfRead, true);
-        if (FT_OK != ftStatus) f_exit("Read failed!\n");
+	
+	// Read the execution end bit
+	ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], size,  &sizeOfRead, true);
+    	if (FT_OK != ftStatus) f_exit("Read failed!\n");
 
-    // printf("%02x %02x\n", rdata[4], rdata[5]);
-    /*if(rdata[5] != end_exec)
-        printf("End exec bit value changed to %x %x\n", rdata[4], rdata[5]);
-    
-    end_exec = rdata[5];*/
-    // counter++;
-    
-    // if(counter > 100000) {
-    // if(rdata[5] == 0x02 || rdata[5] == 0x03 || rdata[5] != 0xFF || rdata[5] != 0x00) {
-        //printf("rdata[4] %x\t rdata[5] %x\n\n", rdata[4], rdata[5]);
-    //  break;
-    //}
+	// printf("%02x %02x\n", rdata[4], rdata[5]);
+	/*if(rdata[5] != end_exec)
+		printf("End exec bit value changed to %x %x\n", rdata[4], rdata[5]);
+	
+	end_exec = rdata[5];*/
+	// counter++;
+	
+	// if(counter > 100000) {
+	// if(rdata[5] == 0x02 || rdata[5] == 0x03 || rdata[5] != 0xFF || rdata[5] != 0x00) {
+		//printf("rdata[4] %x\t rdata[5] %x\n\n", rdata[4], rdata[5]);
+	//	break;
+	//}
+    	//printf("waiting for exec end\n");
 
-    if(rdata[5] == 0x03) {
-        printf("rdata[4] %x\t rdata[5] %x\n\n", rdata[4], rdata[5]);
-        break;
-    }
+	if(rdata[5] == 0x03) {
+		printf("rdata[4] %x\t rdata[5] %x\n\n", rdata[4], rdata[5]);
+		break;
+	}
     }
 
     printf("Observed execution end bit.\n\n");
@@ -731,6 +1125,9 @@ int32_t O0[R1*(C2/P)], W0[R1*C1], I0[R2*(C2/P)];
 int32_t O1[R1*(C2/P)], W1[R1*C1], I1[R2*(C2/P)];
 int32_t O2[R1*(C2/P)], W2[R1*C1], I2[R2*(C2/P)];
 int32_t O3[R1*(C2/P)], W3[R1*C1], I3[R2*(C2/P)];
+
+
+int32_t O0_PACE[R1*(C2/P)];
 //int32_t R1C1C24P=R1*C1*C2/(4*P);
 //int32_t C2P=C2/P;
 //12 partitions
@@ -771,7 +1168,7 @@ void microspeech_conv_layer_hycube(){
 
 	//SEND O0 to CLUSTER0_BASE_ADDRESS_O0
 
-
+/*
 	//SEND I0 to CLUSTER0_BASE_ADDRESS_I0
 		for (int i = 0; i < R2*C2/P; i=i+4)
 		{
@@ -836,12 +1233,101 @@ void microspeech_conv_layer_hycube(){
             
             int addr = (i*2+CLUSTER3_BASE_ADDRESS_W3);// 16 bit address
             send_data_4_spi(&W3[i], addr);
+        }*/
+
+
+
+    //remove this after finding the start address
+	send_pre_compiled_config_data_trace();
+	
+	//SEND I0 to CLUSTER0_BASE_ADDRESS_I0
+		for (int i = 0; i < R2*C2/P; i=i+1)
+		{
+			//
+			int addr = (i*2+CLUSTER0_BASE_ADDRESS_I0);// 16 bit address
+            send_data_1_spi(&I0[i], addr);
+
+		}
+
+	//SEND W0 to CLUSTER0_BASE_ADDRESS_W0
+		for (int i = 0; i < R1*C1; i=i+1)
+		{
+			
+            int addr = (i*2+CLUSTER0_BASE_ADDRESS_W0);// 16 bit address
+            send_data_1_spi(&W0[i], addr);
+		}
+		  //   FT4222_UnInitialize(ftHandle);
+    // FT_Close(ftHandle);
+    // exit(0);
+
+	//SEND O1 to CLUSTER1_BASE_ADDRESS_O1
+	//SEND I1 to CLUSTER1_BASE_ADDRESS_I1
+        for (int i = 0; i < R2*C2/P; i=i+1)
+        {
+            //
+            int addr = (i*2+CLUSTER1_BASE_ADDRESS_I1);// 16 bit address
+            send_data_1_spi(&I1[i], addr);
+
+        }
+	//SEND W1 to CLUSTER1_BASE_ADDRESS_W1
+        for (int i = 0; i < R1*C1; i=i+1)
+        {
+            
+            int addr = (i*2+CLUSTER1_BASE_ADDRESS_W1);// 16 bit address
+            send_data_1_spi(&W1[i], addr);
+        }
+	//SEND O2 to CLUSTER2_BASE_ADDRESS_O2
+	//SEND I2 to CLUSTER2_BASE_ADDRESS_I2
+        for (int i = 0; i < R2*C2/P; i=i+1)
+        {
+            //
+            int addr = (i*2+CLUSTER2_BASE_ADDRESS_I2);// 16 bit address
+            send_data_1_spi(&I2[i], addr);
+
+        }
+	//SEND W2 to CLUSTER2_BASE_ADDRESS_W2
+        for (int i = 0; i < R1*C1; i=i+1)
+        {
+            
+            int addr = (i*2+CLUSTER2_BASE_ADDRESS_W2);// 16 bit address
+            send_data_1_spi(&W2[i], addr);
+        }
+	//SEND O3 to CLUSTER3_BASE_ADDRESS_O3
+	//SEND I3 to CLUSTER3_BASE_ADDRESS_I3
+        for (int i = 0; i < R2*C2/P; i=i+1)
+        {
+            //
+            int addr = (i*2+CLUSTER3_BASE_ADDRESS_I3);// 16 bit address
+            send_data_1_spi(&I3[i], addr);
+
+        }
+	//SEND W3 to CLUSTER3_BASE_ADDRESS_W3
+        for (int i = 0; i < R1*C1; i=i+1)
+        {
+            
+            int addr = (i*2+CLUSTER3_BASE_ADDRESS_W3);// 16 bit address
+            send_data_1_spi(&W3[i], addr);
         }
 
+        
+
 	// execute
+
+	printf("Writing SPI live data done\n");
+
         start_execution_and_wait();
 
-        read_spi_data();
+        //read_spi_data();
+	
+	
+	read_spi_data_range((int)CLUSTER0_BASE_ADDRESS_O0, R1*(C2/P), O0_PACE);
+printf("Reading SPI live data done\n");
+
+		  //   FT4222_UnInitialize(ftHandle);
+    // FT_Close(ftHandle);
+    // exit(0);
+
+
 /*
 	for (i=0;i<R1; i++)
 		for (j=0;j<C2/P; j++)
@@ -935,9 +1421,18 @@ i=0;j=0;k=0;
 				++i;
 			}
 	}
+	FILE *fp;
+fp = fopen("O0_results_expected.txt", "w");
+	for(int i = 0;i<R1*(C2/P);i++){
+		//printf("Result: %2x expected: %2x\n", O0_PACE[i],O0[i]);
+		fprintf(fp, "Result: %2x expected: %2x\n", O0_PACE[i],O0[i]);
+		fprintf(fp, "Result: %d expected: %d\n\n", O0_PACE[i],O0[i]);
+	}
+fclose(fp);
 
-
-
+		  //   FT4222_UnInitialize(ftHandle);
+    // FT_Close(ftHandle);
+    // exit(0);
 
 
 
@@ -1184,6 +1679,9 @@ i=0;j=0;k=0;
 	//pthread_exit(NULL);
 }
 
+
+
+
 int setup_fpga_emulation(){
     /*
 Following code segment is copied from 
@@ -1195,7 +1693,7 @@ https://github.com/ecolab-nus/Hycube_RTL_FPGA/blob/main/oct_2021/snapshot/sw/mic
     double time_used;
 
 
-    // //FT4222H handle and vars
+    //FT4222H handle and vars
     // FT_HANDLE ftHandle = NULL;
     // FT_STATUS ftStatus;
     // FT4222_STATUS ft4222Status;
@@ -1270,17 +1768,80 @@ https://github.com/ecolab-nus/Hycube_RTL_FPGA/blob/main/oct_2021/snapshot/sw/mic
     ft4222Status= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], 2,  &sizeOfRead, true);
     if (FT4222_OK != ftStatus) f_exit("Write failed!\n");
 
+        // Chip enable and resetn set to 0
+        wdata[0]=0x18; //{Opcode,Addr(MSB)}
+        wdata[1]=0x00; //Addr
+        wdata[2]=0x00; //Addr
+        wdata[3]=0x00; //Size
+        wdata[4]=0x00;
+	wdata[5]=0x00;
+        
+        ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], 4+2,  &sizeOfRead, true);
+        if (FT_OK != ftStatus) f_exit("Write failed!\n");
+        
+        wdata[0]=0x08; //{Opcode,Addr(MSB)}
+        //SPI read
+        ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], 4+2,  &sizeOfRead, true);
+        if (FT_OK != ftStatus) f_exit("Read failed!\n");
+
+        //Read
+        printf("S1: Error: %2x%2x (expected) != %2x%2x (read)\n",wdata[4],wdata[5],rdata[4],rdata[5]);
+
+
+
+        // Resentn set to 1
+        wdata[0]=0x18; //{Opcode,Addr(MSB)}
+        wdata[1]=0x00; //Addr
+        wdata[2]=0x00; //Addr
+        wdata[3]=0x00; //Size
+        wdata[4]=0x01;
+	wdata[5]=0x00;
+        
+        ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], 4+2,  &sizeOfRead, true);
+        if (FT_OK != ftStatus) f_exit("Write failed!\n");
+        
+        wdata[0]=0x08; //{Opcode,Addr(MSB)}
+        //SPI read
+        ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], 4+2,  &sizeOfRead, true);
+        if (FT_OK != ftStatus) f_exit("Read failed!\n");
+
+        //Read
+        printf("S2: Error: %2x%2x (expected) != %2x%2x (read)\n",wdata[4],wdata[5],rdata[4],rdata[5]);
+
+
+
+        // Chip_en set to 1
+        wdata[0]=0x18; //{Opcode,Addr(MSB)}
+        wdata[1]=0x00; //Addr
+        wdata[2]=0x00; //Addr
+        wdata[3]=0x00; //Size
+        wdata[4]=0x01;
+	wdata[5]=0x10;
+        
+        ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], 4+2,  &sizeOfRead, true);
+        if (FT_OK != ftStatus) f_exit("Write failed!\n");
+        
+        wdata[0]=0x08; //{Opcode,Addr(MSB)}
+        //SPI read
+        ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], 4+2,  &sizeOfRead, true);
+        if (FT_OK != ftStatus) f_exit("Read failed!\n");
+
+        //Read
+        printf("S3: Error: %2x%2x (expected) != %2x%2x (read)\n",wdata[4],wdata[5],rdata[4],rdata[5]);
+   
+
+
     //RW loop
     int s;
-    #include "invocation3/invocation3.h"
-    
+    #include "../../../../invocation1/invocation1.h"
 
+    // Start writing
     start = clock();
     for (int i=0; i<file_len; i++) {
-        // Write data
-    ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[size*i], &wdata[size*i], size,  &sizeOfRead, true);
-        if (FT_OK != ftStatus) f_exit("Write failed!\n");
-    
+    	// Write data
+	ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[size*i], &wdata[size*i], size,  &sizeOfRead, true);
+    	if (FT_OK != ftStatus) f_exit("Write failed!\n");
+	
     }
     end = clock();
     time_used = (double)(end-start)/CLOCKS_PER_SEC;
@@ -1291,11 +1852,11 @@ https://github.com/ecolab-nus/Hycube_RTL_FPGA/blob/main/oct_2021/snapshot/sw/mic
 
     printf("Reading the start execution bit\n");
     wdata[0] = 0x08;
-    wdata[1] = 0x00;    
+    wdata[1] = 0x00;	
     wdata[2] = 0x00;
     wdata[3] = 0x00;
-    wdata[4] = 0x00;
-    wdata[5] = 0x00;
+    wdata[4] = 0x01;
+    wdata[5] = 0x10;
 
     // Read start execution
     ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], size,  &sizeOfRead, true);
@@ -1309,16 +1870,16 @@ https://github.com/ecolab-nus/Hycube_RTL_FPGA/blob/main/oct_2021/snapshot/sw/mic
 
 
     wdata[0] = 0x18;
-    wdata[1] = 0x00;    
+    wdata[1] = 0x00;	
     wdata[2] = 0x00;
     wdata[3] = 0x00;
-    wdata[4] = 0x00;
-    wdata[5] = 0x01;
-    
+    wdata[4] = 0x01;
+    wdata[5] = 0x11;
+	
     // Write start execution
     ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], size,  &sizeOfRead, true);
     if (FT_OK != ftStatus) f_exit("Write failed!\n");
-    
+	
     printf("Start execution bit is written\n\n");
     
     
@@ -1326,11 +1887,11 @@ https://github.com/ecolab-nus/Hycube_RTL_FPGA/blob/main/oct_2021/snapshot/sw/mic
 
     printf("Reading the start execution bit\n");
     wdata[0] = 0x08;
-    wdata[1] = 0x00;    
+    wdata[1] = 0x00;	
     wdata[2] = 0x00;
     wdata[3] = 0x00;
-    wdata[4] = 0x00;
-    wdata[5] = 0x01;
+    wdata[4] = 0x01;
+    wdata[5] = 0x11;
 
     // Read start execution
     ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], size,  &sizeOfRead, true);
@@ -1346,50 +1907,50 @@ https://github.com/ecolab-nus/Hycube_RTL_FPGA/blob/main/oct_2021/snapshot/sw/mic
     wdata[1] = 0x00;
     wdata[2] = 0x00;
     wdata[3] = 0x00;
-    wdata[4] = 0x00;
-    wdata[5] = 0x01;
+    wdata[4] = 0x01;
+    wdata[5] = 0x11;
     uint8_t end_exec;
 
     int counter = 0;
     while(1) {
-    
-    // Read the execution end bit
-    ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], size,  &sizeOfRead, true);
-        if (FT_OK != ftStatus) f_exit("Read failed!\n");
+	
+	// Read the execution end bit
+	ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], size,  &sizeOfRead, true);
+    	if (FT_OK != ftStatus) f_exit("Read failed!\n");
 
-    // printf("%02x %02x\n", rdata[4], rdata[5]);
-    /*if(rdata[5] != end_exec)
-        printf("End exec bit value changed to %x %x\n", rdata[4], rdata[5]);
-    
-    end_exec = rdata[5];*/
-    // counter++;
-    
-    // if(counter > 100000) {
-    // if(rdata[5] == 0x02 || rdata[5] == 0x03 || rdata[5] != 0xFF || rdata[5] != 0x00) {
-        //printf("rdata[4] %x\t rdata[5] %x\n\n", rdata[4], rdata[5]);
-    //  break;
-    //}
+	// printf("%02x %02x\n", rdata[4], rdata[5]);
+	/*if(rdata[5] != end_exec)
+		printf("End exec bit value changed to %x %x\n", rdata[4], rdata[5]);
+	
+	end_exec = rdata[5];*/
+	// counter++;
+	
+	// if(counter > 100000) {
+	// if(rdata[5] == 0x02 || rdata[5] == 0x03 || rdata[5] != 0xFF || rdata[5] != 0x00) {
+		//printf("rdata[4] %x\t rdata[5] %x\n\n", rdata[4], rdata[5]);
+	//	break;
+	//}
 
-    if(rdata[5] == 0x03) {
-        printf("rdata[4] %x\t rdata[5] %x\n\n", rdata[4], rdata[5]);
-        break;
-    }
+	if(rdata[5] == 0x03) {
+		printf("rdata[4] %x\t rdata[5] %x\n\n", rdata[4], rdata[5]);
+		break;
+	}
     }
 
     printf("Observed execution end bit.\n\n");
    
 
     wdata[0] = 0x18;
-    wdata[1] = 0x00;    
+    wdata[1] = 0x00;	
     wdata[2] = 0x00;
     wdata[3] = 0x00;
-    wdata[4] = 0x00;
-    wdata[5] = 0x00;
-    
+    wdata[4] = 0x01;
+    wdata[5] = 0x10;
+	
     // Write start execution
     ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], size,  &sizeOfRead, true);
     if (FT_OK != ftStatus) f_exit("Write failed!\n");
-    
+	
     printf("Start execution bit is written\n\n");
     
     
@@ -1397,11 +1958,11 @@ https://github.com/ecolab-nus/Hycube_RTL_FPGA/blob/main/oct_2021/snapshot/sw/mic
 
     printf("Reading the start execution bit\n");
     wdata[0] = 0x08;
-    wdata[1] = 0x00;    
+    wdata[1] = 0x00;	
     wdata[2] = 0x00;
     wdata[3] = 0x00;
-    wdata[4] = 0x00;
-    wdata[5] = 0x00;
+    wdata[4] = 0x01;
+    wdata[5] = 0x10;
 
     // Read start execution
     ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], size,  &sizeOfRead, true);
@@ -1428,7 +1989,7 @@ https://github.com/ecolab-nus/Hycube_RTL_FPGA/blob/main/oct_2021/snapshot/sw/mic
 
 
 
-    #include "invocation3/invocation3.h"
+    #include "../../../../invocation1/invocation1.h"
     printf("Reading the data from the memories now.\n");
     wdata[0] = 0x10;
     wdata[1] = 0x00;
@@ -1439,48 +2000,77 @@ https://github.com/ecolab-nus/Hycube_RTL_FPGA/blob/main/oct_2021/snapshot/sw/mic
     
     /*printf("Printing array A.\n");
     for (int i=7680/6; i<=7794/6; i++) {
-    wdata[size*i] -= 0x10;
-    // printf("%d, %x\t", i*6, wdata[i*6]);
-    
-        //Read data
-    ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[size*i], &wdata[size*i], size,  &sizeOfRead, true);
-        if (FT_OK != ftStatus) f_exit("Read failed!\n");
-    printf("Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\t Rdata %2x %2x\n", wdata[size*i], wdata[size*i + 1], wdata[size*i + 2], wdata[size*i+3], wdata[size*i + 4], wdata[size*i + 5], rdata[size*i + 4], rdata[size*i + 5]);
+	wdata[size*i] -= 0x10;
+	// printf("%d, %x\t", i*6, wdata[i*6]);
+	
+    	//Read data
+	ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[size*i], &wdata[size*i], size,  &sizeOfRead, true);
+    	if (FT_OK != ftStatus) f_exit("Read failed!\n");
+
+	printf("Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\t Rdata %2x %2x\n", wdata[size*i], wdata[size*i + 1], wdata[size*i + 2], wdata[size*i+3], wdata[size*i + 4], wdata[size*i + 5], rdata[size*i + 4], rdata[size*i + 5]);
     }
     
     printf("\n\nPrinting array B.\n");
     for (int i=7800/6; i<=7914/6; i++) {
-    wdata[size*i] -= 0x10;
-    // printf("%d, %x\t", i*6, wdata[i*6]);
-    
-        //Read data
-    ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[size*i], &wdata[size*i], size,  &sizeOfRead, true);
-        if (FT_OK != ftStatus) f_exit("Read failed!\n");
-    printf("Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\t Rdata %2x %2x\n", wdata[size*i], wdata[size*i + 1], wdata[size*i + 2], wdata[size*i+3], wdata[size*i + 4], wdata[size*i + 5], rdata[size*i + 4], rdata[size*i + 5]);
+	wdata[size*i] -= 0x10;
+	// printf("%d, %x\t", i*6, wdata[i*6]);
+	
+    	//Read data
+	ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[size*i], &wdata[size*i], size,  &sizeOfRead, true);
+    	if (FT_OK != ftStatus) f_exit("Read failed!\n");
+
+	printf("Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\t Rdata %2x %2x\n", wdata[size*i], wdata[size*i + 1], wdata[size*i + 2], wdata[size*i+3], wdata[size*i + 4], wdata[size*i + 5], rdata[size*i + 4], rdata[size*i + 5]);
     }
+
     printf("\n\nPrinting array C.\n");
     for (int i=32256/6; i<=32370/6; i++) {
-    wdata[size*i] -= 0x10;
-    // printf("%d, %x\t", i*6, wdata[i*6]);
-    
-        //Read data
-    ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[size*i], &wdata[size*i], size,  &sizeOfRead, true);
-        if (FT_OK != ftStatus) f_exit("Read failed!\n");
-    printf("Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\t Rdata %2x %2x\n", wdata[size*i], wdata[size*i + 1], wdata[size*i + 2], wdata[size*i+3], wdata[size*i + 4], wdata[size*i + 5], rdata[size*i + 4], rdata[size*i + 5]);
+	wdata[size*i] -= 0x10;
+	// printf("%d, %x\t", i*6, wdata[i*6]);
+	
+    	//Read data
+	ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[size*i], &wdata[size*i], size,  &sizeOfRead, true);
+    	if (FT_OK != ftStatus) f_exit("Read failed!\n");
+
+	printf("Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\t Rdata %2x %2x\n", wdata[size*i], wdata[size*i + 1], wdata[size*i + 2], wdata[size*i+3], wdata[size*i + 4], wdata[size*i + 5], rdata[size*i + 4], rdata[size*i + 5]);
     }*/
 
     printf("\n\ndata.\n");
-    for (int i=0; i<file_len; i++) {
-    wdata[size*i] -= 0x10;
-    // printf("%d, %x\t", i*6, wdata[i*6]);
-    printf("i %d ", i); 
+    /*
+    for (int i=4600; i<5000; i++) {//file_len
+	wdata[size*i] -= 0x10;
+	// printf("%d, %x\t", i*6, wdata[i*6]);
+	printf("i %d ", i);	
 
-        //Read data
-    ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[size*i], &wdata[size*i], size,  &sizeOfRead, true);
-        if (FT_OK != ftStatus) f_exit("Read failed!\n");
+    	//Read data
+	ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[size*i], &wdata[size*i], size,  &sizeOfRead, true);
+    	if (FT_OK != ftStatus) f_exit("Read failed!\n");
 
-    printf("Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\t Rdata %2x %2x\n", wdata[size*i], wdata[size*i + 1], wdata[size*i + 2], wdata[size*i+3], wdata[size*i + 4], wdata[size*i + 5], rdata[size*i + 4], rdata[size*i + 5]);
+	printf("Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\t Rdata %2x %2x\n", wdata[size*i], wdata[size*i + 1], wdata[size*i + 2], wdata[size*i+3], wdata[size*i + 4], wdata[size*i + 5], rdata[size*i + 4], rdata[size*i + 5]);
+    
+    uint32 address_msb = wdata[size*i + 1]<<8;
+    uint32 address = address_msb + wdata[size*i + 2];
+    printf("%d\n",address );
     }
+    */
+
+    for (int i=0; i<file_len; i++) {//file_len
+    	wdata[size*i] -= 0x10;
+    	// printf("%d, %x\t", i*6, wdata[i*6]);
+	
+    	    //Read data
+    	ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[size*i], &wdata[size*i], size,  &sizeOfRead, true);
+    	    if (FT_OK != ftStatus) f_exit("Read failed!\n");
+	
+    	uint32 address_msb = wdata[size*i + 1]<<8;
+    	uint32 address = address_msb + wdata[size*i + 2];
+    	if(address ==8190 || address == 2560){// >= 2560 && address < 2560+100){
+    		printf("i %d ", i); 
+    		printf("Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\t Rdata %2x %2x\n", wdata[size*i], wdata[size*i + 1], wdata[size*i + 2], wdata[size*i+3], wdata[size*i + 4], wdata[size*i + 5], rdata[size*i + 4], rdata[size*i + 5]);
+   	
+    		printf("%d\n",address );
+		}
+    }
+
     
 
     //Close device
@@ -1494,11 +2084,14 @@ https://github.com/ecolab-nus/Hycube_RTL_FPGA/blob/main/oct_2021/snapshot/sw/mic
 }
 
 
-
 void main() {
 
 
   setup_fpga_emulation();
+
+   // FT4222_UnInitialize(ftHandle);
+   //  FT_Close(ftHandle);
+   //  exit(0);
 
 
   int correct = 0;
