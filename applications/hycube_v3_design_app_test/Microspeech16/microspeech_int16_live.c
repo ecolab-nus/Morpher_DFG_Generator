@@ -567,7 +567,7 @@ void send_pre_compiled_config_data_trace(){
         if (FT_OK != ftStatus) f_exit("Read failed!\n");
 
         //Read
-        printf("S1: Error: %2x%2x (expected) != %2x%2x (read)\n",wdata[4],wdata[5],rdata[4],rdata[5]);
+        // printf("S1: Error: %2x%2x (expected) != %2x%2x (read)\n",wdata[4],wdata[5],rdata[4],rdata[5]);
 
 
 
@@ -588,7 +588,7 @@ void send_pre_compiled_config_data_trace(){
         if (FT_OK != ftStatus) f_exit("Read failed!\n");
 
         //Read
-        printf("S2: Error: %2x%2x (expected) != %2x%2x (read)\n",wdata[4],wdata[5],rdata[4],rdata[5]);
+        // printf("S2: Error: %2x%2x (expected) != %2x%2x (read)\n",wdata[4],wdata[5],rdata[4],rdata[5]);
 
 
 
@@ -609,7 +609,7 @@ void send_pre_compiled_config_data_trace(){
         if (FT_OK != ftStatus) f_exit("Read failed!\n");
 
         //Read
-        printf("S3: Error: %2x%2x (expected) != %2x%2x (read)\n",wdata[4],wdata[5],rdata[4],rdata[5]);
+        // printf("S3: Error: %2x%2x (expected) != %2x%2x (read)\n",wdata[4],wdata[5],rdata[4],rdata[5]);
 
     //RW loop
     #include "../../../../invocation2/invocation2.h"
@@ -626,7 +626,7 @@ void send_pre_compiled_config_data_trace(){
     }
     end = clock();
     time_used = (double)(end-start)/CLOCKS_PER_SEC;
-    printf("pre_compiled_config_data_trace is completely written through spi in %f seconds\n\n", time_used);
+    // printf("pre_compiled_config_data_trace is completely written through spi in %f seconds\n\n", time_used);
 
 }
 //send 1 2B data elements with one address
@@ -889,12 +889,12 @@ void read_spi_data_range(int start_addr, int range, int * array){
     ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], size,  &sizeOfRead, true);
     if (FT_OK != ftStatus) f_exit("Write failed!\n");
 	
-    printf("Start execution bit is written\n\n");
+    // printf("Start execution bit is written\n\n");
     
     
     
 
-    printf("Reading the start execution bit\n");
+    // printf("Reading the start execution bit\n");
     wdata[0] = 0x08;
     wdata[1] = 0x00;	
     wdata[2] = 0x00;
@@ -906,11 +906,11 @@ void read_spi_data_range(int start_addr, int range, int * array){
     ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], size,  &sizeOfRead, true);
     if (FT_OK != ftStatus) f_exit("Read failed!\n");
 
-    printf("Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\t Rdata %2x %2x\n\n", wdata[0], wdata[1], wdata[2], wdata[3], wdata[4], wdata[5], rdata[4], rdata[5]);
+    // printf("Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\t Rdata %2x %2x\n\n", wdata[0], wdata[1], wdata[2], wdata[3], wdata[4], wdata[5], rdata[4], rdata[5]);
 
 
 
-    printf("Reading config register now.\n");
+    // printf("Reading config register now.\n");
     wdata[0] = 0x00;
     wdata[1] = 0x00;
     wdata[2] = 0x06;
@@ -922,13 +922,13 @@ void read_spi_data_range(int start_addr, int range, int * array){
     ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], size,  &sizeOfRead, true);
     if (FT_OK != ftStatus) f_exit("Read failed!\n");
     
-    printf("Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\t Rdata %2x %2x\n\n", wdata[0], wdata[1], wdata[2], wdata[3], wdata[4], wdata[5], rdata[4], rdata[5]);
+    // printf("Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\t Rdata %2x %2x\n\n", wdata[0], wdata[1], wdata[2], wdata[3], wdata[4], wdata[5], rdata[4], rdata[5]);
     
 
 
 
     //#include "../../../../invocation1/invocation1.h"
-    printf("Reading the data from the memories now.\n");
+    // printf("Reading the data from the memories now.\n");
     wdata[0] = 0x10;
     wdata[1] = 0x00;
     wdata[2] = 0x06;
@@ -969,7 +969,7 @@ void read_spi_data_range(int start_addr, int range, int * array){
     printf("Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\t Rdata %2x %2x\n", wdata[size*i], wdata[size*i + 1], wdata[size*i + 2], wdata[size*i+3], wdata[size*i + 4], wdata[size*i + 5], rdata[size*i + 4], rdata[size*i + 5]);
     }*/
 
-    printf("\n\ndata.\n");
+    // printf("\n\ndata.\n");
 
     int address = start_addr;
             
@@ -998,10 +998,10 @@ void read_spi_data_range(int start_addr, int range, int * array){
 	
 
     	if(address == 2560){// && address < 2560+50){
-    		printf("i %d ", i); 
-    		printf("Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\t Rdata %2x %2x\n", wdata[0], wdata[1], wdata[2], wdata[3], wdata[4], wdata[5], rdata[4], rdata[5]);
+    		// printf("i %d ", i); 
+    		// printf("Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\t Rdata %2x %2x\n", wdata[0], wdata[1], wdata[2], wdata[3], wdata[4], wdata[5], rdata[4], rdata[5]);
    	
-    		printf("%d\n",address );
+    		// printf("%d\n",address );
 		}
 
 
@@ -1043,7 +1043,7 @@ void start_execution_and_wait(){
 //     printf("LOOPSTART bit is written\n\n");
 	
 
-    printf("Reading the start execution bit\n");
+    // printf("Reading the start execution bit\n");
     wdata[0] = 0x08;
     wdata[1] = 0x00;	
     wdata[2] = 0x00;
@@ -1056,7 +1056,7 @@ void start_execution_and_wait(){
     if (FT_OK != ftStatus) f_exit("Read failed!\n");
 
     
-    printf("Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\t Rdata %2x %2x\n\n", wdata[0], wdata[1], wdata[2], wdata[3], wdata[4], wdata[5], rdata[4], rdata[5]);
+    // printf("Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\t Rdata %2x %2x\n\n", wdata[0], wdata[1], wdata[2], wdata[3], wdata[4], wdata[5], rdata[4], rdata[5]);
 
 
 
@@ -1073,12 +1073,12 @@ void start_execution_and_wait(){
     ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], size,  &sizeOfRead, true);
     if (FT_OK != ftStatus) f_exit("Write failed!\n");
 	
-    printf("Start execution bit is written\n\n");
+    // printf("Start execution bit is written\n\n");
     
     
     
 
-    printf("Reading the start execution bit\n");
+    // printf("Reading the start execution bit\n");
     wdata[0] = 0x08;
     wdata[1] = 0x00;	
     wdata[2] = 0x00;
@@ -1091,7 +1091,7 @@ void start_execution_and_wait(){
     if (FT_OK != ftStatus) f_exit("Read failed!\n");
 
     
-    printf("Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\t Rdata %2x %2x\n\n", wdata[0], wdata[1], wdata[2], wdata[3], wdata[4], wdata[5], rdata[4], rdata[5]);
+    // printf("Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\t Rdata %2x %2x\n\n", wdata[0], wdata[1], wdata[2], wdata[3], wdata[4], wdata[5], rdata[4], rdata[5]);
 
     //rdata[4] = 0x00;
     //rdata[5] = 0x00;
@@ -1126,7 +1126,7 @@ void start_execution_and_wait(){
     	//printf("waiting for exec end\n");
 
 	if(rdata[5] == 0x03) {
-		printf("rdata[4] %x\t rdata[5] %x\n\n", rdata[4], rdata[5]);
+		// printf("rdata[4] %x\t rdata[5] %x\n\n", rdata[4], rdata[5]);
 		break;
 	}
     }
@@ -1289,7 +1289,7 @@ void microspeech_conv_layer_hycube(){
         {
             //
             int addr = (i*2+CLUSTER1_BASE_ADDRESS_I1);// 16 bit address
-            send_data_1_spi(&I1[i], addr);
+            // send_data_1_spi(&I1[i], addr);
 
         }
 	//SEND W1 to CLUSTER1_BASE_ADDRESS_W1
@@ -1297,7 +1297,7 @@ void microspeech_conv_layer_hycube(){
         {
             
             int addr = (i*2+CLUSTER1_BASE_ADDRESS_W1);// 16 bit address
-            send_data_1_spi(&W1[i], addr);
+            // send_data_1_spi(&W1[i], addr);
         }
 	//SEND O2 to CLUSTER2_BASE_ADDRESS_O2
 	//SEND I2 to CLUSTER2_BASE_ADDRESS_I2
@@ -1305,7 +1305,7 @@ void microspeech_conv_layer_hycube(){
         {
             //
             int addr = (i*2+CLUSTER2_BASE_ADDRESS_I2);// 16 bit address
-            send_data_1_spi(&I2[i], addr);
+            // send_data_1_spi(&I2[i], addr);
 
         }
 	//SEND W2 to CLUSTER2_BASE_ADDRESS_W2
@@ -1313,7 +1313,7 @@ void microspeech_conv_layer_hycube(){
         {
             
             int addr = (i*2+CLUSTER2_BASE_ADDRESS_W2);// 16 bit address
-            send_data_1_spi(&W2[i], addr);
+            // send_data_1_spi(&W2[i], addr);
         }
 	//SEND O3 to CLUSTER3_BASE_ADDRESS_O3
 	//SEND I3 to CLUSTER3_BASE_ADDRESS_I3
@@ -1321,7 +1321,7 @@ void microspeech_conv_layer_hycube(){
         {
             //
             int addr = (i*2+CLUSTER3_BASE_ADDRESS_I3);// 16 bit address
-            send_data_1_spi(&I3[i], addr);
+            // send_data_1_spi(&I3[i], addr);
 
         }
 	//SEND W3 to CLUSTER3_BASE_ADDRESS_W3
@@ -1329,7 +1329,7 @@ void microspeech_conv_layer_hycube(){
         {
             
             int addr = (i*2+CLUSTER3_BASE_ADDRESS_W3);// 16 bit address
-            send_data_1_spi(&W3[i], addr);
+            // send_data_1_spi(&W3[i], addr);
         }
 
         
@@ -1344,9 +1344,9 @@ void microspeech_conv_layer_hycube(){
 	
 	
 	read_spi_data_range((int)CLUSTER0_BASE_ADDRESS_O0, R1*(C2/P), O0_PACE);
-	read_spi_data_range((int)CLUSTER0_BASE_ADDRESS_W0, R1*C1, W0_PACE);
-	read_spi_data_range((int)CLUSTER0_BASE_ADDRESS_I0, R2*(C2/P), I0_PACE);
-	read_spi_data_range(0, 8192, FIRST_TWO_MEMS);
+	// read_spi_data_range((int)CLUSTER0_BASE_ADDRESS_W0, R1*C1, W0_PACE);
+	// read_spi_data_range((int)CLUSTER0_BASE_ADDRESS_I0, R2*(C2/P), I0_PACE);
+	// read_spi_data_range(0, 8192, FIRST_TWO_MEMS);
 printf("Reading SPI live data done\n");
 
 		  //   FT4222_UnInitialize(ftHandle);
@@ -1447,46 +1447,46 @@ i=0;j=0;k=0;
 				++i;
 			}
 	}
-	FILE *fp;
-fp = fopen("O0_results_expected.txt", "w");
-	for(int i = 0;i<R1*(C2/P);i++){
-		//printf("Result: %2x expected: %2x\n", O0_PACE[i],O0[i]);
-		fprintf(fp, "Result: %2x expected: %2x\n", O0_PACE[i],O0[i]);
-		fprintf(fp, "Result: %d expected: %d\n\n", O0_PACE[i],O0[i]);
-	}
-fclose(fp);
-fp = fopen("W0_results_expected.txt", "w");
-	for(int i = 0;i<R1*C1;i++){
-		//printf("Result: %2x expected: %2x\n", O0_PACE[i],O0[i]);
-		fprintf(fp, "Result: %2x expected: %2x\n", W0_PACE[i],W0[i]);
-		fprintf(fp, "Result: %d expected: %d\n\n", W0_PACE[i],W0[i]);
-	}
-fclose(fp);
-fp = fopen("I0_results_expected.txt", "w");
-	for(int i = 0;i<R2*(C2/P);i++){
-		//printf("Result: %2x expected: %2x\n", O0_PACE[i],O0[i]);
-		fprintf(fp, "Result: %2x expected: %2x\n", I0_PACE[i],I0[i]);
-		fprintf(fp, "Result: %d expected: %d\n\n", I0_PACE[i],I0[i]);
-	}
-fclose(fp);
+// 	FILE *fp;
+// fp = fopen("O0_results_expected.txt", "w");
+// 	for(int i = 0;i<R1*(C2/P);i++){
+// 		//printf("Result: %2x expected: %2x\n", O0_PACE[i],O0[i]);
+// 		fprintf(fp, "Result: %2x expected: %2x\n", O0_PACE[i],O0[i]);
+// 		fprintf(fp, "Result: %d expected: %d\n\n", O0_PACE[i],O0[i]);
+// 	}
+// fclose(fp);
+// fp = fopen("W0_results_expected.txt", "w");
+// 	for(int i = 0;i<R1*C1;i++){
+// 		//printf("Result: %2x expected: %2x\n", O0_PACE[i],O0[i]);
+// 		fprintf(fp, "Result: %2x expected: %2x\n", W0_PACE[i],W0[i]);
+// 		fprintf(fp, "Result: %d expected: %d\n\n", W0_PACE[i],W0[i]);
+// 	}
+// fclose(fp);
+// fp = fopen("I0_results_expected.txt", "w");
+// 	for(int i = 0;i<R2*(C2/P);i++){
+// 		//printf("Result: %2x expected: %2x\n", O0_PACE[i],O0[i]);
+// 		fprintf(fp, "Result: %2x expected: %2x\n", I0_PACE[i],I0[i]);
+// 		fprintf(fp, "Result: %d expected: %d\n\n", I0_PACE[i],I0[i]);
+// 	}
+// fclose(fp);
 
-	fp = fopen("FIRST_TWO_MEMS_CONTENT.txt", "w");
-	for(int i = 0;i<8192;i++){
-		//printf("Result: %2x expected: %2x\n", O0_PACE[i],O0[i]);
-		fprintf(fp, "Addr: %d Data: %d\n", i,FIRST_TWO_MEMS[i]);
-	}
-fclose(fp);
+// 	fp = fopen("FIRST_TWO_MEMS_CONTENT.txt", "w");
+// 	for(int i = 0;i<8192;i++){
+// 		//printf("Result: %2x expected: %2x\n", O0_PACE[i],O0[i]);
+// 		fprintf(fp, "Addr: %d Data: %d\n", i,FIRST_TWO_MEMS[i]);
+// 	}
+// fclose(fp);
 
-		    FT4222_UnInitialize(ftHandle);
-    FT_Close(ftHandle);
-    exit(0);
+// 		    FT4222_UnInitialize(ftHandle);
+//     FT_Close(ftHandle);
+//     exit(0);
 
 
 
 	//copy data back from O
 	for(int h=0; h<R1; h++)
 		for(int w=0; w<C2/P; w++){
-			OUTPUT_MATRIX_[h*(C2)+w] = O0[h*(C2/P)+w];
+			OUTPUT_MATRIX_[h*(C2)+w] = O0_PACE[h*(C2/P)+w];//O0[h*(C2/P)+w];
 			OUTPUT_MATRIX_[h*(C2)+w+ (C2/P)] = O1[h*(C2/P)+w];
 			OUTPUT_MATRIX_[h*(C2)+w+ (2*C2/P)] = O2[h*(C2/P)+w];
 			OUTPUT_MATRIX_[h*(C2)+w+ (3*C2/P)] = O3[h*(C2/P)+w];
@@ -2149,7 +2149,7 @@ void main() {
 
   //specify directory path here
   //path_to_dir
-  dir = opendir("test_data/");
+  dir = opendir("/home/angela/Desktop/prototype/Morpher_DFG_Generator/applications/hycube_v3_design_app_test/Microspeech16/test_data/");
   
   if (dir == NULL) {
     printf("Failed to open directory.\n");
@@ -2161,7 +2161,7 @@ void main() {
       char string[1000];
       
       //specify directory path here
-      char full_file_name[] = "test_data/";
+      char full_file_name[] = "/home/angela/Desktop/prototype/Morpher_DFG_Generator/applications/hycube_v3_design_app_test/Microspeech16/test_data/";
       int ctr_fl = sizeof(full_file_name);
 
       //printf("%s\n", entry->d_name);
@@ -2206,7 +2206,7 @@ void main() {
 
     for (int i=0;i<R1; i++)
 	for (int j=0; j<500; j++){
-		OUTPUT_MATRIX[(i)*500+(j)] =OUTPUT_MATRIX_EXP[(i)*C2+(j)];// OUTPUT_MATRIX_[(i)*C2+(j)];
+		OUTPUT_MATRIX[(i)*500+(j)] =OUTPUT_MATRIX_[(i)*C2+(j)];// OUTPUT_MATRIX_[(i)*C2+(j)];
 	}
     quantize_conv_layer();
 
