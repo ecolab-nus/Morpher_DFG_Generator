@@ -9,4 +9,8 @@ There are four possible output labels: 1, 2, 3 and 4.
 
 To compile:
 gcc -w microspeech_int16.c -o micro -lpthread 
-Change "path_to_dir" on line 848 and line 860 accordingly.  
+Change "path_to_dir" on line 848 and line 860 accordingly.
+
+
+Compile with FPGA emulation test:
+gcc -w microspeech_int16_live.c -lft4222 -lftd2xx -Wl,-rpath /usr/local/lib -o microlive -lpthread  

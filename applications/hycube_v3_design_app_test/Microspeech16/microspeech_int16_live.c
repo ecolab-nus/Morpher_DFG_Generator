@@ -636,13 +636,27 @@ void send_data_1_spi(int * data, int address){
     uint8_t databyte1,databyte2,databyte3,databyte4,databyte5,databyte6,databyte7,databyte8;
     uint8_t wdata[6];
     uint8_t rdata[6];
-    uint8_t addrbyte1,addrbyte2;
+    uint8_t opcode_addrmsb,addrbyte1,addrbyte2;
+
+    opcode_addrmsb = 0x12;//0001 0010  [17] = 1 for DM
 
     databyte1 = (*data & 0xFF00) >> 8;
     databyte2 = *data & 0x00FF;
 
             
     addrbyte1 = (address & 0xFF00) >> 8;
+
+    uint8_t select_dmemmsb = (addrbyte1 & 0x80)>>7;
+    uint8_t select_dmem = (addrbyte1 & 0xe0);
+    uint8_t rest = addrbyte1 & 0x1f;
+    uint8_t convertedaddress = (select_dmem << 1)|rest;
+
+    opcode_addrmsb = opcode_addrmsb | select_dmemmsb;
+
+
+    addrbyte1 = convertedaddress;
+
+
     addrbyte2 = address &  0x00FF;
     //printf("I0[%d]:%d : addr: %d data B1: %x B2: %x addr B1:%x B2:%x  \n", i, I0[i], addr, databyte1, databyte2, addrbyte1, addrbyte2);
     // printf("addr: %x | %x\n",addrbyte1,addrbyte2);
@@ -657,14 +671,14 @@ void send_data_1_spi(int * data, int address){
     #ifdef INTEGRATION_WITH_FPGA_EMULATION
 
     // Write data
-    wdata[0] = 0x12; // {Opcode, Addr(MSB)}
+    wdata[0] = opcode_addrmsb; // {Opcode, Addr(MSB)}
     wdata[1] = addrbyte1; // Addr // Check endianess with Rohan
     wdata[2] = addrbyte2; // Addr
     wdata[3] = 0x00; // Size
     wdata[4] = databyte1; // Data
     wdata[5] = databyte2; // Data
-
-    //printf("send_data_1_spi Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\t address %d\n",wdata[0],wdata[1],wdata[2],wdata[3],wdata[4],wdata[5], address );
+    //if(address <= 8500)
+     	//printf("send_data_1_spi Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\t address %d\n",wdata[0],wdata[1],wdata[2],wdata[3],wdata[4],wdata[5], address );
 
     ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], size,  &sizeOfRead, true);
     if (FT_OK != ftStatus) f_exit("send_data_1_spi Write failed!\n");
@@ -997,8 +1011,11 @@ void read_spi_data_range(int start_addr, int range, int * array){
     	addrbyte2 = address &  0x00FF;
 
     	uint32 data_msb = rdata[4] << 8;
+    	uint16 data_before_signextend = data_msb + rdata[5];
+    	//*array = (data_before_signextend & 0xFF) << 7 >> 7; // sign extension
+    	*array = data_before_signextend | ((data_before_signextend & 0x8000) ? 0xFFFF0000 : 0); //sign extend
 
-    	*array = data_msb + rdata[5];
+    	//*array = data_msb + rdata[5];
     	array++;
     }
     
@@ -1127,7 +1144,8 @@ int32_t O2[R1*(C2/P)], W2[R1*C1], I2[R2*(C2/P)];
 int32_t O3[R1*(C2/P)], W3[R1*C1], I3[R2*(C2/P)];
 
 
-int32_t O0_PACE[R1*(C2/P)];
+int32_t O0_PACE[R1*(C2/P)], W0_PACE[R1*C1], I0_PACE[R2*(C2/P)];
+int32_t FIRST_TWO_MEMS[8192];
 //int32_t R1C1C24P=R1*C1*C2/(4*P);
 //int32_t C2P=C2/P;
 //12 partitions
@@ -1147,9 +1165,12 @@ void microspeech_conv_layer_hycube(){
 
 		}
 	//copy weight_m to W
+    int uint_weight = 0;
+    int uint_input = 0;
 	for(int h=0; h<R1; h++)
 		for(int w=0; w<C1; w++){
 			W0[h*C1+w] = WEIGHT_MATRIX[h*C1+w];
+			//if(uint_weight == 10) uint_weight = 0;
 			W1[h*C1+w] = WEIGHT_MATRIX[h*C1+w];
 			W2[h*C1+w] = WEIGHT_MATRIX[h*C1+w];
 			W3[h*C1+w] = WEIGHT_MATRIX[h*C1+w];
@@ -1159,6 +1180,8 @@ void microspeech_conv_layer_hycube(){
 	for(int h=0; h<R2; h++)
 		for(int w=0; w<C2/P; w++){
 			I0[h*(C2/P)+w] = INPUT_MATRIX[h*(C2)+w];
+			//uint_input = uint_input + 2;
+			//if(uint_input==10) uint_input = 0;
 			I1[h*(C2/P)+w] = INPUT_MATRIX[h*(C2)+w + (C2/P)];
 			I2[h*(C2/P)+w] = INPUT_MATRIX[h*(C2)+w + (2*C2/P)];
 			I3[h*(C2/P)+w] = INPUT_MATRIX[h*(C2)+w + (3*C2/P)];
@@ -1321,6 +1344,9 @@ void microspeech_conv_layer_hycube(){
 	
 	
 	read_spi_data_range((int)CLUSTER0_BASE_ADDRESS_O0, R1*(C2/P), O0_PACE);
+	read_spi_data_range((int)CLUSTER0_BASE_ADDRESS_W0, R1*C1, W0_PACE);
+	read_spi_data_range((int)CLUSTER0_BASE_ADDRESS_I0, R2*(C2/P), I0_PACE);
+	read_spi_data_range(0, 8192, FIRST_TWO_MEMS);
 printf("Reading SPI live data done\n");
 
 		  //   FT4222_UnInitialize(ftHandle);
@@ -1429,10 +1455,31 @@ fp = fopen("O0_results_expected.txt", "w");
 		fprintf(fp, "Result: %d expected: %d\n\n", O0_PACE[i],O0[i]);
 	}
 fclose(fp);
+fp = fopen("W0_results_expected.txt", "w");
+	for(int i = 0;i<R1*C1;i++){
+		//printf("Result: %2x expected: %2x\n", O0_PACE[i],O0[i]);
+		fprintf(fp, "Result: %2x expected: %2x\n", W0_PACE[i],W0[i]);
+		fprintf(fp, "Result: %d expected: %d\n\n", W0_PACE[i],W0[i]);
+	}
+fclose(fp);
+fp = fopen("I0_results_expected.txt", "w");
+	for(int i = 0;i<R2*(C2/P);i++){
+		//printf("Result: %2x expected: %2x\n", O0_PACE[i],O0[i]);
+		fprintf(fp, "Result: %2x expected: %2x\n", I0_PACE[i],I0[i]);
+		fprintf(fp, "Result: %d expected: %d\n\n", I0_PACE[i],I0[i]);
+	}
+fclose(fp);
 
-		  //   FT4222_UnInitialize(ftHandle);
-    // FT_Close(ftHandle);
-    // exit(0);
+	fp = fopen("FIRST_TWO_MEMS_CONTENT.txt", "w");
+	for(int i = 0;i<8192;i++){
+		//printf("Result: %2x expected: %2x\n", O0_PACE[i],O0[i]);
+		fprintf(fp, "Addr: %d Data: %d\n", i,FIRST_TWO_MEMS[i]);
+	}
+fclose(fp);
+
+		    FT4222_UnInitialize(ftHandle);
+    FT_Close(ftHandle);
+    exit(0);
 
 
 
