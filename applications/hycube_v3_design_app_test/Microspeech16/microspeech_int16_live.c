@@ -519,28 +519,8 @@ void microspeech_fc_layer(){
         }
     }
 }
-/*
-void spi_send(address,data){
 
-
-    start = clock();
-    for (int i=0; i<file_len; i++) {
-    	// Write data
-	ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[size*i], &wdata[size*i], size,  &sizeOfRead, true);
-    	if (FT_OK != ftStatus) f_exit("Write failed!\n");
-	
-    }
-    end = clock();
-    time_used = (double)(end-start)/CLOCKS_PER_SEC;
-    printf("Data is completely written through spi in %f seconds\n\n", time_used);
-
-}
-
-void spi_receive(){
-
-}
-*/
-void send_pre_compiled_config_data_trace(){
+void send_loopstart_and_cluster_enable(){
     // Time functions
     clock_t start, end;
     double time_used;
@@ -550,86 +530,20 @@ void send_pre_compiled_config_data_trace(){
     uint32 sizeOfRead;
     //uint16 sizeOfRead;
     uint8 wdata[file_len*size], rdata[file_len*size];
- 	
-
-/* Invocation 2 */
-        // Chip enable and resetn set to 0
-        wdata[0]=0x18; //{Opcode,Addr(MSB)}
-        wdata[1]=0x00; //Addr
-        wdata[2]=0x00; //Addr
-        wdata[3]=0x00; //Size
-        wdata[4]=0x00;
-	    wdata[5]=0x00;
-        
-        ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], 4+2,  &sizeOfRead, true);
-        if (FT_OK != ftStatus) f_exit("Write failed!\n");
-        
-        wdata[0]=0x08; //{Opcode,Addr(MSB)}
-        //SPI read
-        ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], 4+2,  &sizeOfRead, true);
-        if (FT_OK != ftStatus) f_exit("Read failed!\n");
-
-        //Read
-        // printf("S1: Error: %2x%2x (expected) != %2x%2x (read)\n",wdata[4],wdata[5],rdata[4],rdata[5]);
-
-
-
-        // Resentn set to 1
-        wdata[0]=0x18; //{Opcode,Addr(MSB)}
-        wdata[1]=0x00; //Addr
-        wdata[2]=0x00; //Addr
-        wdata[3]=0x00; //Size
-        wdata[4]=0x01;
-	    wdata[5]=0x00;
-        
-        ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], 4+2,  &sizeOfRead, true);
-        if (FT_OK != ftStatus) f_exit("Write failed!\n");
-        
-        wdata[0]=0x08; //{Opcode,Addr(MSB)}
-        //SPI read
-        ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], 4+2,  &sizeOfRead, true);
-        if (FT_OK != ftStatus) f_exit("Read failed!\n");
-
-        //Read
-        // printf("S2: Error: %2x%2x (expected) != %2x%2x (read)\n",wdata[4],wdata[5],rdata[4],rdata[5]);
-
-
-
-        // Chip_en set to 1
-        wdata[0]=0x18; //{Opcode,Addr(MSB)}
-        wdata[1]=0x00; //Addr
-        wdata[2]=0x00; //Addr
-        wdata[3]=0x00; //Size
-        wdata[4]=0x01;
-	    wdata[5]=0x10;
-        
-        ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], 4+2,  &sizeOfRead, true);
-        if (FT_OK != ftStatus) f_exit("Write failed!\n");
-        
-        wdata[0]=0x08; //{Opcode,Addr(MSB)}
-        //SPI read
-        ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], 4+2,  &sizeOfRead, true);
-        if (FT_OK != ftStatus) f_exit("Read failed!\n");
-
-        //Read
-        // printf("S3: Error: %2x%2x (expected) != %2x%2x (read)\n",wdata[4],wdata[5],rdata[4],rdata[5]);
-
-    //RW loop
+ 
     #include "../../../../invocation2/invocation2.h"
     
 
     start = clock();
     for (int i=3327; i<file_len; i++) {
     	// Write data
-    	if( (i > 3327+8180 && i < 3327+8194) || (i > 3327+8180+8192 && i < 3327+8194+8192) || (i > 3327+8180+2*8192 && i < 3327+8194+2*8192) || (i > 3327+8180+3*8192) ){
+    	//write start address and cluster enables
+    	if( (i > 3327+8190 && i < 3327+8194) || (i > 3327+8190+8192 && i < 3327+8194+8192) || (i > 3327+8190+2*8192 && i < 3327+8194+2*8192) || (i > 3327+8190+3*8192) ){
 		// if( (i > 3327+1280 && i < 3327+4096) || (i > 3327+4096 && i < 3327+8194) || (i > 3327+1280+8192 && i < 3327+4096+8192)|| (i > 3327+4096+8192 && i < 3327+8194+8192) || (i > 3327+1280+2*8192 && i < 3327+4096+2*8192) ||  (i > 3327+4096+2*8192 && i < 3327+8194+2*8192)|| (i > 3327+1280+3*8192) ){
 		
 			ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[size*i], &wdata[size*i], size,  &sizeOfRead, true);
     		if (FT_OK != ftStatus) f_exit("Write failed!\n");
     	}
-
-    //printf("Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\n", wdata[size*i], wdata[size*i + 1], wdata[size*i + 2], wdata[size*i+3], wdata[size*i + 4], wdata[size*i + 5]);
-
     }
     end = clock();
     time_used = (double)(end-start)/CLOCKS_PER_SEC;
@@ -753,129 +667,7 @@ void send_data_4_spi(int * data, int address){
 
 }
 
-void read_spi_data(){
-    #ifdef INTEGRATION_WITH_FPGA_EMULATION
-    //SPI data vars
-    uint32 sizeOfRead;
-    uint8 wdata[file_len*size], rdata[file_len*size];
 
-///////////////////////////////////////////////////////////////
-
-   
-
-    wdata[0] = 0x18;
-    wdata[1] = 0x00;	
-    wdata[2] = 0x00;
-    wdata[3] = 0x00;
-    wdata[4] = 0x01;
-    wdata[5] = 0x10;
-	
-    // Write start execution
-    ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], size,  &sizeOfRead, true);
-    if (FT_OK != ftStatus) f_exit("Write failed!\n");
-	
-    printf("Start execution bit is written\n\n");
-    
-    
-    
-
-    printf("Reading the start execution bit\n");
-    wdata[0] = 0x08;
-    wdata[1] = 0x00;	
-    wdata[2] = 0x00;
-    wdata[3] = 0x00;
-    wdata[4] = 0x01;
-    wdata[5] = 0x10;
-
-    // Read start execution
-    ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], size,  &sizeOfRead, true);
-    if (FT_OK != ftStatus) f_exit("Read failed!\n");
-
-    printf("Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\t Rdata %2x %2x\n\n", wdata[0], wdata[1], wdata[2], wdata[3], wdata[4], wdata[5], rdata[4], rdata[5]);
-
-
-
-    printf("Reading config register now.\n");
-    wdata[0] = 0x00;
-    wdata[1] = 0x00;
-    wdata[2] = 0x06;
-    wdata[3] = 0x00;
-    wdata[4] = 0x40;
-    wdata[5] = 0x00;
-    
-    // Read config register
-    ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], size,  &sizeOfRead, true);
-    if (FT_OK != ftStatus) f_exit("Read failed!\n");
-    
-    printf("Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\t Rdata %2x %2x\n\n", wdata[0], wdata[1], wdata[2], wdata[3], wdata[4], wdata[5], rdata[4], rdata[5]);
-    
-
-
-
-    #include "../../../../invocation1/invocation1.h"
-    printf("Reading the data from the memories now.\n");
-    wdata[0] = 0x10;
-    wdata[1] = 0x00;
-    wdata[2] = 0x06;
-    wdata[3] = 0x00;
-    wdata[4] = 0x40;
-    wdata[5] = 0x00;
-    
-    
-    /*printf("Printing array A.\n");
-    for (int i=7680/6; i<=7794/6; i++) {
-    wdata[size*i] -= 0x10;
-    // printf("%d, %x\t", i*6, wdata[i*6]);
-    
-        //Read data
-    ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[size*i], &wdata[size*i], size,  &sizeOfRead, true);
-        if (FT_OK != ftStatus) f_exit("Read failed!\n");
-    printf("Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\t Rdata %2x %2x\n", wdata[size*i], wdata[size*i + 1], wdata[size*i + 2], wdata[size*i+3], wdata[size*i + 4], wdata[size*i + 5], rdata[size*i + 4], rdata[size*i + 5]);
-    }
-    
-    printf("\n\nPrinting array B.\n");
-    for (int i=7800/6; i<=7914/6; i++) {
-    wdata[size*i] -= 0x10;
-    // printf("%d, %x\t", i*6, wdata[i*6]);
-    
-        //Read data
-    ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[size*i], &wdata[size*i], size,  &sizeOfRead, true);
-        if (FT_OK != ftStatus) f_exit("Read failed!\n");
-    printf("Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\t Rdata %2x %2x\n", wdata[size*i], wdata[size*i + 1], wdata[size*i + 2], wdata[size*i+3], wdata[size*i + 4], wdata[size*i + 5], rdata[size*i + 4], rdata[size*i + 5]);
-    }
-    printf("\n\nPrinting array C.\n");
-    for (int i=32256/6; i<=32370/6; i++) {
-    wdata[size*i] -= 0x10;
-    // printf("%d, %x\t", i*6, wdata[i*6]);
-    
-        //Read data
-    ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[size*i], &wdata[size*i], size,  &sizeOfRead, true);
-        if (FT_OK != ftStatus) f_exit("Read failed!\n");
-    printf("Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\t Rdata %2x %2x\n", wdata[size*i], wdata[size*i + 1], wdata[size*i + 2], wdata[size*i+3], wdata[size*i + 4], wdata[size*i + 5], rdata[size*i + 4], rdata[size*i + 5]);
-    }*/
-
-    printf("\n\ndata.\n");
-    for (int i=0; i<file_len; i++) {//file_len
-    	wdata[size*i] -= 0x10;
-    	// printf("%d, %x\t", i*6, wdata[i*6]);
-	
-    	    //Read data
-    	ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[size*i], &wdata[size*i], size,  &sizeOfRead, true);
-    	    if (FT_OK != ftStatus) f_exit("Read failed!\n");
-	
-    	uint32 address_msb = wdata[size*i + 1]<<8;
-    	uint32 address = address_msb + wdata[size*i + 2];
-    	if(address == 2560){// && address < 2560+50){
-    		printf("i %d ", i); 
-    		printf("Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\t Rdata %2x %2x\n", wdata[size*i], wdata[size*i + 1], wdata[size*i + 2], wdata[size*i+3], wdata[size*i + 4], wdata[size*i + 5], rdata[size*i + 4], rdata[size*i + 5]);
-   	
-    		printf("%d\n",address );
-		}
-    }
-    
-
-    #endif
-}
 
 void read_spi_data_range(int start_addr, int range, int * array){
     #ifdef INTEGRATION_WITH_FPGA_EMULATION
@@ -886,7 +678,6 @@ void read_spi_data_range(int start_addr, int range, int * array){
 
 ///////////////////////////////////////////////////////////////
 
-   
 
     wdata[0] = 0x18;
     wdata[1] = 0x00;	
@@ -901,7 +692,7 @@ void read_spi_data_range(int start_addr, int range, int * array){
 	
     // printf("Start execution bit is written\n\n");
     
-    
+ 
     
 
     // printf("Reading the start execution bit\n");
@@ -917,7 +708,6 @@ void read_spi_data_range(int start_addr, int range, int * array){
     if (FT_OK != ftStatus) f_exit("Read failed!\n");
 
     // printf("Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\t Rdata %2x %2x\n\n", wdata[0], wdata[1], wdata[2], wdata[3], wdata[4], wdata[5], rdata[4], rdata[5]);
-
 
 
     // printf("Reading config register now.\n");
@@ -947,39 +737,6 @@ void read_spi_data_range(int start_addr, int range, int * array){
     wdata[5] = 0x00;
     
     
-    /*printf("Printing array A.\n");
-    for (int i=7680/6; i<=7794/6; i++) {
-    wdata[size*i] -= 0x10;
-    // printf("%d, %x\t", i*6, wdata[i*6]);
-    
-        //Read data
-    ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[size*i], &wdata[size*i], size,  &sizeOfRead, true);
-        if (FT_OK != ftStatus) f_exit("Read failed!\n");
-    printf("Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\t Rdata %2x %2x\n", wdata[size*i], wdata[size*i + 1], wdata[size*i + 2], wdata[size*i+3], wdata[size*i + 4], wdata[size*i + 5], rdata[size*i + 4], rdata[size*i + 5]);
-    }
-    
-    printf("\n\nPrinting array B.\n");
-    for (int i=7800/6; i<=7914/6; i++) {
-    wdata[size*i] -= 0x10;
-    // printf("%d, %x\t", i*6, wdata[i*6]);
-    
-        //Read data
-    ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[size*i], &wdata[size*i], size,  &sizeOfRead, true);
-        if (FT_OK != ftStatus) f_exit("Read failed!\n");
-    printf("Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\t Rdata %2x %2x\n", wdata[size*i], wdata[size*i + 1], wdata[size*i + 2], wdata[size*i+3], wdata[size*i + 4], wdata[size*i + 5], rdata[size*i + 4], rdata[size*i + 5]);
-    }
-    printf("\n\nPrinting array C.\n");
-    for (int i=32256/6; i<=32370/6; i++) {
-    wdata[size*i] -= 0x10;
-    // printf("%d, %x\t", i*6, wdata[i*6]);
-    
-        //Read data
-    ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[size*i], &wdata[size*i], size,  &sizeOfRead, true);
-        if (FT_OK != ftStatus) f_exit("Read failed!\n");
-    printf("Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\t Rdata %2x %2x\n", wdata[size*i], wdata[size*i + 1], wdata[size*i + 2], wdata[size*i+3], wdata[size*i + 4], wdata[size*i + 5], rdata[size*i + 4], rdata[size*i + 5]);
-    }*/
-
-    // printf("\n\ndata.\n");
 
     int address = start_addr;
             
@@ -1027,14 +784,6 @@ void read_spi_data_range(int start_addr, int range, int * array){
     	    //Read data
     	ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], size,  &sizeOfRead, true);
     	    if (FT_OK != ftStatus) f_exit("Read failed!\n");
-	
-
-    	if(address == 2560){// && address < 2560+50){
-    		// printf("i %d ", i); 
-    		// printf("Addr %2x %2x %2x\t Size %2x\t Wdata %2x %2x\t Rdata %2x %2x\n", wdata[0], wdata[1], wdata[2], wdata[3], wdata[4], wdata[5], rdata[4], rdata[5]);
-   	
-    		// printf("%d\n",address );
-		}
 
 
 
@@ -1158,19 +907,6 @@ void start_execution_and_wait(){
 	ftStatus= FT4222_SPIMaster_SingleReadWrite(ftHandle, &rdata[0], &wdata[0], size,  &sizeOfRead, true);
     	if (FT_OK != ftStatus) f_exit("Read failed!\n");
 
-	// printf("%02x %02x\n", rdata[4], rdata[5]);
-	/*if(rdata[5] != end_exec)
-		printf("End exec bit value changed to %x %x\n", rdata[4], rdata[5]);
-	
-	end_exec = rdata[5];*/
-	// counter++;
-	
-	// if(counter > 100000) {
-	// if(rdata[5] == 0x02 || rdata[5] == 0x03 || rdata[5] != 0xFF || rdata[5] != 0x00) {
-		//printf("rdata[4] %x\t rdata[5] %x\n\n", rdata[4], rdata[5]);
-	//	break;
-	//}
-    	//printf("waiting for exec end\n");
 
 	if(rdata[5] == 0x03) {
 		// printf("rdata[4] %x\t rdata[5] %x\n\n", rdata[4], rdata[5]);
@@ -1200,6 +936,8 @@ int32_t ALL_EIGHT_MEMS[4*8192];
 //int32_t R1C1C24P=R1*C1*C2/(4*P);
 //int32_t C2P=C2/P;
 //12 partitions
+
+
 void conv_layer_pace(){
 	printf("# Calling PACE convolution #\n");
 	int i,j,k,ijk;
@@ -1239,7 +977,7 @@ void conv_layer_pace(){
 
 
     //remove this after finding the start address
-	    send_pre_compiled_config_data_trace();
+	    send_loopstart_and_cluster_enable();
 	
 
 
@@ -1251,24 +989,11 @@ void conv_layer_pace(){
 				
         	    int addr = (i*2+CLUSTER0_BASE_ADDRESS_W0);// 16 bit address
         	    send_data_1_spi(&W0[i], addr);
-			}
-			for (int i = 0; i < R1*C1; i=i+1)
-        	{
-        	    
-        	    int addr = (i*2+CLUSTER1_BASE_ADDRESS_W1);// 16 bit address
+        	    addr = (i*2+CLUSTER1_BASE_ADDRESS_W1);// 16 bit address
         	    send_data_1_spi(&W1[i], addr);
-        	}
-        	for (int i = 0; i < R1*C1; i=i+1)
-        	{
-        	    
-        	    int addr = (i*2+CLUSTER2_BASE_ADDRESS_W2);// 16 bit address
+        	    addr = (i*2+CLUSTER2_BASE_ADDRESS_W2);// 16 bit address
         	    send_data_1_spi(&W2[i], addr);
-        	}
-
-        	for (int i = 0; i < R1*C1; i=i+1)
-        	{
-        	    
-        	    int addr = (i*2+CLUSTER3_BASE_ADDRESS_W3);// 16 bit address
+        	    addr = (i*2+CLUSTER3_BASE_ADDRESS_W3);// 16 bit address
         	    send_data_1_spi(&W3[i], addr);
         	}
         
@@ -1281,28 +1006,12 @@ void conv_layer_pace(){
 		{
 			//
 			int addr = (i*2+CLUSTER0_BASE_ADDRESS_I0);// 16 bit address
-			//printf("writing I0\n");
             send_data_1_spi(&I0[i], addr);
-
-		}
-        for (int i = 0; i < R2*C2/P; i=i+1)
-        {
-            //
-            int addr = (i*2+CLUSTER1_BASE_ADDRESS_I1);// 16 bit address
+            addr = (i*2+CLUSTER1_BASE_ADDRESS_I1);// 16 bit address
             send_data_1_spi(&I1[i], addr);
-
-        }
-        for (int i = 0; i < R2*C2/P; i=i+1)
-        {
-            //
-            int addr = (i*2+CLUSTER2_BASE_ADDRESS_I2);// 16 bit address
+            addr = (i*2+CLUSTER2_BASE_ADDRESS_I2);// 16 bit address
             send_data_1_spi(&I2[i], addr);
-
-        }
-        for (int i = 0; i < R2*C2/P; i=i+1)
-        {
-            //
-            int addr = (i*2+CLUSTER3_BASE_ADDRESS_I3);// 16 bit address
+            addr = (i*2+CLUSTER3_BASE_ADDRESS_I3);// 16 bit address
             send_data_1_spi(&I3[i], addr);
 
         }
@@ -1313,28 +1022,12 @@ void conv_layer_pace(){
 		{
 			//
 			int addr = (i*2+CLUSTER0_BASE_ADDRESS_O0);// 16 bit address
-			//printf("writing I0\n");
             send_data_1_spi(&O0[i], addr);
-
-		}
-        for (int i = 0; i < R1*C2/P; i=i+1)
-        {
-            //
-            int addr = (i*2+CLUSTER1_BASE_ADDRESS_O1);// 16 bit address
+            addr = (i*2+CLUSTER1_BASE_ADDRESS_O1);// 16 bit address
             send_data_1_spi(&O1[i], addr);
-
-        }
-        for (int i = 0; i < R1*C2/P; i=i+1)
-        {
-            //
-            int addr = (i*2+CLUSTER2_BASE_ADDRESS_O2);// 16 bit address
+            addr = (i*2+CLUSTER2_BASE_ADDRESS_O2);// 16 bit address
             send_data_1_spi(&O2[i], addr);
-
-        }
-        for (int i = 0; i < R1*C2/P; i=i+1)
-        {
-            //
-            int addr = (i*2+CLUSTER3_BASE_ADDRESS_O3);// 16 bit address
+            addr = (i*2+CLUSTER3_BASE_ADDRESS_O3);// 16 bit address
             send_data_1_spi(&O3[i], addr);
 
         }
@@ -1374,7 +1067,6 @@ void conv_layer_pace(){
 
 	printf("First four blocks done\n");
 	// 2nd four blocks
-	//First four blocks
 	//initialize O
 	for(int h=0; h<R1; h++)
 		for(int w=0; w<C2/P; w++){
@@ -1383,14 +1075,7 @@ void conv_layer_pace(){
 			O2[h*(C2/P)+w] = 0;
 			O3[h*(C2/P)+w] = 0;
 		}
-	//copy weight_m to W
-	for(int h=0; h<R1; h++)
-		for(int w=0; w<C1; w++){
-			W0[h*C1+w] = WEIGHT_MATRIX[h*C1+w];
-			W1[h*C1+w] = WEIGHT_MATRIX[h*C1+w];
-			W2[h*C1+w] = WEIGHT_MATRIX[h*C1+w];
-			W3[h*C1+w] = WEIGHT_MATRIX[h*C1+w];
-		}
+
 
 	//copy input_m to I
 	for(int h=0; h<R2; h++)
@@ -1404,35 +1089,19 @@ void conv_layer_pace(){
 
 
     //remove this after finding the start address
-	    send_pre_compiled_config_data_trace();
+	    send_loopstart_and_cluster_enable();
 
 	//SEND Inputs
 		for (int i = 0; i < R2*C2/P; i=i+1)
 		{
 			//
 			int addr = (i*2+CLUSTER0_BASE_ADDRESS_I0);// 16 bit address
-			//printf("writing I0\n");
             send_data_1_spi(&I0[i], addr);
-
-		}
-        for (int i = 0; i < R2*C2/P; i=i+1)
-        {
-            //
-            int addr = (i*2+CLUSTER1_BASE_ADDRESS_I1);// 16 bit address
+            addr = (i*2+CLUSTER1_BASE_ADDRESS_I1);// 16 bit address
             send_data_1_spi(&I1[i], addr);
-
-        }
-        for (int i = 0; i < R2*C2/P; i=i+1)
-        {
-            //
-            int addr = (i*2+CLUSTER2_BASE_ADDRESS_I2);// 16 bit address
+            addr = (i*2+CLUSTER2_BASE_ADDRESS_I2);// 16 bit address
             send_data_1_spi(&I2[i], addr);
-
-        }
-        for (int i = 0; i < R2*C2/P; i=i+1)
-        {
-            //
-            int addr = (i*2+CLUSTER3_BASE_ADDRESS_I3);// 16 bit address
+            addr = (i*2+CLUSTER3_BASE_ADDRESS_I3);// 16 bit address
             send_data_1_spi(&I3[i], addr);
 
         }
@@ -1443,28 +1112,12 @@ void conv_layer_pace(){
 		{
 			//
 			int addr = (i*2+CLUSTER0_BASE_ADDRESS_O0);// 16 bit address
-			//printf("writing I0\n");
             send_data_1_spi(&O0[i], addr);
-
-		}
-        for (int i = 0; i < R1*C2/P; i=i+1)
-        {
-            //
-            int addr = (i*2+CLUSTER1_BASE_ADDRESS_O1);// 16 bit address
+            addr = (i*2+CLUSTER1_BASE_ADDRESS_O1);// 16 bit address
             send_data_1_spi(&O1[i], addr);
-
-        }
-        for (int i = 0; i < R1*C2/P; i=i+1)
-        {
-            //
-            int addr = (i*2+CLUSTER2_BASE_ADDRESS_O2);// 16 bit address
+			addr = (i*2+CLUSTER2_BASE_ADDRESS_O2);// 16 bit address
             send_data_1_spi(&O2[i], addr);
-
-        }
-        for (int i = 0; i < R1*C2/P; i=i+1)
-        {
-            //
-            int addr = (i*2+CLUSTER3_BASE_ADDRESS_O3);// 16 bit address
+            addr = (i*2+CLUSTER3_BASE_ADDRESS_O3);// 16 bit address
             send_data_1_spi(&O3[i], addr);
 
         }
@@ -1473,11 +1126,9 @@ void conv_layer_pace(){
 
 	// execute
 
-	// printf("Writing SPI live data done\n");
-
     start_execution_and_wait();
 
-        //read_spi_data();
+
 	
 	
 	read_spi_data_range((int)CLUSTER0_BASE_ADDRESS_O0, R1*(C2/P), O0_PACE);
@@ -1485,7 +1136,6 @@ void conv_layer_pace(){
 	read_spi_data_range((int)CLUSTER2_BASE_ADDRESS_O2, R1*(C2/P), O2_PACE);
 	read_spi_data_range((int)CLUSTER3_BASE_ADDRESS_O3, R1*(C2/P), O3_PACE);
     // printf("Reading SPI live data done\n\n");
-
 
 
 	//copy data back from O
@@ -1501,7 +1151,7 @@ void conv_layer_pace(){
 	printf("Second four blocks done\n");
 
     // 3rd four blocks
-//First four blocks
+
 	//initialize O
 	for(int h=0; h<R1; h++)
 		for(int w=0; w<C2/P; w++){
@@ -1509,14 +1159,6 @@ void conv_layer_pace(){
 			O1[h*(C2/P)+w] = 0;
 			O2[h*(C2/P)+w] = 0;
 			O3[h*(C2/P)+w] = 0;
-		}
-	//copy weight_m to W
-	for(int h=0; h<R1; h++)
-		for(int w=0; w<C1; w++){
-			W0[h*C1+w] = WEIGHT_MATRIX[h*C1+w];
-			W1[h*C1+w] = WEIGHT_MATRIX[h*C1+w];
-			W2[h*C1+w] = WEIGHT_MATRIX[h*C1+w];
-			W3[h*C1+w] = WEIGHT_MATRIX[h*C1+w];
 		}
 
 	//copy input_m to I
@@ -1531,35 +1173,19 @@ void conv_layer_pace(){
 
 
     //remove this after finding the start address
-	    send_pre_compiled_config_data_trace();
+	    send_loopstart_and_cluster_enable();
 
 		//SEND Inputs
 		for (int i = 0; i < R2*C2/P; i=i+1)
 		{
 			//
 			int addr = (i*2+CLUSTER0_BASE_ADDRESS_I0);// 16 bit address
-			//printf("writing I0\n");
             send_data_1_spi(&I0[i], addr);
-
-		}
-        for (int i = 0; i < R2*C2/P; i=i+1)
-        {
-            //
-            int addr = (i*2+CLUSTER1_BASE_ADDRESS_I1);// 16 bit address
+            addr = (i*2+CLUSTER1_BASE_ADDRESS_I1);// 16 bit address
             send_data_1_spi(&I1[i], addr);
-
-        }
-        for (int i = 0; i < R2*C2/P; i=i+1)
-        {
-            //
-            int addr = (i*2+CLUSTER2_BASE_ADDRESS_I2);// 16 bit address
+            addr = (i*2+CLUSTER2_BASE_ADDRESS_I2);// 16 bit address
             send_data_1_spi(&I2[i], addr);
-
-        }
-        for (int i = 0; i < R2*C2/P; i=i+1)
-        {
-            //
-            int addr = (i*2+CLUSTER3_BASE_ADDRESS_I3);// 16 bit address
+            addr = (i*2+CLUSTER3_BASE_ADDRESS_I3);// 16 bit address
             send_data_1_spi(&I3[i], addr);
 
         }
@@ -1570,28 +1196,12 @@ void conv_layer_pace(){
 		{
 			//
 			int addr = (i*2+CLUSTER0_BASE_ADDRESS_O0);// 16 bit address
-			//printf("writing I0\n");
             send_data_1_spi(&O0[i], addr);
-
-		}
-        for (int i = 0; i < R1*C2/P; i=i+1)
-        {
-            //
-            int addr = (i*2+CLUSTER1_BASE_ADDRESS_O1);// 16 bit address
+            addr = (i*2+CLUSTER1_BASE_ADDRESS_O1);// 16 bit address
             send_data_1_spi(&O1[i], addr);
-
-        }
-        for (int i = 0; i < R1*C2/P; i=i+1)
-        {
-            //
-            int addr = (i*2+CLUSTER2_BASE_ADDRESS_O2);// 16 bit address
+            addr = (i*2+CLUSTER2_BASE_ADDRESS_O2);// 16 bit address
             send_data_1_spi(&O2[i], addr);
-
-        }
-        for (int i = 0; i < R1*C2/P; i=i+1)
-        {
-            //
-            int addr = (i*2+CLUSTER3_BASE_ADDRESS_O3);// 16 bit address
+            addr = (i*2+CLUSTER3_BASE_ADDRESS_O3);// 16 bit address
             send_data_1_spi(&O3[i], addr);
 
         }
@@ -2113,9 +1723,9 @@ void main() {
     int obtained_label = requantize_fc();
     if (obtained_label == correct_label) {
     	accuracy += 1;
-    	printf("Correct prediction \n");
+    	printf("Prediction: CORRECT \n");
     } else{
-    	printf("Wrong prediction\n");
+    	printf("Prediction: WRONG\n");
     }
     }
   }
