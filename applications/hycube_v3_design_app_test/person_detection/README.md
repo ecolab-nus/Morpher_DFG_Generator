@@ -2,7 +2,7 @@
 
 The Visual Wake Work Application shall detect people in images in a lightweight and efficient manner such that the application can be deployed on a microcontroller. The following image shows the steps that have been necessary to implement this application.
 
-![Roadmap](https://github.com/melina2200/Research-Internship-NUS/blob/main/VWW-Application/img/roadmap.png?raw=true)
+![Roadmap](https://github.com/ecolab-nus/Morpher_DFG_Generator/tree/stable/applications/hycube_v3_design_app_test/person_detection/img/roadmap.png?raw=true)
 
 **(1)** In the first step the model had to be trained. I used the [COCO Dataset](https://cocodataset.org/#home) for training. The model is based on the [MobileNets](https://arxiv.org/pdf/1704.04861.pdf) model. The [TrainPersonDetect Jupyter Notebook](TrainPersonDetect.ipynb) contains the script to train the model for the Person Detection Algorithm. I used it in Google Colab. Maybe there need to be done some modifications if you run it as a jupyter notebook. The script is based on the Training of the [Person Detection Example of the TF Lite Micro Repo](https://github.com/tensorflow/tflite-micro/tree/main/tensorflow/lite/micro/examples/person_detection).
 
@@ -27,7 +27,7 @@ The [Person Detection Algorithm Excel File](Person_Detection_Algorithm.xlsx) con
 ## VWW Model
 The Visual Wake Word Model for Person Detection is based on the [MobileNets](https://arxiv.org/pdf/1704.04861.pdf) model and makes use of depthwise seperable convolution. In this process the 'normal' convolution is seperated in two convolution steps, the depthwise and the pointwise convolution. This separation divides a convolution kernel into two smaller kernels leading to a reduction in multiplications and therefore computational complexity. In the example given below instead of doing 3x3x3 = 27 multiplications we will now do 3x3 = 9 multiplications in the first step and them 3 in the second, leading to a total of 12 multiplications.
 
-![SeparableConv](https://github.com/melina2200/Research-Internship-NUS/blob/main/VWW-Application/img/separableConv.png?raw=true)
+![SeparableConv](https://github.com/ecolab-nus/Morpher_DFG_Generator/tree/stable/applications/hycube_v3_design_app_test/person_detection/img/separableConv.png?raw=true)
 
 
 **TODO**: Add detailed layer description of DepthwiseConv, AvgPooling, Softmax and describe Quantization
