@@ -486,8 +486,6 @@ int32_t O3[R1*(C2/P)], W3[R1*C1], I3[R2*(C2/P)];
 void microspeech_conv_layer_hycube(){
 	int i,j,k,ijk;
 
-  printf("invoke\n");
-
 	//First four blocks
 	//initialize O
 	for(int h=0; h<R1; h++)
@@ -871,7 +869,7 @@ void main() {
 
   //specify directory path here
   //path_to_dir
-  dir = opendir("/home/angela/Desktop/prototype/Morpher_DFG_Generator/applications/hycube_v3_design_app_test/Microspeech16/test_data/");
+  dir = opendir("test_data/");
   
   if (dir == NULL) {
     printf("Failed to open directory.\n");
@@ -883,7 +881,7 @@ void main() {
       char string[1000];
       
       //specify directory path here
-      char full_file_name[] = "/home/angela/Desktop/prototype/Morpher_DFG_Generator/applications/hycube_v3_design_app_test/Microspeech16/test_data/";
+      char full_file_name[] = "test_data/";
       int ctr_fl = sizeof(full_file_name);
 
       //printf("%s\n", entry->d_name);
