@@ -95,7 +95,7 @@ Pass *createskeleton();
 } // namespace llvm
 
 using namespace llvm;
-#define LV_NAME "sfp"
+#define LV_NAME "dfg_gen" //"sfp"
 #define DEBUG_TYPE LV_NAME
 
 //static cl::opt<unsigned> loopNumber("ln", cl::init(0), cl::desc("The loop number to map"));
@@ -178,8 +178,9 @@ void traverseDefTree(Instruction *I,
 
 			if (Argument *arg = dyn_cast<Argument>(V))
 			{
-				outs() << "Argument adding load parent : ";
-				V->dump();
+				LLVM_DEBUG(dbgs() << "Argument adding load parent : ");
+				LLVM_DEBUG(V->dump());
+
 				if (!V->getType()->isPointerTy())
 				{
 					currBBDFG->findNode(I)->addLoadParent(arg);
@@ -191,14 +192,14 @@ void traverseDefTree(Instruction *I,
 	for (User *U : I->users())
 	{
 
-		errs() << "I :";
-		I->dump();
-		errs() << "Inst : ";
-		U->dump();
+		LLVM_DEBUG(dbgs() << "I :");
+		LLVM_DEBUG(I->dump());
+		LLVM_DEBUG(dbgs() << "Inst : ");
+		LLVM_DEBUG(U->dump());
 
 		if (Instruction *Inst = dyn_cast<Instruction>(U))
 		{
-			errs() << "#####TRAVDEFTREE :: Inst Valid!\n";
+			LLVM_DEBUG(dbgs() << "#####TRAVDEFTREE :: Inst Valid!\n");
 
 			//Searching inside basicblocks of the loop
 			if (validBB.find(Inst->getParent()) == validBB.end())
@@ -209,10 +210,10 @@ void traverseDefTree(Instruction *I,
 
 			if (Inst->getOpcode() == Instruction::PHI)
 			{
-				errs() << "#####TRAVDEFTREE :: PHI Child found2!\n";
+				LLVM_DEBUG(dbgs() << "#####TRAVDEFTREE :: PHI Child found2!\n");
 				currBBDFG->findNode(I)->addPHIchild(Inst);
-				I->dump();
-				Inst->dump();
+				LLVM_DEBUG(I->dump());
+				LLVM_DEBUG(Inst->dump());
 				continue;
 			}
 
@@ -220,10 +221,10 @@ void traverseDefTree(Instruction *I,
 			{
 				if (Inst->getOpcode() == Instruction::PHI)
 				{
-					errs() << "#####TRAVDEFTREE :: PHI Child found1!\n";
+					LLVM_DEBUG(dbgs() << "#####TRAVDEFTREE :: PHI Child found1!\n");
 					currBBDFG->findNode(I)->addPHIchild(Inst);
 				}
-				errs() << "line 126, #####TRAVDEFTREE :: backedge found!\n";
+				LLVM_DEBUG(dbgs() << "#####TRAVDEFTREE :: backedge found!\n");
 				continue;
 			}
 
@@ -232,7 +233,7 @@ void traverseDefTree(Instruction *I,
 			{
 				if (I->getParent() != Inst->getParent())
 				{
-					errs() << "line 112, #####TRAVDEFTREE :: backedge found!\n";
+					LLVM_DEBUG(dbgs() << "#####TRAVDEFTREE :: backedge found!\n");
 					continue;
 				}
 			}
@@ -241,10 +242,10 @@ void traverseDefTree(Instruction *I,
 			{
 				if (I->getParent() == Inst->getParent())
 				{
-					errs() << "#####TRAVDEFTREE :: PHI Child found2!\n";
+					LLVM_DEBUG(dbgs()  << "#####TRAVDEFTREE :: PHI Child found2!\n");
 					currBBDFG->findNode(I)->addPHIchild(Inst);
-					I->dump();
-					Inst->dump();
+					LLVM_DEBUG(I->dump());
+					LLVM_DEBUG(Inst->dump());
 					continue;
 				}
 			}
@@ -398,7 +399,7 @@ Instruction *checkMemDepedency(Instruction *I, MemoryDependenceResults *MD)
 	if (mRes.getInst() != NULL)
 	{
 		//errs() << "Dependency : \n";
-		mRes.getInst()->dump();
+		LLVM_DEBUG(mRes.getInst()->dump());
 	}
 	else
 	{
@@ -413,7 +414,7 @@ void dfsBB(SmallVector<std::pair<const BasicBlock *, const BasicBlock *>, 1> Bac
 		BasicBlock *currBB,
 		const BasicBlock *startBB)
 {
-	errs() << "currBB : " << currBB->getName() << "\n";
+	LLVM_DEBUG(dbgs()  << "currBB : " << currBB->getName() << "\n");
 
 	succ_iterator SI(succ_begin(currBB)), SE(succ_end(currBB));
 	for (; SI != SE; ++SI)
@@ -487,20 +488,20 @@ void getInnerMostLoops(std::vector<Loop *> *innerMostLoops, std::vector<Loop *> 
 		currLPTree.lp = loops[i];
 		parentLoopTree->lpChildren.push_back(currLPTree);
 
-		outs() << "LoopName : " << ss.str() << "\n";
+		LLVM_DEBUG( dbgs() << "LoopName : " << ss.str() << "\n");
 		for (Loop::block_iterator bb = loops[i]->block_begin(); bb != loops[i]->block_end(); ++bb)
 		{
-			outs() << (*bb)->getName() << ",";
+			LLVM_DEBUG( dbgs() << (*bb)->getName() << ",");
 		}
-		outs() << "; EXIT=";
+		LLVM_DEBUG( dbgs() << "; EXIT=");
 		SmallVector<BasicBlock *, 8> loopExitBlocks;
 		loops[i]->getExitBlocks(loopExitBlocks);
 		for (int i = 0; i < loopExitBlocks.size(); ++i)
 		{
-			outs() << loopExitBlocks[i]->getName() << ",";
+			LLVM_DEBUG( dbgs() << loopExitBlocks[i]->getName() << ",");
 		}
 
-		outs() << "\n";
+		LLVM_DEBUG( dbgs() << "\n");
 
 		if (loops[i]->getSubLoops().size() == 0)
 		{
@@ -543,7 +544,7 @@ void printNtabs(int N)
 {
 	for (int i = 0; i < N; ++i)
 	{
-		outs() << "\t";
+		LLVM_DEBUG( dbgs() << "\t");
 	}
 }
 
@@ -585,20 +586,20 @@ void printLoopTree(LoopTree rootLoop, std::map<Loop *, std::string> *loopNames, 
 
 	if (false)
 	{
-		outs() << "ROOT LOOP\n";
+		LLVM_DEBUG(dbgs() << "ROOT LOOP\n");
 	}
 	else
 	{
 		printNtabs(tabs);
 		if (rootLoop.lp != NULL)
 		{
-			outs() << (*loopNames)[rootLoop.lp] << "******begin\n";
+			LLVM_DEBUG(dbgs() << (*loopNames)[rootLoop.lp] << "******begin\n");
 		}
 
 		for (BasicBlock *bb : thisLoopBB)
 		{
 			printNtabs(tabs);
-			outs() << bb->getName() << ",";
+			LLVM_DEBUG(dbgs() << bb->getName() << ",");
 			bool found = false;
 			for (LoopTree lt : rootLoop.lpChildren)
 			{
@@ -608,7 +609,7 @@ void printLoopTree(LoopTree rootLoop, std::map<Loop *, std::string> *loopNames, 
 						BBSuccBasicBlocks[bb].end(),
 						lpHeader) != BBSuccBasicBlocks[bb].end())
 				{
-					outs() << "PRE_" << (*loopNames)[lt.lp] << ",";
+					LLVM_DEBUG(dbgs() << "PRE_" << (*loopNames)[lt.lp] << ",");
 					ss << "PRE_" << (*loopNames)[lt.lp];
 					mappingUnitMap[ss.str()].allBlocks.insert(bb);
 					mappingUnitMap[ss.str()].lp = rootLoop.lp;
@@ -619,7 +620,7 @@ void printLoopTree(LoopTree rootLoop, std::map<Loop *, std::string> *loopNames, 
 			}
 			if (found)
 			{
-				outs() << "\n";
+				LLVM_DEBUG(dbgs() << "\n");
 				continue;
 			}
 
@@ -633,7 +634,7 @@ void printLoopTree(LoopTree rootLoop, std::map<Loop *, std::string> *loopNames, 
 						BBSuccBasicBlocks[lpHeader].end(),
 						bb) != BBSuccBasicBlocks[lpHeader].end())
 				{
-					outs() << "POST_" << (*loopNames)[lt.lp] << ",";
+					LLVM_DEBUG(dbgs() << "POST_" << (*loopNames)[lt.lp] << ",");
 					ss << "POST_" << (*loopNames)[lt.lp];
 					mappingUnitMap[ss.str()].allBlocks.insert(bb);
 					mappingUnitMap[ss.str()].lp = rootLoop.lp;
@@ -642,7 +643,7 @@ void printLoopTree(LoopTree rootLoop, std::map<Loop *, std::string> *loopNames, 
 					break;
 				}
 			}
-			outs() << "\n";
+			LLVM_DEBUG(dbgs() << "\n");
 		}
 
 		for (std::pair<std::string, MappingUnit> pair : mappingUnitMap)
@@ -682,7 +683,7 @@ void printLoopTree(LoopTree rootLoop, std::map<Loop *, std::string> *loopNames, 
 		printNtabs(tabs);
 		if (rootLoop.lp != NULL)
 		{
-			outs() << (*loopNames)[rootLoop.lp] << "******end\n";
+			LLVM_DEBUG(dbgs() << (*loopNames)[rootLoop.lp] << "******end\n");
 		}
 	}
 
@@ -690,29 +691,38 @@ void printLoopTree(LoopTree rootLoop, std::map<Loop *, std::string> *loopNames, 
 	{
 		printLoopTree(child, loopNames, tabs + 1);
 	}
+
+
 }
 
 void printMappableUnitMap()
 {
-	outs() << "Printing mappable unit map ... \n";
+
+LLVM_DEBUG(dbgs() << "Printing mappable unit map ... \n");
+
+	//outs() << "Printing mappable unit map ... \n";
 	for (std::pair<std::string, MappingUnit> pair : mappingUnitMap)
 	{
-		outs() << pair.first << " :: ";
+		//outs() << pair.first << " :: ";
+		LLVM_DEBUG(dbgs() << pair.first << " :: ");
 		for (BasicBlock *bb : pair.second.allBlocks)
 		{
-			outs() << bb->getName() << ",";
+			LLVM_DEBUG(dbgs() << bb->getName() << ",");
 		}
-		outs() << "|entry=";
+//		outs() << "|entry=";
+		LLVM_DEBUG(dbgs() << "|entry=");
 		for (std::pair<BasicBlock *, BasicBlock *> bbPair : pair.second.entryBlocks)
 		{
-			outs() << bbPair.first->getName() << "to" << bbPair.second->getName() << ",";
+			LLVM_DEBUG(dbgs()  << bbPair.first->getName() << "to" << bbPair.second->getName() << ",");
 		}
-		outs() << "|exit=";
+//		outs() << "|exit=";
+		LLVM_DEBUG(dbgs() <<"|exit=");
 		for (std::pair<BasicBlock *, BasicBlock *> bbPair : pair.second.exitBlocks)
 		{
-			outs() << bbPair.first->getName() << "to" << bbPair.second->getName() << ",";
+			LLVM_DEBUG(dbgs() << bbPair.first->getName() << "to" << bbPair.second->getName() << ",");
 		}
-		outs() << "\n";
+//		outs() << "\n";
+		LLVM_DEBUG(dbgs() <<"\n");
 	}
 }
 
@@ -747,9 +757,9 @@ void dfsmunitTrans(std::pair<std::string, std::string> currEdge,
 	std::string currMunit = currEdge.second;
 	for (int i = 0; i < tabs; ++i)
 	{
-		outs() << "\t";
+		LLVM_DEBUG(dbgs() << "\t");
 	}
-	outs() << "prevMunit=" << currEdge.first << ",currMunit=" << currMunit << "\n";
+	LLVM_DEBUG(dbgs()  << "prevMunit=" << currEdge.first << ",currMunit=" << currMunit << "\n");
 
 	for (std::string varName : varNeeds[currMunit])
 	{
@@ -758,21 +768,21 @@ void dfsmunitTrans(std::pair<std::string, std::string> currEdge,
 
 		for (int i = 0; i < tabs; ++i)
 		{
-			outs() << "\t";
+			LLVM_DEBUG(dbgs()  << "\t");
 		}
-		outs() << "varName = " << varName << ",";
-		outs() << "PrevOwner =" << varOwner[varName] << ",";
+		LLVM_DEBUG(dbgs()  << "varName = " << varName << ",");
+		LLVM_DEBUG(dbgs()  << "PrevOwner =" << varOwner[varName] << ",");
 
 		if (varOwner[varName].compare(currMunit) == 0)
 		{
-			outs() << "isOwned by itself\n";
+			LLVM_DEBUG(dbgs() << "isOwned by itself\n");
 			continue;
 		}
 		assert(varOwner[varName].compare(currMunit) != 0);
 
 		bool found = false;
 		int foundi = 0;
-		outs() << "currPath.size=" << currPath.size() << ",";
+		LLVM_DEBUG(dbgs() << "currPath.size=" << currPath.size() << ",");
 		std::vector<std::string> connectingPath;
 		for (int i = 0; i < currPath.size(); ++i)
 		{
@@ -793,11 +803,11 @@ void dfsmunitTrans(std::pair<std::string, std::string> currEdge,
 					connectingPath.push_back(nextMunit);
 				}
 
-				outs() << nextMunit << ",";
+				LLVM_DEBUG(dbgs() << nextMunit << ",");
 			}
 			if (currPath[i].compare(varOwner[varName]) == 0)
 			{
-				outs() << "foundi=" << i << "," << nextMunit << ",";
+				LLVM_DEBUG(dbgs() << "foundi=" << i << "," << nextMunit << ",");
 				found = true;
 				foundi = i;
 				transbasedScalarTransfers[currPath[i]][currMunit].insert(varName);
@@ -809,13 +819,13 @@ void dfsmunitTrans(std::pair<std::string, std::string> currEdge,
 
 		if (found)
 		{
-			outs() << "NewOwner =" << currMunit << "\n";
+			LLVM_DEBUG(dbgs() << "NewOwner =" << currMunit << "\n");
 			varOwner[varName] = currMunit;
 			transbasedNextMunit[currPath[foundi]][currMunit].insert(connectingPath);
 		}
 		else
 		{
-			outs() << "\n";
+			LLVM_DEBUG(dbgs() << "\n");
 		}
 	}
 
@@ -1040,36 +1050,36 @@ void printFileOutMappingUnitVars(Function &F,
 		{
 			if (GetElementPtrInst *GEP = dyn_cast<GetElementPtrInst>(&I))
 			{
-				outs() << "Fn : " << F.getName() << "\n";
-				GEP->dump();
+				LLVM_DEBUG(dbgs() << "Fn : " << F.getName() << "\n");
+				LLVM_DEBUG(GEP->dump());
 
 				std::string ptrName = GEP->getPointerOperand()->getName().str();
-				outs() << "PtrName = " << ptrName << "\n";
+				LLVM_DEBUG(dbgs() << "PtrName = " << ptrName << "\n");
 
 				Instruction *pointerOp;
 				if (ptrName.empty())
 				{
 					pointerOp = cast<Instruction>(GEP->getPointerOperand());
-					pointerOp->dump();
+					LLVM_DEBUG(pointerOp->dump());
 					if (LoadInst *pointerOpLD = dyn_cast<LoadInst>(GEP->getPointerOperand()))
 					{
 						ptrName = pointerOpLD->getPointerOperand()->getName().str();
-						outs() << "NewPtrName = " << ptrName << "\n";
+						LLVM_DEBUG(dbgs() << "NewPtrName = " << ptrName << "\n");
 					}
 				}
 				while (ptrName.empty())
 				{
 					pointerOp = cast<Instruction>(pointerOp->getOperand(0));
-					pointerOp->dump();
+					LLVM_DEBUG(pointerOp->dump());
 					if (GetElementPtrInst *OrignalGEP = dyn_cast<GetElementPtrInst>(pointerOp))
 					{
 						ptrName = OrignalGEP->getPointerOperand()->getName().str();
-						outs() << "NewPtrName = " << ptrName << "\n";
+						LLVM_DEBUG(dbgs() << "NewPtrName = " << ptrName << "\n");
 					}
 					if (CallInst *CLI = dyn_cast<CallInst>(pointerOp))
 					{ //2019 work
 						ptrName = CLI->getName().str();
-						outs() << "NewPtrName = " << ptrName << "\n";
+						LLVM_DEBUG(dbgs() << "NewPtrName = " << ptrName << "\n");
 					}
 				}
 
@@ -1094,7 +1104,7 @@ void printFileOutMappingUnitVars(Function &F,
 	std::set<std::pair<Instruction *, std::string>> usesQ;
 	for (std::pair<std::string, int> pair1 : *sizeArrMap)
 	{
-		outs() << "the user given pointer name = " << pair1.first << "\n";
+		LLVM_DEBUG(dbgs() << "the user given pointer name = " << pair1.first << "\n");
 		for (BasicBlock &BB : F)
 		{
 			for (Instruction &I : BB)
@@ -1108,7 +1118,7 @@ void printFileOutMappingUnitVars(Function &F,
 				{
 					if (I.getOperand(i)->getName().str().compare(pair1.first) == 0)
 					{
-						I.dump();
+						LLVM_DEBUG(I.dump());
 						if (Instruction *childIns = dyn_cast<Instruction>(&I))
 						{
 							usesQ.insert(std::make_pair(childIns, pair1.first));
@@ -1119,7 +1129,7 @@ void printFileOutMappingUnitVars(Function &F,
 		}
 	}
 
-	outs() << "Allocas ::\n";
+	LLVM_DEBUG(dbgs() << "Allocas ::\n");
 	for (BasicBlock &BB : F)
 	{
 		const DataLayout DL = F.getParent()->getDataLayout();
@@ -1127,10 +1137,10 @@ void printFileOutMappingUnitVars(Function &F,
 		{
 			if (AllocaInst *ALI = dyn_cast<AllocaInst>(&I))
 			{
-				ALI->dump();
+				LLVM_DEBUG(ALI->dump());
 				if (ALI->isStaticAlloca())
 				{
-					outs() << "Size=" << DL.getTypeAllocSize(ALI->getAllocatedType()) << "\n";
+					LLVM_DEBUG(dbgs() << "Size=" << DL.getTypeAllocSize(ALI->getAllocatedType()) << "\n");
 					(*sizeArrMap)[ALI->getName().str()] = (int)DL.getTypeAllocSize(ALI->getAllocatedType());
 					usesQ.insert(std::make_pair(&I, ALI->getName().str()));
 				}
@@ -1145,12 +1155,12 @@ void printFileOutMappingUnitVars(Function &F,
 	std::map<Value *, std::string> truePointers;
 	std::map<std::string, std::string> truePointersStr;
 
-	outs() << "Collecting True Pointers...\n";
+	LLVM_DEBUG(dbgs() << "Collecting True Pointers...\n");
 	while (!usesQ.empty())
 	{
 		std::pair<Instruction *, std::string> head = *usesQ.begin();
 		Instruction *I = head.first;
-		I->dump();
+		LLVM_DEBUG(I->dump());
 		std::string ptrName = head.second;
 		usesQ.erase(head);
 		truePointers[I] = ptrName;
@@ -1164,25 +1174,25 @@ void printFileOutMappingUnitVars(Function &F,
 				continue;
 			if (Instruction *childIns = dyn_cast<Instruction>(U))
 			{
-				outs() << "\tchild=";
-				childIns->dump();
+				LLVM_DEBUG(dbgs() << "\tchild=");
+				LLVM_DEBUG(childIns->dump());
 				if (truePointers.find(childIns) == truePointers.end())
 				{
 					usesQ.insert(std::make_pair(childIns, ptrName));
 				}
 				else
 				{
-					outs() << "\t\tnot inserted\n";
+					LLVM_DEBUG(dbgs() << "\t\tnot inserted\n");
 				}
 			}
 		}
 	}
 
-	outs() << "TRUE_POINTERS :: \n";
+	LLVM_DEBUG(dbgs() << "TRUE_POINTERS :: \n");
 	for (std::pair<Value *, std::string> tppair : truePointers)
 	{
-		outs() << tppair.second << "<--";
-		tppair.first->dump();
+		LLVM_DEBUG(dbgs() << tppair.second << "<--");
+		LLVM_DEBUG(tppair.first->dump());
 	}
 
 	std::map<std::string, int> arrSizes;
@@ -1194,7 +1204,7 @@ void printFileOutMappingUnitVars(Function &F,
 		Type *T = GEPTypeMap[ptrName];
 		int size;
 
-		T->dump();
+		LLVM_DEBUG(T->dump());
 		//Determing array size
 		if (StructType *ST = dyn_cast<StructType>(T))
 		{
@@ -1293,7 +1303,7 @@ void populateBBTrans()
 		}
 	}
 
-	outs() << "MUNIT transitions = " << munitTransitions.size() << "\n";
+	LLVM_DEBUG(dbgs() << "MUNIT transitions = " << munitTransitions.size() << "\n");
 
 	for (std::pair<std::string, MappingUnit> pair : mappingUnitMap)
 	{
@@ -1357,7 +1367,7 @@ void ParseSizeAttr(Function &F, std::map<std::string, int> *sizeArrMap)
 	if (F.hasFnAttribute("size"))
 	{
 		Attribute attr = F.getFnAttribute("size");
-		outs() << "Size attribute : " << attr.getValueAsString() << "\n";
+		LLVM_DEBUG(dbgs() << "Size attribute : " << attr.getValueAsString() << "\n");
 		StringRef sizeAttrStr = attr.getValueAsString();
 		SmallVector<StringRef, 8> sizeArr;
 		sizeAttrStr.split(sizeArr, ',');
@@ -1367,14 +1377,14 @@ void ParseSizeAttr(Function &F, std::map<std::string, int> *sizeArrMap)
 			std::pair<StringRef, StringRef> splitDuple = sizeArr[i].split(':');
 			uint32_t size;
 			splitDuple.second.getAsInteger(10, size);
-			outs() << "ParseAttr:: name:" << splitDuple.first << ",size:" << size << "\n";
+			LLVM_DEBUG(dbgs() << "ParseAttr:: name:" << splitDuple.first << ",size:" << size << "\n");
 			(*sizeArrMap)[splitDuple.first.str()] = size;
 		}
 	}
 
 	if (F.hasFnAttribute("size"))
 	{
-		outs() << F.getName() << " has my attribute!\n";
+		LLVM_DEBUG(dbgs() << F.getName() << " has my attribute!\n");
 	}
 }
 
@@ -1392,19 +1402,19 @@ void RemoveSelectLeafs(Function &F)
 				{
 					if (Cond->getParent() == SLI->getParent())
 						continue;
-					outs() << "Found Alone Select=";
-					SLI->dump();
-					outs() << "Condition=";
-					Cond->dump();
+					LLVM_DEBUG(dbgs() << "Found Alone Select=");
+					LLVM_DEBUG(SLI->dump());
+					LLVM_DEBUG(dbgs() << "Condition=");
+					LLVM_DEBUG(Cond->dump());
 					builder.SetInsertPoint(BB.getFirstNonPHI());
 					Value *OR0 = builder.CreateXor(Cond, (uint64_t)0);
 					assert(OR0 != Cond);
 					Instruction *ORIns = cast<Instruction>(OR0);
-					outs() << "OR = ";
-					ORIns->dump();
+					LLVM_DEBUG(dbgs() << "OR = ");
+					LLVM_DEBUG(ORIns->dump());
 
 					SLI->setOperand(0, OR0);
-					BB.dump();
+					LLVM_DEBUG(BB.dump());
 				}
 			}
 		}
@@ -1428,19 +1438,19 @@ void InsertORtoSingularConditionalBB(Function &F)
 					if (Cond->getParent() == BRI->getParent())
 						continue;
 					//Coming here if the condition is from a another basicblock;
-					outs() << "Found Alone Branch=";
-					BRI->dump();
-					outs() << "Pointer=";
-					Cond->dump();
+					LLVM_DEBUG(dbgs() << "Found Alone Branch=");
+					LLVM_DEBUG(BRI->dump());
+					LLVM_DEBUG(dbgs() << "Pointer=");
+					LLVM_DEBUG(Cond->dump());
 					builder.SetInsertPoint(BB.getFirstNonPHI());
 					Value *OR0 = builder.CreateXor(Cond, (uint64_t)0);
 					assert(OR0 != Cond);
 					Instruction *ORIns = cast<Instruction>(OR0);
-					outs() << "OR = ";
-					ORIns->dump();
+					LLVM_DEBUG(dbgs() << "OR = ");
+					LLVM_DEBUG(ORIns->dump());
 
 					BRI->setOperand(0, OR0);
-					BB.dump();
+					LLVM_DEBUG(BB.dump());
 				}
 			}
 		}
@@ -1465,7 +1475,7 @@ void ReplaceCMPs(Function &F)
 	{
 		if (CmpInst *CI = dyn_cast_or_null<CmpInst>(I))
 		{
-			I->dump();
+			LLVM_DEBUG(I->dump());
 
 			IRBuilder<> builder(CI);
 			assert(CI->getNumOperands() == 2);
@@ -1584,7 +1594,7 @@ void analyzeAllMappingUnits(Function &F,
 		if (pair.second.lp == NULL)
 			continue;
 
-		outs() << "analyzeAllMappingUnits ::" << munitName << "\n";
+		LLVM_DEBUG(dbgs() << "analyzeAllMappingUnits ::" << munitName << "\n");
 		std::map<Instruction *, int> insMap;
 
 		DFG LoopDFG("test" + F.getName().str() + "_" + munitName, &loopNames);
@@ -1651,21 +1661,21 @@ void analyzeAllMappingUnits(Function &F,
 				bbInfoIns.loopName = loopNames[pair.second.lp];
 				BasicBlockNN[currBB] = bbInfoIns;
 
-				node->printName();
-				outs() << "Adding...\n";
-				outs() << "currBB name = " << currBB->getName().str() << "\n";
-				outs() << " munitName = " << munitName << "\n";
-				outs() << " loopNames[pair.second.lp] = " << loopNames[pair.second.lp] << "\n";
+				LLVM_DEBUG(node->printName());
+				LLVM_DEBUG(dbgs() << "Adding...\n");
+				LLVM_DEBUG(dbgs() << "currBB name = " << currBB->getName().str() << "\n");
+				LLVM_DEBUG(dbgs() << " munitName = " << munitName << "\n");
+				LLVM_DEBUG(dbgs() << " loopNames[pair.second.lp] = " << loopNames[pair.second.lp] << "\n");
 			}
 			else
 			{
-				node->printName();
-				outs() << "Incrementing...\n";
-				outs() << "currBB name = " << currBB->getName().str() << "\n";
-				outs() << "BasicBlockNN[currBB].mappingunitName = " << BasicBlockNN[currBB].mappingunitName;
-				outs() << " munitName = " << munitName << "\n";
-				outs() << "BasicBlockNN[currBB].loopName = " << BasicBlockNN[currBB].loopName;
-				outs() << " loopNames[pair.second.lp] = " << loopNames[pair.second.lp] << "\n";
+				LLVM_DEBUG(node->printName());
+				LLVM_DEBUG(dbgs() << "Incrementing...\n");
+				LLVM_DEBUG(dbgs() << "currBB name = " << currBB->getName().str() << "\n");
+				LLVM_DEBUG(dbgs() << "BasicBlockNN[currBB].mappingunitName = " << BasicBlockNN[currBB].mappingunitName);
+				LLVM_DEBUG(dbgs() << " munitName = " << munitName << "\n");
+				LLVM_DEBUG(dbgs() << "BasicBlockNN[currBB].loopName = " << BasicBlockNN[currBB].loopName);
+				LLVM_DEBUG(dbgs() << " loopNames[pair.second.lp] = " << loopNames[pair.second.lp] << "\n");
 				assert(BasicBlockNN[currBB].mappingunitName.compare(munitName) == 0);
 				assert(BasicBlockNN[currBB].loopName.compare(loopNames[pair.second.lp]) == 0);
 				BasicBlockNN[currBB].noNodes = BasicBlockNN[currBB].noNodes + 1;
@@ -1897,10 +1907,10 @@ std::string getMappingUnitNameUsingTokenFunction(Function &F)
 				std::string op_str;
 				raw_string_ostream rs(op_str);
 				CI->print(rs);
-				outs() << "op : " << rs.str() << "\n";
+				LLVM_DEBUG(dbgs()  << "op : " << rs.str() << "\n");
 				if (op_str.find("please_map_me") != std::string::npos)
 				{
-					outs() << "token found in BB = " << BB.getName() << "\n";
+					LLVM_DEBUG(dbgs()  << "token found in BB = " << BB.getName() << "\n");
 					MUBB = &BB;
 					checker_ins = CI;
 				}
@@ -1936,8 +1946,8 @@ void NameUnnamedValues(Function &F)
 			{
 				if (ins->getName().empty() && !ins->getType()->isVoidTy())
 				{
-					outs() << "setting name for = ";
-					ins->dump();
+					LLVM_DEBUG(dbgs()  << "setting name for = ");
+					LLVM_DEBUG(ins->dump());
 					std::string name = prefix + std::to_string(ctr++);
 					ins->setName(name);
 				}
@@ -1954,21 +1964,21 @@ void AllocateSPMBanks(std::unordered_set<Value *> &outer_vals,
 {
 
 
-	outs()<<"number of banks: "<<banks_number<<"\n";
-	outs()<<"banks size: "<<bank_size<<"\n";
-	outs()<<"Data placement policy: "<<dp_policy<<"\n";
+	LLVM_DEBUG(dbgs()<<"number of banks: "<<banks_number<<"\n");
+	LLVM_DEBUG(dbgs()<<"banks size: "<<bank_size<<"\n");
+	LLVM_DEBUG(dbgs()<<"Data placement policy: "<<dp_policy<<"\n");
 	// Find variable sizes;
 	std::unordered_map<Value *, int> variable_sizes_bytes;
 	DataLayout DL = F.getParent()->getDataLayout();
 
 	//for outer vals
-	outs()<<"For outer values \n";
+	LLVM_DEBUG(dbgs()<<"For outer values \n");
 	for (auto it = outer_vals.begin(); it != outer_vals.end(); it++)
 	{
 		Value *outer_val = *it;
-		outer_val->dump();
+		LLVM_DEBUG(outer_val->dump());
 		int size = DL.getTypeAllocSize(outer_val->getType());
-		outs() <<" Size:" << size << "/n";
+		LLVM_DEBUG(dbgs() <<" Size:" << size << "/n");
 		assert(size <= bank_size); // assume the size of each array is not bigger than the bank size
 		variable_sizes_bytes[outer_val] = size;
 	}
@@ -1983,7 +1993,7 @@ void AllocateSPMBanks(std::unordered_set<Value *> &outer_vals,
 		{
 			variable_sizes_bytes[gep->getPointerOperand()] = sizeArrMap[gep_pointer_name];
 			assert(variable_sizes_bytes[gep->getPointerOperand()] <= bank_size);
-			outs() << gep_pointer_name << ", size = " << sizeArrMap[gep_pointer_name] << "\n";
+			LLVM_DEBUG(dbgs() << gep_pointer_name << ", size = " << sizeArrMap[gep_pointer_name] << "\n");
 		}
 		else
 		{
@@ -1994,7 +2004,7 @@ void AllocateSPMBanks(std::unordered_set<Value *> &outer_vals,
 			assert(size <= bank_size);
 #endif
 			variable_sizes_bytes[gep->getPointerOperand()] = size;
-			outs() << gep_pointer_name << ", size = " << size << "\n";
+			LLVM_DEBUG(dbgs() << gep_pointer_name << ", size = " << size << "\n");
 		}
 	}
 
@@ -2037,7 +2047,7 @@ void AllocateSPMBanks(std::unordered_set<Value *> &outer_vals,
 				}
 			}
 
-			outs()<<"assign"<< size << "to bank"<<desired_bank<<"\n";
+			LLVM_DEBUG(dbgs()<<"assign"<< size << "to bank"<<desired_bank<<"\n");
 			banks_vars[desired_bank].insert(it->first);
 			value_to_BankId[it->first] = desired_bank;
 			data_in_bank[desired_bank] = size + data_in_bank[desired_bank];
@@ -2053,9 +2063,9 @@ void AllocateSPMBanks(std::unordered_set<Value *> &outer_vals,
 
 	for(int i = 0; i < banks_vars.size(); i++){
 		auto & bank_vars = banks_vars[i];
-		outs() << "Bank"<<i<< " vars :: \n";
+		LLVM_DEBUG(dbgs() << "Bank"<<i<< " vars :: \n");
 		for(Value* v : bank_vars){
-			outs() << "\t" << v->getName() << " :: size = " << variable_sizes_bytes[v] << ", acceses = " << acc[v] << "\n";
+			LLVM_DEBUG(dbgs() << "\t" << v->getName() << " :: size = " << variable_sizes_bytes[v] << ", acceses = " << acc[v] << "\n");
 			// spm_bank_allocation[v]=BANK0;
 			// spm_base_address[v] = bank0_addr;
 			// bank0_addr += variable_sizes_bytes[v];
@@ -2064,7 +2074,7 @@ void AllocateSPMBanks(std::unordered_set<Value *> &outer_vals,
 
 	int mem_size = banks_number * bank_size;
 
-	outs() << "FINAL ALLOCATION BEGIN.\n";
+	LLVM_DEBUG(dbgs() << "FINAL ALLOCATION BEGIN.\n");
 	std::map<int, int> bank_base_address;
 	for(int i = 0; i< banks_number;i++){
 		bank_base_address.emplace(i, i * bank_size);
@@ -2074,22 +2084,22 @@ void AllocateSPMBanks(std::unordered_set<Value *> &outer_vals,
 		Value* mem_ins = it->first;
 		GetElementPtrInst* gep = it->second;
 
-		outs() << "pointer_ins = " << mem_ins->getName() << ",";
-		outs() << "gep_pointer = " << gep->getPointerOperand()->getName() << ",";
-		outs() << "size = " << variable_sizes_bytes[gep->getPointerOperand()] << ",";
+		LLVM_DEBUG(dbgs() << "pointer_ins = " << mem_ins->getName() << ",");
+		LLVM_DEBUG(dbgs()<< "gep_pointer = " << gep->getPointerOperand()->getName() << ",");
+		LLVM_DEBUG(dbgs() << "size = " << variable_sizes_bytes[gep->getPointerOperand()] << ",");
 
 		if(value_to_BankId.find(gep->getPointerOperand()) != value_to_BankId.end()){
 			if(spm_base_address.find(gep->getPointerOperand()) == spm_base_address.end()){
 				int bank_id = (value_to_BankId.find(gep->getPointerOperand()))->second;
 				spm_bank_allocation[gep->getPointerOperand()] = SPMBANKOfIndex(bank_id);
-				outs() << "bank="<<bank_id<<",";
+				LLVM_DEBUG(dbgs() << "bank="<<bank_id<<",");
 				spm_base_address[gep->getPointerOperand()] = bank_base_address[bank_id];
 				assert(variable_sizes_bytes.find(gep->getPointerOperand()) != variable_sizes_bytes.end());
 				bank_base_address[bank_id] += variable_sizes_bytes[gep->getPointerOperand()];
-				outs() << "addr=" << spm_base_address[gep->getPointerOperand()] << "\n";
+				LLVM_DEBUG(dbgs() << "addr=" << spm_base_address[gep->getPointerOperand()] << "\n");
 			}
 			else{
-				outs() << "array/struct already allocated \n";
+				LLVM_DEBUG(dbgs() << "array/struct already allocated \n");
 			}
 		}
 		else{
@@ -2101,7 +2111,7 @@ void AllocateSPMBanks(std::unordered_set<Value *> &outer_vals,
 	{
 		Value* outer_value_mem = *it;
 
-		outs() << "outer value = " << outer_value_mem->getName() << ",";
+		LLVM_DEBUG(dbgs() << "outer value = " << outer_value_mem->getName() << ",");
 		if(value_to_BankId.find(outer_value_mem) != value_to_BankId.end()){
 			int bank_id = (value_to_BankId.find(outer_value_mem))->second;
 			spm_bank_allocation[outer_value_mem] = SPMBANKOfIndex(bank_id);
@@ -2109,8 +2119,8 @@ void AllocateSPMBanks(std::unordered_set<Value *> &outer_vals,
 			assert(variable_sizes_bytes.find(outer_value_mem) != variable_sizes_bytes.end());
 			bank_base_address[bank_id] += variable_sizes_bytes[outer_value_mem];
 
-			outs() << "bank="<<bank_id<<",";
-			outs() << "addr=" << spm_base_address[outer_value_mem] << "\n";
+			LLVM_DEBUG(dbgs() << "bank="<<bank_id<<",");
+			LLVM_DEBUG(dbgs() << "addr=" << spm_base_address[outer_value_mem] << "\n");
 		}
 		else{
 			assert(false);
@@ -2118,7 +2128,7 @@ void AllocateSPMBanks(std::unordered_set<Value *> &outer_vals,
 
 	}
 
-	outs() << "FINAL ALLOCATION END.\n";
+	LLVM_DEBUG(dbgs() << "FINAL ALLOCATION END.\n");
 
 
 	// assert(false);
@@ -2155,7 +2165,7 @@ struct SkeletonFunctionPass : public FunctionPass
 		{
 			if (F.getName() != fName)
 			{
-				errs() << "Function Name : " << F.getName() << "\n";
+				LLVM_DEBUG(dbgs() << "Function Name : " << F.getName() << "\n");
 				return false;
 			}
 		}
@@ -2182,7 +2192,7 @@ struct SkeletonFunctionPass : public FunctionPass
 			errs() << "\n";
 		}
 
-		errs() << "Processing : " << F.getName() << "\n";
+		LLVM_DEBUG(dbgs() << "Processing : " << F.getName() << "\n");
 
 		LoopInfo &LI = getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
 		ScalarEvolution *SE = &getAnalysis<ScalarEvolutionWrapperPass>().getSE();
@@ -2207,7 +2217,7 @@ struct SkeletonFunctionPass : public FunctionPass
 		for (auto &B : F)
 		{
 			currBBIdx++;
-			errs() << "Currently proessing = " << currBBIdx << "\n";
+			LLVM_DEBUG(dbgs() << "Currently processing = " << currBBIdx << "\n");
 			BasicBlock *BB = dyn_cast<BasicBlock>(&B);
 			funcBB.insert(BB);
 			BBSuccBasicBlocks[BB].push_back(BB);
@@ -2232,7 +2242,7 @@ struct SkeletonFunctionPass : public FunctionPass
 		populateNonLoopBBs(F, loops);
 		std::string lnstr("LN");
 		getInnerMostLoops(&innerMostLoops, loops, &loopNames, lnstr, &rootLoop);
-		errs() << "Number of innermost loops : " << innerMostLoops.size() << "\n";
+		LLVM_DEBUG(dbgs() << "Number of innermost loops : " << innerMostLoops.size() << "\n");
 
 		printLoopTree(rootLoop, &loopNames);
 		printMappableUnitMap();
@@ -2240,11 +2250,11 @@ struct SkeletonFunctionPass : public FunctionPass
 
 		std::string munitName = getMappingUnitNameUsingTokenFunction(F);
 		// std::string munitName = "INNERMOST_LN121";
-		outs() << "--------------------------------------------------------------\n";
-		outs() << "--------MAPPING-------" << munitName << " of " << F.getName() << "---------------\n";
-		outs() << "--------------------------------------------------------------\n";
+		LLVM_DEBUG(dbgs() << "--------------------------------------------------------------\n");
+		LLVM_DEBUG(dbgs() << "--------MAPPING-------" << munitName << " of " << F.getName() << "---------------\n");
+		LLVM_DEBUG(dbgs() << "--------------------------------------------------------------\n");
 
-		//-----------------------------------
+ 		//-----------------------------------
 		// New Code for 2018 work
 		//-----------------------------------
 		{
@@ -2253,6 +2263,7 @@ struct SkeletonFunctionPass : public FunctionPass
 			{
 				LoopDFG = new DFGPartPred(F.getName().str() + "_" + munitName, &loopNames, mappingUnitMap[munitName].lp);
 				DFGPartPred *LoopDFG_PP = static_cast<DFGPartPred *>(LoopDFG);
+				LoopDFG->setKernelName(F.getName().str());
 				LoopDFG_PP->SE = SE;
 			}
 			else if (dfgType == "FullPred")
@@ -2279,20 +2290,20 @@ struct SkeletonFunctionPass : public FunctionPass
 			}
 			else
 			{
-				outs() << "Invalid DFG Type=" << dfgType << "\n";
+				errs() << "Invalid DFG Type=" << dfgType << "\n";
 				assert(false);
 			}
 			LoopDFG->DT = DT;
 
 			LoopDFG->setBBSuccBasicBlocks(BBSuccBasicBlocks);
 			LoopDFG->sizeArrMap = sizeArrMap;
-			outs() << "Currently mapping unit : " << munitName << "\n";
+			LLVM_DEBUG(dbgs() << "Currently mapping unit : " << munitName << "\n");
 			assert(!mappingUnitMap[munitName].allBlocks.empty());
 			LoopDFG->setLoopBB(mappingUnitMap[munitName].allBlocks,
 					mappingUnitMap[munitName].entryBlocks,
 					mappingUnitMap[munitName].exitBlocks);
 			insMap.clear();
-			outs() << "\n[Skeleton.cpp][traverseDefTree begin]\n";
+			LLVM_DEBUG(dbgs() << "\n[Skeleton.cpp][traverseDefTree begin]\n");
 			for (BasicBlock *B : *LoopDFG->getLoopBB())
 			{
 				int Icount = 0;
@@ -2308,16 +2319,16 @@ struct SkeletonFunctionPass : public FunctionPass
 					traverseDefTree(&I, depth, LoopDFG, &insMap, BBSuccBasicBlocks, *LoopDFG->getLoopBB());
 				}
 			}
-			outs() << "[Skeleton.cpp][traverseDefTree end]\n\n";
+			LLVM_DEBUG(dbgs() << "[Skeleton.cpp][traverseDefTree end]\n\n");
 
-			outs() << "\n[Skeleton.cpp][addMemRecDepEdgesNew begin]\n";
+			LLVM_DEBUG(dbgs() << "\n[Skeleton.cpp][addMemRecDepEdgesNew begin]\n");
 			LoopDFG->addMemRecDepEdgesNew(DI);
-			outs() << "[Skeleton.cpp][addMemRecDepEdgesNew end]\n\n";
+			LLVM_DEBUG(dbgs() << "[Skeleton.cpp][addMemRecDepEdgesNew end]\n\n");
 
 
-			outs() << "\n[Skeleton.cpp][generateTrigDFGDOT begin]\n";
+			LLVM_DEBUG(dbgs() << "\n[Skeleton.cpp][generateTrigDFGDOT begin]\n");
 			LoopDFG->generateTrigDFGDOT(F);
-			outs() << "[Skeleton.cpp][generateTrigDFGDOT end]\n\n";
+			LLVM_DEBUG(dbgs() << "[Skeleton.cpp][generateTrigDFGDOT end]\n\n");
 #ifdef REMOVE_AGI
 			return true;
 #endif
@@ -2326,12 +2337,12 @@ struct SkeletonFunctionPass : public FunctionPass
 			std::unordered_map<Value *, GetElementPtrInst *> arrPtrs;
 			std::unordered_map<Value *, int> mem_acceses; // base pointer name : number of memory accesses
 			std::map<dfgNode*,Value*> OLNodesWithPtrTyUsage;
-			outs() << "\n[Skeleton.cpp][getTransferVariables begin]\n";
+			LLVM_DEBUG(dbgs() << "\n[Skeleton.cpp][getTransferVariables begin]\n");
 			LoopDFG->getTransferVariables(outVals, arrPtrs, mem_acceses, F);
-			outs() << "[Skeleton.cpp][getTransferVariables end]\n\n";
-			outs() << "\n[Skeleton.cpp][SetBasePointers begin]\n";
+			LLVM_DEBUG(dbgs() << "[Skeleton.cpp][getTransferVariables end]\n\n");
+			LLVM_DEBUG(dbgs() << "\n[Skeleton.cpp][SetBasePointers begin]\n");
 			LoopDFG->SetBasePointers(outVals, arrPtrs,OLNodesWithPtrTyUsage, F);
-			outs() << "[Skeleton.cpp][SetBasePointers end]\n\n";
+			LLVM_DEBUG(dbgs() << "[Skeleton.cpp][SetBasePointers end]\n\n");
 
 			//			std::unordered_map<Value *, int> spm_base_address;
 			//			LoopDFG->InstrumentInOutVars(F,mem_acceses,OLNodesWithPtrTyUsage,spm_base_address);
@@ -2339,63 +2350,65 @@ struct SkeletonFunctionPass : public FunctionPass
 
 
 			//
-			outs()<<"\nOutvals contains: \n" ;
+			LLVM_DEBUG(dbgs()<<"\nOutvals contains: \n" );
 			for (auto it = outVals.begin(); it != outVals.end(); it++)
 			{
 				Value* outvl = *it;
-				outs() << "outVal:";
-				outvl->dump();
+				LLVM_DEBUG(dbgs() << "outVal:");
+				LLVM_DEBUG(outvl->dump());
 
-				outs() << "\n";
+				LLVM_DEBUG(dbgs() << "\n");
 			}
 
 
-			outs()<<"\nsizeArrMap contains: \n" ;
+			LLVM_DEBUG(dbgs()<<"\nsizeArrMap contains: \n") ;
 			for (auto it = sizeArrMap.begin(); it != sizeArrMap.end(); it++)
 			{
 				std::string base_ptr = it->first;
 				int size = it->second;
-				outs() << "base_ptr:" << base_ptr << ", size = " << size << "\n";
+				LLVM_DEBUG(dbgs() << "base_ptr:" << base_ptr << ", size = " << size << "\n");
 			}
 
-			outs()<<"\narrPtrs contains: \n" ;
+			LLVM_DEBUG(dbgs()<<"\narrPtrs contains: \n") ;
 			for (auto it = arrPtrs.begin(); it != arrPtrs.end(); it++)
 			{
 				Value *base_ptr = it->first;
 				GetElementPtrInst * gep = it->second;
-				outs() << "base_ptr:" << base_ptr->getName() << ", GEP = ";
-				gep->dump();
+				LLVM_DEBUG(dbgs() << "base_ptr:" << base_ptr->getName() << ", GEP = ");
+				LLVM_DEBUG(gep->dump());
 			}
-			outs()<<"\nmem_acceses contains: \n" ;
+			LLVM_DEBUG(dbgs()<<"\nmem_acceses contains: \n") ;
 			for (auto it = mem_acceses.begin(); it != mem_acceses.end(); it++)
 			{
 				Value *base_ptr = it->first;
 				int accesses = it->second;
-				outs() << "base_ptr:" << base_ptr->getName() << ", accesses = " << accesses << "\n";
+				LLVM_DEBUG(dbgs() << "base_ptr:" << base_ptr->getName() << ", accesses = " << accesses << "\n");
 			}
 
 			//for hycube binary generation-----------------
 			std::unordered_map<Value *, SPM_BANK> spm_bank_allocation;
 			std::unordered_map<Value *, int> spm_base_address;
-			outs() << "\n[Skeleton.cpp][AllocateSPMBanks] begin\n";
+			LLVM_DEBUG(dbgs() << "\n[Skeleton.cpp][AllocateSPMBanks] begin\n");
 			AllocateSPMBanks(outVals,arrPtrs,mem_acceses,spm_bank_allocation,spm_base_address,F);
-			outs() << "[Skeleton.cpp][AllocateSPMBanks] end\n\n";
+			LLVM_DEBUG(dbgs() << "[Skeleton.cpp][AllocateSPMBanks] end\n\n");
 
 
-			outs() << "\n[Skeleton.cpp][UpdateSPMAllocation] begin\n";
+			LLVM_DEBUG(dbgs() << "\n[Skeleton.cpp][UpdateSPMAllocation] begin\n");
 			LoopDFG->UpdateSPMAllocation(spm_base_address,spm_bank_allocation,arrPtrs);
-			outs() << "[Skeleton.cpp][UpdateSPMAllocation] end\n\n";
+			LLVM_DEBUG(dbgs() << "[Skeleton.cpp][UpdateSPMAllocation] end\n\n");
 			//------------------------------------
 
-			outs() << "\n[Skeleton.cpp][InstrumentInOutVars begin]\n";
+			LLVM_DEBUG(dbgs() << "\n[Skeleton.cpp][InstrumentInOutVars begin]\n");
 			LoopDFG->InstrumentInOutVars(F,mem_acceses,OLNodesWithPtrTyUsage,spm_base_address);
-			outs() << "[Skeleton.cpp][InstrumentInOutVars end]\n\n";
+			LLVM_DEBUG(dbgs() << "[Skeleton.cpp][InstrumentInOutVars end]\n\n");
 
-			outs() << "\n[Skeleton.cpp][PrintOuts] begin\n";
+			//std::cout << "Code instrumentation done \n";
+
+			LLVM_DEBUG(dbgs() << "\n[Skeleton.cpp][PrintOuts] begin\n");
 			LoopDFG->PrintOuts();
-			outs() << "\n[Skeleton.cpp][PrintOuts] end\n";
+			LLVM_DEBUG(dbgs() << "\n[Skeleton.cpp][PrintOuts] end\n");
 			delete (LoopDFG);
-			outs() << "dfgType=" << dfgType << "\n";
+			LLVM_DEBUG(dbgs() << "dfgType=" << dfgType << "\n");
 			return true;
 		}
 	} //END OF runOnFunction

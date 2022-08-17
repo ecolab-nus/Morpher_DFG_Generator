@@ -13,7 +13,7 @@
 /* Include polybench common header. */
 // #include "polybench.h"
 
-// # define LARGE_DATASET
+# define MINI_DATASET
 
 /* Default to STANDARD_DATASET. */
 # if !defined(MINI_DATASET) && !defined(SMALL_DATASET) && !defined(LARGE_DATASET) && !defined(EXTRALARGE_DATASET)
@@ -90,6 +90,7 @@ void print_array()
 
 /* Main computational kernel. The whole function will be timed,
    including the call and return. */
+__attribute__((noinline))
 static
 void trmm()
 {

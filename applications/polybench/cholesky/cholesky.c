@@ -1,10 +1,12 @@
 #include <stdio.h>
+#include <math.h>
 
 #define SIZE 10
 int n = SIZE, m = SIZE;
 int A[SIZE][SIZE], p[SIZE], r[SIZE], s[SIZE], q[SIZE];
 int i = 0, j = 0;
 
+__attribute__((noinline))
 void cholesky()
 {   
     int i = 0 ,  j = 0, k = 0;
@@ -26,7 +28,7 @@ void cholesky()
         {
             A[i][i] -= A[i][k] * A[i][k];
         }
-        A[i][i] = SQRT_FUN(A[i][i]);
+        A[i][i] = sqrtf(A[i][i]);
     }
 }
 

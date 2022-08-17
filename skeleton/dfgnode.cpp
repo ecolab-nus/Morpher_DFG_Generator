@@ -14,7 +14,7 @@ dfgNode::dfgNode(Instruction *ins, DFG* parent){
 			}
 
 			if(this->hasConstantVal()){
-				ins->dump();
+				LLVM_DEBUG(ins->dump());
 			}
 			//TODO : DAC18:Currently I do not support two constants fix this later...
 //			assert(this->hasConstantVal()==false);
@@ -61,7 +61,7 @@ void dfgNode::addChild(Instruction *child, int type){
 
 void dfgNode::addAncestor(Instruction *anc, int type){
 	assert(anc != NULL);
-	errs() << "Ancestor Size = " << this->Ancestors.size() << "\n";
+	LLVM_DEBUG(dbgs()  << "Ancestor Size = " << this->Ancestors.size() << "\n");
 	for (int i = 0; i < Ancestors.size(); ++i) {
 		if(anc == Ancestors[i]){
 			return;
@@ -74,9 +74,10 @@ void dfgNode::addAncestor(Instruction *anc, int type){
 	ancNode->addChildNode(this);
 	AncestorNodes.push_back(ancNode);
 
-	errs() << "Adding ::  idx=" << ancNode->getIdx() << ",from=" ; anc->dump();
+	LLVM_DEBUG(dbgs()  << "Adding ::  idx=" << ancNode->getIdx() << ",from=" );
+	LLVM_DEBUG(anc->dump());
 	if(this->getNode()) {
-		errs() << "\t idx=" << this->idx << ",to="; this->getNode()->dump();
+		LLVM_DEBUG(dbgs()  << "\t idx=" << this->idx << ",to="); LLVM_DEBUG(this->getNode()->dump());
 	}
 
 	Edge temp;
@@ -95,22 +96,22 @@ void dfgNode::addAncestor(Instruction *anc, int type){
 void dfgNode::addChildNode(dfgNode* node, int type, bool isBackEdge,
 		bool isControlDependent, bool ControlValue) {
 
-	outs() << "adding child node:" << node->getIdx() <<  " to:" << this->getIdx();
-	outs() << " of type =";
+	LLVM_DEBUG(dbgs()  << "adding child node:" << node->getIdx() <<  " to:" << this->getIdx());
+	LLVM_DEBUG(dbgs()  << " of type =");
 	if(type==EDGE_TYPE_DATA){
-		outs() << " data";
+		LLVM_DEBUG(dbgs()  << " data");
 	}
 	else if(type==EDGE_TYPE_PS){
-		outs() << " psuedo";
+		LLVM_DEBUG(dbgs()  << " psuedo");
 	}
 	else if(type==EDGE_TYPE_CTRL){
-		outs() << " control";
+		LLVM_DEBUG(dbgs()  << " control");
 	}
-	if(isBackEdge) outs() << " :: also is backedge";
-	outs() << "\n";
+	if(isBackEdge) LLVM_DEBUG(dbgs()  << " :: also is backedge");
+	LLVM_DEBUG(dbgs()  << "\n");
 
 	if(std::find(ChildNodes.begin(),ChildNodes.end(),node)!=ChildNodes.end()) { //already a child
-		outs() << "Src : " << this->getIdx() << " to " << "Dest : " << node->getIdx() << "\n";
+		LLVM_DEBUG(dbgs()  << "Src : " << this->getIdx() << " to " << "Dest : " << node->getIdx() << "\n");
 
 		if(childConditionalMap[node]!=UNCOND){
 			assert(isControlDependent);
@@ -129,7 +130,7 @@ void dfgNode::addChildNode(dfgNode* node, int type, bool isBackEdge,
 	}
 
 	ChildNodes.push_back(node);
-	outs() << "node idx = " << node->getIdx() << "\n";
+	LLVM_DEBUG(dbgs()  << "node idx = " << node->getIdx() << "\n");
 	childBackEdgeMap[node]=isBackEdge;
 
 	if(isControlDependent){
@@ -349,7 +350,7 @@ void dfgNode::addRecAncestor(Instruction* anc, std::string depType, int type) {
 	recAncNode->addRecChildNode(this);
 	RecAncestorNodes.push_back(recAncNode);
 
-	std::cout << "Adding Rec Ancestor=" << recAncNode->getIdx() <<", to=" << this->idx << "\n";
+	LLVM_DEBUG(dbgs() << "Adding Rec Ancestor=" << recAncNode->getIdx() <<", to=" << this->idx << "\n");
 
 	Edge temp;
 	temp.setID(Parent->getEdges().size());
@@ -522,7 +523,8 @@ dfgNode* dfgNode::addStoreChild(Instruction * ins) {
 	temp->BB = this->getNode()->getParent();
 
 	//ceiling upto multiple of 8
-	outs() << "addStoreChild : ins="; ins->dump();
+	LLVM_DEBUG(dbgs()  << "addStoreChild : ins=");
+	LLVM_DEBUG(ins->dump());
 
 	if(GetElementPtrInst* GEP = dyn_cast<GetElementPtrInst>(ins)){
 		temp->setTypeSizeBytes(4);
@@ -580,14 +582,14 @@ dfgNode* dfgNode::addLoadParent(Value* ins) {
 //	assert(ins->getType()->getIntegerBitWidth() >= 8);
 
 	//ceiling upto multiple of 8
-	outs() << "addLoadParent :" << ",node =" << temp->getIdx() << ",for the node=" << this->getIdx() << "\n";
-	ins->dump();
+	LLVM_DEBUG(dbgs()  << "addLoadParent :" << ",node =" << temp->getIdx() << ",for the node=" << this->getIdx() << "\n");
+	LLVM_DEBUG(ins->dump());
 
 	if(GetElementPtrInst* GEP = dyn_cast<GetElementPtrInst>(ins)){
 		temp->setTypeSizeBytes(4);
 	}
 	else if(AllocaInst* ALOCA = dyn_cast<AllocaInst>(ins)){
-		errs() << "ALOCA\n";
+		LLVM_DEBUG(dbgs() << "ALOCA\n");
 		temp->setTypeSizeBytes(4);
 	}
 	else if(dyn_cast<PointerType>(ins->getType())){
@@ -596,13 +598,13 @@ dfgNode* dfgNode::addLoadParent(Value* ins) {
 	else{
 
 		if(dyn_cast<ArrayType>(ins->getType())){
-			outs() << "A\n";
+			LLVM_DEBUG(dbgs()  << "A\n");
 		}
 		if(dyn_cast<StructType>(ins->getType())){
-			outs() << "S\n";
+			LLVM_DEBUG(dbgs()  << "S\n");
 		}
 		if(dyn_cast<PointerType>(ins->getType())){
-			outs() << "P\n";
+			LLVM_DEBUG(dbgs()  << "P\n");
 		}
 
 		//TODO:DAC18
@@ -623,7 +625,7 @@ void dfgNode::setoutloopAddr(int addr) {
 	assert((this->getNameType().compare("OutLoopLOAD") == 0)||(this->getNameType().compare("OutLoopSTORE") == 0));
 	outloopAddr = addr;
 	constValFlag = true;
-	outs() << "setoutloopAddr setting const val=" << addr << "\n";
+	LLVM_DEBUG(dbgs()  << "setoutloopAddr setting const val=" << addr << "\n");
 	constVal = addr;
 }
 
@@ -638,7 +640,7 @@ void dfgNode::setGEPbaseAddr(int addr) {
 	assert(dyn_cast<GetElementPtrInst>(this->getNode()));
 	GEPbaseAddr = addr;
 	constValFlag = true;
-	outs() << "setGEPbaseAddr setting const val=" << addr << "\n";
+	LLVM_DEBUG(dbgs()  << "setGEPbaseAddr setting const val=" << addr << "\n");
 	constVal = addr;
 }
 
@@ -711,12 +713,12 @@ bool dfgNode::isGEP() {
 dfgNode* dfgNode::addCMergeParent(Instruction* phiBRAncestorIns,
 		dfgNode* phiDataAncestor) {
 
-	outs() << "BasicBlocks : " << "\n";
+	LLVM_DEBUG(dbgs()  << "BasicBlocks : " << "\n");
 	for(BasicBlock* bb : (*Parent->getLoopBB())){
-		outs() << bb->getName() << ",";
+		LLVM_DEBUG(dbgs()  << bb->getName() << ",");
 		assert(phiBRAncestorIns->getParent() != bb);
 	}
-	outs() << "\n";
+	LLVM_DEBUG(dbgs()  << "\n");
 
 	assert(phiBRAncestorIns!=NULL);
 	dfgNode* tempBR;
@@ -733,8 +735,8 @@ dfgNode* dfgNode::addCMergeParent(Instruction* phiBRAncestorIns,
 			tempBR->setIdx(10000);
 		}
 		tempBR->setNameType("LOOPSTART");
-		outs() << "Adding loopstart.\n";
-		phiBRAncestorIns->dump();
+		LLVM_DEBUG(dbgs()  << "Adding loopstart.\n");
+		LLVM_DEBUG(phiBRAncestorIns->dump());
 		tempBR->BB = this->BB;
 		Parent->LoopStartMap[phiBRAncestorIns]=tempBR;
 	}
@@ -767,12 +769,12 @@ dfgNode* dfgNode::addCMergeParent(Instruction* phiBRAncestorIns,
 	temp->setNameType("CMERGE");
 	temp->BB = this->BB;
 
-	outs() << "BasicBlocks : " << "\n";
+	LLVM_DEBUG(dbgs()  << "BasicBlocks : " << "\n");
 	for(BasicBlock* bb : (*Parent->getLoopBB())){
-		outs() << bb->getName() << ",";
+		LLVM_DEBUG(dbgs()  << bb->getName() << ",");
 		assert(phiBRAncestorIns->getParent() != bb);
 	}
-	outs() << "\n";
+	LLVM_DEBUG(dbgs()  << "\n");
 
 	temp->addLoadParent(outLoopLoadIns);
 
@@ -791,8 +793,8 @@ dfgNode* dfgNode::addCMergeParent(Instruction* phiBRAncestorIns,
 			tempBR->setIdx(10000);
 		}
 		tempBR->setNameType("LOOPSTART");
-		outs() << "Adding loopstart.\n";
-		phiBRAncestorIns->dump();
+		LLVM_DEBUG(dbgs()  << "Adding loopstart.\n");
+		LLVM_DEBUG(phiBRAncestorIns->dump());
 		tempBR->BB = this->BB;
 		Parent->LoopStartMap[phiBRAncestorIns]=tempBR;
 	}
@@ -833,8 +835,8 @@ dfgNode* dfgNode::addCMergeParent(Instruction* phiBRAncestorIns, int32_t constVa
 		}
 
 		tempBR->setNameType("LOOPSTART");
-		outs() << "Adding loopstart.\n";
-		phiBRAncestorIns->dump();
+		LLVM_DEBUG(dbgs()  << "Adding loopstart.\n");
+		LLVM_DEBUG(phiBRAncestorIns->dump());
 		tempBR->BB = this->BB;
 		Parent->LoopStartMap[phiBRAncestorIns]=tempBR;
 	}
@@ -850,7 +852,7 @@ dfgNode* dfgNode::addCMergeParent(Instruction* phiBRAncestorIns, int32_t constVa
 }
 
 void dfgNode::setFinalIns(HyCUBEIns ins){
-	outs() <<  "SetFinalIns::Node=" << this->getIdx() << ",HyIns=" << Parent->HyCUBEInsStrings[ins] << "\n";
+	LLVM_DEBUG(dbgs()  <<  "SetFinalIns::Node=" << this->getIdx() << ",HyIns=" << Parent->HyCUBEInsStrings[ins] << "\n");
 	finalIns = ins;
 }
 
@@ -874,10 +876,10 @@ bool dfgNode::isParent(dfgNode* parent) {
 
 void dfgNode::printName() {
 	if(this->getNode()!=NULL){
-		this->getNode()->dump();
+		LLVM_DEBUG(this->getNode()->dump());
 	}
 	else{
-		outs() << this->getNameType() << "\n";
+		LLVM_DEBUG(dbgs()  << this->getNameType() << "\n");
 	}
 }
 

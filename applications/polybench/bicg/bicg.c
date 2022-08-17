@@ -5,6 +5,7 @@ int n = SIZE, m = SIZE;
 int A[SIZE][SIZE], p[SIZE], r[SIZE], s[SIZE], q[SIZE];
 int i = 0, j = 0;
 
+__attribute__((noinline))
 void bicg()
 {
     int i = 0, j = 0;

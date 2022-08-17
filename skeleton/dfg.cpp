@@ -10,6 +10,9 @@
 #include <bitset>
 #include <set>
 
+#define LV_NAME "dfg_gen" //"sfp"
+#define DEBUG_TYPE LV_NAME
+
 dfgNode *DFG::getEntryNode()
 {
 	if (NodeList.size() > 0)
@@ -37,7 +40,7 @@ void DFG::InsertNode(Instruction *Node)
 }
 
 //void DFG::InsertNode(dfgNode Node){
-//	errs() << "Inserted Node with Instruction : " << Node.getNode() << "\n";
+//	LLVM_DEBUG(dbgs() << "Inserted Node with Instruction : " << Node.getNode() << "\n";
 //	Node.setIdx(NodeList.size());
 //	NodeList.push_back(Node);
 //}
@@ -91,7 +94,7 @@ Edge *DFG::findEdge(dfgNode *src, dfgNode *dest, CGRANode *goal)
 		}
 	}
 
-	outs() << "edge is NULL, src = " << src->getIdx() << ",dest = " << dest->getIdx() << "\n";
+	LLVM_DEBUG(dbgs() << "edge is NULL, src = " << src->getIdx() << ",dest = " << dest->getIdx() << "\n");
 
 	assert(false);
 	return NULL;
@@ -112,7 +115,7 @@ std::vector<dfgNode *> DFG::getRoots()
 
 std::vector<dfgNode *> DFG::getLeafs(BasicBlock *BB)
 {
-	errs() << "start getting the LeafNodes...!\n";
+	LLVM_DEBUG(dbgs() << "start getting the LeafNodes...!\n");
 	std::vector<dfgNode *> leafNodes;
 	for (int i = 0; i < NodeList.size(); i++)
 	{
@@ -137,7 +140,7 @@ std::vector<dfgNode *> DFG::getLeafs(BasicBlock *BB)
 			}
 		}
 	}
-	errs() << "LeafNodes init done...!\n";
+	LLVM_DEBUG(dbgs() << "LeafNodes init done...!\n");
 
 	for (int i = 0; i < NodeList.size(); i++)
 	{
@@ -155,15 +158,15 @@ std::vector<dfgNode *> DFG::getLeafs(BasicBlock *BB)
 				dfgNode *nodeToBeRemoved = NodeList[i]->getChildren()[j];
 				if (nodeToBeRemoved != NULL)
 				{
-					//					errs() << "LeafNodes : nodeToBeRemoved found...! : ";
+					//					LLVM_DEBUG(dbgs() << "LeafNodes : nodeToBeRemoved found...! : ";
 					if (nodeToBeRemoved->getNode() == NULL)
 					{
-						//						errs() << "NodeIdx:" << nodeToBeRemoved->getIdx() << "," << nodeToBeRemoved->getNameType() << "\n";
+						//						LLVM_DEBUG(dbgs() << "NodeIdx:" << nodeToBeRemoved->getIdx() << "," << nodeToBeRemoved->getNameType() << "\n";
 					}
 					else
 					{
-						//						errs() << "NodeIdx:" << nodeToBeRemoved->getIdx() << ",";
-						nodeToBeRemoved->getNode()->dump();
+						//						LLVM_DEBUG(dbgs() << "NodeIdx:" << nodeToBeRemoved->getIdx() << ",";
+						LLVM_DEBUG(nodeToBeRemoved->getNode()->dump());
 					}
 
 					if (std::find(leafNodes.begin(), leafNodes.end(), nodeToBeRemoved) != leafNodes.end())
@@ -174,13 +177,13 @@ std::vector<dfgNode *> DFG::getLeafs(BasicBlock *BB)
 			}
 		}
 	}
-	errs() << "got the LeafNodes...!\n";
+	LLVM_DEBUG(dbgs() << "got the LeafNodes...!\n");
 	return leafNodes;
 }
 
 void DFG::connectBB()
 {
-	errs() << "ConnectBB called!\n";
+	LLVM_DEBUG(dbgs() << "ConnectBB called!\n");
 
 	std::map<dfgNode *, std::vector<dfgNode *>> BrSuccesors;
 	std::map<dfgNode *, std::set<dfgNode *>> BrBackEdgeSuccessors;
@@ -192,14 +195,14 @@ void DFG::connectBB()
 	dfgNode firstNode = *NodeList[0];
 	SmallVector<std::pair<const BasicBlock *, const BasicBlock *>, 8> Result;
 	FindFunctionBackedges(*(firstNode.getNode()->getFunction()), Result);
-	outs() << "Number of Backedges = " << Result.size() << "\n";
+	LLVM_DEBUG(dbgs() << "Number of Backedges = " << Result.size() << "\n");
 
 	for (int i = 0; i < Result.size(); ++i)
 	{
-		errs() << "Backedges .... :: \n";
-		outs() << "From : " << Result[i].first->getName();
-		outs() << ",To : " << Result[i].second->getName();
-		errs() << "\n";
+		LLVM_DEBUG(dbgs() << "Backedges .... :: \n");
+		LLVM_DEBUG(dbgs() << "From : " << Result[i].first->getName());
+		LLVM_DEBUG(dbgs() << ",To : " << Result[i].second->getName());
+		LLVM_DEBUG(dbgs() << "\n");
 	}
 
 	std::vector<BasicBlock *> analysedBB;
@@ -210,26 +213,26 @@ void DFG::connectBB()
 			//			if(NodeList[i]->getNode()->getOpcode() == Instruction::Br){
 			if (BranchInst *BI = dyn_cast<BranchInst>(NodeList[i]->getNode()))
 			{
-				errs() << "$$$$$ This belongs to BB=" << NodeList[i]->getNode()->getParent()->getName() << "\n";
+				LLVM_DEBUG(dbgs() << "$$$$$ This belongs to BB=" << NodeList[i]->getNode()->getParent()->getName() << "\n");
 
 				BasicBlock *BB = NodeList[i]->getNode()->getParent();
 				succ_iterator SI(succ_begin(BB)), SE(succ_end(BB));
 				for (; SI != SE; ++SI)
 				{
 					BasicBlock *succ = *SI;
-					errs() << "$%$%$%$%$ successor Basic Blocks\n";
-					errs() << "Name=" << succ->getName() << "\n";
-					errs() << "$%$%$%$%$\n";
+					LLVM_DEBUG(dbgs() << "$%$%$%$%$ successor Basic Blocks\n");
+					LLVM_DEBUG(dbgs() << "Name=" << succ->getName() << "\n");
+					LLVM_DEBUG(dbgs() << "$%$%$%$%$\n");
 
 					std::vector<dfgNode *> succLeafs = this->getLeafs(succ);
-					errs() << "succLeafs.size = " << succLeafs.size() << "\n";
+					LLVM_DEBUG(dbgs() << "succLeafs.size = " << succLeafs.size() << "\n");
 
 					std::pair<const BasicBlock *, const BasicBlock *> bbCouple(BB, succ);
 					if (std::find(Result.begin(), Result.end(), bbCouple) != Result.end())
 					{
 						for (int j = 0; j < succLeafs.size(); j++)
 						{
-							errs() << "Backedge from : " << NodeList[i]->getIdx() << ",To :" << succLeafs[j]->getIdx() << "\n";
+							LLVM_DEBUG(dbgs() << "Backedge from : " << NodeList[i]->getIdx() << ",To :" << succLeafs[j]->getIdx() << "\n");
 							BrBackEdgeSuccessors[succLeafs[j]].insert(NodeList[i]);
 						}
 						//						 continue;
@@ -255,8 +258,8 @@ void DFG::connectBB()
 		node = it->first;
 		workingSet.clear();
 		nextWorkingSet.clear();
-		errs() << "ConnectBB :: "
-				<< "Init Round\n";
+		LLVM_DEBUG(dbgs() << "ConnectBB :: "
+				<< "Init Round\n");
 
 		if (BBPredicate.find(it->first->BB) != BBPredicate.end())
 		{
@@ -271,8 +274,8 @@ void DFG::connectBB()
 				BBPredicate[node->BB]->addPHIChildNode(node);
 				node->addPHIAncestorNode(BBPredicate[node->BB]);
 			}
-			errs() << "ConnectBB :: "
-					<< "BB already done\n";
+			LLVM_DEBUG(dbgs() << "ConnectBB :: "
+					<< "BB already done\n");
 			continue;
 		}
 
@@ -333,12 +336,12 @@ void DFG::connectBB()
 		{
 			workingSet.push_back(BrSuccesors[node][numberofbrs - 1]);
 		}
-		errs() << "ConnectBB :: "
-				<< "Rest Rounds\n";
+		LLVM_DEBUG(dbgs() << "ConnectBB :: "
+				<< "Rest Rounds\n");
 		while (workingSet.size() > 1)
 		{
-			errs() << "ConnectBB :: "
-					<< "workingSet.size() = " << workingSet.size() << "\n";
+			LLVM_DEBUG(dbgs() << "ConnectBB :: "
+					<< "workingSet.size() = " << workingSet.size() << "\n");
 			for (int i = 0; i < workingSet.size() - 1; i = i + 2)
 			{
 				temp = new dfgNode(this);
@@ -346,8 +349,8 @@ void DFG::connectBB()
 				NodeList.push_back(temp);
 				temp->setNameType("CTRLBrOR");
 				temp->BB = node->BB;
-				errs() << "ConnectBB :: "
-						<< "workingSet[i+1] = " << workingSet[i + 1]->getIdx() << "\n";
+				LLVM_DEBUG(dbgs() << "ConnectBB :: "
+						<< "workingSet[i+1] = " << workingSet[i + 1]->getIdx() << "\n");
 
 				if (BrBackEdgeSuccessors[node].find(workingSet[i]) ==
 						BrBackEdgeSuccessors[node].end())
@@ -404,7 +407,7 @@ void DFG::connectBB()
 
 		BBPredicate[node->BB] = workingSet[0];
 	}
-	errs() << "ConnectBB DONE! \n";
+	LLVM_DEBUG(dbgs() << "ConnectBB DONE! \n");
 }
 
 //WIP
@@ -456,8 +459,8 @@ int DFG::handlePHINodeFanIn()
 
 		while (workingSet.size() > 1)
 		{
-			errs() << "handlePHINodeFanIn :: "
-					<< "workingSet.size() = " << workingSet.size() << "\n";
+			LLVM_DEBUG(dbgs() << "handlePHINodeFanIn :: "
+					<< "workingSet.size() = " << workingSet.size() << "\n");
 			for (int i = 0; i < workingSet.size() - 1; i = i + 2)
 			{
 				temp = new dfgNode(this);
@@ -465,8 +468,8 @@ int DFG::handlePHINodeFanIn()
 				NodeList.push_back(temp);
 				temp->setNameType("SELECTPHI");
 				workingSet[i]->addChildNode(temp);
-				errs() << "handlePHINodeFanIn :: "
-						<< "workingSet[i+1] = " << workingSet[i + 1]->getIdx() << "\n";
+				LLVM_DEBUG(dbgs() << "handlePHINodeFanIn :: "
+						<< "workingSet[i+1] = " << workingSet[i + 1]->getIdx() << "\n");
 				workingSet[i + 1]->addChildNode(temp);
 				temp->addAncestorNode(workingSet[i]);
 				temp->addAncestorNode(workingSet[i + 1]);
@@ -755,7 +758,7 @@ void DFG::addMemRecDepEdges(DependenceInfo *DI)
 	log.open(Filename.c_str());
 	log << "Started...\n";
 
-	errs() << "&&&&&&&&&&&&&&&&&&&&Recurrence search started.....!\n";
+	LLVM_DEBUG(dbgs() << "&&&&&&&&&&&&&&&&&&&&Recurrence search started.....!\n");
 
 	//Create a list of memory instructions
 	for (int i = 0; i < NodeList.size(); ++i)
@@ -774,8 +777,8 @@ void DFG::addMemRecDepEdges(DependenceInfo *DI)
 			return;
 		if (St && !St->isSimple())
 			return;
-		errs() << "ID=" << nodePtr->getIdx() << " ,";
-		nodePtr->getNode()->dump();
+		LLVM_DEBUG(dbgs() << "ID=" << nodePtr->getIdx() << " ,");
+		LLVM_DEBUG(nodePtr->getNode()->dump());
 		memNodes.push_back(nodePtr);
 	}
 
@@ -936,7 +939,7 @@ void DFG::addMemRecDepEdgesNew(DependenceInfo *DI)
 	log.open(Filename.c_str());
 	log << "Started...\n";
 
-	errs() << "&&&&&&&&&&&&&&&&&&&&Recurrence search started.....!\n";
+	LLVM_DEBUG(dbgs() << "&&&&&&&&&&&&&&&&&&&&Recurrence search started.....!\n");
 
 	//Create a list of memory instructions
 	for (int i = 0; i < NodeList.size(); ++i)
@@ -960,8 +963,8 @@ void DFG::addMemRecDepEdgesNew(DependenceInfo *DI)
 			return;
 		if (St && !St->isSimple())
 			return;
-		errs() << "ID=" << nodePtr->getIdx() << " ,";
-		nodePtr->getNode()->dump();
+		LLVM_DEBUG(dbgs() << "ID=" << nodePtr->getIdx() << " ,");
+		LLVM_DEBUG(nodePtr->getNode()->dump());
 		memNodes.push_back(nodePtr);
 	}
 
@@ -985,20 +988,20 @@ void DFG::addMemRecDepEdgesNew(DependenceInfo *DI)
 			{
 				log << "addMemRecDepEdges :"
 						<< "Found Dependency between Src=" << memNodes[i]->getIdx() << " Des=" << memNodes[j]->getIdx() << "\n";
-				outs() << "addMemRecDepEdges :"
-						<< "Found Dependency between Src=" << memNodes[i]->getIdx() << " Des=" << memNodes[j]->getIdx() << "\n";
+				LLVM_DEBUG(dbgs() << "addMemRecDepEdges :"
+						<< "Found Dependency between Src=" << memNodes[i]->getIdx() << " Des=" << memNodes[j]->getIdx() << "\n");
 
 				if (D->isLoopIndependent())
 				{
-					outs() << "Loop Independent.\n";
+					LLVM_DEBUG(dbgs() << "Loop Independent.\n");
 				}
 				else
 				{
-					outs() << "Loop Dependent.\n";
+					LLVM_DEBUG(dbgs() << "Loop Dependent.\n");
 				}
 
-				outs() << "Levels = " << D->getLevels() << "\n";
-				D->dump(outs());
+				LLVM_DEBUG(outs() << "Levels = " << D->getLevels() << "\n");
+				LLVM_DEBUG(D->dump(outs()));
 
 				char Direction;
 				for (int i = 1; i <= D->getLevels(); i++)
@@ -1032,7 +1035,7 @@ void DFG::addMemRecDepEdgesNew(DependenceInfo *DI)
 							Direction = '*';
 					}
 
-					outs() << "\tlevel=" << i << ",dir=" << Direction << "\n";
+					LLVM_DEBUG(dbgs() << "\tlevel=" << i << ",dir=" << Direction << "\n");
 				}
 
 				if (D->isAnti())
@@ -1070,7 +1073,7 @@ void DFG::addMemRecDepEdgesNew(DependenceInfo *DI)
 					if (D->isConfused())
 						continue;
 
-					outs() << "adding recurrence relation!\n";
+					LLVM_DEBUG(dbgs() << "adding recurrence relation!\n");
 					this->findNode(Des)->addRecChild(Src, depType, EDGE_TYPE_LDST);
 					this->findNode(Src)->addRecAncestor(Des, depType);
 
@@ -1148,7 +1151,7 @@ void DFG::addMemRecDepEdgesNew(DependenceInfo *DI)
 
 	log.close();
 	//		assert(false);
-	errs() << "&&&&&&&&&&&&&&&&&&&&Recurrence search done.....!\n";
+	LLVM_DEBUG(dbgs() << "&&&&&&&&&&&&&&&&&&&&Recurrence search done.....!\n");
 }
 
 void DFG::addMemDepEdges(MemoryDependenceResults *MD)
@@ -1169,8 +1172,8 @@ void DFG::addMemDepEdges(MemoryDependenceResults *MD)
 		{
 			mRes = MD->getDependency(it);
 
-			errs() << "Dependent :";
-			it->dump();
+			LLVM_DEBUG(dbgs() << "Dependent :");
+			LLVM_DEBUG(it->dump());
 
 			if (mRes.isNonLocal())
 			{
@@ -1179,7 +1182,7 @@ void DFG::addMemDepEdges(MemoryDependenceResults *MD)
 				}
 				else
 				{
-					errs() << "****** GET NON LOCAL MEM DEPENDENCIES ******\n";
+					LLVM_DEBUG(dbgs() << "****** GET NON LOCAL MEM DEPENDENCIES ******\n");
 
 					MD->getNonLocalPointerDependency(it, result);
 
@@ -1200,14 +1203,14 @@ void DFG::addMemDepEdges(MemoryDependenceResults *MD)
 									continue;
 								}
 
-								result[j].getResult().getInst()->dump();
+								LLVM_DEBUG(result[j].getResult().getInst()->dump());
 								this->findNode(result[j].getResult().getInst())->addChild(it, EDGE_TYPE_LDST);
 								NodeList[i]->addAncestor(result[j].getResult().getInst());
 							}
 						}
 					}
 
-					errs() << "****** DONE NON LOCAL MEM DEPENDENCIES ******\n";
+					LLVM_DEBUG(dbgs() << "****** DONE NON LOCAL MEM DEPENDENCIES ******\n");
 				}
 			}
 
@@ -1353,7 +1356,7 @@ void DFG::traverseBFS(dfgNode *node, int ASAPlevel)
 
 	if (node->getNode())
 	{
-		node->getNode()->dump();
+		LLVM_DEBUG(node->getNode()->dump());
 	}
 
 	dfgNode *child;
@@ -1425,7 +1428,7 @@ void DFG::scheduleASAP()
 		leafs[i]->setASAPnumber(0);
 		traverseBFS(leafs[i], 1);
 	}
-	errs() << "scheduleASAP DONE!\n";
+	LLVM_DEBUG(dbgs() << "scheduleASAP DONE!\n");
 }
 
 void DFG::scheduleALAP()
@@ -1461,7 +1464,7 @@ void DFG::scheduleALAP()
 		NodeList[i]->setALAPnumber(maxASAPLevel - NodeList[i]->getALAPnumber());
 	}
 
-	errs() << "scheduleALAP DONE!\n";
+	LLVM_DEBUG(dbgs() << "scheduleALAP DONE!\n");
 }
 
 void DFG::balanceASAPALAP()
@@ -2012,25 +2015,25 @@ bool DFG::MapMultiDestRec(
 
 	std::vector<std::pair<CGRANode *, int>> PossibleDests = it->second;
 
-	errs() << "MapMultiDestRec : Procesing NodeIdx = " << node->getIdx();
-	errs() << ", PossibleDests = " << it->second.size();
-	errs() << ", MII = " << currCGRA->getMII();
-	errs() << ", currASAPLevel = " << node->getASAPnumber() << "/" << maxASAPLevel;
-	errs() << ", NodeProgress = " << index + 1 << "/" << nodeDestMap->size();
-	errs() << "\n";
+	LLVM_DEBUG(dbgs() << "MapMultiDestRec : Procesing NodeIdx = " << node->getIdx());
+	LLVM_DEBUG(dbgs() << ", PossibleDests = " << it->second.size());
+	LLVM_DEBUG(dbgs() << ", MII = " << currCGRA->getMII());
+	LLVM_DEBUG(dbgs() << ", currASAPLevel = " << node->getASAPnumber() << "/" << maxASAPLevel);
+	LLVM_DEBUG(dbgs() << ", NodeProgress = " << index + 1 << "/" << nodeDestMap->size());
+	LLVM_DEBUG(dbgs() << "\n");
 
 	for (int j = 0; j < node->getAncestors().size(); ++j)
 	{
 		parent = node->getAncestors()[j];
 		parentExt = currCGRA->getCGRANode((parent->getMappedLoc()->getT() + 1) % (currCGRA->getMII()), parent->getMappedLoc()->getY(), parent->getMappedLoc()->getX());
 
-		errs() << "ParentIdx=" << parent->getIdx();
-		errs() << ",ParentType=" << parent->getNameType();
-		errs() << ",ParentRT=" << parent->getmappedRealTime();
-		errs() << ",Path = "
+		LLVM_DEBUG(dbgs() << "ParentIdx=" << parent->getIdx());
+		LLVM_DEBUG(dbgs() << ",ParentType=" << parent->getNameType());
+		LLVM_DEBUG(dbgs() << ",ParentRT=" << parent->getmappedRealTime());
+		LLVM_DEBUG(dbgs() << ",Path = "
 				<< "(" << parentExt->getT() << ","
 				<< parentExt->getY() << ","
-				<< parentExt->getX() << ") to ...\n";
+				<< parentExt->getX() << ") to ...\n");
 		parents.push_back(parent);
 	}
 
@@ -2039,7 +2042,7 @@ bool DFG::MapMultiDestRec(
 		success = false;
 		if (it->second[i].first->getmappedDFGNode() == NULL)
 		{
-			//			errs() << "Possible Dest = "
+			//			LLVM_DEBUG(dbgs() << "Possible Dest = "
 			//				   << "(" << it->second[i].first->getT() << ","
 			//				   	   	  << it->second[i].first->getY() << ","
 			//						  << it->second[i].first->getX() << ")\n";
@@ -2058,8 +2061,8 @@ bool DFG::MapMultiDestRec(
 		localCGRAEdges = cgraEdges;
 		routeComplete = astar->Route(node, parents, &dests, &destllMap, &localCGRAEdges, &pathsNotRouted, &chosenCnode, &deadEndReached);
 
-		errs() << "MapMultiDestRec::routeComplete=" << routeComplete << "\n";
-		errs() << "MapMultiDestRec::deadEndReached=" << deadEndReached << "\n";
+		LLVM_DEBUG(dbgs() << "MapMultiDestRec::routeComplete=" << routeComplete << "\n");
+		LLVM_DEBUG(dbgs() << "MapMultiDestRec::deadEndReached=" << deadEndReached << "\n");
 
 		if (deadEndReached || !routeComplete)
 		{
@@ -2070,8 +2073,8 @@ bool DFG::MapMultiDestRec(
 				<< "\n";
 		mappingOutFile << "routing success, keeping the current edges\n";
 
-		errs() << "Placed = "
-				<< "(" << chosenCnode->getT() << "," << chosenCnode->getY() << "," << chosenCnode->getX() << ")\n";
+		LLVM_DEBUG(dbgs() << "Placed = "
+				<< "(" << chosenCnode->getT() << "," << chosenCnode->getY() << "," << chosenCnode->getX() << ")\n");
 		node->setMappedLoc(chosenCnode);
 		chosenCnode->setMappedDFGNode(node);
 		node->setMappedRealTime(destllMap[chosenCnode]);
@@ -2090,7 +2093,7 @@ bool DFG::MapMultiDestRec(
 		}
 		else
 		{
-			errs() << "nodeDestMap end reached..\n";
+			LLVM_DEBUG(dbgs() << "nodeDestMap end reached..\n");
 			*nodeDestMap = localNodeDestMap;
 			*destNodeMap = localdestNodeMap;
 			currCGRA->setCGRAEdges(localCGRAEdges);
@@ -2099,7 +2102,7 @@ bool DFG::MapMultiDestRec(
 
 		if (!success)
 		{
-			errs() << "MapMultiDestRec : fails next possible destination\n";
+			LLVM_DEBUG(dbgs() << "MapMultiDestRec : fails next possible destination\n");
 			node->setMappedLoc(NULL);
 			chosenCnode->setMappedDFGNode(NULL);
 			mappingOutFile << std::to_string(index + 1) << " :: mapping failed, therefore trying mapping again for index=" << std::to_string(index) << "\n";
@@ -2118,13 +2121,13 @@ bool DFG::MapMultiDestRec(
 	//
 	//	for (int i = 0; i < it->second.size(); ++i) {
 	//		success = false;
-	//		errs() << "Possible Dest = "
+	//		LLVM_DEBUG(dbgs() << "Possible Dest = "
 	//			   << "(" << it->second[i].first->getT() << ","
 	//			   	   	  << it->second[i].first->getY() << ","
 	//					  << it->second[i].first->getX() << ")\n";
 	//
 	//		if(it->second[i].first->getmappedDFGNode() == NULL){
-	//			errs() << "Possible Dest is NULL\n";
+	//			LLVM_DEBUG(dbgs() << "Possible Dest is NULL\n";
 	//			cnode = it->second[i].first;
 	//			cnodePair = it->second[i];
 	//			for (int j = 0; j < node->getAncestors().size(); ++j) {
@@ -2133,12 +2136,12 @@ bool DFG::MapMultiDestRec(
 	////				parentExt = parent->getMappedLoc();
 	//				parentExt = currCGRA->getCGRANode((parent->getMappedLoc()->getT() + 1)%(currCGRA->getMII()),parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
 	//
-	//				errs() << "Path = "
+	//				LLVM_DEBUG(dbgs() << "Path = "
 	//					   << "(" << parentExt->getT() << ","
 	//					   	   	  << parentExt->getY() << ","
 	//							  << parentExt->getX() << ") to ";
 	//
-	//				errs() << "(" << cnode->getT() << ","
+	//				LLVM_DEBUG(dbgs() << "(" << cnode->getT() << ","
 	//					   	   	  << cnode->getY() << ","
 	//							  << cnode->getX() << ")\n";
 	//
@@ -2156,7 +2159,7 @@ bool DFG::MapMultiDestRec(
 	////			paths.clear();
 	//			if(!pathsNotRouted.empty()){
 	//				mappingOutFile << "routing failed, clearing edges\n";
-	//				errs() << "all paths are not routed.\n";
+	//				LLVM_DEBUG(dbgs() << "all paths are not routed.\n";
 	//				pathsNotRouted.clear();
 	//				if(deadEndReached){
 	//					return false;
@@ -2175,7 +2178,7 @@ bool DFG::MapMultiDestRec(
 	////			it->second.push_back(cnodePair);
 	//			localdestNodeMap[cnode].clear();
 	//
-	//			errs() << "Placed = " << "(" << cnode->getT() << "," << cnode->getY() << "," << cnode->getX() << ")\n";
+	//			LLVM_DEBUG(dbgs() << "Placed = " << "(" << cnode->getT() << "," << cnode->getY() << "," << cnode->getX() << ")\n";
 	//			node->setMappedLoc(cnode);
 	//			cnode->setMappedDFGNode(node);
 	//			node->setMappedRealTime(cnodePair.second);
@@ -2194,7 +2197,7 @@ bool DFG::MapMultiDestRec(
 	//						index + 1);
 	//			}
 	//			else{
-	//				errs() << "nodeDestMap end reached..\n";
+	//				LLVM_DEBUG(dbgs() << "nodeDestMap end reached..\n";
 	//				*nodeDestMap = localNodeDestMap;
 	//				*destNodeMap = localdestNodeMap;
 	//				currCGRA->setCGRAEdges(localCGRAEdges);
@@ -2213,7 +2216,7 @@ bool DFG::MapMultiDestRec(
 	//				break;
 	//			}
 	//			else{
-	//				errs() << "MapMultiDestRec : fails next possible destination\n";
+	//				LLVM_DEBUG(dbgs() << "MapMultiDestRec : fails next possible destination\n";
 	//				node->setMappedLoc(NULL);
 	//				cnode->setMappedDFGNode(NULL);
 	//				mappingOutFile << std::to_string(index + 1) << " :: mapping failed, therefore trying mapping again for index=" << std::to_string(index) << "\n";
@@ -2265,7 +2268,7 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim, ArchType arch)
 
 	currCGRA->setMapped(true);
 
-	errs() << "STARTING MAPASAP with MII = " << MII << "with maxASAPLevel = " << maxASAPLevel << "\n";
+	LLVM_DEBUG(dbgs() << "STARTING MAPASAP with MII = " << MII << "with maxASAPLevel = " << maxASAPLevel << "\n");
 
 	//	std::map<dfgNode*,std::vector<CGRANode*> > nodeDestMap;
 	std::map<dfgNode *, std::vector<std::pair<CGRANode *, int>>> nodeDestMap;
@@ -2285,7 +2288,7 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim, ArchType arch)
 		destNodeMap.clear();
 		nodeDestCostMap.clear();
 
-		errs() << "level = " << level << "\n";
+		LLVM_DEBUG(dbgs() << "level = " << level << "\n");
 
 		for (int j = 0; j < NodeList.size(); ++j)
 		{
@@ -2298,7 +2301,7 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim, ArchType arch)
 			}
 		}
 
-		errs() << "numOfNodes = " << currLevelNodes.size() << "\n";
+		LLVM_DEBUG(dbgs() << "numOfNodes = " << currLevelNodes.size() << "\n");
 
 		for (int i = 0; i < currLevelNodes.size(); ++i)
 		{
@@ -2315,7 +2318,7 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim, ArchType arch)
 				//every parent should be mapped
 				if (parent->getMappedLoc() == NULL)
 				{
-					errs() << "Parent : " << parent->getIdx() << " is not mapped!, this node=" << node->getIdx() << "\n";
+					LLVM_DEBUG(dbgs() << "Parent : " << parent->getIdx() << " is not mapped!, this node=" << node->getIdx() << "\n");
 				}
 				assert(parent->getMappedLoc() != NULL);
 
@@ -2323,8 +2326,8 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim, ArchType arch)
 				{
 					if (parent->getmappedRealTime() % MII != parent->getMappedLoc()->getT())
 					{
-						errs() << "parent->getmappedRealTime()%MII = " << parent->getmappedRealTime() % MII << "\n";
-						errs() << "parent->getMappedLoc()->getT() = " << parent->getMappedLoc()->getT() << "\n";
+						LLVM_DEBUG(dbgs() << "parent->getmappedRealTime()%MII = " << parent->getmappedRealTime() % MII << "\n");
+						LLVM_DEBUG(dbgs() << "parent->getMappedLoc()->getT() = " << parent->getMappedLoc()->getT() << "\n");
 					}
 
 					assert(parent->getmappedRealTime() % MII == parent->getMappedLoc()->getT());
@@ -2342,11 +2345,11 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim, ArchType arch)
 			//				if(!node->getAncestors().empty()){
 			//					ll+=node->getASAPnumber() - latestParent->getASAPnumber() - 1;
 			//				}
-			outs() << "ll=" << ll << "\n";
+			LLVM_DEBUG(dbgs() << "ll=" << ll << "\n");
 
 			if (!node->getRecAncestors().empty())
 			{
-				errs() << "RecAnc for Node" << node->getIdx();
+				LLVM_DEBUG(dbgs() << "RecAnc for Node" << node->getIdx());
 				mappingOutFile << "RecAnc for Node" << node->getIdx();
 			}
 
@@ -2354,9 +2357,9 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim, ArchType arch)
 			{
 				parent = node->getRecAncestors()[j];
 
-				errs() << " (Id=" << parent->getIdx() <<
+				LLVM_DEBUG(dbgs() << " (Id=" << parent->getIdx() <<
 
-						",rt=" << parent->getmappedRealTime() << ",t=" << parent->getMappedLoc()->getT() << "),";
+						",rt=" << parent->getmappedRealTime() << ",t=" << parent->getMappedLoc()->getT() << "),");
 
 				mappingOutFile << " (Id=" << parent->getIdx() << ",rt=" << parent->getmappedRealTime() << ",t=" << parent->getMappedLoc()->getT() << "),";
 
@@ -2369,7 +2372,7 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim, ArchType arch)
 
 			if (!node->getRecAncestors().empty())
 			{
-				errs() << "\n";
+				LLVM_DEBUG(dbgs() << "\n");
 				mappingOutFile << "\n";
 				el = el % MII;
 			}
@@ -2468,15 +2471,15 @@ bool DFG::MapASAPLevel(int MII, int XDim, int YDim, ArchType arch)
 
 				ll = (ll + 1);
 			}
-			errs() << "MapASAPLevel:: nodeIdx=" << node->getIdx() << " ,Possible Dests = " << nodeDestMap[node].size() << "\n";
+			LLVM_DEBUG(dbgs() << "MapASAPLevel:: nodeIdx=" << node->getIdx() << " ,Possible Dests = " << nodeDestMap[node].size() << "\n");
 			for (int i = 0; i < nodeDestMap[node].size(); ++i)
 			{
-				errs() << nodeDestMap[node][i].first->getName() << ",RT=" << nodeDestMap[node][i].second << ";";
+				LLVM_DEBUG(dbgs() << nodeDestMap[node][i].first->getName() << ",RT=" << nodeDestMap[node][i].second << ";");
 			}
-			errs() << "\n";
+			LLVM_DEBUG(dbgs() << "\n");
 		}
 
-		errs() << "MapASAPLevel:: Finding dests are done!\n";
+		LLVM_DEBUG(dbgs() << "MapASAPLevel:: Finding dests are done!\n");
 
 		//Multiple Desination Nodes
 		deadEndReached = false;
@@ -2509,11 +2512,11 @@ bool DFG::MapCGRA_SMART(int XDim, int YDim, ArchType arch, int bTrack, int initM
 	findMaxRecDist();
 	conMatArr.push_back(getConMat());
 
-	errs() << "MapCGRAsa:: Resource Constrained MII = " << MII << "\n";
-	errs() << "MapCGRAsa:: Recurrence Constrained MII = " << getMaxRecDist() << "\n";
+	LLVM_DEBUG(dbgs() << "MapCGRAsa:: Resource Constrained MII = " << MII << "\n");
+	LLVM_DEBUG(dbgs() << "MapCGRAsa:: Recurrence Constrained MII = " << getMaxRecDist() << "\n");
 
-	errs() << "MapCGRAsa:: MEMNodes/TotalNodes = " << getMEMOpsToBePlaced() << "/" << NodeList.size() << "\n";
-	errs() << "MapCGRAsa:: MEM Constrained MII = " << memMII << "\n";
+	LLVM_DEBUG(dbgs() << "MapCGRAsa:: MEMNodes/TotalNodes = " << getMEMOpsToBePlaced() << "/" << NodeList.size() << "\n");
+	LLVM_DEBUG(dbgs() << "MapCGRAsa:: MEM Constrained MII = " << memMII << "\n");
 	mappingOutFile << "MapCGRAsa:: Number of nodes = " << NodeList.size() << ", Edges = " << edgeList.size() << "\n";
 	mappingOutFile << "MapCGRAsa:: Resource Constrained MII = " << MII << "\n";
 	mappingOutFile << "MapCGRAsa:: MEMNodes/TotalNodes = " << getMEMOpsToBePlaced() << "/" << NodeList.size() << "\n";
@@ -2532,7 +2535,7 @@ bool DFG::MapCGRA_SMART(int XDim, int YDim, ArchType arch, int bTrack, int initM
 		node = NodeList[i];
 		if (node->getAncestors().size() > 5)
 		{
-			errs() << "Cannot map applications that have Fan in nodes more than 5\n";
+			LLVM_DEBUG(dbgs() << "Cannot map applications that have Fan in nodes more than 5\n");
 			return false;
 		}
 	}
@@ -2545,7 +2548,7 @@ bool DFG::MapCGRA_SMART(int XDim, int YDim, ArchType arch, int bTrack, int initM
 		{
 			clock_t end = clock();
 			double elapsed_time = double(end - begin) / CLOCKS_PER_SEC;
-			errs() << "MapCGRAsa :: Mapping success with MII = " << MII << "\n";
+			LLVM_DEBUG(dbgs() << "MapCGRAsa :: Mapping success with MII = " << MII << "\n");
 
 			for (int i = 0; i < NodeList.size(); ++i)
 			{
@@ -2645,18 +2648,18 @@ bool DFG::MapCGRA_SMART(int XDim, int YDim, ArchType arch, int bTrack, int initM
 			mappingOutFile << "Duration :: " << elapsed_time << "\n";
 			break;
 		}
-		errs() << "MapCGRAsa :: Mapping failed with MII = " << MII << "\n";
+		LLVM_DEBUG(dbgs() << "MapCGRAsa :: Mapping failed with MII = " << MII << "\n");
 		mappingOutFile << "MapCGRAsa :: Mapping failed with MII = " << MII << "\n";
 		if (MII >= 25)
 		{
-			errs() << "Largest MII is 25, current MII = 25 , therefore aborting mapping\n";
+			LLVM_DEBUG(dbgs() << "Largest MII is 25, current MII = 25 , therefore aborting mapping\n");
 			return false;
 		}
 
 		double currTime = double(clock() - begin) / CLOCKS_PER_SEC;
 		//TODO : DAC18 removed time limit
 		//		if(currTime > 60*15){
-		//			errs() << "8 mins window expired for the compilation, exiting\n";
+		//			LLVM_DEBUG(dbgs() << "8 mins window expired for the compilation, exiting\n";
 		//			return false;
 		//		}
 
@@ -2686,7 +2689,7 @@ void DFG::MapCGRA(int XDim, int YDim)
 
 	while (1)
 	{
-		errs() << "Mapping started with MII = " << MII << "\n";
+		LLVM_DEBUG(dbgs() << "Mapping started with MII = " << MII << "\n");
 		currCGRA = new CGRA(MII, XDim, YDim, REGS_PER_NODE);
 		int nodeListSequencer = 0;
 		int min_nodeListSequencer = NodeList.size();
@@ -2699,21 +2702,21 @@ void DFG::MapCGRA(int XDim, int YDim)
 		while (1)
 		{
 			temp = NodeList[nodeListSequencer];
-			errs() << "Mapping " << nodeListSequencer << "/" << NodeList.size() << "..."
-					<< ", with MII = " << MII << "\n";
+			LLVM_DEBUG(dbgs() << "Mapping " << nodeListSequencer << "/" << NodeList.size() << "..."
+					<< ", with MII = " << MII << "\n");
 
 			if (nodeListSequencer == NodeList.size())
 			{
-				errs() << "Mapping done...\n";
+				LLVM_DEBUG(dbgs() << "Mapping done...\n");
 				break;
 			}
 
-			errs() << "Finding candidates for NodeSeq =" << nodeListSequencer << "...\n";
+			LLVM_DEBUG(dbgs() << "Finding candidates for NodeSeq =" << nodeListSequencer << "...\n");
 			candidateCGRANodes = FindCandidateCGRANodes(temp);
-			errs() << "Found candidates : " << candidateCGRANodes.size() << "\n";
+			LLVM_DEBUG(dbgs() << "Found candidates : " << candidateCGRANodes.size() << "\n");
 
 			//			for (int i = 0; i < candidateCGRANodes.size(); ++i) {
-			//				errs() << "(t,y,x) = (" << candidateCGRANodes[i].node->getT() << ","
+			//				LLVM_DEBUG(dbgs() << "(t,y,x) = (" << candidateCGRANodes[i].node->getT() << ","
 			//										<< candidateCGRANodes[i].node->getY() << ","
 			//										<< candidateCGRANodes[i].node->getX() << ")\n";
 			//			}
@@ -2721,10 +2724,10 @@ void DFG::MapCGRA(int XDim, int YDim)
 			//Remove this special Debug
 			//			if(nodeListSequencer == 28){
 			//				if(currCGRA->getCGRANode(2,2,1)->getmappedDFGNode() == NULL){
-			//					errs() << "SPECIAL_DEBUG : (221) is NULL\n";
+			//					LLVM_DEBUG(dbgs() << "SPECIAL_DEBUG : (221) is NULL\n";
 			//				}
 			//				else{
-			//					errs() << "SPECIAL_DEBUG : (221) is "<< currCGRA->getCGRANode(2,2,1)->getmappedDFGNode()->getIdx() <<"\n";
+			//					LLVM_DEBUG(dbgs() << "SPECIAL_DEBUG : (221) is "<< currCGRA->getCGRANode(2,2,1)->getmappedDFGNode()->getIdx() <<"\n";
 			//				}
 			//			}
 
@@ -2740,13 +2743,13 @@ void DFG::MapCGRA(int XDim, int YDim)
 						backTrack(nodeListSequencer);
 					}
 
-					errs() << "nodeListSequencer =" << nodeListSequencer << "\n";
+					LLVM_DEBUG(dbgs() << "nodeListSequencer =" << nodeListSequencer << "\n");
 				} while ((chosenCandidates[nodeListSequencer].curr + 1 >= chosenCandidates[nodeListSequencer].max) && (nodeListSequencer >= 0));
-				errs() << "Backtracked to nodeListSequencer =" << nodeListSequencer << "\n";
+				LLVM_DEBUG(dbgs() << "Backtracked to nodeListSequencer =" << nodeListSequencer << "\n");
 
 				if (nodeListSequencer < 0)
 				{
-					errs() << "Mapping failed for MII = " << MII << "...\n";
+					LLVM_DEBUG(dbgs() << "Mapping failed for MII = " << MII << "...\n");
 					break;
 				}
 
@@ -2754,16 +2757,16 @@ void DFG::MapCGRA(int XDim, int YDim)
 			}
 			else
 			{
-				errs() << "current candidate = " << chosenCandidates[nodeListSequencer].curr << "\n";
+				LLVM_DEBUG(dbgs() << "current candidate = " << chosenCandidates[nodeListSequencer].curr << "\n");
 				chosenCandidates[nodeListSequencer].max = candidateCGRANodes.size();
 				candidateCGRANodes[chosenCandidates[nodeListSequencer].curr].node->setMappedDFGNode(temp);
 				temp->setMappedLoc(candidateCGRANodes[chosenCandidates[nodeListSequencer].curr].node);
 
-				errs() << "Mapped node with sequence =" << nodeListSequencer << "\n";
-				errs() << "(t,y,x) = (" << candidateCGRANodes[chosenCandidates[nodeListSequencer].curr].node->getT() << ","
+				LLVM_DEBUG(dbgs() << "Mapped node with sequence =" << nodeListSequencer << "\n");
+				LLVM_DEBUG(dbgs() << "(t,y,x) = (" << candidateCGRANodes[chosenCandidates[nodeListSequencer].curr].node->getT() << ","
 						<< candidateCGRANodes[chosenCandidates[nodeListSequencer].curr].node->getY() << ","
-						<< candidateCGRANodes[chosenCandidates[nodeListSequencer].curr].node->getX() << ")\n";
-				//				errs() << "(t,y,x) = (" << currCGRA->getCGRANode(temp->getMappedLoc()->getT(),temp->getMappedLoc()->getY(),temp->getMappedLoc()->getX())->getT()  << ","
+						<< candidateCGRANodes[chosenCandidates[nodeListSequencer].curr].node->getX() << ")\n");
+				//				LLVM_DEBUG(dbgs() << "(t,y,x) = (" << currCGRA->getCGRANode(temp->getMappedLoc()->getT(),temp->getMappedLoc()->getY(),temp->getMappedLoc()->getX())->getT()  << ","
 				//									    << currCGRA->getCGRANode(temp->getMappedLoc()->getT(),temp->getMappedLoc()->getY(),temp->getMappedLoc()->getX())->getY()   << ","
 				//									    << currCGRA->getCGRANode(temp->getMappedLoc()->getT(),temp->getMappedLoc()->getY(),temp->getMappedLoc()->getX())->getX()   << ")\n";
 				nodeListSequencer++;
@@ -2773,7 +2776,7 @@ void DFG::MapCGRA(int XDim, int YDim)
 
 		if (nodeListSequencer == NodeList.size())
 		{
-			errs() << "Mapping done...\n";
+			LLVM_DEBUG(dbgs() << "Mapping done...\n");
 			break;
 		}
 
@@ -2798,24 +2801,24 @@ void DFG::CreateSchList()
 {
 	dfgNode *temp;
 
-	errs() << "#################Begin :: The Schedule List#################\n";
+	LLVM_DEBUG(dbgs() << "#################Begin :: The Schedule List#################\n");
 
 	//	for (int i = 0; i < NodeList.size(); ++i) {
 	//		temp = &NodeList[i];
-	//		errs() << "NodeIdx=" << temp->getIdx() << ", ASAP =" << temp->getASAPnumber() << ", ALAP =" << temp->getALAPnumber() << "\n";
+	//		LLVM_DEBUG(dbgs() << "NodeIdx=" << temp->getIdx() << ", ASAP =" << temp->getASAPnumber() << ", ALAP =" << temp->getALAPnumber() << "\n";
 	//	}
-	//	errs() << "Done\n";
+	//	LLVM_DEBUG(dbgs() << "Done\n";
 
 	std::sort(NodeList.begin(), NodeList.end(), ScheduleOrder());
-	errs() << "CreateSchList::Done sorting...\n";
+	LLVM_DEBUG(dbgs() << "CreateSchList::Done sorting...\n");
 	for (int i = 0; i < NodeList.size(); ++i)
 	{
 		temp = NodeList[i];
 		temp->setSchIdx(i);
 
-		errs() << "NodeIdx=" << temp->getIdx() <<  ", NameType=" << temp->getNameType() << ", ASAP =" << temp->getASAPnumber() << ", ALAP =" << temp->getALAPnumber() << ", CONST VAL =" << (temp->hasConstantVal()? temp->getConstantVal():0) << "\n";
+		LLVM_DEBUG(dbgs() << "NodeIdx=" << temp->getIdx() <<  ", NameType=" << temp->getNameType() << ", ASAP =" << temp->getASAPnumber() << ", ALAP =" << temp->getALAPnumber() << ", CONST VAL =" << (temp->hasConstantVal()? temp->getConstantVal():0) << "\n");
 	}
-	errs() << "#################End :: The Schedule List#################\n";
+	LLVM_DEBUG(dbgs() << "#################End :: The Schedule List#################\n");
 }
 
 std::vector<ConnectedCGRANode> DFG::searchCandidates(CGRANode *mappedLoc, dfgNode *node, std::vector<std::pair<Instruction *, int>> *candidateNumbers)
@@ -2874,7 +2877,7 @@ void DFG::eraseAlreadyMappedNodes(std::vector<ConnectedCGRANode> *candidates)
 	{
 		if (it->node->getmappedDFGNode() != NULL)
 		{
-			//			errs() << "eraseAlreadyMappedNodes :: Already mapped = (" << it->node->getT() << ","
+			//			LLVM_DEBUG(dbgs() << "eraseAlreadyMappedNodes :: Already mapped = (" << it->node->getT() << ","
 			//																	  << it->node->getY() << ","
 			//																	  << it->node->getX() << ")\n";
 			it = candidates->erase(it);
@@ -2890,11 +2893,11 @@ void DFG::backTrack(int nodeSeq)
 {
 	dfgNode *temp = NodeList[nodeSeq];
 	dfgNode *anc;
-	//	errs() << "Backtrack : NodeSeq=" << nodeSeq << "\n";
+	//	LLVM_DEBUG(dbgs() << "Backtrack : NodeSeq=" << nodeSeq << "\n";
 
 	if (temp->getMappedLoc() != NULL)
 	{
-		//		errs() << "(t,y,x) = (" << temp->getMappedLoc()->getT() << "," << temp->getMappedLoc()->getY() << "," << temp->getMappedLoc()->getX() << "\n";
+		//		LLVM_DEBUG(dbgs() << "(t,y,x) = (" << temp->getMappedLoc()->getT() << "," << temp->getMappedLoc()->getY() << "," << temp->getMappedLoc()->getX() << "\n";
 		temp->getMappedLoc()->setMappedDFGNode(NULL);
 		temp->setMappedLoc(NULL);
 	}
@@ -2907,7 +2910,7 @@ void DFG::backTrack(int nodeSeq)
 
 		while (it != anc->getRoutingLocs()->end())
 		{
-			//			errs() << "BackTrack :: erasing routing=(" << (*it)->getT() << ","
+			//			LLVM_DEBUG(dbgs() << "BackTrack :: erasing routing=(" << (*it)->getT() << ","
 			//													   << (*it)->getY() << ","
 			//													   << (*it)->getX() << ")\n";
 			(*it)->setMappedDFGNode(NULL);
@@ -2970,7 +2973,7 @@ std::vector<ConnectedCGRANode> DFG::ExpandCandidatesAddingRoutingNodes(
 		for (int j = 0; j < candidates2.size(); ++j)
 		{
 
-			//					errs() << "candidates2 = (" << candidates2[j].node->getT() << ","
+			//					LLVM_DEBUG(dbgs() << "candidates2 = (" << candidates2[j].node->getT() << ","
 			//							   	   	   	   	    << candidates2[j].node->getY() << ","
 			//												<< candidates2[j].node->getX() << ")\n";
 		}
@@ -3076,21 +3079,21 @@ std::vector<ConnectedCGRANode> DFG::FindCandidateCGRANodes(dfgNode *node)
 
 		if (temp->getMappedLoc() == NULL)
 		{
-			errs() << "Unmapped ancestor : " << temp->getIdx() << "\n";
+			LLVM_DEBUG(dbgs() << "Unmapped ancestor : " << temp->getIdx() << "\n");
 		}
 
 		assert(temp->getMappedLoc() != NULL);
 
 		if (temp->getMappedLoc()->getmappedDFGNode() == NULL)
 		{
-			errs() << "Unmapped ancestor : " << temp->getIdx() << "\n";
+			LLVM_DEBUG(dbgs() << "Unmapped ancestor : " << temp->getIdx() << "\n");
 		}
 
 		assert(temp->getMappedLoc()->getmappedDFGNode() != NULL);
 		candidateNumbers.clear();
 		candidates = searchCandidates(temp->getMappedLoc(), node, &candidateNumbers);
 
-		//		errs() << "FindCandidateCGRANodes :: candidates.size()=" << candidates.size() << "\n";
+		//		LLVM_DEBUG(dbgs() << "FindCandidateCGRANodes :: candidates.size()=" << candidates.size() << "\n";
 
 		std::vector<ConnectedCGRANode> candidates2;
 
@@ -3107,7 +3110,7 @@ std::vector<ConnectedCGRANode> DFG::FindCandidateCGRANodes(dfgNode *node)
 
 				for (int j = 0; j < candidates2.size(); ++j)
 				{
-					//					errs() << "candidates2 = (" << candidates2[j].node->getT() << ","
+					//					LLVM_DEBUG(dbgs() << "candidates2 = (" << candidates2[j].node->getT() << ","
 					//							   	   	   	   	    << candidates2[j].node->getY() << ","
 					//												<< candidates2[j].node->getX() << ")\n";
 				}
@@ -3123,7 +3126,7 @@ std::vector<ConnectedCGRANode> DFG::FindCandidateCGRANodes(dfgNode *node)
 					}
 					else
 					{
-						//						errs() << "FindCandidateCGRANodes :: Routing node added=(" << candidates2[j].node->getT() << ","
+						//						LLVM_DEBUG(dbgs() << "FindCandidateCGRANodes :: Routing node added=(" << candidates2[j].node->getT() << ","
 						//																				   << candidates2[j].node->getY() << ","
 						//																				   << candidates2[j].node->getX() << ")\n";
 						temp->getRoutingLocs()->push_back(candidates2[j].node);
@@ -3139,8 +3142,8 @@ std::vector<ConnectedCGRANode> DFG::FindCandidateCGRANodes(dfgNode *node)
 
 		if (candidates.size() == 0)
 		{
-			errs() << "No Candidates found for NODE_ID:" << node->getIdx() << "\n";
-			errs() << "Need to backtrack...\n";
+			LLVM_DEBUG(dbgs() << "No Candidates found for NODE_ID:" << node->getIdx() << "\n");
+			LLVM_DEBUG(dbgs() << "Need to backtrack...\n");
 			return candidates;
 		}
 
@@ -3159,8 +3162,8 @@ void DFG::MapCGRA_EMS(int XDim, int YDim, std::string mapfileName)
 	conMatArr.push_back(getConMat());
 	printConMat(conMatArr[0]);
 
-	errs() << "MapCGRAsa:: Resource Constrained MII = " << MII << "\n";
-	errs() << "MapCGRAsa:: Recurrence Constrained MII = " << getMaxRecDist() << "\n";
+	LLVM_DEBUG(dbgs() << "MapCGRAsa:: Resource Constrained MII = " << MII << "\n");
+	LLVM_DEBUG(dbgs() << "MapCGRAsa:: Recurrence Constrained MII = " << getMaxRecDist() << "\n");
 	mappingOutFile << "MapCGRAsa:: Number of nodes = " << NodeList.size() << "\n";
 	mappingOutFile << "MapCGRAsa:: Resource Constrained MII = " << MII << "\n";
 	mappingOutFile << "MapCGRAsa:: Recurrence Constrained MII = " << getMaxRecDist() << "\n";
@@ -3176,7 +3179,7 @@ void DFG::MapCGRA_EMS(int XDim, int YDim, std::string mapfileName)
 		node = NodeList[i];
 		if (node->getAncestors().size() > 5)
 		{
-			errs() << "Cannot map applications that have Fan in nodes more than 5\n";
+			LLVM_DEBUG(dbgs() << "Cannot map applications that have Fan in nodes more than 5\n");
 			return;
 		}
 	}
@@ -3229,7 +3232,7 @@ bool DFG::MapCGRA_EMS_ASAPLevel(int MII, int XDim, int YDim)
 {
 	currCGRA = new CGRA(MII, XDim, YDim, REGS_PER_NODE);
 
-	errs() << "STARTING MAPASAP with MII = " << MII << "with maxASAPLevel = " << maxASAPLevel << "\n";
+	LLVM_DEBUG(dbgs() << "STARTING MAPASAP with MII = " << MII << "with maxASAPLevel = " << maxASAPLevel << "\n");
 	mappingOutFile << "STARTING MAPASAP with MII = " << MII << "with maxASAPLevel = " << maxASAPLevel << "\n";
 
 	std::map<CGRANode *, std::vector<CGRAEdge>>::iterator edgeIt;
@@ -3280,7 +3283,7 @@ bool DFG::MapCGRA_EMS_ASAPLevel(int MII, int XDim, int YDim)
 		destNodeMap.clear();
 		nodeDestCostMap.clear();
 
-		errs() << "level = " << level << "\n";
+		LLVM_DEBUG(dbgs() << "level = " << level << "\n");
 
 		for (int j = 0; j < NodeList.size(); ++j)
 		{
@@ -3292,7 +3295,7 @@ bool DFG::MapCGRA_EMS_ASAPLevel(int MII, int XDim, int YDim)
 			}
 		}
 
-		errs() << "numOfNodes = " << currLevelNodes.size() << "\n";
+		LLVM_DEBUG(dbgs() << "numOfNodes = " << currLevelNodes.size() << "\n");
 
 		for (int i = 0; i < currLevelNodes.size(); ++i)
 		{
@@ -3306,7 +3309,7 @@ bool DFG::MapCGRA_EMS_ASAPLevel(int MII, int XDim, int YDim)
 				//every parent should be mapped
 				if (parent->getMappedLoc() == NULL)
 				{
-					errs() << "parent :: nodeIdx=" << parent->getIdx() << ", ASAP=" << parent->getASAPnumber() << "\n";
+					LLVM_DEBUG(dbgs() << "parent :: nodeIdx=" << parent->getIdx() << ", ASAP=" << parent->getASAPnumber() << "\n");
 					//					parent->getNode()->dump();
 				}
 				assert(parent->getMappedLoc() != NULL);
@@ -3315,9 +3318,9 @@ bool DFG::MapCGRA_EMS_ASAPLevel(int MII, int XDim, int YDim)
 				{
 					if (parent->getmappedRealTime() % MII != parent->getMappedLoc()->getT())
 					{
-						errs() << "getMappedRealTime assertion is going to fail!\n";
-						errs() << "parent->getmappedRealTime()%MII = " << parent->getmappedRealTime() % MII << "\n";
-						errs() << "parent->getMappedLoc()->getT() = " << parent->getMappedLoc()->getT() << "\n";
+						LLVM_DEBUG(dbgs() << "getMappedRealTime assertion is going to fail!\n");
+						LLVM_DEBUG(dbgs() << "parent->getmappedRealTime()%MII = " << parent->getmappedRealTime() % MII << "\n");
+						LLVM_DEBUG(dbgs() << "parent->getMappedLoc()->getT() = " << parent->getMappedLoc()->getT() << "\n");
 					}
 
 					assert(parent->getmappedRealTime() % MII == parent->getMappedLoc()->getT());
@@ -3334,7 +3337,7 @@ bool DFG::MapCGRA_EMS_ASAPLevel(int MII, int XDim, int YDim)
 
 			if (!node->getRecAncestors().empty())
 			{
-				errs() << "RecAnc for Node" << node->getIdx();
+				LLVM_DEBUG(dbgs() << "RecAnc for Node" << node->getIdx());
 				mappingOutFile << "RecAnc for Node" << node->getIdx();
 			}
 
@@ -3342,7 +3345,7 @@ bool DFG::MapCGRA_EMS_ASAPLevel(int MII, int XDim, int YDim)
 			{
 				parent = node->getRecAncestors()[j];
 
-				errs() << " (Id=" << parent->getIdx() << ",rt=" << parent->getmappedRealTime() << ",t=" << parent->getMappedLoc()->getT() << "),";
+				LLVM_DEBUG(dbgs() << " (Id=" << parent->getIdx() << ",rt=" << parent->getmappedRealTime() << ",t=" << parent->getMappedLoc()->getT() << "),");
 
 				mappingOutFile << " (Id=" << parent->getIdx() << ",rt=" << parent->getmappedRealTime() << ",t=" << parent->getMappedLoc()->getT() << "),";
 
@@ -3355,7 +3358,7 @@ bool DFG::MapCGRA_EMS_ASAPLevel(int MII, int XDim, int YDim)
 
 			if (!node->getRecAncestors().empty())
 			{
-				errs() << "\n";
+				LLVM_DEBUG(dbgs() << "\n");
 				mappingOutFile << "\n";
 				el = el % MII;
 			}
@@ -3402,10 +3405,10 @@ bool DFG::MapCGRA_EMS_ASAPLevel(int MII, int XDim, int YDim)
 
 				ll = (ll + 1);
 			}
-			errs() << "MapASAPLevel:: nodeIdx=" << node->getIdx() << " ,Possible Dests = " << nodeDestMap[node].size() << "\n";
+			LLVM_DEBUG(dbgs() << "MapASAPLevel:: nodeIdx=" << node->getIdx() << " ,Possible Dests = " << nodeDestMap[node].size() << "\n");
 		}
 
-		errs() << "MapASAPLevel:: Finding dests are done!\n";
+		LLVM_DEBUG(dbgs() << "MapASAPLevel:: Finding dests are done!\n");
 
 		//Sorting the nodeDestMap based routing/affinity costs
 		for (nodeDestMapIt = nodeDestMap.begin(); nodeDestMapIt != nodeDestMap.end(); nodeDestMapIt++)
@@ -3488,20 +3491,20 @@ bool DFG::MAPCGRA_EMS_MultDest(std::map<dfgNode *, std::vector<std::pair<CGRANod
 	//	possibleDests = it->second;
 
 	//	if(node == NULL){
-	//		errs() << "Node is NULL...\n";
+	//		LLVM_DEBUG(dbgs() << "Node is NULL...\n";
 	//	}else{
-	//		errs() << "Node = \n";
+	//		LLVM_DEBUG(dbgs() << "Node = \n";
 	//		node->getNode()->dump();
 	//	}
 
-	//	errs() << "MapMultiDestRec : Procesing NodeIdx = " << node->getIdx() << " ,PossibleDests = " << (*nodeDestMap)[node].size() << "\n";
+	//	LLVM_DEBUG(dbgs() << "MapMultiDestRec : Procesing NodeIdx = " << node->getIdx() << " ,PossibleDests = " << (*nodeDestMap)[node].size() << "\n";
 
-	errs() << "EMSMapMultiDestRec : Procesing NodeIdx = " << node->getIdx();
-	errs() << ", PossibleDests = " << (*nodeDestMap)[node].size();
-	errs() << ", MII = " << currCGRA->getMII();
-	errs() << ", currASAPLevel = " << node->getASAPnumber();
-	errs() << ", NodeProgress = " << index + 1 << "/" << nodeDestMap->size();
-	errs() << "\n";
+	LLVM_DEBUG(dbgs() << "EMSMapMultiDestRec : Procesing NodeIdx = " << node->getIdx());
+	LLVM_DEBUG(dbgs() << ", PossibleDests = " << (*nodeDestMap)[node].size());
+	LLVM_DEBUG(dbgs() << ", MII = " << currCGRA->getMII());
+	LLVM_DEBUG(dbgs() << ", currASAPLevel = " << node->getASAPnumber());
+	LLVM_DEBUG(dbgs() << ", NodeProgress = " << index + 1 << "/" << nodeDestMap->size());
+	LLVM_DEBUG(dbgs() << "\n");
 
 	for (int i = 0; i < (*nodeDestMap)[node].size(); ++i)
 	{
@@ -3509,10 +3512,10 @@ bool DFG::MAPCGRA_EMS_MultDest(std::map<dfgNode *, std::vector<std::pair<CGRANod
 
 		if ((*nodeDestMap)[node][i].first->getmappedDFGNode() == NULL)
 		{
-			errs() << "Possible Dest = "
+			LLVM_DEBUG(dbgs() << "Possible Dest = "
 					<< "(" << (*nodeDestMap)[node][i].first->getT() << ","
 					<< (*nodeDestMap)[node][i].first->getY() << ","
-					<< (*nodeDestMap)[node][i].first->getX() << "), Index=" << i + 1 << "/" << (*nodeDestMap)[node].size() << "\n";
+					<< (*nodeDestMap)[node][i].first->getX() << "), Index=" << i + 1 << "/" << (*nodeDestMap)[node].size() << "\n");
 			cnode = (*nodeDestMap)[node][i].first;
 			cnodePair = (*nodeDestMap)[node][i];
 			for (int j = 0; j < node->getAncestors().size(); ++j)
@@ -3522,12 +3525,12 @@ bool DFG::MAPCGRA_EMS_MultDest(std::map<dfgNode *, std::vector<std::pair<CGRANod
 				parentExt = parent->getMappedLoc();
 				//				parentExt = currCGRA->getCGRANode((parent->getMappedLoc()->getT() + 1)%(currCGRA->getMII()),parent->getMappedLoc()->getY(),parent->getMappedLoc()->getX());
 
-				//				errs() << "Path = "
+				//				LLVM_DEBUG(dbgs() << "Path = "
 				//					   << "(" << parentExt->getT() << ","
 				//					   	   	  << parentExt->getY() << ","
 				//							  << parentExt->getX() << ") to ";
 				//
-				//				errs() << "(" << cnode->getT() << ","
+				//				LLVM_DEBUG(dbgs() << "(" << cnode->getT() << ","
 				//					   	   	  << cnode->getY() << ","
 				//							  << cnode->getX() << ")\n";
 
@@ -3553,7 +3556,7 @@ bool DFG::MAPCGRA_EMS_MultDest(std::map<dfgNode *, std::vector<std::pair<CGRANod
 					parents[j]->getRoutingLocs()->clear();
 				}
 				mappingOutFile << "routing failed, clearing edges\n";
-				errs() << "all paths are not routed.\n";
+				LLVM_DEBUG(dbgs() << "all paths are not routed.\n");
 				pathsNotRouted.clear();
 				if (deadEndReached)
 				{
@@ -3574,8 +3577,8 @@ bool DFG::MAPCGRA_EMS_MultDest(std::map<dfgNode *, std::vector<std::pair<CGRANod
 			//			it->second.push_back(cnodePair);
 			localdestNodeMap[cnode].clear();
 
-			errs() << "Placed = "
-					<< "(" << cnode->getT() << "," << cnode->getY() << "," << cnode->getX() << ")\n";
+			LLVM_DEBUG(dbgs() << "Placed = "
+					<< "(" << cnode->getT() << "," << cnode->getY() << "," << cnode->getX() << ")\n");
 			node->setMappedLoc(cnode);
 			cnode->setMappedDFGNode(node);
 			node->setMappedRealTime(cnodePair.second);
@@ -3591,13 +3594,13 @@ bool DFG::MAPCGRA_EMS_MultDest(std::map<dfgNode *, std::vector<std::pair<CGRANod
 			{
 				if (!EMSSortNodeDest(&localNodeDestMap, localCGRAEdges, index + 1))
 				{
-					errs() << "&& EMSSortNodeDest Done and Some nodes does not have destination retrying...\n";
+					LLVM_DEBUG(dbgs() << "&& EMSSortNodeDest Done and Some nodes does not have destination retrying...\n");
 					success = false;
 				}
 				else
 				{
 					itlocal = globalNodesWithCost.begin() + index + 1;
-					errs() << "&& EMSSortNodeDest Done \n";
+					LLVM_DEBUG(dbgs() << "&& EMSSortNodeDest Done \n");
 					success = MAPCGRA_EMS_MultDest(
 							&localNodeDestMap,
 							&localdestNodeMap,
@@ -3608,7 +3611,7 @@ bool DFG::MAPCGRA_EMS_MultDest(std::map<dfgNode *, std::vector<std::pair<CGRANod
 			}
 			else
 			{
-				errs() << "nodeDestMap end reached..\n";
+				LLVM_DEBUG(dbgs() << "nodeDestMap end reached..\n");
 				*nodeDestMap = localNodeDestMap;
 				*destNodeMap = localdestNodeMap;
 				currCGRA->setCGRAEdges(localCGRAEdges);
@@ -3629,7 +3632,7 @@ bool DFG::MAPCGRA_EMS_MultDest(std::map<dfgNode *, std::vector<std::pair<CGRANod
 			}
 			else
 			{
-				errs() << "MapMultiDestRec : fails next possible destination\n";
+				LLVM_DEBUG(dbgs() << "MapMultiDestRec : fails next possible destination\n");
 				node->setMappedLoc(NULL);
 				cnode->setMappedDFGNode(NULL);
 				mappingOutFile << std::to_string(index + 1) << " :: mapping failed, therefore trying mapping again for index=" << std::to_string(index) << "\n";
@@ -3682,8 +3685,8 @@ TreePath DFG::createTreePath(dfgNode *parent, CGRANode *dest)
 	tp.sourceSCpathLengths[ParentExt] = 0;
 
 	//	if(parent->getIdx() == 22){
-	//		errs() << "createTreePath::Parent=" << parent->getIdx() << "\n";
-	//		errs() << "createTreePath::ParentExt=" << ParentExt->getName() << "\n";
+	//		LLVM_DEBUG(dbgs() << "createTreePath::Parent=" << parent->getIdx() << "\n";
+	//		LLVM_DEBUG(dbgs() << "createTreePath::ParentExt=" << ParentExt->getName() << "\n";
 	//	}
 
 	assert(parent != NULL);
@@ -3705,12 +3708,12 @@ TreePath DFG::createTreePath(dfgNode *parent, CGRANode *dest)
 					tp.sources.push_back(cnode);
 					tp.sourcePorts[cnode] = (*child->getTreeBasedRoutingLocs())[parent][j]->lastPort;
 
-					//					errs() << "getTreeBasedRoutingLocs read :: ";
-					//					errs() << ", currNode=" << child->getIdx();
-					//					errs() << ", currParent=" << parent->getIdx();
-					//					errs() << ", cnode=" << cnode->getName();
-					//					errs() << ", port=" << getCGRA()->getPortName(tp.sourcePorts[cnode]) << "\n";
-					//					errs() << ", pathLength=" << (*child->getTreeBasedRoutingLocs())[parent][j]->SCpathLength << "\n";
+					//					LLVM_DEBUG(dbgs() << "getTreeBasedRoutingLocs read :: ";
+					//					LLVM_DEBUG(dbgs() << ", currNode=" << child->getIdx();
+					//					LLVM_DEBUG(dbgs() << ", currParent=" << parent->getIdx();
+					//					LLVM_DEBUG(dbgs() << ", cnode=" << cnode->getName();
+					//					LLVM_DEBUG(dbgs() << ", port=" << getCGRA()->getPortName(tp.sourcePorts[cnode]) << "\n";
+					//					LLVM_DEBUG(dbgs() << ", pathLength=" << (*child->getTreeBasedRoutingLocs())[parent][j]->SCpathLength << "\n";
 					assert(std::string("INV").compare(getCGRA()->getPortName(tp.sourcePorts[cnode])) != 0);
 
 					tp.sourceSCpathLengths[cnode] = (*child->getTreeBasedRoutingLocs())[parent][j]->SCpathLength;
@@ -3751,10 +3754,10 @@ TreePath DFG::createTreePath(dfgNode *parent, CGRANode *dest)
 
 			if (!foundParentTreeBasedRoutingLocs)
 			{
-				errs() << "foundParentTreeBasedRoutingLocs is false!\n";
-				errs() << "child=" << child->getIdx() << "\n";
-				errs() << "childLoc=" << child->getMappedLoc()->getName() << "\n";
-				errs() << "parent=" << parent->getIdx() << "\n";
+				LLVM_DEBUG(dbgs() << "foundParentTreeBasedRoutingLocs is false!\n");
+				LLVM_DEBUG(dbgs() << "child=" << child->getIdx() << "\n");
+				LLVM_DEBUG(dbgs() << "childLoc=" << child->getMappedLoc()->getName() << "\n");
+				LLVM_DEBUG(dbgs() << "parent=" << parent->getIdx() << "\n");
 			}
 
 			assert(tp.sourcePaths[cnode].first != NULL);
@@ -3823,7 +3826,7 @@ void DFG::printOutSMARTRoutes()
 		node = NodeList[i];
 		if (node->getMappedLoc() == NULL)
 		{
-			errs() << "printOutSMARTRoutes :: All the nodes are not mapped!\n";
+			LLVM_DEBUG(dbgs() << "printOutSMARTRoutes :: All the nodes are not mapped!\n");
 			return;
 		}
 	}
@@ -3870,11 +3873,11 @@ void DFG::printOutSMARTRoutes()
 							routeStart = 0;
 							std::string strEntry;
 							routingCnode = node->getMappedLoc();
-							errs() << "ParentExt=" << parentExt->getName() << "\n";
-							errs() << "FinalDest=" << routingCnode->getName() << "\n";
-							errs() << "FinalDestNodeIdx=" << node->getIdx() << "\n";
-							errs() << "FinalParentNodeIdx=" << parent->getIdx() << "\n";
-							errs() << "ParentsSize=" << node->getAncestors().size() << "\n";
+							LLVM_DEBUG(dbgs() << "ParentExt=" << parentExt->getName() << "\n");
+							LLVM_DEBUG(dbgs() << "FinalDest=" << routingCnode->getName() << "\n");
+							LLVM_DEBUG(dbgs() << "FinalDestNodeIdx=" << node->getIdx() << "\n");
+							LLVM_DEBUG(dbgs() << "FinalParentNodeIdx=" << parent->getIdx() << "\n");
+							LLVM_DEBUG(dbgs() << "ParentsSize=" << node->getAncestors().size() << "\n");
 							do
 							{
 								assert(parent->getMappedLoc() != NULL);
@@ -3884,7 +3887,7 @@ void DFG::printOutSMARTRoutes()
 								//							noRouting = true;
 								for (int j = routeStart; j < node->getMergeRoutingLocs()[parent].size(); ++j)
 								{
-									errs() << "routePath = " << node->getMergeRoutingLocs()[parent][j]->cnode->getName() << "\n";
+									LLVM_DEBUG(dbgs() << "routePath = " << node->getMergeRoutingLocs()[parent][j]->cnode->getName() << "\n");
 									//									if(routingCnode->getT() != node->getMergeRoutingLocs()[parent][j]->getT()){
 									//										if(!noRouting){
 									//											pT = routingCnode->getT();
@@ -3921,28 +3924,28 @@ void DFG::printOutSMARTRoutes()
 								{
 									for (k = 0; k < node->getMergeRoutingLocs()[parent].size(); ++k)
 									{
-										errs() << "pathNode =" << node->getMergeRoutingLocs()[parent][k]->cnode->getName() << "\n";
+										LLVM_DEBUG(dbgs() << "pathNode =" << node->getMergeRoutingLocs()[parent][k]->cnode->getName() << "\n");
 										if (node->getMergeRoutingLocs()[parent][k]->cnode == routingCnode)
 										{
 											routeStart = k + 1;
 											break;
 										}
 									}
-									errs() << "routingCnode = " << routingCnode->getName() << "\n";
-									errs() << "sourcePathNodeIdx = " << node->getIdx() << "\n";
-									errs() << "sourcePathParentIdx = " << parent->getIdx() << "\n";
-									errs() << "sourcePathParentExtLoc = " << parentExt->getName() << "\n";
-									errs() << "sourcePathNodeLoc = " << node->getMappedLoc()->getName() << "\n";
-									errs() << "sourcePathParentLoc = " << parent->getMappedLoc()->getName() << "\n";
+									LLVM_DEBUG(dbgs() << "routingCnode = " << routingCnode->getName() << "\n");
+									LLVM_DEBUG(dbgs() << "sourcePathNodeIdx = " << node->getIdx() << "\n");
+									LLVM_DEBUG(dbgs() << "sourcePathParentIdx = " << parent->getIdx() << "\n");
+									LLVM_DEBUG(dbgs() << "sourcePathParentExtLoc = " << parentExt->getName() << "\n");
+									LLVM_DEBUG(dbgs() << "sourcePathNodeLoc = " << node->getMappedLoc()->getName() << "\n");
+									LLVM_DEBUG(dbgs() << "sourcePathParentLoc = " << parent->getMappedLoc()->getName() << "\n");
 
-									errs() << "node->getMergeRoutingLocs()[parent].size() = " << node->getMergeRoutingLocs()[parent].size() << "\n";
+									LLVM_DEBUG(dbgs() << "node->getMergeRoutingLocs()[parent].size() = " << node->getMergeRoutingLocs()[parent].size() << "\n");
 
 									assert(routeStart == k + 1);
 								}
 
 							} while (node != parent);
 							assert(routingCnode == parentExt);
-							errs() << "%% Path Mapping Done ! \n";
+							LLVM_DEBUG(dbgs() << "%% Path Mapping Done ! \n");
 
 							//							if(!noRouting){
 							pT = cnode->getT();
@@ -4081,22 +4084,22 @@ bool DFG::EMSSortNodeDest(
 	{
 		//Assumption : All nodes are mapped until this point
 		assert(localtItPrev->node->getMappedLoc() != NULL);
-		errs() << "localtItPrev, NodeIdx = " << localtItPrev->node->getIdx() << "\n";
+		LLVM_DEBUG(dbgs() << "localtItPrev, NodeIdx = " << localtItPrev->node->getIdx() << "\n");
 
 		for (localtItForward = it; localtItForward != globalNodesWithCost.end(); localtItForward++)
 		{
-			errs() << "localtItForward, NodeIdx = " << localtItForward->node->getIdx() << "\n";
+			LLVM_DEBUG(dbgs() << "localtItForward, NodeIdx = " << localtItForward->node->getIdx() << "\n");
 			if (localtItForward->node->getASAPnumber() == 16)
 			{
-				errs() << "getAffinityCost started.\n";
+				LLVM_DEBUG(dbgs() << "getAffinityCost started.\n");
 			}
 			affCost = getAffinityCost(localtItForward->node, localtItPrev->node);
 			//TODO :removing affcost for now, add it later
 			//			affCost = 0;
 			if (localtItForward->node->getASAPnumber() == 16)
 			{
-				errs() << "getAffinityCost done.\n";
-				errs() << "(*nodeDestMap)[localtItForward->node].size = " << (*nodeDestMap)[localtItForward->node].size() << "\n";
+				LLVM_DEBUG(dbgs() << "getAffinityCost done.\n");
+				LLVM_DEBUG(dbgs() << "(*nodeDestMap)[localtItForward->node].size = " << (*nodeDestMap)[localtItForward->node].size() << "\n");
 			}
 
 			localNodesWithCost.clear();
@@ -4104,7 +4107,7 @@ bool DFG::EMSSortNodeDest(
 			{
 				if (localtItForward->node->getASAPnumber() == 16)
 				{
-					errs() << "(*nodeDestMap)[localtItForward->node], j = " << j << "\n";
+					LLVM_DEBUG(dbgs() << "(*nodeDestMap)[localtItForward->node], j = " << j << "\n");
 				}
 
 				cnode = (*nodeDestMap)[localtItForward->node][j].first;
@@ -4140,7 +4143,7 @@ bool DFG::EMSSortNodeDest(
 				}
 				assert(localNodesWithCost.size() != 0);
 				localtItForward->cost = localNodesWithCost[0].cost;
-				errs() << "routeCost=" << localNodesWithCost[0].routingCost << ", affCost=" << localNodesWithCost[0].affinityCost << ", Total=" << localNodesWithCost[0].cost << "\n";
+				LLVM_DEBUG(dbgs() << "routeCost=" << localNodesWithCost[0].routingCost << ", affCost=" << localNodesWithCost[0].affinityCost << ", Total=" << localNodesWithCost[0].cost << "\n");
 			}
 		}
 	}
@@ -4163,16 +4166,16 @@ int DFG::getDistCGRANodes(CGRANode *a, CGRANode *b)
 
 void DFG::printConMat(std::vector<std::vector<unsigned char>> conMat)
 {
-	errs() << "Printing ConMat....\n";
+	LLVM_DEBUG(dbgs() << "Printing ConMat....\n");
 	for (int i = 0; i < conMat.size(); ++i)
 	{
 		for (int j = 0; j < conMat[i].size(); ++j)
 		{
-			errs() << (int)conMat[i][j] << " ";
+			LLVM_DEBUG(dbgs() << (int)conMat[i][j] << " ");
 		}
-		errs() << "\n";
+		LLVM_DEBUG(dbgs() << "\n");
 	}
-	errs() << "Done Printing ConMat....\n";
+	LLVM_DEBUG(dbgs() << "Done Printing ConMat....\n");
 }
 
 int DFG::getStaticRoutingCost(dfgNode *node, CGRANode *dest, std::map<CGRANode *, std::vector<CGRAEdge>> Edges)
@@ -4254,10 +4257,10 @@ int DFG::getStaticRoutingCost(dfgNode *node, CGRANode *dest, std::map<CGRANode *
 
 		if (bestSource == NULL)
 		{
-			//			errs() << "getStaticRoutingCost :: routing ParentIdx=" << parent->getIdx();
-			//			errs() << ", placed=" << parent->getMappedLoc()->getName();
-			//			errs() << " to nodeIdx" << node->getIdx() << ", triedToBePlaced=" << dest->getName();
-			//			errs() << " FAILED! \n";
+			//			LLVM_DEBUG(dbgs() << "getStaticRoutingCost :: routing ParentIdx=" << parent->getIdx();
+			//			LLVM_DEBUG(dbgs() << ", placed=" << parent->getMappedLoc()->getName();
+			//			LLVM_DEBUG(dbgs() << " to nodeIdx" << node->getIdx() << ", triedToBePlaced=" << dest->getName();
+			//			LLVM_DEBUG(dbgs() << " FAILED! \n";
 			return INT_MAX;
 		}
 		cost = cost + bestCost;
@@ -4341,19 +4344,19 @@ int DFG::readXML(std::string fileName)
 	const char *tempchararr;
 	//	std::string tempString;
 
-	errs() << "Reading xml input file : " << fileName << "\n";
+	LLVM_DEBUG(dbgs() << "Reading xml input file : " << fileName << "\n");
 	err = inputDFG.LoadFile(fileName.c_str());
 	XMLCheckResult(err);
 
 	pRoot = inputDFG.FirstChild();
 	XMLCheckNULL(pRoot);
-	errs() << pRoot->Value() << "\n";
+	LLVM_DEBUG(dbgs() << pRoot->Value() << "\n");
 
-	errs() << "Reading OPs\n";
+	LLVM_DEBUG(dbgs() << "Reading OPs\n");
 	nextElem = pRoot->FirstChildElement("OPs");
 	XMLCheckNULL(nextElem);
 
-	errs() << "Reading OP-number\n";
+	LLVM_DEBUG(dbgs() << "Reading OP-number\n");
 	nextElem = nextElem->FirstChildElement("OP-number");
 	XMLCheckNULL(nextElem);
 	err = nextElem->QueryIntText(&totalNumberOps);
@@ -4365,7 +4368,7 @@ int DFG::readXML(std::string fileName)
 	while (nextElem != NULL)
 	{
 		dfgNode *node = new dfgNode(this);
-		errs() << "Reading OP," << opManualCount << "\n";
+		LLVM_DEBUG(dbgs() << "Reading OP," << opManualCount << "\n");
 
 		inElem1 = nextElem->FirstChildElement("ID");
 		XMLCheckNULL(inElem1);
@@ -4377,16 +4380,16 @@ int DFG::readXML(std::string fileName)
 		XMLCheckNULL(inElem1);
 		tempchararr = inElem1->GetText();
 		std::string tempString = tempchararr;
-		errs() << tempchararr << "\n";
+		LLVM_DEBUG(dbgs() << tempchararr << "\n");
 		node->setNameType(tempString);
 
-		//		errs() << "Reading In-edge-number : ";
+		//		LLVM_DEBUG(dbgs() << "Reading In-edge-number : ";
 		//		inElem1 = nextElem->FirstChildElement("In-edge-number");
 		//		XMLCheckNULL(inElem1);
 		//		err = inElem1->QueryIntText(&tempInt1);
 		//		XMLCheckResult(err);
 		//		ancNumber = tempInt1;
-		//		errs() << ancNumber << "\n";
+		//		LLVM_DEBUG(dbgs() << ancNumber << "\n";
 		//
 		//		if(ancNumber > 0){
 		//			//traverse to in-edges
@@ -4396,7 +4399,7 @@ int DFG::readXML(std::string fileName)
 		//			inElem1 = inElem1->FirstChildElement("Edge");
 		//			XMLCheckNULL(inElem1);
 		//			for (int i = 0; i < ancNumber; ++i) {
-		//				errs() << "Read in-edge \n";
+		//				LLVM_DEBUG(dbgs() << "Read in-edge \n";
 		//				err = inElem1->QueryIntText(&tempInt1);
 		//				XMLCheckResult(err);
 		//				node->InEdgesIdx.push_back(tempInt1);
@@ -4405,7 +4408,7 @@ int DFG::readXML(std::string fileName)
 		//			}
 		//		}
 		//
-		//		errs() << "Reading Out-edge-number : \n";
+		//		LLVM_DEBUG(dbgs() << "Reading Out-edge-number : \n";
 		//		inElem1 = nextElem->FirstChildElement("Out-edge-number");
 		//		XMLCheckNULL(inElem1);
 		//		err = inElem1->QueryIntText(&tempInt1);
@@ -4435,11 +4438,11 @@ int DFG::readXML(std::string fileName)
 	assert(opManualCount == totalNumberOps);
 
 	//EDGES
-	errs() << "Reading EDGEs\n";
+	LLVM_DEBUG(dbgs() << "Reading EDGEs\n");
 	nextElem = pRoot->FirstChildElement("EDGEs");
 	XMLCheckNULL(nextElem);
 
-	errs() << "Reading Edge-number\n";
+	LLVM_DEBUG(dbgs() << "Reading Edge-number\n");
 	nextElem = nextElem->FirstChildElement("Edge-number");
 	XMLCheckNULL(nextElem);
 	err = nextElem->QueryIntText(&totalNumberEdges);
@@ -4450,7 +4453,7 @@ int DFG::readXML(std::string fileName)
 
 	while (nextElem != NULL)
 	{
-		errs() << "Reading Edge, " << edgeManualCount << "\n";
+		LLVM_DEBUG(dbgs() << "Reading Edge, " << edgeManualCount << "\n");
 		inElem1 = nextElem->FirstChildElement("Start-OP");
 		XMLCheckNULL(inElem1);
 		err = inElem1->QueryIntText(&tempInt1);
@@ -4735,10 +4738,10 @@ int DFG::printRegStats()
 
 						if (tempEdgeVec.size() > 4)
 						{
-							errs() << "init tempEdgeVec.size() =" << tempEdgeVec.size() << "\n";
+							LLVM_DEBUG(dbgs() << "init tempEdgeVec.size() =" << tempEdgeVec.size() << "\n");
 							for (int i = 0; i < tempEdgeVec.size(); ++i)
 							{
-								errs() << tempEdgeVec[i]->getName() << "\n";
+								LLVM_DEBUG(dbgs() << tempEdgeVec[i]->getName() << "\n");
 							}
 						}
 
@@ -4766,7 +4769,7 @@ int DFG::printRegStats()
 
 						if (freeSlots < tempEdgeVec.size())
 						{
-							errs() << "freeSlots=" << freeSlots << ",tempEdgeVec.size()=" << tempEdgeVec.size() << "\n";
+							LLVM_DEBUG(dbgs() << "freeSlots=" << freeSlots << ",tempEdgeVec.size()=" << tempEdgeVec.size() << "\n");
 						}
 						assert(freeSlots >= tempEdgeVec.size());
 
@@ -4860,8 +4863,8 @@ int DFG::addCMERGEtoSELECT()
 
 		if (SelectInst *SEL = dyn_cast<SelectInst>(node->getNode()))
 		{
-			SEL->dump();
-			outs() << "node ancestors = " << node->getAncestors().size() << "\n";
+			LLVM_DEBUG(SEL->dump());
+			LLVM_DEBUG(dbgs() << "node ancestors = " << node->getAncestors().size() << "\n");
 			//			assert(node->getAncestors().size()==3);
 
 			int condVal;
@@ -4872,7 +4875,7 @@ int DFG::addCMERGEtoSELECT()
 			if (dyn_cast<Instruction>(SEL->getCondition()))
 			{
 				condNode = findNode(cast<Instruction>(SEL->getCondition()));
-				cast<Instruction>(SEL->getCondition())->dump();
+				LLVM_DEBUG(cast<Instruction>(SEL->getCondition())->dump());
 				assert(condNode != NULL);
 				assert(std::find(node->getAncestors().begin(), node->getAncestors().end(), condNode) != node->getAncestors().end());
 			}
@@ -4894,7 +4897,7 @@ int DFG::addCMERGEtoSELECT()
 			else if (dyn_cast<Instruction>(SEL->getTrueValue()))
 			{
 				trueNode = findNode(cast<Instruction>(SEL->getTrueValue()));
-				cast<Instruction>(SEL->getTrueValue())->dump();
+				LLVM_DEBUG(cast<Instruction>(SEL->getTrueValue())->dump());
 				assert(trueNode != NULL);
 				assert(std::find(node->getAncestors().begin(), node->getAncestors().end(), trueNode) != node->getAncestors().end());
 			}
@@ -4916,7 +4919,7 @@ int DFG::addCMERGEtoSELECT()
 			else if (dyn_cast<Instruction>(SEL->getFalseValue()))
 			{
 				falseNode = findNode(cast<Instruction>(SEL->getFalseValue()));
-				cast<Instruction>(SEL->getFalseValue())->dump();
+				LLVM_DEBUG(cast<Instruction>(SEL->getFalseValue())->dump());
 				assert(falseNode != NULL);
 				assert(std::find(node->getAncestors().begin(), node->getAncestors().end(), falseNode) != node->getAncestors().end());
 			}
@@ -5269,8 +5272,8 @@ int DFG::printMapping()
 										XBarMap[PrevCnode][OP2] = INV;
 									}
 
-									outs() << "printMapping : currNode = " << currCnodeNode->getIdx() << "\n";
-									outs() << "printMapping : currParent = " << cnodeParent->getIdx() << "\n";
+									LLVM_DEBUG(dbgs() << "printMapping : currNode = " << currCnodeNode->getIdx() << "\n");
+									LLVM_DEBUG(dbgs() << "printMapping : currParent = " << cnodeParent->getIdx() << "\n");
 									assert(found);
 
 									//									if((PrevCnode->getmappedDFGNode()->getFinalIns() == CMP) ||
@@ -5284,7 +5287,7 @@ int DFG::printMapping()
 									//										XBarMap[PrevCnode][OP2] = TILE;
 									//									}
 									//									else{
-									//										errs() << "UNCOMMENT here : assertion failes here truly!\n";
+									//										LLVM_DEBUG(dbgs() << "UNCOMMENT here : assertion failes here truly!\n";
 									////										assert(false);
 									//									}
 								}
@@ -5376,24 +5379,24 @@ int DFG::printMapping()
 											XBarMap[PrevCnode][OP2] = INV;
 										}
 
-										outs() << "printMapping : currNode = " << currCnodeNode->getIdx() << "\n";
-										outs() << "printMapping : currParent = " << cnodeParent->getIdx() << "\n";
+										LLVM_DEBUG(dbgs() << "printMapping : currNode = " << currCnodeNode->getIdx() << "\n");
+										LLVM_DEBUG(dbgs() << "printMapping : currParent = " << cnodeParent->getIdx() << "\n");
 
 										if (!found)
 										{
-											outs() << "Node : \n";
+											LLVM_DEBUG(dbgs() << "Node : \n");
 											if (currCnodeNode->getNode())
 											{
-												currCnodeNode->getNode()->dump();
+												LLVM_DEBUG(currCnodeNode->getNode()->dump());
 											}
-											outs() << "Parent : \n";
+											LLVM_DEBUG(dbgs() << "Parent : \n");
 											if (cnodeParent->getNode())
 											{
-												cnodeParent->getNode()->dump();
+												LLVM_DEBUG(cnodeParent->getNode()->dump());
 											}
 											else if (cnodeParent->getNameType().compare("OUTOutLoopLOAD") == 0)
 											{
-												OutLoopNodeMapReverse[cnodeParent]->dump();
+												LLVM_DEBUG(OutLoopNodeMapReverse[cnodeParent]->dump());
 											}
 										}
 										//TODO : DAC18
@@ -5410,7 +5413,7 @@ int DFG::printMapping()
 										//										XBarMap[PrevCnode][OP2] = TILE;
 										//									}
 										//									else{
-										//										errs() << "UNCOMMENT here : assertion failes here truly!\n";
+										//										LLVM_DEBUG(dbgs() << "UNCOMMENT here : assertion failes here truly!\n";
 										////										assert(false);
 										//									}
 									}
@@ -5471,14 +5474,14 @@ int DFG::printMapping()
 					//									   != currCnodeNode->getAncestors().end();
 					if (parentFound)
 					{
-						outs() << "currCnodeNode=" << currCnodeNode->getIdx() << "\n";
-						outs() << "Parents=";
+						LLVM_DEBUG(dbgs() << "currCnodeNode=" << currCnodeNode->getIdx() << "\n");
+						LLVM_DEBUG(dbgs() << "Parents=");
 						for (dfgNode *parent : currCnodeNode->getAncestors())
 						{
-							outs() << parent->getIdx() << ",";
+							LLVM_DEBUG(dbgs() << parent->getIdx() << ",");
 						}
-						outs() << "\n";
-						outs() << "Parent=" << cgraEdges_t[m].mappedDFGEdge->getSrc()->getIdx() << "\n";
+						LLVM_DEBUG(dbgs() << "\n");
+						LLVM_DEBUG(dbgs() << "Parent=" << cgraEdges_t[m].mappedDFGEdge->getSrc()->getIdx() << "\n");
 					}
 
 					if ((cgraEdges_t[m].mappedDFGEdge->getDest() == cnode->getmappedDFGNode()) || parentFound)
@@ -5510,9 +5513,9 @@ int DFG::printMapping()
 						else
 						{
 
-							outs() << "printMapping : currNode = " << currCnodeNode->getIdx() << "\n";
-							outs() << "printMapping : currParent = " << cnodeParent->getIdx() << "\n";
-							outs() << "printMapping : PrevCnode = " << PrevCnode->getName() << "\n";
+							LLVM_DEBUG(dbgs() << "printMapping : currNode = " << currCnodeNode->getIdx() << "\n");
+							LLVM_DEBUG(dbgs() << "printMapping : currParent = " << cnodeParent->getIdx() << "\n");
+							LLVM_DEBUG(dbgs() << "printMapping : PrevCnode = " << PrevCnode->getName() << "\n");
 
 							bool found = false;
 							if (currCnodeNode->parentClassification.find(0) !=
@@ -5523,7 +5526,7 @@ int DFG::printMapping()
 									this->getCGRA()->printCGRAEdge(cgraEdges_t[m]);
 									assert(XBarMap[PrevCnode].find(PRED) == XBarMap[PrevCnode].end());
 									XBarMap[PrevCnode][PRED] = cgraEdges_t[m].DstPort;
-									std::cout << "PRED : " << cgraEdges_t[m].DstPort << "\n";
+									LLVM_DEBUG(dbgs() << "PRED : " << cgraEdges_t[m].DstPort << "\n");
 									found = true;
 								}
 							}
@@ -5540,7 +5543,7 @@ int DFG::printMapping()
 									this->getCGRA()->printCGRAEdge(cgraEdges_t[m]);
 									assert(XBarMap[PrevCnode].find(OP1) == XBarMap[PrevCnode].end());
 									XBarMap[PrevCnode][OP1] = cgraEdges_t[m].DstPort;
-									std::cout << "I1 : " << cgraEdges_t[m].DstPort << "\n";
+									LLVM_DEBUG(dbgs() << "I1 : " << cgraEdges_t[m].DstPort << "\n");
 									found = true;
 								}
 							}
@@ -5557,7 +5560,7 @@ int DFG::printMapping()
 									this->getCGRA()->printCGRAEdge(cgraEdges_t[m]);
 									assert(XBarMap[PrevCnode].find(OP2) == XBarMap[PrevCnode].end());
 									XBarMap[PrevCnode][OP2] = cgraEdges_t[m].DstPort;
-									std::cout << "I2 : " << cgraEdges_t[m].DstPort << "\n";
+									LLVM_DEBUG(dbgs() << "I2 : " << cgraEdges_t[m].DstPort << "\n");
 									found = true;
 								}
 							}
@@ -5568,19 +5571,19 @@ int DFG::printMapping()
 
 							if (!found)
 							{
-								outs() << "Node : \n";
+								LLVM_DEBUG(dbgs() << "Node : \n");
 								if (currCnodeNode->getNode())
 								{
-									currCnodeNode->getNode()->dump();
+									LLVM_DEBUG(currCnodeNode->getNode()->dump());
 								}
-								outs() << "Parent : \n";
+								LLVM_DEBUG(dbgs() << "Parent : \n");
 								if (cnodeParent->getNode())
 								{
-									cnodeParent->getNode()->dump();
+									LLVM_DEBUG(cnodeParent->getNode()->dump());
 								}
 								else if (cnodeParent->getNameType().compare("OUTOutLoopLOAD") == 0)
 								{
-									OutLoopNodeMapReverse[cnodeParent]->dump();
+									LLVM_DEBUG(OutLoopNodeMapReverse[cnodeParent]->dump());
 								}
 							}
 
@@ -5599,7 +5602,7 @@ int DFG::printMapping()
 							//								XBarMap[PrevCnode][OP2] = cgraEdges_t[m].DstPort;
 							//							}
 							//							else{
-							//								errs() << "UNCOMMENT here : assertion failes here truly!\n";
+							//								LLVM_DEBUG(dbgs() << "UNCOMMENT here : assertion failes here truly!\n";
 							////								assert(false);
 							//							}
 						}
@@ -5658,7 +5661,7 @@ int DFG::printMapping()
 					{
 						currBinOp.npb = 1;
 					}
-					outs() << "CurrNode=" << node->getIdx() << ",placed=" << node->getMappedLoc()->getName() << ",xbarop2=" << currBinOp.outMap[OP2] << "\n";
+					LLVM_DEBUG(dbgs() << "CurrNode=" << node->getIdx() << ",placed=" << node->getMappedLoc()->getName() << ",xbarop2=" << currBinOp.outMap[OP2] << "\n");
 				}
 
 				for (int l = 0; l < insPortOrder.size(); ++l)
@@ -5674,7 +5677,7 @@ int DFG::printMapping()
 					}
 				}
 
-				outs() << "xbarop2=" << currBinOp.outMap[OP2] << "\n";
+				LLVM_DEBUG(dbgs() << "xbarop2=" << currBinOp.outMap[OP2] << "\n");
 
 				//Print Binary
 				binFile << std::setfill('0');
@@ -5730,19 +5733,19 @@ int DFG::printMapping()
 		dfgNode *node = unit.first;
 		if (node->getAncestors().size() != parentInfo[node].size())
 		{
-			outs() << "This node :" << node->getIdx() << "'s parents are not accounted for\n";
-			outs() << "Accounted parents : ";
+			LLVM_DEBUG(dbgs() << "This node :" << node->getIdx() << "'s parents are not accounted for\n");
+			LLVM_DEBUG(dbgs() << "Accounted parents : ");
 			for (dfgNode *par : parentInfo[node])
 			{
-				outs() << par->getIdx() << ",";
+				LLVM_DEBUG(dbgs() << par->getIdx() << ",");
 			}
-			outs() << "\n";
+			LLVM_DEBUG(dbgs() << "\n");
 		}
 		assert(node->getAncestors().size() == parentInfo[node].size());
 	}
 
-	//	outs() << "parentInfo.size() =" << parentInfo.size() << "\n";
-	//	outs() << "NodeList.size() =" << NodeList.size() << "\n";
+	//	LLVM_DEBUG(dbgs() << "parentInfo.size() =" << parentInfo.size() << "\n";
+	//	LLVM_DEBUG(dbgs() << "NodeList.size() =" << NodeList.size() << "\n";
 	//	assert(parentInfo.size()==NodeList.size());
 
 	binFile << std::endl;
@@ -5898,7 +5901,7 @@ int DFG::printCongestionInfo()
 	int nodeNumberToBePlaced = 0;
 	for (int i = 0; i < maxASAPLevel; ++i)
 	{
-		errs() << "printCongestionInfo :: ASAPLevel=" << i << "\n";
+		LLVM_DEBUG(dbgs() << "printCongestionInfo :: ASAPLevel=" << i << "\n");
 		t = mapLevel % II;
 		T = mapLevel / II;
 
@@ -5914,7 +5917,7 @@ int DFG::printCongestionInfo()
 		else
 		{
 			nodeNumberToBePlaced = totalNodeCountMapEst[t] + nodeMapASAPLevels[i].size() - cgraNodePerLevel;
-			errs() << "first nodeNumberToBePlaced=" << nodeNumberToBePlaced << "\n";
+			LLVM_DEBUG(dbgs() << "first nodeNumberToBePlaced=" << nodeNumberToBePlaced << "\n");
 			totalNodeCountMapEst[t] = cgraNodePerLevel;
 			assert(nodeMapEst[t].find(T) == nodeMapEst[t].end());
 			nodeMapEst[t][T] = cgraNodePerLevel - totalNodeCountMapEst[t];
@@ -5923,7 +5926,7 @@ int DFG::printCongestionInfo()
 
 			while (nodeNumberToBePlaced != 0)
 			{
-				errs() << "while nodeNumberToBePlaced=" << nodeNumberToBePlaced << "\n";
+				LLVM_DEBUG(dbgs() << "while nodeNumberToBePlaced=" << nodeNumberToBePlaced << "\n");
 				mapLevel++;
 				t = mapLevel % II;
 				T = mapLevel / II;
@@ -5939,7 +5942,7 @@ int DFG::printCongestionInfo()
 				else
 				{
 					nodeNumberToBePlaced = totalNodeCountMapEst[t] + nodeNumberToBePlaced - cgraNodePerLevel;
-					errs() << "while else nodeNumberToBePlaced=" << nodeNumberToBePlaced << "\n";
+					LLVM_DEBUG(dbgs() << "while else nodeNumberToBePlaced=" << nodeNumberToBePlaced << "\n");
 					totalNodeCountMapEst[t] = cgraNodePerLevel;
 					assert(nodeMapEst[t].find(T) == nodeMapEst[t].end());
 					nodeMapEst[t][T] = cgraNodePerLevel - totalNodeCountMapEst[t];
@@ -5958,13 +5961,13 @@ int DFG::printCongestionInfo()
 				}
 				if (!sanity)
 				{
-					errs() << "printCongestionInfo is crazy!\n";
+					LLVM_DEBUG(dbgs() << "printCongestionInfo is crazy!\n");
 					exit(-1);
 				}
 			}
 		}
 	}
-	errs() << "printCongestionInfo :: ASAPLevels done.\n";
+	LLVM_DEBUG(dbgs() << "printCongestionInfo :: ASAPLevels done.\n");
 
 	std::ofstream outFile;
 	std::string outFileName = name + "_congestinfo.txt";
@@ -5973,40 +5976,40 @@ int DFG::printCongestionInfo()
 
 	for (int i = 0; i < II; ++i)
 	{
-		errs() << "t=" << std::to_string(i);
+		LLVM_DEBUG(dbgs() << "t=" << std::to_string(i));
 		outFile << "t=" << std::to_string(i);
 
 		for (int j = 0; j < nodeMapEst[i].size() - 1; ++j)
 		{
 			assert(nodeMapEst[i].find(j) != nodeMapEst[i].end());
-			errs() << "," << std::to_string(nodeMapEst[i][j]);
+			LLVM_DEBUG(dbgs() << "," << std::to_string(nodeMapEst[i][j]));
 			outFile << "," << std::to_string(nodeMapEst[i][j]);
 		}
-		errs() << "\n";
+		LLVM_DEBUG(dbgs() << "\n");
 		outFile << std::endl;
 	}
 
-	errs() << "Edges\n";
+	LLVM_DEBUG(dbgs() << "Edges\n");
 	outFile << "Edges" << std::endl;
 
 	for (int i = 0; i < II; ++i)
 	{
-		errs() << "t=" << std::to_string(i);
+		LLVM_DEBUG(dbgs() << "t=" << std::to_string(i));
 		outFile << "t=" << std::to_string(i);
 
 		for (int j = 0; j < edgeMapEst[i].size() - 1; ++j)
 		{
 			assert(edgeMapEst[i].find(j) != edgeMapEst[i].end());
-			errs() << "," << std::to_string(edgeMapEst[i][j]);
+			LLVM_DEBUG(dbgs() << "," << std::to_string(edgeMapEst[i][j]));
 			outFile << "," << std::to_string(edgeMapEst[i][j]);
 		}
-		errs() << "\n";
+		LLVM_DEBUG(dbgs() << "\n");
 		outFile << std::endl;
 	}
 
 	outFile.close();
 
-	errs() << "printCongestionInfo done\n";
+	LLVM_DEBUG(dbgs() << "printCongestionInfo done\n");
 	return 0;
 }
 
@@ -6194,7 +6197,7 @@ int DFG::nameNodes()
 			case Instruction::URem:
 			case Instruction::SRem:
 			case Instruction::FRem:
-				errs() << "REM operations are not implemented\n";
+				LLVM_DEBUG(dbgs() << "REM operations are not implemented\n");
 				assert(false);
 				break;
 			case Instruction::Shl:
@@ -6234,8 +6237,8 @@ int DFG::nameNodes()
 				}
 				else
 				{
-					node->getNode()->dump();
-					outs() << "OutLoopLOAD size = " << node->getTypeSizeBytes() << "\n";
+					LLVM_DEBUG(node->getNode()->dump());
+					LLVM_DEBUG(dbgs() << "OutLoopLOAD size = " << node->getTypeSizeBytes() << "\n");
 					if (node->getNode()->getType() == Type::getDoubleTy(node->getNode()->getContext()))
 					{
 						node->setFinalIns(Hy_LOAD);
@@ -6269,8 +6272,8 @@ int DFG::nameNodes()
 				}
 				else
 				{
-					node->getNode()->dump();
-					outs() << "TypeSize : " << node->getTypeSizeBytes() << "\n";
+					LLVM_DEBUG(node->getNode()->dump());
+					LLVM_DEBUG(dbgs() << "TypeSize : " << node->getTypeSizeBytes() << "\n");
 					assert(0);
 				}
 				break;
@@ -6328,7 +6331,7 @@ int DFG::nameNodes()
 			case Instruction::IntToPtr:
 			case Instruction::BitCast:
 			case Instruction::AddrSpaceCast:
-				node->getNode()->dump();
+				LLVM_DEBUG(node->getNode()->dump());
 				//					assert(0);
 				//2019 work
 				node->setFinalIns(OR);
@@ -6355,23 +6358,23 @@ int DFG::nameNodes()
 			break;
 			case Instruction::ICmp:
 			{
-				outs() << "NameNodes::Node=" << node->getIdx() << ",CMP=";
+				LLVM_DEBUG(dbgs() << "NameNodes::Node=" << node->getIdx() << ",CMP=");
 				CmpInst *CI = cast<CmpInst>(node->getNode());
-				CI->dump();
+				LLVM_DEBUG(CI->dump());
 				switch (CI->getPredicate())
 				{
 				case CmpInst::ICMP_SLT:
 				case CmpInst::ICMP_ULT:
-					outs() << "LT\n";
+					LLVM_DEBUG(dbgs() << "LT\n");
 					node->setFinalIns(CLT);
 					break;
 				case CmpInst::ICMP_SGT:
 				case CmpInst::ICMP_UGT:
-					outs() << "GT\n";
+					LLVM_DEBUG(dbgs() << "GT\n");
 					node->setFinalIns(CGT);
 					break;
 				case CmpInst::ICMP_EQ:
-					outs() << "EQ\n";
+					LLVM_DEBUG(dbgs() << "EQ\n");
 					node->setFinalIns(CMP);
 					break;
 				default:
@@ -6381,14 +6384,14 @@ int DFG::nameNodes()
 			}
 			break;
 			case Instruction::FCmp:
-				outs() << "NameNodes::Node=" << node->getIdx() << ",FCMP\n";
+				LLVM_DEBUG(dbgs() << "NameNodes::Node=" << node->getIdx() << ",FCMP\n");
 				node->setFinalIns(CMP);
 				//2019 work
 				//					assert(false);
 				break;
 			default:
-				errs() << "The Op :" << node->getNode()->getOpcodeName() << " that I thought would not be in the compiled code\n";
-				node->getNode()->dump();
+				LLVM_DEBUG(dbgs() << "The Op :" << node->getNode()->getOpcodeName() << " that I thought would not be in the compiled code\n");
+				LLVM_DEBUG(node->getNode()->dump());
 				assert(false);
 				break;
 			}
@@ -6461,7 +6464,7 @@ int DFG::nameNodes()
 				}
 				else
 				{
-					OutLoopNodeMapReverse[node]->dump();
+					LLVM_DEBUG(OutLoopNodeMapReverse[node]->dump());
 					if (OutLoopNodeMapReverse[node]->getType()->isDoubleTy())
 					{
 						//TODO : to make it compatible with double
@@ -6490,8 +6493,8 @@ int DFG::nameNodes()
 				}
 				else
 				{
-					OutLoopNodeMapReverse[node]->dump();
-					outs() << "OutLoopLOAD size = " << node->getTypeSizeBytes() << "\n";
+					LLVM_DEBUG(OutLoopNodeMapReverse[node]->dump());
+					LLVM_DEBUG(dbgs() << "OutLoopLOAD size = " << node->getTypeSizeBytes() << "\n");
 					if (OutLoopNodeMapReverse[node]->getType()->isDoubleTy())
 					{
 						//TODO : to make it compatible with double
@@ -6581,7 +6584,7 @@ int DFG::nameNodes()
 			}
 			else
 			{
-				errs() << "Unknown custom node \n";
+				LLVM_DEBUG(dbgs() << "Unknown custom node \n");
 				assert(false);
 			}
 		}
@@ -6599,12 +6602,12 @@ int DFG::checkSanity()
 		node = NodeList[i];
 		if (node->getAncestors().size() > 3)
 		{
-			errs() << "More than 3 ancestors, NodeIdx=" << node->getIdx();
+			LLVM_DEBUG(dbgs() << "More than 3 ancestors, NodeIdx=" << node->getIdx());
 			if (node->getNode() != NULL)
 			{
-				node->getNode()->dump();
+				LLVM_DEBUG(node->getNode()->dump());
 			}
-			errs() << "\n";
+			LLVM_DEBUG(dbgs() << "\n");
 		}
 		assert(NodeList[i]->getAncestors().size() <= 3);
 	}
@@ -6649,7 +6652,7 @@ bool DFG::MapASAPLevelUnWrapped(int MII, int XDim, int YDim, ArchType arch)
 
 int DFG::handlePHINodes(std::set<BasicBlock *> LoopBB)
 {
-	errs() << "handlePHINodes started!\n";
+	LLVM_DEBUG(dbgs() << "handlePHINodes started!\n");
 	dfgNode *node;
 	std::map<dfgNode *, std::vector<const BasicBlock *>> processedPhiNodes;
 
@@ -6659,10 +6662,10 @@ int DFG::handlePHINodes(std::set<BasicBlock *> LoopBB)
 		for (int j = 0; j < node->PHIchildren.size(); ++j)
 		{
 			assert(node->PHIchildren[j] != NULL);
-			node->PHIchildren[j]->dump();
+			LLVM_DEBUG(node->PHIchildren[j]->dump());
 			assert(findNode(node->PHIchildren[j]) != NULL);
 
-			node->PHIchildren[j]->dump();
+			LLVM_DEBUG(node->PHIchildren[j]->dump());
 
 			if (PHINode *phiIns = dyn_cast<PHINode>(node->PHIchildren[j]))
 			{
@@ -6673,7 +6676,7 @@ int DFG::handlePHINodes(std::set<BasicBlock *> LoopBB)
 					{
 						continue;
 					}
-					outs() << "handlePHINodes adding nodes...\n";
+					LLVM_DEBUG(dbgs() << "handlePHINodes adding nodes...\n");
 					BasicBlock::iterator instIter = --bb->end();
 					Instruction *brIns = &*instIter;
 					assert(brIns->getOpcode() == Instruction::Br);
@@ -6693,7 +6696,7 @@ int DFG::handlePHINodes(std::set<BasicBlock *> LoopBB)
 		}
 	}
 
-	outs() << "second loop\n";
+	LLVM_DEBUG(dbgs() << "second loop\n");
 
 	for (int i = 0; i < NodeList.size(); ++i)
 	{
@@ -6702,8 +6705,8 @@ int DFG::handlePHINodes(std::set<BasicBlock *> LoopBB)
 			continue;
 		if (PHINode *phiIns = dyn_cast<PHINode>(node->getNode()))
 		{
-			phiIns->dump();
-			outs() << "incomingblocks:" << phiIns->getNumIncomingValues() << "\n";
+			LLVM_DEBUG(phiIns->dump());
+			LLVM_DEBUG(dbgs() << "incomingblocks:" << phiIns->getNumIncomingValues() << "\n");
 
 			for (int k = 0; k < phiIns->getNumIncomingValues(); ++k)
 			{
@@ -6719,11 +6722,11 @@ int DFG::handlePHINodes(std::set<BasicBlock *> LoopBB)
 					}
 				}
 
-				outs() << "handlePHINodes adding nodes in second loop...\n";
+				LLVM_DEBUG(dbgs() << "handlePHINodes adding nodes in second loop...\n");
 
 				BasicBlock::iterator instIter = --bb->end();
 				Instruction *brIns = &*instIter;
-				brIns->dump();
+				LLVM_DEBUG(brIns->dump());
 				//				assert(LoopBB.find(brIns->getParent())!=LoopBB.end());
 				assert(brIns->getOpcode() == Instruction::Br);
 				dfgNode *brNode = findNode(brIns);
@@ -6826,10 +6829,10 @@ int DFG::handlePHINodes(std::set<BasicBlock *> LoopBB)
 				{
 					for (std::pair<std::string, int> pair : sizeArrMap)
 					{
-						outs() << pair.first << ":" << pair.second << "\n";
+						LLVM_DEBUG(dbgs() << pair.first << ":" << pair.second << "\n");
 					}
-					outs() << "sizeARRMap size =" << sizeArrMap.size() << "\n";
-					phiIns->getIncomingValueForBlock(bb)->dump();
+					LLVM_DEBUG(dbgs() << "sizeARRMap size =" << sizeArrMap.size() << "\n");
+					LLVM_DEBUG(phiIns->getIncomingValueForBlock(bb)->dump());
 					assert(0);
 				}
 			}
@@ -6862,8 +6865,8 @@ int DFG::handlePHINodes(std::set<BasicBlock *> LoopBB)
 			tempLoopStartNode->setIdx(10000);
 		}
 		tempLoopStartNode->setNameType("LOOPSTART");
-		outs() << "Adding loopstart.\n";
-		brIns->dump();
+		LLVM_DEBUG(dbgs() << "Adding loopstart.\n");
+		LLVM_DEBUG(brIns->dump());
 		tempLoopStartNode->BB = entrybb;
 		LoopStartMap[brIns] = tempLoopStartNode;
 
@@ -6900,7 +6903,7 @@ int DFG::handlePHINodes(std::set<BasicBlock *> LoopBB)
 		}
 	}
 
-	errs() << "handlePHINodes DONE!\n";
+	LLVM_DEBUG(dbgs() << "handlePHINodes DONE!\n");
 	return 0;
 }
 
@@ -6981,16 +6984,16 @@ void DFG::addPHIParents()
 		{
 			phiChild = node->getPHIchildren()[j];
 			ancestors = phiChild->getAncestors();
-			errs() << "\n addPHIParents : child : " << phiChild->getIdx() << "\n";
-			errs() << "addPHIParents : anc : " << node->getIdx() << "\n";
-			errs() << "ancestors.size= : " << ancestors.size() << "\n";
+			LLVM_DEBUG(dbgs() << "\n addPHIParents : child : " << phiChild->getIdx() << "\n");
+			LLVM_DEBUG(dbgs() << "addPHIParents : anc : " << node->getIdx() << "\n");
+			LLVM_DEBUG(dbgs() << "ancestors.size= : " << ancestors.size() << "\n");
 			searchParent = std::find(ancestors.begin(), ancestors.end(), node);
 			if (searchParent != ancestors.end())
-				errs() << "searchParent : " << (*searchParent)->getIdx() << "\n";
+				LLVM_DEBUG(dbgs() << "searchParent : " << (*searchParent)->getIdx() << "\n");
 			if (searchParent == ancestors.end())
 			{
-				errs() << "ifaddPHIParents : child : " << phiChild->getIdx() << "\n";
-				errs() << "ifaddPHIParents : anc : " << node->getIdx() << "\n";
+				LLVM_DEBUG(dbgs() << "ifaddPHIParents : child : " << phiChild->getIdx() << "\n");
+				LLVM_DEBUG(dbgs() << "ifaddPHIParents : anc : " << node->getIdx() << "\n");
 				phiChild->addAncestorNode(node, EDGE_TYPE_PHI);
 				node->addChildNode(phiChild, EDGE_TYPE_PHI);
 			}
@@ -7070,8 +7073,8 @@ void DFG::GEPInvestigate(Function &F, Loop *L, std::map<std::string, int> *sizeA
 		BasicBlock *LoopExitBB = loopExitBlocks[i];
 		//		BasicBlock::iterator instIter = --LoopExitBB->end();
 		BasicBlock::iterator instIter = LoopExitBB->begin();
-		outs() << "LoopExit Blocks : \n";
-		LoopExitBB->dump();
+		LLVM_DEBUG(dbgs() << "LoopExit Blocks : \n");
+		LLVM_DEBUG(LoopExitBB->dump());
 
 		if (std::find(loopExitInsVec.begin(), loopExitInsVec.end(), &*instIter) == loopExitInsVec.end())
 		{
@@ -7107,10 +7110,10 @@ void DFG::GEPInvestigate(Function &F, Loop *L, std::map<std::string, int> *sizeA
 			{
 				continue;
 			}
-			errs() << "OutLoopLoad found!!\n";
+			LLVM_DEBUG(dbgs() << "OutLoopLoad found!!\n");
 			Value *printfstr = builder.CreateGlobalStringPtr("OutLoopLoadNode:%d,val=%d,addr=%d\n");
 			assert(OutLoopNodeMapReverse[node] != NULL);
-			OutLoopNodeMapReverse[node]->dump();
+			LLVM_DEBUG(OutLoopNodeMapReverse[node]->dump());
 			Value *loadVal = OutLoopNodeMapReverse[node];
 			Value *nodeIdx = ConstantInt::get(Type::getInt32Ty(Ctx), node->getIdx());
 			Value *addrVal = ConstantInt::get(Type::getInt32Ty(Ctx), node->getoutloopAddr());
@@ -7153,7 +7156,7 @@ void DFG::GEPInvestigate(Function &F, Loop *L, std::map<std::string, int> *sizeA
 				builder.SetInsertPoint(loopExitBlocks[i], --loopExitBlocks[i]->end());
 				//				builder.CreateCall(printf,args);
 				builder.CreateCall(outloopReportFn, args);
-				//				outs() << "its a load\n";
+				//				LLVM_DEBUG(dbgs() << "its a load\n";
 				//				loopExitBlocks[i]->dump();
 			}
 		}
@@ -7208,7 +7211,7 @@ void DFG::GEPInvestigate(Function &F, Loop *L, std::map<std::string, int> *sizeA
 				builder.SetInsertPoint(loopExitBlocks[i], --loopExitBlocks[i]->end());
 				//				builder.CreateCall(printf,args);
 				builder.CreateCall(outloopReportFn, args);
-				//				outs() << "its a store\n";
+				//				LLVM_DEBUG(dbgs() << "its a store\n";
 				//				OutLoopNodeMapReverse[node]->dump();
 				//				loopExitBlocks[i]->dump();
 			}
@@ -7226,21 +7229,21 @@ void DFG::GEPInvestigate(Function &F, Loop *L, std::map<std::string, int> *sizeA
 		//
 		//			Instruction* ins = &I;
 
-		//			errs() << "GEPInvestigate node found\n";
+		//			LLVM_DEBUG(dbgs() << "GEPInvestigate node found\n";
 
 		if (GetElementPtrInst *GEP = dyn_cast<GetElementPtrInst>(ins))
 		{
 			const DataLayout DL = ins->getParent()->getParent()->getParent()->getDataLayout();
 
 			//number of elements
-			errs() << "Pointer operand = " << GEP->getPointerOperand()->getName() << "\n";
-			GEP->dump();
+			LLVM_DEBUG(dbgs() << "Pointer operand = " << GEP->getPointerOperand()->getName() << "\n");
+			LLVM_DEBUG(GEP->dump());
 			Type *T = GEP->getSourceElementType();
 
-			errs() << "S/A/I/P=" << T->isStructTy() << "/";
-			errs() << T->isArrayTy() << "/";
-			errs() << T->isIntegerTy() << "/";
-			errs() << T->isPointerTy() << "\n";
+			LLVM_DEBUG(dbgs() << "S/A/I/P=" << T->isStructTy() << "/");
+			LLVM_DEBUG(dbgs() << T->isArrayTy() << "/");
+			LLVM_DEBUG(dbgs() << T->isIntegerTy() << "/");
+			LLVM_DEBUG(dbgs() << T->isPointerTy() << "\n");
 
 			if (dyn_cast<StructType>(T))
 			{
@@ -7251,7 +7254,7 @@ void DFG::GEPInvestigate(Function &F, Loop *L, std::map<std::string, int> *sizeA
 				}
 
 				StructType *ST = dyn_cast<StructType>(T);
-				errs() << "StructType=" << ST->getName() << "\n";
+				LLVM_DEBUG(dbgs() << "StructType=" << ST->getName() << "\n");
 
 				//				//Insert a call to our function
 				//				builder(loopStartIns);
@@ -7272,14 +7275,14 @@ void DFG::GEPInvestigate(Function &F, Loop *L, std::map<std::string, int> *sizeA
 					if (memopChild->getLeftAlignedMemOp() == 1)
 					{
 						node->setGEPbaseAddr(arrayAddrPtrLeft);
-						outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrLeft << ",size=" << size << "\n";
+						LLVM_DEBUG(dbgs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrLeft << ",size=" << size << "\n");
 						allocatedArraysMap[GEP->getPointerOperand()->getName().str()] = arrayAddrPtrLeft;
 						arrayAddrPtrLeft += size;
 					}
 					else
 					{
 						node->setGEPbaseAddr(arrayAddrPtrRight);
-						outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrRight << ",size=" << size << "\n";
+						LLVM_DEBUG(dbgs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrRight << ",size=" << size << "\n");
 						allocatedArraysMap[GEP->getPointerOperand()->getName().str()] = arrayAddrPtrRight;
 						arrayAddrPtrRight += size;
 					}
@@ -7287,7 +7290,7 @@ void DFG::GEPInvestigate(Function &F, Loop *L, std::map<std::string, int> *sizeA
 				else
 				{
 					node->setGEPbaseAddr(allocatedArraysMap[GEP->getPointerOperand()->getName().str()]);
-					outs() << "NodeIdx:" << node->getIdx() << ",addr=" << allocatedArraysMap[GEP->getPointerOperand()->getName().str()] << ",size=" << size << "\n";
+					LLVM_DEBUG(dbgs() << "NodeIdx:" << node->getIdx() << ",addr=" << allocatedArraysMap[GEP->getPointerOperand()->getName().str()] << ",size=" << size << "\n");
 				}
 
 				auto printArrFunc = F.getParent()->getOrInsertFunction(
@@ -7326,7 +7329,7 @@ void DFG::GEPInvestigate(Function &F, Loop *L, std::map<std::string, int> *sizeA
 				}
 
 				//experiment
-				//				errs() << "Experiment, arraytype size = " << AT->getArrayNumElements() << "\n";
+				//				LLVM_DEBUG(dbgs() << "Experiment, arraytype size = " << AT->getArrayNumElements() << "\n";
 			}
 			else
 			{
@@ -7339,8 +7342,8 @@ void DFG::GEPInvestigate(Function &F, Loop *L, std::map<std::string, int> *sizeA
 					}
 
 					ArrayType *AT = dyn_cast<ArrayType>(T);
-					errs() << "ArrayType=" << AT->getArrayNumElements() << "\n";
-					errs() << "Size = " << DL.getTypeAllocSize(AT) << "\n";
+					LLVM_DEBUG(dbgs() << "ArrayType=" << AT->getArrayNumElements() << "\n");
+					LLVM_DEBUG(dbgs() << "Size = " << DL.getTypeAllocSize(AT) << "\n");
 
 					//					//Insert a call to our function
 					//					IRBuilder<> builder(loopStartIns);
@@ -7357,13 +7360,13 @@ void DFG::GEPInvestigate(Function &F, Loop *L, std::map<std::string, int> *sizeA
 					if (memopChild->getLeftAlignedMemOp() == 1)
 					{
 						node->setGEPbaseAddr(arrayAddrPtrLeft);
-						outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrLeft << ",size=" << size << "\n";
+						LLVM_DEBUG(dbgs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrLeft << ",size=" << size << "\n");
 						arrayAddrPtrLeft += size;
 					}
 					else
 					{
 						node->setGEPbaseAddr(arrayAddrPtrRight);
-						outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrRight << ",size=" << size << "\n";
+						LLVM_DEBUG(dbgs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrRight << ",size=" << size << "\n");
 						arrayAddrPtrRight += size;
 					}
 
@@ -7391,7 +7394,7 @@ void DFG::GEPInvestigate(Function &F, Loop *L, std::map<std::string, int> *sizeA
 					//Add a call in the begginning of the loop
 					builder.CreateCall(printArrFunc, argsi);
 
-					//					errs() << "loopExitInsVec.size()=" << loopExitInsVec.size() << "\n";
+					//					LLVM_DEBUG(dbgs() << "loopExitInsVec.size()=" << loopExitInsVec.size() << "\n";
 					//					for (int i = 0; i < loopExitInsVec.size(); ++i) {
 					//						loopExitInsVec[i]->dump();
 					//						builder.SetInsertPoint(loopExitInsVec[i]);
@@ -7449,14 +7452,14 @@ void DFG::GEPInvestigate(Function &F, Loop *L, std::map<std::string, int> *sizeA
 							if (memopChild->getLeftAlignedMemOp() == 1)
 							{
 								node->setGEPbaseAddr(arrayAddrPtrLeft);
-								outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrLeft << ",size=" << size << "\n";
+								LLVM_DEBUG(dbgs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrLeft << ",size=" << size << "\n");
 								allocatedArraysMap[ptrName] = arrayAddrPtrLeft;
 								arrayAddrPtrLeft += size;
 							}
 							else
 							{
 								node->setGEPbaseAddr(arrayAddrPtrRight);
-								outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrRight << ",size=" << size << "\n";
+								LLVM_DEBUG(dbgs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrRight << ",size=" << size << "\n");
 								allocatedArraysMap[ptrName] = arrayAddrPtrRight;
 								arrayAddrPtrRight += size;
 							}
@@ -7464,7 +7467,7 @@ void DFG::GEPInvestigate(Function &F, Loop *L, std::map<std::string, int> *sizeA
 						else
 						{
 							node->setGEPbaseAddr(allocatedArraysMap[ptrName]);
-							outs() << "NodeIdx:" << node->getIdx() << ",addr=" << allocatedArraysMap[ptrName] << ",size=" << size << "\n";
+							LLVM_DEBUG(dbgs() << "NodeIdx:" << node->getIdx() << ",addr=" << allocatedArraysMap[ptrName] << ",size=" << size << "\n");
 						}
 
 						auto printArrFunc = F.getParent()->getOrInsertFunction(
@@ -7489,7 +7492,7 @@ void DFG::GEPInvestigate(Function &F, Loop *L, std::map<std::string, int> *sizeA
 						//Add a call in the begginning of the loop
 						builder.CreateCall(printArrFunc, argsi);
 						//
-						//						errs() << "loopExitInsVec.size()=" << loopExitInsVec.size() << "\n";
+						//						LLVM_DEBUG(dbgs() << "loopExitInsVec.size()=" << loopExitInsVec.size() << "\n";
 						//						for (int i = 0; i < loopExitInsVec.size(); ++i) {
 						//							loopExitInsVec[i]->dump();
 						//							builder.SetInsertPoint(loopExitInsVec[i]);
@@ -7504,13 +7507,13 @@ void DFG::GEPInvestigate(Function &F, Loop *L, std::map<std::string, int> *sizeA
 					}
 					else
 					{
-						errs() << "Please provide sizes for the arrayptr : " << ptrName << "\n";
+						LLVM_DEBUG(dbgs() << "Please provide sizes for the arrayptr : " << ptrName << "\n");
 						assert(0);
 					}
 				}
 			}
 
-			errs() << "GEPInvestigate : instrument code added!\n";
+			LLVM_DEBUG(dbgs() << "GEPInvestigate : instrument code added!\n");
 			handledGEPs.insert(GEP->getPointerOperand());
 		}
 
@@ -7595,8 +7598,8 @@ void DFG::GEPInvestigate(Function &F, std::map<std::string, int> *sizeArrMap)
 		BasicBlock *LoopExitBB = loopExitBlocks[i];
 		//		BasicBlock::iterator instIter = --LoopExitBB->end();
 		BasicBlock::iterator instIter = LoopExitBB->begin();
-		outs() << "LoopExit Blocks : \n";
-		LoopExitBB->dump();
+		LLVM_DEBUG(dbgs() << "LoopExit Blocks : \n");
+		LLVM_DEBUG(LoopExitBB->dump());
 
 		if (std::find(loopExitInsVec.begin(), loopExitInsVec.end(), &*instIter) == loopExitInsVec.end())
 		{
@@ -7632,10 +7635,10 @@ void DFG::GEPInvestigate(Function &F, std::map<std::string, int> *sizeArrMap)
 			{
 				continue;
 			}
-			errs() << "OutLoopLoad found!!\n";
+			LLVM_DEBUG(dbgs() << "OutLoopLoad found!!\n");
 			Value *printfstr = builder.CreateGlobalStringPtr("OutLoopLoadNode:%d,val=%d,addr=%d\n");
 			assert(OutLoopNodeMapReverse[node] != NULL);
-			OutLoopNodeMapReverse[node]->dump();
+			LLVM_DEBUG(OutLoopNodeMapReverse[node]->dump());
 			Value *loadVal = OutLoopNodeMapReverse[node];
 			Value *nodeIdx = ConstantInt::get(Type::getInt32Ty(Ctx), node->getIdx());
 			Value *addrVal = ConstantInt::get(Type::getInt32Ty(Ctx), node->getoutloopAddr());
@@ -7678,7 +7681,7 @@ void DFG::GEPInvestigate(Function &F, std::map<std::string, int> *sizeArrMap)
 				builder.SetInsertPoint(loopExitBlocks[i], --loopExitBlocks[i]->end());
 				//				builder.CreateCall(printf,args);
 				builder.CreateCall(outloopReportFn, args);
-				//				outs() << "its a load\n";
+				//				LLVM_DEBUG(dbgs() << "its a load\n";
 				//				loopExitBlocks[i]->dump();
 			}
 		}
@@ -7733,7 +7736,7 @@ void DFG::GEPInvestigate(Function &F, std::map<std::string, int> *sizeArrMap)
 				builder.SetInsertPoint(loopExitBlocks[i], --loopExitBlocks[i]->end());
 				//				builder.CreateCall(printf,args);
 				builder.CreateCall(outloopReportFn, args);
-				//				outs() << "its a store\n";
+				//				LLVM_DEBUG(dbgs() << "its a store\n";
 				//				OutLoopNodeMapReverse[node]->dump();
 				//				loopExitBlocks[i]->dump();
 			}
@@ -7751,21 +7754,21 @@ void DFG::GEPInvestigate(Function &F, std::map<std::string, int> *sizeArrMap)
 		//
 		//			Instruction* ins = &I;
 
-		//			errs() << "GEPInvestigate node found\n";
+		//			LLVM_DEBUG(dbgs() << "GEPInvestigate node found\n";
 
 		if (GetElementPtrInst *GEP = dyn_cast<GetElementPtrInst>(ins))
 		{
 			const DataLayout DL = ins->getParent()->getParent()->getParent()->getDataLayout();
 
 			//number of elements
-			errs() << "Pointer operand = " << GEP->getPointerOperand()->getName() << "\n";
-			GEP->dump();
+			LLVM_DEBUG(dbgs() << "Pointer operand = " << GEP->getPointerOperand()->getName() << "\n");
+			LLVM_DEBUG(GEP->dump());
 			Type *T = GEP->getSourceElementType();
 
-			errs() << "S/A/I/P=" << T->isStructTy() << "/";
-			errs() << T->isArrayTy() << "/";
-			errs() << T->isIntegerTy() << "/";
-			errs() << T->isPointerTy() << "\n";
+			LLVM_DEBUG(dbgs() << "S/A/I/P=" << T->isStructTy() << "/");
+			LLVM_DEBUG(dbgs() << T->isArrayTy() << "/");
+			LLVM_DEBUG(dbgs() << T->isIntegerTy() << "/");
+			LLVM_DEBUG(dbgs() << T->isPointerTy() << "\n");
 
 			if (dyn_cast<StructType>(T))
 			{
@@ -7776,7 +7779,7 @@ void DFG::GEPInvestigate(Function &F, std::map<std::string, int> *sizeArrMap)
 				}
 
 				StructType *ST = dyn_cast<StructType>(T);
-				errs() << "StructType=" << ST->getName() << "\n";
+				LLVM_DEBUG(dbgs() << "StructType=" << ST->getName() << "\n");
 
 				//				//Insert a call to our function
 				//				builder(loopStartIns);
@@ -7797,14 +7800,14 @@ void DFG::GEPInvestigate(Function &F, std::map<std::string, int> *sizeArrMap)
 					if (memopChild->getLeftAlignedMemOp() == 1)
 					{
 						node->setGEPbaseAddr(arrayAddrPtrLeft);
-						outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrLeft << ",size=" << size << "\n";
+						LLVM_DEBUG(dbgs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrLeft << ",size=" << size << "\n");
 						allocatedArraysMap[GEP->getPointerOperand()->getName().str()] = arrayAddrPtrLeft;
 						arrayAddrPtrLeft += size;
 					}
 					else
 					{
 						node->setGEPbaseAddr(arrayAddrPtrRight);
-						outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrRight << ",size=" << size << "\n";
+						LLVM_DEBUG(dbgs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrRight << ",size=" << size << "\n");
 						allocatedArraysMap[GEP->getPointerOperand()->getName().str()] = arrayAddrPtrRight;
 						arrayAddrPtrRight += size;
 					}
@@ -7812,7 +7815,7 @@ void DFG::GEPInvestigate(Function &F, std::map<std::string, int> *sizeArrMap)
 				else
 				{
 					node->setGEPbaseAddr(allocatedArraysMap[GEP->getPointerOperand()->getName().str()]);
-					outs() << "NodeIdx:" << node->getIdx() << ",addr=" << allocatedArraysMap[GEP->getPointerOperand()->getName().str()] << ",size=" << size << "\n";
+					LLVM_DEBUG(dbgs() << "NodeIdx:" << node->getIdx() << ",addr=" << allocatedArraysMap[GEP->getPointerOperand()->getName().str()] << ",size=" << size << "\n");
 				}
 
 				auto printArrFunc = F.getParent()->getOrInsertFunction(
@@ -7851,7 +7854,7 @@ void DFG::GEPInvestigate(Function &F, std::map<std::string, int> *sizeArrMap)
 				}
 
 				//experiment
-				//				errs() << "Experiment, arraytype size = " << AT->getArrayNumElements() << "\n";
+				//				LLVM_DEBUG(dbgs() << "Experiment, arraytype size = " << AT->getArrayNumElements() << "\n";
 			}
 			else
 			{
@@ -7864,8 +7867,8 @@ void DFG::GEPInvestigate(Function &F, std::map<std::string, int> *sizeArrMap)
 					}
 
 					ArrayType *AT = dyn_cast<ArrayType>(T);
-					errs() << "ArrayType=" << AT->getArrayNumElements() << "\n";
-					errs() << "Size = " << DL.getTypeAllocSize(AT) << "\n";
+					LLVM_DEBUG(dbgs() << "ArrayType=" << AT->getArrayNumElements() << "\n");
+					LLVM_DEBUG(dbgs() << "Size = " << DL.getTypeAllocSize(AT) << "\n");
 
 					//					//Insert a call to our function
 					//					IRBuilder<> builder(loopStartIns);
@@ -7882,13 +7885,13 @@ void DFG::GEPInvestigate(Function &F, std::map<std::string, int> *sizeArrMap)
 					if (memopChild->getLeftAlignedMemOp() == 1)
 					{
 						node->setGEPbaseAddr(arrayAddrPtrLeft);
-						outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrLeft << ",size=" << size << "\n";
+						LLVM_DEBUG(dbgs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrLeft << ",size=" << size << "\n");
 						arrayAddrPtrLeft += size;
 					}
 					else
 					{
 						node->setGEPbaseAddr(arrayAddrPtrRight);
-						outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrRight << ",size=" << size << "\n";
+						LLVM_DEBUG(dbgs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrRight << ",size=" << size << "\n");
 						arrayAddrPtrRight += size;
 					}
 
@@ -7916,7 +7919,7 @@ void DFG::GEPInvestigate(Function &F, std::map<std::string, int> *sizeArrMap)
 					//Add a call in the begginning of the loop
 					builder.CreateCall(printArrFunc, argsi);
 
-					//					errs() << "loopExitInsVec.size()=" << loopExitInsVec.size() << "\n";
+					//					LLVM_DEBUG(dbgs() << "loopExitInsVec.size()=" << loopExitInsVec.size() << "\n";
 					//					for (int i = 0; i < loopExitInsVec.size(); ++i) {
 					//						loopExitInsVec[i]->dump();
 					//						builder.SetInsertPoint(loopExitInsVec[i]);
@@ -7974,14 +7977,14 @@ void DFG::GEPInvestigate(Function &F, std::map<std::string, int> *sizeArrMap)
 							if (memopChild->getLeftAlignedMemOp() == 1)
 							{
 								node->setGEPbaseAddr(arrayAddrPtrLeft);
-								outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrLeft << ",size=" << size << "\n";
+								LLVM_DEBUG(dbgs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrLeft << ",size=" << size << "\n");
 								allocatedArraysMap[ptrName] = arrayAddrPtrLeft;
 								arrayAddrPtrLeft += size;
 							}
 							else
 							{
 								node->setGEPbaseAddr(arrayAddrPtrRight);
-								outs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrRight << ",size=" << size << "\n";
+								LLVM_DEBUG(dbgs() << "NodeIdx:" << node->getIdx() << ",addr=" << arrayAddrPtrRight << ",size=" << size << "\n");
 								allocatedArraysMap[ptrName] = arrayAddrPtrRight;
 								arrayAddrPtrRight += size;
 							}
@@ -7989,7 +7992,7 @@ void DFG::GEPInvestigate(Function &F, std::map<std::string, int> *sizeArrMap)
 						else
 						{
 							node->setGEPbaseAddr(allocatedArraysMap[ptrName]);
-							outs() << "NodeIdx:" << node->getIdx() << ",addr=" << allocatedArraysMap[ptrName] << ",size=" << size << "\n";
+							LLVM_DEBUG(dbgs() << "NodeIdx:" << node->getIdx() << ",addr=" << allocatedArraysMap[ptrName] << ",size=" << size << "\n");
 						}
 
 						auto printArrFunc = F.getParent()->getOrInsertFunction(
@@ -8014,7 +8017,7 @@ void DFG::GEPInvestigate(Function &F, std::map<std::string, int> *sizeArrMap)
 						//Add a call in the begginning of the loop
 						builder.CreateCall(printArrFunc, argsi);
 						//
-						//						errs() << "loopExitInsVec.size()=" << loopExitInsVec.size() << "\n";
+						//						LLVM_DEBUG(dbgs() << "loopExitInsVec.size()=" << loopExitInsVec.size() << "\n";
 						//						for (int i = 0; i < loopExitInsVec.size(); ++i) {
 						//							loopExitInsVec[i]->dump();
 						//							builder.SetInsertPoint(loopExitInsVec[i]);
@@ -8029,13 +8032,13 @@ void DFG::GEPInvestigate(Function &F, std::map<std::string, int> *sizeArrMap)
 					}
 					else
 					{
-						errs() << "Please provide sizes for the arrayptr : " << ptrName << "\n";
+						LLVM_DEBUG(dbgs() << "Please provide sizes for the arrayptr : " << ptrName << "\n");
 						assert(0);
 					}
 				}
 			}
 
-			errs() << "GEPInvestigate : instrument code added!\n";
+			LLVM_DEBUG(dbgs() << "GEPInvestigate : instrument code added!\n");
 			handledGEPs.insert(GEP->getPointerOperand());
 		}
 
@@ -8108,7 +8111,7 @@ void DFG::AssignOutLoopAddr()
 				}
 
 				node->setoutloopAddr(outloopAddrPtrLeft);
-				outs() << "NodeIdx:" << node->getIdx() << ",bytewidth=" << bytewidth << ",addr=" << outloopAddrPtrLeft << "\n";
+				LLVM_DEBUG(dbgs() << "NodeIdx:" << node->getIdx() << ",bytewidth=" << bytewidth << ",addr=" << outloopAddrPtrLeft << "\n");
 			}
 			else if (node->getMappedLoc()->getY() >= 2)
 			{
@@ -8124,7 +8127,7 @@ void DFG::AssignOutLoopAddr()
 				}
 
 				node->setoutloopAddr(outloopAddrPtrRight);
-				outs() << "NodeIdx:" << node->getIdx() << ",bytewidth=" << bytewidth << ",addr=" << outloopAddrPtrRight << "\n";
+				LLVM_DEBUG(dbgs() << "NodeIdx:" << node->getIdx() << ",bytewidth=" << bytewidth << ",addr=" << outloopAddrPtrRight << "\n");
 			}
 			else
 			{
@@ -8165,13 +8168,13 @@ int DFG::classifyParents()
 	{
 		node = NodeList[i];
 
-		outs() << "classifyParent::currentNode = " << node->getIdx() << "\n";
-		outs() << "Parents : ";
+		LLVM_DEBUG(dbgs() << "classifyParent::currentNode = " << node->getIdx() << "\n");
+		LLVM_DEBUG(dbgs() << "Parents : ");
 		for (dfgNode *parent : node->getAncestors())
 		{
-			outs() << parent->getIdx() << ",";
+			LLVM_DEBUG(dbgs() << parent->getIdx() << ",");
 		}
-		outs() << "\n";
+		LLVM_DEBUG(dbgs() << "\n");
 
 		for (dfgNode *parent : node->getAncestors())
 		{
@@ -8377,7 +8380,7 @@ int DFG::classifyParents()
 						{
 							if (node->parentClassification.find(1) != node->parentClassification.end())
 							{
-								parentIns->dump();
+								LLVM_DEBUG(parentIns->dump());
 							}
 							assert(node->parentClassification.find(1) == node->parentClassification.end());
 							node->parentClassification[1] = parent;
@@ -8409,7 +8412,7 @@ int DFG::classifyParents()
 						}
 						else
 						{
-							outs() << "Parent :" << parent->getIdx() << ", classified as I1\n";
+							LLVM_DEBUG(dbgs() << "Parent :" << parent->getIdx() << ", classified as I1\n");
 							assert(node->parentClassification.find(1) == node->parentClassification.end());
 							node->parentClassification[1] = parent;
 						}
@@ -8429,10 +8432,10 @@ int DFG::classifyParents()
 			if (dyn_cast<PHINode>(ins) || dyn_cast<SelectInst>(ins))
 			{
 				if (parent->getNode() != NULL)
-					parent->getNode()->dump();
-				outs() << "node : " << node->getIdx() << "\n";
-				outs() << "Parent : " << parent->getIdx() << "\n";
-				outs() << "Parent NameType : " << parent->getNameType() << "\n";
+					LLVM_DEBUG(parent->getNode()->dump());
+				LLVM_DEBUG(dbgs() << "node : " << node->getIdx() << "\n");
+				LLVM_DEBUG(dbgs() << "Parent : " << parent->getIdx() << "\n");
+				LLVM_DEBUG(dbgs() << "Parent NameType : " << parent->getNameType() << "\n");
 
 				if (parent->getNode())
 				{
@@ -8455,7 +8458,7 @@ int DFG::classifyParents()
 				}
 				else
 				{
-					outs() << "Extra parent : " << parent->getIdx() << ",Nametype = " << parent->getNameType() << ",par_idx = " << node->parentClassification.size() + 1 << "\n";
+					LLVM_DEBUG(dbgs() << "Extra parent : " << parent->getIdx() << ",Nametype = " << parent->getNameType() << ",par_idx = " << node->parentClassification.size() + 1 << "\n");
 					node->parentClassification[node->parentClassification.size() + 1] = parent;
 				}
 				continue;
@@ -8533,7 +8536,7 @@ int DFG::classifyParents()
 					}
 					else
 					{
-						outs() << "Extra parent : " << parent->getIdx() << ",Nametype = " << parent->getNameType() << ",par_idx = " << node->parentClassification.size() + 1 << "\n";
+						LLVM_DEBUG(dbgs() << "Extra parent : " << parent->getIdx() << ",Nametype = " << parent->getNameType() << ",par_idx = " << node->parentClassification.size() + 1 << "\n");
 						node->parentClassification[node->parentClassification.size() + 1] = parent;
 					}
 					continue;
@@ -8574,24 +8577,24 @@ int DFG::findOperandNumber(dfgNode *node, Instruction *child, Value *parent)
 	{
 		if (node->getAncestors().size() > 1)
 		{
-			outs() << "node :";
-			child->dump();
+			LLVM_DEBUG(dbgs() << "node :");
+			LLVM_DEBUG(child->dump());
 			for (dfgNode *parentNode : node->getAncestors())
 			{
 				if (parentNode->getNode())
 				{
-					outs() << "parent :";
-					parentNode->getNode()->dump();
+					LLVM_DEBUG(dbgs() << "parent :");
+					LLVM_DEBUG(parentNode->getNode()->dump());
 				}
 				else
 				{
-					outs() << "parent :" << parentNode->getDFSIdx() << "," << parentNode->getNameType() << "\n";
+					LLVM_DEBUG(dbgs() << "parent :" << parentNode->getDFSIdx() << "," << parentNode->getNameType() << "\n");
 				}
 			}
 
 			for (int i = 0; i < child->getNumOperands(); ++i)
 			{
-				child->getOperand(i)->dump();
+				LLVM_DEBUG(child->getOperand(i)->dump());
 				if (child->getOperand(i) == parent)
 				{
 					return i + 1;
@@ -8617,11 +8620,11 @@ int DFG::findOperandNumber(dfgNode *node, Instruction *child, Value *parent)
 				}
 				else
 				{
-					//					outs() << "child :\n";
-					child->dump();
-					//					outs() << "parent :\n";
-					parent->dump();
-					//					outs() << child->getOperand(i)->getName() << "\n";
+					//					LLVM_DEBUG(dbgs() << "child :\n";
+					LLVM_DEBUG(child->dump());
+					//					LLVM_DEBUG(dbgs() << "parent :\n";
+					LLVM_DEBUG(parent->dump());
+					//					LLVM_DEBUG(dbgs() << child->getOperand(i)->getName() << "\n";
 					assert(i != 0);
 					ConstantInt *CI = cast<ConstantInt>(child->getOperand(i));
 					if (i == 1)
@@ -8729,13 +8732,13 @@ int DFG::treatFalsePaths()
 			}
 		}
 	}
-	outs() << "treatFalsePaths:: NOTsadded = " << NOTsadded << "\n";
+	LLVM_DEBUG(dbgs() << "treatFalsePaths:: NOTsadded = " << NOTsadded << "\n");
 	return 0;
 }
 
 int DFG::insertshiftGEPs()
 {
-	outs() << "insertshiftGEPs started!\n";
+	LLVM_DEBUG(dbgs() << "insertshiftGEPs started!\n");
 	dfgNode *node;
 	for (int i = 0; i < NodeList.size(); ++i)
 	{
@@ -8747,7 +8750,7 @@ int DFG::insertshiftGEPs()
 			{
 
 				int elementSize = 0;
-				GEP->dump();
+				LLVM_DEBUG(GEP->dump());
 				for (dfgNode *child : node->getChildren())
 				{
 					if (child->getNode() != NULL)
@@ -8755,7 +8758,7 @@ int DFG::insertshiftGEPs()
 						if (child->getNode()->mayReadOrWriteMemory())
 						{
 							elementSize = child->getTypeSizeBytes() / 4;
-							outs() << "GEP element size = " << child->getTypeSizeBytes() / 4 << "\n";
+							LLVM_DEBUG(dbgs() << "GEP element size = " << child->getTypeSizeBytes() / 4 << "\n");
 							break;
 						}
 					}
@@ -8846,7 +8849,7 @@ int DFG::insertshiftGEPs()
 			}
 		}
 	}
-	outs() << "insertshiftGEPs ended!\n";
+	LLVM_DEBUG(dbgs() << "insertshiftGEPs ended!\n");
 }
 
 int DFG::partitionMemNodes()
@@ -8958,28 +8961,28 @@ int DFG::partitionMemNodes()
 		}
 	}
 
-	outs() << "Left side pointers : \n";
+	LLVM_DEBUG(dbgs() << "Left side pointers : \n");
 	for (Value *pointerOp : dpValueMap[n][minsumpart])
 	{
-		outs() << "(" << pointerOp->getName() << "," << pointerMemInsMap[pointerOp].size() << ");";
+		LLVM_DEBUG(dbgs() << "(" << pointerOp->getName() << "," << pointerMemInsMap[pointerOp].size() << ");");
 		for (dfgNode *node : pointerMemInsMap[pointerOp])
 		{
 			node->setLeftAlignedMemOp(1);
 		}
 		pointerOperandVec.erase(std::remove(pointerOperandVec.begin(), pointerOperandVec.end(), pointerOp), pointerOperandVec.end());
 	}
-	outs() << "\n";
+	LLVM_DEBUG(dbgs() << "\n");
 
-	outs() << "Right side pointers : \n";
+	LLVM_DEBUG(dbgs() << "Right side pointers : \n");
 	for (Value *pointerOp : pointerOperandVec)
 	{
-		outs() << "(" << pointerOp->getName() << "," << pointerMemInsMap[pointerOp].size() << ");";
+		LLVM_DEBUG(dbgs() << "(" << pointerOp->getName() << "," << pointerMemInsMap[pointerOp].size() << ");");
 		for (dfgNode *node : pointerMemInsMap[pointerOp])
 		{
 			node->setLeftAlignedMemOp(2);
 		}
 	}
-	outs() << "\n";
+	LLVM_DEBUG(dbgs() << "\n");
 
 	return 0;
 }
@@ -9181,8 +9184,8 @@ int DFG::handlestartstop_munit(std::vector<munitTransition> bbTrans)
 					{
 						//successor does not belong to the loop
 						//						exitNodes.push_back(node);
-						BRI->dump();
-						outs() << "Successor BB : " << BRI->getSuccessor(j)->getName() << "\n";
+						LLVM_DEBUG(BRI->dump());
+						LLVM_DEBUG(dbgs() << "Successor BB : " << BRI->getSuccessor(j)->getName() << "\n");
 						exitNodesWithSucc[node].push_back(BRI->getSuccessor(j));
 						exitNodesWithSuccCount++;
 					}
@@ -9192,12 +9195,12 @@ int DFG::handlestartstop_munit(std::vector<munitTransition> bbTrans)
 	}
 	assert(realStartNode != NULL);
 
-	outs() << "munitName = " << this->name << "\n";
-	outs() << "startNodes size =" << startNodes.size() << "\n";
-	outs() << "loopentryBB size =" << loopentryBB.size() << "\n";
+	LLVM_DEBUG(dbgs() << "munitName = " << this->name << "\n");
+	LLVM_DEBUG(dbgs() << "startNodes size =" << startNodes.size() << "\n");
+	LLVM_DEBUG(dbgs() << "loopentryBB size =" << loopentryBB.size() << "\n");
 
-	outs() << "exitNodesWithSucc size =" << exitNodesWithSuccCount << "\n";
-	outs() << "loopexitBB size =" << loopexitBB.size() << "\n";
+	LLVM_DEBUG(dbgs() << "exitNodesWithSucc size =" << exitNodesWithSuccCount << "\n");
+	LLVM_DEBUG(dbgs() << "loopexitBB size =" << loopexitBB.size() << "\n");
 
 	assert(startNodes.size() == this->loopentryBB.size());
 	assert(loopexitBB.size() == exitNodesWithSuccCount);
@@ -9397,20 +9400,20 @@ int DFG::nonGEPLoadStorecheck()
 			assert(false);
 		}
 
-		node->getNode()->dump();
+		LLVM_DEBUG(node->getNode()->dump());
 		int Size = DL.getTypeAllocSize(T);
-		outs() << "Size=" << Size << ",";
+		LLVM_DEBUG(dbgs() << "Size=" << Size << ",");
 
 		if (PointerType *PT = dyn_cast<PointerType>(T))
 		{
-			outs() << "ElementSize=" << DL.getTypeAllocSize(PT->getElementType()) << ",";
+			LLVM_DEBUG(dbgs() << "ElementSize=" << DL.getTypeAllocSize(PT->getElementType()) << ",");
 			//			PT->is
 		}
 
-		errs() << "S/A/I/P=" << T->isStructTy() << "/";
-		errs() << T->isArrayTy() << "/";
-		errs() << T->isIntegerTy() << "/";
-		errs() << T->isPointerTy() << "\n";
+		LLVM_DEBUG(dbgs() << "S/A/I/P=" << T->isStructTy() << "/");
+		LLVM_DEBUG(dbgs() << T->isArrayTy() << "/");
+		LLVM_DEBUG(dbgs() << T->isIntegerTy() << "/");
+		LLVM_DEBUG(dbgs() << T->isPointerTy() << "\n");
 	}
 
 	assert(false);
@@ -9479,8 +9482,8 @@ int DFG::addBreakLongerPaths()
 			int internalASAPdist = ASAPdistance / 4;
 			if (ASAPdistance > 5 && internalASAPdist > 0)
 			{
-				outs() << "breaking long paths adding op:OR 0 between "
-						<< ": node=" << node->getIdx() << "and node=" << child->getIdx() << "\n";
+				LLVM_DEBUG(dbgs() << "breaking long paths adding op:OR 0 between "
+						<< ": node=" << node->getIdx() << "and node=" << child->getIdx() << "\n");
 
 				dfgNode *orzero1 = new dfgNode(this);
 				orzero1->setIdx(this->getNodesPtr()->size());
@@ -9532,7 +9535,7 @@ int DFG::addBreakLongerPaths()
 int DFG::analyzeRTpaths()
 {
 	assert(!nodeRouteMap.empty());
-	outs() << "analyzeRTpaths :: begin\n";
+	LLVM_DEBUG(dbgs() << "analyzeRTpaths :: begin\n");
 
 	for (dfgNode *node : NodeList)
 	{
@@ -9569,7 +9572,7 @@ int DFG::analyzeRTpaths()
 				parent_tplus1_2 = (parent->getMappedLoc()->getT() + 2) % currCGRA->getMII();
 			}
 
-			outs() << "path size = " << nodeRouteMap[node][parent].size() << "\n";
+			LLVM_DEBUG(dbgs() << "path size = " << nodeRouteMap[node][parent].size() << "\n");
 
 			int parent_y = parent->getMappedLoc()->getY();
 			int parent_x = parent->getMappedLoc()->getX();
@@ -9585,7 +9588,7 @@ int DFG::analyzeRTpaths()
 
 				if (curr->getT() != next->getT())
 				{
-					outs() << "curr=" << curr->getNameSp() << ",next=" << next->getNameSp() << "\n";
+					LLVM_DEBUG(dbgs() << "curr=" << curr->getNameSp() << ",next=" << next->getNameSp() << "\n");
 					distanceDt++;
 				}
 
@@ -9599,15 +9602,15 @@ int DFG::analyzeRTpaths()
 
 			if (distanceDt != distanceRT)
 			{
-				outs() << "the path from " << parent->getMappedLoc()->getNameSp() << ",Node=" << parent->getIdx();
-				outs() << " to " << node->getMappedLoc()->getNameSp() << ",Node=" << node->getIdx();
-				outs() << " RealDistance=" << distanceRT << " and MappedDistance=" << distanceDt << "\n";
+				LLVM_DEBUG(dbgs() << "the path from " << parent->getMappedLoc()->getNameSp() << ",Node=" << parent->getIdx());
+				LLVM_DEBUG(dbgs() << " to " << node->getMappedLoc()->getNameSp() << ",Node=" << node->getIdx());
+				LLVM_DEBUG(dbgs() << " RealDistance=" << distanceRT << " and MappedDistance=" << distanceDt << "\n");
 			}
 
 			assert(distanceRT % currCGRA->getMII() == distanceDt % currCGRA->getMII());
 		}
 	}
-	outs() << "analyzeRTpaths :: end\n";
+	LLVM_DEBUG(dbgs() << "analyzeRTpaths :: end\n");
 }
 
 std::map<BasicBlock *, std::set<BasicBlock *>> DFG::checkMutexBBs()
@@ -9616,7 +9619,7 @@ std::map<BasicBlock *, std::set<BasicBlock *>> DFG::checkMutexBBs()
 	dfgNode *firstNode = NodeList[0];
 	SmallVector<std::pair<const BasicBlock *, const BasicBlock *>, 8> Result;
 	FindFunctionBackedges(*(firstNode->BB->getParent()), Result);
-	outs() << "Number of Backedges = " << Result.size() << "\n";
+	LLVM_DEBUG(dbgs() << "Number of Backedges = " << Result.size() << "\n");
 
 	std::map<BasicBlock *, std::set<BasicBlock *>> mutexBBs;
 
@@ -9640,12 +9643,12 @@ std::map<BasicBlock *, std::set<BasicBlock *>> DFG::checkMutexBBs()
 
 	for (std::pair<BasicBlock *, std::set<BasicBlock *>> pair : mutexBBs)
 	{
-		outs() << "BB=" << pair.first->getName() << ":";
+		LLVM_DEBUG(dbgs() << "BB=" << pair.first->getName() << ":");
 		for (BasicBlock *BB2 : pair.second)
 		{
-			outs() << BB2->getName() << ",";
+			LLVM_DEBUG(dbgs() << BB2->getName() << ",");
 		}
-		outs() << "\n";
+		LLVM_DEBUG(dbgs() << "\n");
 	}
 
 	return mutexBBs;
@@ -9653,10 +9656,10 @@ std::map<BasicBlock *, std::set<BasicBlock *>> DFG::checkMutexBBs()
 
 int DFG::printHyCUBEInsHist()
 {
-	outs() << "Hist--------------------\n";
+	LLVM_DEBUG(dbgs() << "Hist--------------------\n");
 	for (std::pair<HyCUBEIns, int> pair : hyCUBEInsHist)
 	{
-		outs() << "Ins:" << HyCUBEInsStrings[pair.first] << "," << pair.second << "\n";
+		LLVM_DEBUG(dbgs() << "Ins:" << HyCUBEInsStrings[pair.first] << "," << pair.second << "\n");
 	}
 }
 
@@ -9987,7 +9990,7 @@ void DFG::MergeCMerge()
 					dataParent->addChildNode(child);
 					child->addAncestorNode(dataParent);
 
-					outs() << "parentClassification size = " << child->parentClassification.size() << "\n";
+					LLVM_DEBUG(dbgs() << "parentClassification size = " << child->parentClassification.size() << "\n");
 					//					if(child->parentClassification[0]==node){
 					//						child->parentClassification[0]=dataParent;
 					//					}
@@ -10054,7 +10057,7 @@ void DFG::insertMOVC()
 		NodeList.push_back(newNode);
 	}
 
-	outs() << "NodeList Size was increased : from=" << beforeNodeListSize << ", to=" << NodeList.size() << "\n";
+	LLVM_DEBUG(dbgs() << "NodeList Size was increased : from=" << beforeNodeListSize << ", to=" << NodeList.size() << "\n");
 }
 
 void DFG::removeDisconnectedNodes()
@@ -10097,7 +10100,7 @@ void DFG::removeDisconnectedNodes()
 
 	for (dfgNode *n : rn)
 	{
-		std::cout << "Removing Node = " << n->getIdx() << "\n";
+		LLVM_DEBUG(dbgs() << "Removing Node = " << n->getIdx() << "\n");
 		NodeList.erase(std::remove(NodeList.begin(), NodeList.end(), n), NodeList.end());
 	}
 }
@@ -10127,10 +10130,10 @@ std::unordered_set<dfgNode *> DFG::getLineage(dfgNode *n)
 		}
 	}
 
-	std::cout << "lineage = ";
+	LLVM_DEBUG(dbgs() << "lineage = ");
 	for (dfgNode *n : lin)
-		std::cout << n->getIdx() << ",";
-	std::cout << "\n";
+		LLVM_DEBUG(dbgs() << n->getIdx() << ",");
+	LLVM_DEBUG(dbgs() << "\n");
 
 	return lin;
 }
@@ -10141,8 +10144,8 @@ void populateStructOffset(StructType *ST, std::unordered_map<int, int> &structOf
 	int ctr = 0;
 	for (auto type_el : ST->elements())
 	{
-		outs() << "\t\t";
-		type_el->dump();
+		LLVM_DEBUG(dbgs() << "\t\t");
+		LLVM_DEBUG(type_el->dump());
 		structOffset[ctr] = prev_offset;
 		prev_offset += DL.getTypeAllocSize(type_el);
 		ctr++;
@@ -10160,15 +10163,15 @@ int DFG::CalculateGEPBaseAddr(GetElementPtrInst *GEP)
 	PointerType *PT = cast<PointerType>(GEP->getPointerOperand()->getType());
 	if (StructType *ST = dyn_cast<StructType>(PT->getElementType()))
 	{
-		outs() << "\t";
-		ST->dump();
+		LLVM_DEBUG(dbgs() << "\t");
+		LLVM_DEBUG(ST->dump());
 		total_size = DL.getTypeAllocSize(ST);
-		// outs() << "\t\t sample element 2 = " ; ST->getElementType(2)->dump();
+		// LLVM_DEBUG(dbgs() << "\t\t sample element 2 = " ; ST->getElementType(2)->dump();
 	}
 	else if (ArrayType *AT = dyn_cast<ArrayType>(PT->getElementType()))
 	{
-		outs() << "\t";
-		AT->dump();
+		LLVM_DEBUG(dbgs() << "\t");
+		LLVM_DEBUG(AT->dump());
 		total_size = DL.getTypeAllocSize(AT);
 	}
 	else
@@ -10189,16 +10192,16 @@ int DFG::CalculateGEPBaseAddr(GetElementPtrInst *GEP)
 		{
 			for (int i = 2; i < GEP->getNumOperands(); i++)
 			{
-				outs() << "currType = ";
-				currType->dump();
+				LLVM_DEBUG(dbgs() << "currType = ");
+				LLVM_DEBUG(currType->dump());
 				if (ConstantInt *CV = dyn_cast<ConstantInt>(GEP->getOperand(i)))
 				{
 					int cv_int = CV->getSExtValue();
-					outs() << "\t offset_idx" << i << "=" << cv_int << "\n";
+					LLVM_DEBUG(dbgs() << "\t offset_idx" << i << "=" << cv_int << "\n");
 
 					if (StructType *ST = dyn_cast<StructType>(currType))
 					{
-						outs() << "ST Type!.\n";
+						LLVM_DEBUG(dbgs() << "ST Type!.\n");
 						std::unordered_map<int, int> structOffset;
 						populateStructOffset(ST, structOffset, DL);
 						offset += structOffset[cv_int];
@@ -10206,14 +10209,14 @@ int DFG::CalculateGEPBaseAddr(GetElementPtrInst *GEP)
 					}
 					else if (ArrayType *AT = dyn_cast<ArrayType>(currType))
 					{
-						outs() << "AT Type!.\n";
+						LLVM_DEBUG(dbgs() << "AT Type!.\n");
 						int element_size = DL.getTypeAllocSize(AT->getElementType());
 						offset += cv_int * element_size;
 						currType = AT->getElementType();
 					}
 					else
 					{
-						outs() << "scalar Type.\n";
+						LLVM_DEBUG(dbgs() << "scalar Type.\n");
 						assert(i == GEP->getNumOperands() - 1);
 					}
 				}
@@ -10221,7 +10224,7 @@ int DFG::CalculateGEPBaseAddr(GetElementPtrInst *GEP)
 		}
 	}
 
-	outs() << "\t offset = " << offset << "\n";
+	LLVM_DEBUG(dbgs() << "\t offset = " << offset << "\n");
 
 	return offset;
 }
@@ -10235,11 +10238,11 @@ void DFG::GEPBaseAddrCheck(Function &F)
 		{
 			if (GetElementPtrInst *GEP = dyn_cast<GetElementPtrInst>(&ins))
 			{
-				outs() << "GEP = ";
-				GEP->dump();
+				LLVM_DEBUG(dbgs() << "GEP = ");
+				LLVM_DEBUG(GEP->dump());
 				int offset = CalculateGEPBaseAddr(GEP);
 				GEPOffsetMap[GEP] = offset;
-				outs() << "[dfg.cpp][GEPBaseAddrCheck] offset: " << offset << "\n";
+				LLVM_DEBUG(dbgs() << "[dfg.cpp][GEPBaseAddrCheck] offset: " << offset << "\n");
 			}
 		}
 	}
@@ -10257,8 +10260,8 @@ void checkGEPDerivatives(Instruction *root, GetElementPtrInst *GEP, std::unorder
 			if (deriv.find(ins) != deriv.end())
 				continue;
 
-			outs() << "\t value = ";
-			ins->dump();
+			LLVM_DEBUG(dbgs() << "\t value = ");
+			LLVM_DEBUG(ins->dump());
 			deriv[ins] = GEP;
 			checkGEPDerivatives(ins, GEP, deriv);
 		}
@@ -10323,7 +10326,7 @@ void DFG::getTransferVariables(std::unordered_set<Value *> &outer_vals,
 
 	for (auto it = OutLoopNodeMapReverse.begin(); it != OutLoopNodeMapReverse.end(); it++)
 	{
-		outs() << "onode = " << it->first->getIdx()  << "nametype = " << it->first->getNameType() << "\n";
+		LLVM_DEBUG(dbgs() << "onode = " << it->first->getIdx()  << "nametype = " << it->first->getNameType() << "\n");
 		Value *val = it->second;
 		outer_vals.insert(val);
 
@@ -10352,8 +10355,8 @@ void DFG::getTransferVariables(std::unordered_set<Value *> &outer_vals,
 				continue;
 			if (GetElementPtrInst *GEP = dyn_cast<GetElementPtrInst>(&ins))
 			{
-				outs() << "searching for GEP = ";
-				GEP->dump();
+				LLVM_DEBUG(dbgs() << "searching for GEP = ");
+				LLVM_DEBUG(GEP->dump());
 				gep_derivatives[GEP] = GEP;
 				checkGEPDerivatives(GEP, GEP, gep_derivatives);
 			}
@@ -10374,16 +10377,16 @@ void DFG::getTransferVariables(std::unordered_set<Value *> &outer_vals,
 		{
 			if (LoadInst *LDI = dyn_cast<LoadInst>(node->getNode()))
 			{
-				outs() << "LOAD TRANSFER = ";
-				LDI->dump();
+				LLVM_DEBUG(dbgs() << "LOAD TRANSFER = ");
+				LLVM_DEBUG(LDI->dump());
 				Value *ld_ptr = LDI->getPointerOperand();
 
 				if(sizeArrMap.find(ld_ptr->getName().str()) != sizeArrMap.end()){
 					acc[LDI->getPointerOperand()] = acc[LDI->getPointerOperand()] + 1;
 				}
 				else{
-					outs()<<"ld_ptr:" ;
-					ld_ptr->dump();
+					LLVM_DEBUG(dbgs()<<"ld_ptr:" );
+					LLVM_DEBUG(ld_ptr->dump());
 					assert(gep_derivatives.find(ld_ptr) != gep_derivatives.end());
 					mem_ptrs[ld_ptr] = gep_derivatives[ld_ptr];
 					acc[gep_derivatives[ld_ptr]->getPointerOperand()] = acc[gep_derivatives[ld_ptr]->getPointerOperand()] + 1;
@@ -10392,8 +10395,8 @@ void DFG::getTransferVariables(std::unordered_set<Value *> &outer_vals,
 			}
 			if (StoreInst *STI = dyn_cast<StoreInst>(node->getNode()))
 			{
-				outs() << "STORE TRANSFER = ";
-				STI->dump();
+				LLVM_DEBUG(dbgs() << "STORE TRANSFER = ");
+				LLVM_DEBUG(STI->dump());
 				Value *st_ptr = STI->getPointerOperand();
 
 				if(sizeArrMap.find(st_ptr->getName().str()) != sizeArrMap.end()){
@@ -10415,14 +10418,14 @@ void DFG::getTransferVariables(std::unordered_set<Value *> &outer_vals,
 	// 	acc[it->second] = 1;
 	// }
 
-	outs()<<"\nOutvals_inorout contains: \n" ;
+	LLVM_DEBUG(dbgs()<<"\nOutvals_inorout contains: \n" );
 	for (auto it = outVals_inorout.begin(); it != outVals_inorout.end(); it++)
 	{
 		Value* outvl = it->first;
-		outs() << "outVal:";
-		outvl->dump();
-		outs() << "\n";
-		outs() << "load(1)/store(0):"<<it->second <<"\n";
+		LLVM_DEBUG(dbgs() << "outVal:");
+		LLVM_DEBUG(outvl->dump());
+		LLVM_DEBUG(dbgs() << "\n");
+		LLVM_DEBUG(dbgs() << "load(1)/store(0):"<<it->second <<"\n");
 	}
 
 }
@@ -10442,16 +10445,16 @@ void DFG::SetBasePointers(std::unordered_set<Value *> &outer_vals,
 {
 
 
-	outs()<<"array_pointer_sizes contains: \n" ;
+	LLVM_DEBUG(dbgs()<<"array_pointer_sizes contains: \n" );
 	for (auto it = array_pointer_sizes.begin(); it != array_pointer_sizes.end(); it++)
 	{
 		std::string base_ptr = it->first;
 		int size = it->second;
-		outs() << "base_ptr:" << base_ptr << ", size = " << size << "\n";
+		LLVM_DEBUG(dbgs() << "base_ptr:" << base_ptr << ", size = " << size << "\n");
 	}
 
-	outs() << "OutLoopNodeMapReverse size = " << OutLoopNodeMapReverse.size() << "\n";
-	outs() << "OutLoopNodeMap size = " << OutLoopNodeMap.size() << "\n";
+	LLVM_DEBUG(dbgs() << "OutLoopNodeMapReverse size = " << OutLoopNodeMapReverse.size() << "\n");
+	LLVM_DEBUG(dbgs() << "OutLoopNodeMap size = " << OutLoopNodeMap.size() << "\n");
 
 	for (dfgNode *node : NodeList)
 	{
@@ -10459,10 +10462,10 @@ void DFG::SetBasePointers(std::unordered_set<Value *> &outer_vals,
 		if (OutLoopNodeMapReverse.find(node) != OutLoopNodeMapReverse.end())
 		{
 			assert(outer_vals.find(OutLoopNodeMapReverse[node]) != outer_vals.end());
-			outs() << "Outer LOOP value :: ";
-			OutLoopNodeMapReverse[node]->dump();
-			outs() << "Outer LOOP name = " << OutLoopNodeMapReverse[node]->getName() << "\n";
-			outs() << "Outer LOOP node idx = " << node->getIdx() << "\n";
+			LLVM_DEBUG(dbgs() << "Outer LOOP value :: ");
+			LLVM_DEBUG(OutLoopNodeMapReverse[node]->dump());
+			LLVM_DEBUG(dbgs() << "Outer LOOP name = " << OutLoopNodeMapReverse[node]->getName() << "\n");
+			LLVM_DEBUG(dbgs() << "Outer LOOP node idx = " << node->getIdx() << "\n");
 			node->setArrBasePtr(OutLoopNodeMapReverse[node]->getName());
 			/*
 			 *   %arrayidx = gep , []* @sum, ... //arrayidx is the address of sum[i]
@@ -10478,15 +10481,15 @@ void DFG::SetBasePointers(std::unordered_set<Value *> &outer_vals,
 			 * generated in the ./final at runtime*/
 			for (User *u : OutLoopNodeMapReverse[node]->users())
 			{
-				outs() << "Users: ";
-				u->dump();
-				outs() << "\n";
+				LLVM_DEBUG(dbgs() << "Users: ");
+				LLVM_DEBUG(u->dump());
+				LLVM_DEBUG(dbgs() << "\n");
 
 				for (int i = 0; i < u->getNumOperands(); ++i)
 				{
 					if (u->getOperand(i) ==  OutLoopNodeMapReverse[node] && u->getOperand(i)->getType()->isPointerTy())
 					{
-						outs() << "Have pointer type user\n";
+						LLVM_DEBUG(dbgs() << "Have pointer type user\n");
 						OLNodesWithPtrTyUsage[node]=OutLoopNodeMapReverse[node];
 					}
 				}
@@ -10552,7 +10555,7 @@ void DFG::SetBasePointers(std::unordered_set<Value *> &outer_vals,
 			{
 				//if the instruction could read or write memory it should be a load
 				// or a store instruction.
-				node->getNode()->dump();
+				LLVM_DEBUG(node->getNode()->dump());
 				assert(false);
 			}
 		}
@@ -10576,22 +10579,22 @@ void DFG::SetBasePointers(std::unordered_set<Value *> &outer_vals,
 
 
 	}
-	outs() << "Outloop node instructions with pointer type usage in the loop body \n";
+	LLVM_DEBUG(dbgs() << "Outloop node instructions with pointer type usage in the loop body \n");
 	for (auto i : OLNodesWithPtrTyUsage)
 	{
 
 		Value* ptr = i.second;
-		ptr->dump();
-		outs() << "\n";
+		LLVM_DEBUG(ptr->dump());
+		LLVM_DEBUG(dbgs() << "\n");
 
 	}
 
-	outs()<<"array_pointer_sizes contains: \n" ;
+	LLVM_DEBUG(dbgs()<<"array_pointer_sizes contains: \n" );
 	for (auto it = array_pointer_sizes.begin(); it != array_pointer_sizes.end(); it++)
 	{
 		std::string base_ptr = it->first;
 		int size = it->second;
-		outs() << "base_ptr:" << base_ptr << ", size = " << size << "\n";
+		LLVM_DEBUG(dbgs() << "base_ptr:" << base_ptr << ", size = " << size << "\n");
 	}
 
 
@@ -10603,13 +10606,13 @@ void DFG::SetBasePointers(std::unordered_set<Value *> &outer_vals,
  * */
 void DFG::InstrumentInOutVars(Function &F, std::unordered_map<Value *, int> mem_accesses, std::map<dfgNode*,Value*> &OLNodesWithPtrTyUsage, std::unordered_map<Value *, int> &spm_base_address){
 
-	outs() << "Outloop node instructions with pointer type usage in the loop body \n";
+	LLVM_DEBUG(dbgs() << "Outloop node instructions with pointer type usage in the loop body \n");
 	for (auto i : OLNodesWithPtrTyUsage)
 	{
 
 		Value* ptr = i.second;
-		ptr->dump();
-		outs() << "\n";
+		LLVM_DEBUG(ptr->dump());
+		LLVM_DEBUG(dbgs() << "\n");
 
 	}
 	LLVMContext &Ctx = F.getContext();
@@ -10702,7 +10705,7 @@ void DFG::InstrumentInOutVars(Function &F, std::unordered_map<Value *, int> mem_
 		BasicBlock* entryBB = trans.first;
 		IRBuilder<> builder(entryBB->getTerminator());
 
-		Value *loopName = builder.CreateGlobalStringPtr(name);
+		Value *loopName = builder.CreateGlobalStringPtr(this->kernelname);
 		builder.CreateCall(loopStartFn,{loopName});
 	}
 
@@ -10713,14 +10716,14 @@ void DFG::InstrumentInOutVars(Function &F, std::unordered_map<Value *, int> mem_
 		IRBuilder<> builder(NodeList[0]->getNode());
 
 		Value* ptr = it->first;
-		outs() << "ptr_name = " << ptr->getName() << "\n";
-		ptr->dump();
+		LLVM_DEBUG(dbgs() << "ptr_name = " << ptr->getName() << "\n");
+		LLVM_DEBUG(ptr->dump());
 
 
 		assert(array_pointer_sizes.find(ptr->getName()) != array_pointer_sizes.end());
 		int size = array_pointer_sizes[ptr->getName()];
 
-		outs() << "size = " << size << "\n";
+		LLVM_DEBUG(dbgs() << "size = " << size << "\n");
 
 		Value* ptr_name_val = builder.CreateGlobalStringPtr(ptr->getName());
 		Value *size_val = ConstantInt::get(Type::getInt32Ty(Ctx), size);
@@ -10743,13 +10746,13 @@ void DFG::InstrumentInOutVars(Function &F, std::unordered_map<Value *, int> mem_
 				//				ptrs->dump();
 				if(ptrs == ptr){
 					GetElementPtrInst *GEP = dyn_cast<GetElementPtrInst>(ptrs);
-//					outs() << "GEP operand 2 =  ";
-					GEP->getOperand(2)->dump();
-					GEP->getOperand(0)->dump();
-//					outs() << "array base = " << GEP->getOperand(0)->getName() << "\n";
+//					LLVM_DEBUG(dbgs() << "GEP operand 2 =  ";
+					LLVM_DEBUG(GEP->getOperand(2)->dump());
+					LLVM_DEBUG(GEP->getOperand(0)->dump());
+//					LLVM_DEBUG(dbgs() << "array base = " << GEP->getOperand(0)->getName() << "\n";
 					Value* gepop0 = builder.CreateGlobalStringPtr(GEP->getOperand(0)->getName());//base ptr of array
 					Value * gepop2= GEP->getOperand(2);// array offset
-//					outs() << "\n";
+//					LLVM_DEBUG(dbgs() << "\n";
 
 					Value* ptr_spm_address_val = builder.CreateGlobalStringPtr(std::to_string(spm_base_address[GEP->getOperand(0)]));
 
@@ -10769,10 +10772,10 @@ void DFG::InstrumentInOutVars(Function &F, std::unordered_map<Value *, int> mem_
 			//	builder.CreateCall(live_in_report_FN2,{ptr_name_val,bitcastedptr2,size_val2});
 			}
 			else{
-				outs() << "type = "; ptr->getType()->dump();
+				LLVM_DEBUG(dbgs() << "type = "); LLVM_DEBUG(ptr->getType()->dump());
 				if(outVals_inorout.find(ptr)!=outVals_inorout.end()){
 					if(outVals_inorout[ptr]==1){//outLoopLoad
-						outs() << "Adding live_in_report_intermediatevariable() call for OutloopLoad\n";
+						LLVM_DEBUG(dbgs() << "Adding live_in_report_intermediatevariable() call for OutloopLoad\n");
 						Value* bitcastedptr = builder.CreateIntCast(it->first, Type::getInt32Ty(Ctx),true);
 						builder.CreateCall(live_in_report_intvar_FN,{ptr_name_val,bitcastedptr});
 					}
@@ -10792,18 +10795,18 @@ void DFG::InstrumentInOutVars(Function &F, std::unordered_map<Value *, int> mem_
 				builder.CreateCall(live_out_report_FN,{ptr_name_val,bitcastedptr,size_val});
 			}
 			else{
-				outs() << "type = "; ptr->getType()->dump();
+				LLVM_DEBUG(dbgs() << "type = "); LLVM_DEBUG(ptr->getType()->dump());
 
 				if(outVals_inorout.find(ptr)!=outVals_inorout.end()){
 					if(outVals_inorout[ptr]==0){//outLoopStore
-						outs() << "Adding live_out_report_intermediatevariable() call for OutloopStore\n";
+						LLVM_DEBUG(dbgs() << "Adding live_out_report_intermediatevariable() call for OutloopStore\n");
 						for (auto &I : *exitBB){
 
-							I.dump();
+							LLVM_DEBUG(I.dump());
 							Value *val = dyn_cast<Value>(&I);
-							val->dump();
+							LLVM_DEBUG(val->dump());
 							if(I.getOperand(0)==ptr){
-								outs() << "lcssa use\n";
+								LLVM_DEBUG(dbgs() << "lcssa use\n");
 //								ptr_name_val = builder.CreateGlobalStringPtr(val->getName());
 								Value* bitcastedptr = builder.CreateIntCast(val, Type::getInt32Ty(Ctx),true);
 								builder.CreateCall(live_out_report_intvar_FN,{ptr_name_val,bitcastedptr});
@@ -10812,9 +10815,9 @@ void DFG::InstrumentInOutVars(Function &F, std::unordered_map<Value *, int> mem_
 
 
 						for (User *u : ptr->users()){
-							outs() << "Users: ";
-							u->dump();
-							outs() << "\n";
+							LLVM_DEBUG(dbgs() << "Users: ");
+							LLVM_DEBUG(u->dump());
+							LLVM_DEBUG(dbgs() << "\n");
 						}
 //						Value* bitcastedptr = builder.CreateIntCast(it->first, Type::getInt32Ty(Ctx),true);
 //						builder.CreateCall(live_out_report_intvar_FN,{ptr_name_val,bitcastedptr});
@@ -10833,7 +10836,7 @@ void DFG::InstrumentInOutVars(Function &F, std::unordered_map<Value *, int> mem_
 		BasicBlock* exitBB = trans.second;
 		IRBuilder<> builder(exitBB->getTerminator());
 
-		Value *loopName = builder.CreateGlobalStringPtr(name);
+		Value *loopName = builder.CreateGlobalStringPtr(kernelname);
 		builder.CreateCall(loopEndFn,{loopName});
 	}
 
@@ -10844,7 +10847,7 @@ void DFG::UpdateSPMAllocation(std::unordered_map<Value *, int> &spm_base_address
 		std::unordered_map<Value *, GetElementPtrInst *> &arr_ptrs)
 {
 	std::ofstream mem_alloc_txt;
-	mem_alloc_txt.open(this->name + "_mem_alloc.txt");
+	mem_alloc_txt.open(this->kernelname + "_mem_alloc.txt");
 	mem_alloc_txt << "var_name,base_addr\n";
 	std::string var_name;
 	int base_addr;
@@ -10854,10 +10857,10 @@ void DFG::UpdateSPMAllocation(std::unordered_map<Value *, int> &spm_base_address
 		if (OutLoopNodeMapReverse.find(node) != OutLoopNodeMapReverse.end() && OutLoopNodeMapReverse[node])
 		{
 			assert(spm_base_address.find(OutLoopNodeMapReverse[node]) != spm_base_address.end());
-			outs() << "SetOutLoopLOAD/STORE BaseAddresses :: setting outerloop value=" << OutLoopNodeMapReverse[node]->getName() << " to " << spm_base_address[OutLoopNodeMapReverse[node]] << "\n";
+			LLVM_DEBUG(dbgs() << "SetOutLoopLOAD/STORE BaseAddresses :: setting outerloop value=" << OutLoopNodeMapReverse[node]->getName() << " to " << spm_base_address[OutLoopNodeMapReverse[node]] << "\n");
 			node->setConstantVal(spm_base_address[OutLoopNodeMapReverse[node]]);
 			node->setoutloopAddr(spm_base_address[OutLoopNodeMapReverse[node]]);//this is assigned to constval in Namenodes()
-//			outs() << "Const val: " << node->getConstantVal() << "/n";
+//			LLVM_DEBUG(dbgs() << "Const val: " << node->getConstantVal() << "/n";
 			assert(spm_base_allocation.find(OutLoopNodeMapReverse[node]) != spm_base_allocation.end());
 			if (spm_base_allocation[OutLoopNodeMapReverse[node]] == BANK0)
 			{
@@ -10867,8 +10870,8 @@ void DFG::UpdateSPMAllocation(std::unordered_map<Value *, int> &spm_base_address
 			{
 				node->setLeftAlignedMemOp(2);
 			}
-			outs() << "\t pointer " << OutLoopNodeMapReverse[node]->getName() << "\n";
-			outs() << "\t to address " << spm_base_address[OutLoopNodeMapReverse[node]] << "\n";
+			LLVM_DEBUG(dbgs() << "\t pointer " << OutLoopNodeMapReverse[node]->getName() << "\n");
+			LLVM_DEBUG(dbgs() << "\t to address " << spm_base_address[OutLoopNodeMapReverse[node]] << "\n");
 			var_name = OutLoopNodeMapReverse[node]->getName();
 			base_addr = spm_base_address[OutLoopNodeMapReverse[node]];
 			base_address_map[var_name]=base_addr;
@@ -10881,10 +10884,10 @@ void DFG::UpdateSPMAllocation(std::unordered_map<Value *, int> &spm_base_address
 				if (spm_base_address.find(gep_pointer) != spm_base_address.end())
 				{
 					node->setGEPbaseAddr(spm_base_address[gep_pointer]);
-					outs() << "SetNewGEPBaseAddresses :: setting GEP base address for=";
-					GEP->dump();
-					outs() << "\t pointer " << gep_pointer->getName() << "\n";
-					outs() << "\t to address " << spm_base_address[gep_pointer] << "\n";
+					LLVM_DEBUG(dbgs() << "SetNewGEPBaseAddresses :: setting GEP base address for=");
+					LLVM_DEBUG(GEP->dump());
+					LLVM_DEBUG(dbgs() << "\t pointer " << gep_pointer->getName() << "\n");
+					LLVM_DEBUG(dbgs() << "\t to address " << spm_base_address[gep_pointer] << "\n");
 					var_name = gep_pointer->getName();
 					base_addr = spm_base_address[gep_pointer];
 					base_address_map[var_name]=base_addr;
@@ -10894,11 +10897,11 @@ void DFG::UpdateSPMAllocation(std::unordered_map<Value *, int> &spm_base_address
 			else if (LoadInst *LDI = dyn_cast<LoadInst>(node->getNode()))
 			{
 				Value *ptr = LDI->getPointerOperand();
-				ptr->dump();
+				LLVM_DEBUG(ptr->dump());
 
 				if(arr_ptrs.find(ptr) == arr_ptrs.end()){
-					outs() << "\t pointer  " << ptr->getName() << "\n";
-					outs() << "\t to address " << spm_base_address[ptr] << "\n";
+					LLVM_DEBUG(dbgs() << "\t pointer  " << ptr->getName() << "\n");
+					LLVM_DEBUG(dbgs() << "\t to address " << spm_base_address[ptr] << "\n");
 				}
 
 				assert(arr_ptrs.find(ptr) != arr_ptrs.end());
@@ -10914,8 +10917,8 @@ void DFG::UpdateSPMAllocation(std::unordered_map<Value *, int> &spm_base_address
 					node->setLeftAlignedMemOp(2);
 				}
 
-				outs() << "\t pointer  " << gep_ptr->getName() << "\n";
-				outs() << "\t to address " << spm_base_address[gep_ptr] << "\n";
+				LLVM_DEBUG(dbgs() << "\t pointer  " << gep_ptr->getName() << "\n");
+				LLVM_DEBUG(dbgs() << "\t to address " << spm_base_address[gep_ptr] << "\n");
 				var_name = gep_ptr->getName();
 				base_addr = spm_base_address[gep_ptr];
 				base_address_map[var_name]=base_addr;
@@ -10923,7 +10926,7 @@ void DFG::UpdateSPMAllocation(std::unordered_map<Value *, int> &spm_base_address
 			else if (StoreInst *STI = dyn_cast<StoreInst>(node->getNode()))
 			{
 				Value *ptr = STI->getPointerOperand();
-				ptr->dump();
+				LLVM_DEBUG(ptr->dump());
 				assert(arr_ptrs.find(ptr) != arr_ptrs.end());
 				Value *gep_ptr = arr_ptrs[ptr]->getPointerOperand();
 				assert(spm_base_allocation.find(gep_ptr) != spm_base_allocation.end());
@@ -10937,8 +10940,8 @@ void DFG::UpdateSPMAllocation(std::unordered_map<Value *, int> &spm_base_address
 					node->setLeftAlignedMemOp(2);
 				}
 
-				outs() << "\t pointer " << gep_ptr->getName() << "\n";
-				outs() << "\t to address " << spm_base_address[gep_ptr] << "\n";
+				LLVM_DEBUG(dbgs() << "\t pointer " << gep_ptr->getName() << "\n");
+				LLVM_DEBUG(dbgs() << "\t to address " << spm_base_address[gep_ptr] << "\n");
 				var_name = gep_ptr->getName();
 				base_addr = spm_base_address[gep_ptr];
 				base_address_map[var_name]=base_addr;
@@ -10946,14 +10949,14 @@ void DFG::UpdateSPMAllocation(std::unordered_map<Value *, int> &spm_base_address
 		}
 	}
 
-	outs() << "\n\nName nodes begin\n";
+	LLVM_DEBUG(dbgs() << "\n\nName nodes begin\n");
 	nameNodes();
-	outs() << "\nName nodes end\n\n";
+	LLVM_DEBUG(dbgs() << "\nName nodes end\n\n");
 
-	outs() << "\n\n Writing mem alloc begin \n";
+	LLVM_DEBUG(dbgs() << "\n\n Writing mem alloc begin \n");
 
 	for(auto i = base_address_map.begin(); i != base_address_map.end(); i++){
-		outs() << "\t pointer " << i->first<<","<< i->second<<"\n";
+		LLVM_DEBUG(dbgs() << "\t pointer " << i->first<<","<< i->second<<"\n");
 		mem_alloc_txt << i->first<<","<< i->second<<"\n";
 	}
 #ifdef ARCHI_16BIT
@@ -10966,7 +10969,8 @@ void DFG::UpdateSPMAllocation(std::unordered_map<Value *, int> &spm_base_address
 		mem_alloc_txt << "loopstart" <<","<<(MEM_SIZE - 2)<<"\n";
 #endif
 	mem_alloc_txt.close();
-	outs() << "\n Writing mem alloc end\n\n";
+	LLVM_DEBUG(dbgs() << "\n Writing mem alloc end\n\n");
+	//std::cout << "Data layout generated ("<<this->kernelname<<"_mem_alloc.txt) \n";
 	// assert(false);
 }
 
@@ -10986,16 +10990,16 @@ int DFG::insertshiftGEPsCorrect(){
 
 				if (isa<ArrayType>(GEP->getSourceElementType())){
 					no_of_elements = cast<ArrayType>(T)->getNumElements();
-					outs() << "is an array\n";
+					LLVM_DEBUG(dbgs() << "is an array\n");
 				}else{
 					no_of_elements = 1;
-					outs()<< "not an array\n";
+					LLVM_DEBUG(dbgs()<< "not an array\n");
 				}
 
 				int size = array_size/no_of_elements;
 
-				outs() << "total array size=" << array_size << " no_of_elements=" << no_of_elements  << " element size(bytes)=" << size << "\n" ;
-				GEP->dump();
+				LLVM_DEBUG(dbgs() << "total array size=" << array_size << " no_of_elements=" << no_of_elements  << " element size(bytes)=" << size << "\n" );
+				LLVM_DEBUG(GEP->dump());
 
 				if (size > 1)
 				{
@@ -11015,7 +11019,7 @@ int DFG::insertshiftGEPsCorrect(){
 #endif
 
 						temp->BB = node->BB;
-						outs() << "adding node...\n";
+						LLVM_DEBUG(dbgs() << "adding node...\n");
 
 						anc->addChildNode(temp);
 						temp->addAncestorNode(anc);

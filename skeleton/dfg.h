@@ -179,6 +179,7 @@ class DFG{
 			std::map<const BasicBlock*,std::vector<const BasicBlock*>> BBSuccBasicBlocks;
 			bool deadEndReached = false;
 			std::string name;
+			std::string kernelname = "kernel";
 			std::vector<nodeWithCost> globalNodesWithCost;
 //			std::vector<std::vector<int> > conMat;
 			std::vector<std::vector<std::vector<unsigned char> > > conMatArr;
@@ -244,6 +245,7 @@ class DFG{
 
 
 			void setName(std::string str){name = str;}
+			void setKernelName(std::string str){kernelname = str;}
 			std::string getName(){return name;}
 
 			dfgNode* getEntryNode();

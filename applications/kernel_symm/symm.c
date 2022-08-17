@@ -61,8 +61,8 @@ void print_array(int ni, int nj,
 
 /* Main computational kernel. The whole function will be timed,
    including the call and return. */
-static
-void kernel_symm(int ni, int nj,
+__attribute__((noinline))
+static void kernel_symm(int ni, int nj,
 		 DATA_TYPE alpha,
 		 DATA_TYPE beta,
 		 DATA_TYPE POLYBENCH_2D(C,NI,NJ,ni,nj),

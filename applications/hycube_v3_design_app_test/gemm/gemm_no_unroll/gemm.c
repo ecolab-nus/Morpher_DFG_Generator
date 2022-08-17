@@ -5,6 +5,7 @@
 #define SIZE  8
 int A[SIZE*SIZE], B[SIZE*SIZE], C[SIZE*SIZE];
 
+__attribute__((noinline))
 void gemm(){
    int i,j,k;
 

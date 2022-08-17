@@ -10,6 +10,8 @@
 // #include "llvm/Analysis/IVUsers.h"
 
 using namespace std;
+#define LV_NAME "dfg_gen" //"sfp"
+#define DEBUG_TYPE LV_NAME
 
 void DFGPartPred::connectBB() {
 
@@ -43,8 +45,8 @@ void DFGPartPred::connectBB() {
 				std::vector<dfgNode*> stores = getStoreInstructions(BRI->getSuccessor(i)); //this doesnt include phinodes
 
 				if(node->getAncestors().size()!=1){
-					BRI->dump();
-					outs() << "BR node ancestor size = " << node->getAncestors().size() << "\n";
+					LLVM_DEBUG(BRI->dump());
+					LLVM_DEBUG(dbgs() << "BR node ancestor size = " << node->getAncestors().size() << "\n");
 				}
 				//				assert(node->getAncestors().size()==1); //should be a unique parent;
 				//				dfgNode* BRParent = node->getAncestors()[0];
@@ -63,10 +65,10 @@ void DFGPartPred::connectBB() {
 						//						}
 						//						else{
 						//							BRParentBRI->dump();
-						//							outs() << BRParentBRI->getSuccessor(0)->getName() << "\n";
-						//							outs() << BRParentBRI->getSuccessor(1)->getName() << "\n";
-						//							outs() << currBB->getName() << "\n";
-						//							outs() << BRParent->getIdx() << "\n";
+						//							LLVM_DEBUG(dbgs() << BRParentBRI->getSuccessor(0)->getName() << "\n";
+						//							LLVM_DEBUG(dbgs() << BRParentBRI->getSuccessor(1)->getName() << "\n";
+						//							LLVM_DEBUG(dbgs() << currBB->getName() << "\n";
+						//							LLVM_DEBUG(dbgs() << BRParent->getIdx() << "\n";
 						//							assert(false);
 						//						}
 						std::set<const BasicBlock*> searchSoFar;
@@ -74,16 +76,16 @@ void DFGPartPred::connectBB() {
 						isConditional=true; //this is always true. coz there is no backtoback unconditional branches.
 					}
 
-					outs() << "BR : ";
-					BRI->dump();
-					outs() << " and BRParent :" << BRParent->getIdx() << "\n";
+					LLVM_DEBUG(dbgs() << "BR : ");
+					LLVM_DEBUG(BRI->dump());
+					LLVM_DEBUG(dbgs() << " and BRParent :" << BRParent->getIdx() << "\n");
 
 
-					outs() << "leafs from basicblock=" << currBB->getName() << " for basicblock=" << succBB->getName().str() << "\n";
+					LLVM_DEBUG(dbgs() << "leafs from basicblock=" << currBB->getName() << " for basicblock=" << succBB->getName().str() << "\n");
 					for(dfgNode* succNode : stores){
-						outs() << succNode->getIdx() << ",";
+						LLVM_DEBUG(dbgs() << succNode->getIdx() << ",");
 					}
-					outs() << "\n";
+					LLVM_DEBUG(dbgs() << "\n");
 
 					for(dfgNode* succNode : stores){
 						isBackEdge = checkBackEdge(node,succNode);
@@ -100,7 +102,7 @@ void DFGPartPred::connectBB() {
 }
 
 void DFGPartPred::removeOutLoopLoad() {
-	outs() << "Removing outloop loads begin...\n";
+	LLVM_DEBUG(dbgs() << "Removing outloop loads begin...\n");
 	std::set<dfgNode*> removalNodes;
 	for(dfgNode* node : NodeList){
 
@@ -126,7 +128,7 @@ void DFGPartPred::removeOutLoopLoad() {
 	}
 
 	for(dfgNode* rn : removalNodes){
-		std::cout << "Removing Node = " << rn->getIdx() << "\n";
+		LLVM_DEBUG(dbgs() << "Removing Node = " << rn->getIdx() << "\n");
 		NodeList.erase(std::remove(NodeList.begin(), NodeList.end(), rn), NodeList.end());
 	}
 
@@ -135,7 +137,7 @@ void DFGPartPred::removeOutLoopLoad() {
 	scheduleASAP();
 	scheduleALAP();
 
-	outs() << "Removing outloop loads end...\n";
+	LLVM_DEBUG(dbgs() << "Removing outloop loads end...\n");
 }
 
 
@@ -203,18 +205,19 @@ int DFGPartPred::handlePHINodes(std::set<BasicBlock*> LoopBB) {
 			std::map<dfgNode*,std::pair<dfgNode*,bool>> mergeNodeControl;
 
 			if(!node->getAncestors().empty()){
-				PHI->dump();
+				LLVM_DEBUG(PHI->dump());
 				assert(false);
 			}
 
-			outs() << "DEBUG........... begin\n";
-			outs() << "PHI :: "; PHI->dump();
+			LLVM_DEBUG(dbgs() << "DEBUG........... begin\n");
+			LLVM_DEBUG(dbgs() << "PHI :: ");
+			LLVM_DEBUG(PHI->dump());
 
 
 			for (int i = 0; i < PHI->getNumIncomingValues(); ++i) {
 				BasicBlock* bb = PHI->getIncomingBlock(i);
 				Value* V = PHI->getIncomingValue(i);
-				outs() << "V :: "; V->dump();
+				LLVM_DEBUG(dbgs() << "V :: ");LLVM_DEBUG( V->dump());
 				//				bool incomingCTRLVal;
 				std::map<dfgNode*,bool> cnodectrlvalmap;
 
@@ -256,10 +259,10 @@ int DFGPartPred::handlePHINodes(std::set<BasicBlock*> LoopBB) {
 							// }
 							// else{
 							// 	BRParentBRI->dump();
-							// 	outs() << BRParentBRI->getSuccessor(0)->getName() << "\n";
-							// 	outs() << BRParentBRI->getSuccessor(1)->getName() << "\n";
-							// 	outs() << currBB->getName() << "\n";
-							// 	outs() << previousCTRLNode->getIdx() << "\n";
+							// 	LLVM_DEBUG(dbgs() << BRParentBRI->getSuccessor(0)->getName() << "\n";
+							// 	LLVM_DEBUG(dbgs() << BRParentBRI->getSuccessor(1)->getName() << "\n";
+							// 	LLVM_DEBUG(dbgs() << currBB->getName() << "\n";
+							// 	LLVM_DEBUG(dbgs() << previousCTRLNode->getIdx() << "\n";
 							// 	assert(false);
 							// }
 							std::set<const BasicBlock*> searchSoFar;
@@ -287,14 +290,14 @@ int DFGPartPred::handlePHINodes(std::set<BasicBlock*> LoopBB) {
 					}
 
 					for(dfgNode* pcn : previousCtrlNodes) {
-						outs() << "pcn idx=" << pcn->getIdx() << ",";
+						LLVM_DEBUG(dbgs() << "pcn idx=" << pcn->getIdx() << ",");
 						if(pcn->getNode()){
-							outs() << "previousCTRLNode : "; pcn->getNode()->dump();
+							LLVM_DEBUG(dbgs() << "previousCTRLNode : "); LLVM_DEBUG(pcn->getNode()->dump());
 						}
 						else{
-							outs() << "\n";
+							LLVM_DEBUG(dbgs() << "\n");
 						}
-						outs() << "CTRL VAL : " << cnodectrlvalmap[pcn] << "\n";
+						LLVM_DEBUG(dbgs() << "CTRL VAL : " << cnodectrlvalmap[pcn] << "\n");
 					}
 
 				}
@@ -363,7 +366,7 @@ int DFGPartPred::handlePHINodes(std::set<BasicBlock*> LoopBB) {
 							mergeNode = insertMergeNode(node,previousCTRLNode,incomingCTRLVal,phiParent);
 						}
 						else{
-							outs() << "mergeNode and control are from the same BB\n";
+							LLVM_DEBUG(dbgs() << "mergeNode and control are from the same BB\n");
 							mergeNode = phiParent;
 							//						if(!isPhiParentOutLoopLoad){
 							//							mergeNodeControl[mergeNode]=std::make_pair(previousCTRLNode,incomingCTRLVal);
@@ -373,13 +376,13 @@ int DFGPartPred::handlePHINodes(std::set<BasicBlock*> LoopBB) {
 					mergeNodes.push_back(mergeNode);
 				}
 			}
-			outs() << "DEBUG........... end\n";
+			LLVM_DEBUG(dbgs() << "DEBUG........... end\n");
 			bool recursivePhiNodes=false;
 
 			for(dfgNode* child : node->getChildren()){
 				for(dfgNode* mergeNode : mergeNodes){
 					if(child == mergeNode){
-						outs() << "recursivePhiNodes found!!!!\n";
+						LLVM_DEBUG(dbgs() << "recursivePhiNodes found!!!!\n");
 						recursivePhiNodes=true;
 						break;
 					}
@@ -392,9 +395,9 @@ int DFGPartPred::handlePHINodes(std::set<BasicBlock*> LoopBB) {
 				if(recursivePhiNodes) break;
 			}
 
-			outs() << "USERS ::::::::::::\n";
+			LLVM_DEBUG(dbgs() << "USERS ::::::::::::\n");
 			for(User* u : PHI->users()){
-				u->dump();
+				LLVM_DEBUG(u->dump());
 				if(PHINode* phiChildIns = dyn_cast<PHINode>(u)){
 					if(dfgNode* phichildnode = findNode(phiChildIns)){
 						recursivePhiNodes=true;
@@ -447,7 +450,7 @@ int DFGPartPred::handlePHINodes(std::set<BasicBlock*> LoopBB) {
 
 					if(!(isInductionVar && isBackEdge)){
 						if(isInductionVar) {
-							outs() << "this is induction variable, node=" << node->getIdx() << ",mergeNode=" << mergeNode->getIdx() << "\n";
+							LLVM_DEBUG(dbgs() << "this is induction variable, node=" << node->getIdx() << ",mergeNode=" << mergeNode->getIdx() << "\n");
 							assert(isBackEdge == false);
 						}
 						node->addAncestorNode(mergeNode,EDGE_TYPE_DATA,isBackEdge);
@@ -462,10 +465,10 @@ int DFGPartPred::handlePHINodes(std::set<BasicBlock*> LoopBB) {
 					node->removeChild(child);
 					child->removeAncestor(node);
 
-					outs() << "PHIChild : " << child->getIdx() << " : ";
+					LLVM_DEBUG(dbgs() << "PHIChild : " << child->getIdx() << " : ");
 
 					for(dfgNode* mergeNode : mergeNodes){
-						outs() << mergeNode->getIdx() << ",";
+						LLVM_DEBUG(dbgs() << mergeNode->getIdx() << ",");
 
 						bool isBackEdge;
 						if(backedgeChildMergeNodes.find(mergeNode)!=backedgeChildMergeNodes.end()){
@@ -489,7 +492,7 @@ int DFGPartPred::handlePHINodes(std::set<BasicBlock*> LoopBB) {
 							control->addChildNode(child,EDGE_TYPE_DATA,isBackEdge,true,controlVal);
 						}
 					}
-					outs() << "\n";
+					LLVM_DEBUG(dbgs() << "\n");
 				}
 			}
 
@@ -733,7 +736,7 @@ void DFGPartPred::removeDisconnetedNodes() {
 	for(dfgNode* removeNode : disconnectedNodes){
 		NodeList.erase(std::remove(NodeList.begin(),NodeList.end(),removeNode), NodeList.end());
 	}
-	outs() << "POST REMOVAL NODE COUNT = " << NodeList.size() << "\n";
+	LLVM_DEBUG(dbgs() << "POST REMOVAL NODE COUNT = " << NodeList.size() << "\n");
 }
 /*
  * This function add CMERGE nodes between SELECT node and its non-CMERGE parents.
@@ -751,7 +754,7 @@ int DFGPartPred::handleSELECTNodes() {
 		if(node->getNode()==NULL) continue;
 		if(SelectInst* SLI = dyn_cast<SelectInst>(node->getNode())){
 			bool isLeafIns=true;
-			SLI->dump();
+			LLVM_DEBUG(SLI->dump());
 			for(dfgNode* parent : node->getAncestors()){
 				if(parent->BB == node->BB){
 					isLeafIns=false;
@@ -765,7 +768,7 @@ int DFGPartPred::handleSELECTNodes() {
 					if(node->ancestorConditionaMap.find(parent)!=node->ancestorConditionaMap.end()){
 						// the condition parent
 						Instruction* selCondIns = cast<Instruction>(SLI->getCondition());
-						selCondIns->dump();
+						LLVM_DEBUG(selCondIns->dump());
 						dfgNode* selCond = findNode(selCondIns);
 						assert(selCond != NULL);
 						combineConditionAND(parent,selCond,node);
@@ -787,9 +790,9 @@ int DFGPartPred::handleSELECTNodes() {
 
 			std::vector<dfgNode*> mergeNodes;
 			std::map<dfgNode*,std::pair<dfgNode*,bool>> mergeNodeControl;
-			SLI->getCondition()->dump();
-			SLI->getFalseValue()->dump();
-			SLI->getTrueValue()->dump();
+			LLVM_DEBUG(SLI->getCondition()->dump());
+			LLVM_DEBUG(SLI->getFalseValue()->dump());
+			LLVM_DEBUG(SLI->getTrueValue()->dump());
 			dfgNode* mergeNode;
 			//Instruction* ins = dyn_cast<Instruction>(V)
 			Instruction* ctrlins = dyn_cast<Instruction>(SLI->getCondition());
@@ -809,12 +812,11 @@ int DFGPartPred::handleSELECTNodes() {
 
 			//Original SELECT instruction has constant,remove the constant value from instruction and supply it from
 			//CMERGE node
-			outs() << "WOODEN:\n";
-			outs() << SLI->getCondition()<<"\n";
-			outs() << SLI->getTrueValue()<<"\n";
-			outs() << SLI->getFalseValue()<<"\n";
+			LLVM_DEBUG(dbgs() << SLI->getCondition()<<"\n");
+			LLVM_DEBUG(dbgs() << SLI->getTrueValue()<<"\n");
+			LLVM_DEBUG(dbgs() << SLI->getFalseValue()<<"\n");
 			ConstantInt* CI = dyn_cast<ConstantInt>(SLI->getTrueValue());
-			outs() << CI<<"\n";
+			LLVM_DEBUG(dbgs() << CI<<"\n");
 			int constant = 0;
 			if(CI){
 				constant = CI->getSExtValue();
@@ -901,15 +903,15 @@ void DFGPartPred::generateTrigDFGDOT(Function &F) {
 	connectBBTrig();
 	createCtrlBROrTree();
 	printDOT(this->name + "bef_handlePHINodes_PartPredDFG.dot");
-	outs() << "\n[DFGPartPred.cpp][handlePHINodes begin]\n";
+	LLVM_DEBUG(dbgs() << "\n[DFGPartPred.cpp][handlePHINodes begin]\n");
 	handlePHINodes(this->loopBB);
 
-	outs() << "\n[DFGPartPred.cpp][handlePHINodes end]\n";
+	LLVM_DEBUG(dbgs() << "\n[DFGPartPred.cpp][handlePHINodes end]\n");
 	printDOT(this->name + "after_handlePHINodes_PartPredDFG.dot");
-	outs() << "\n[DFGPartPred.cpp][handleSELECTNodes begin]\n";
+	LLVM_DEBUG(dbgs() << "\n[DFGPartPred.cpp][handleSELECTNodes begin]\n");
 	handleSELECTNodes();
 
-	outs() << "\n[DFGPartPred.cpp][handleSELECTNodes end]\n";
+	LLVM_DEBUG(dbgs() << "\n[DFGPartPred.cpp][handleSELECTNodes end]\n");
 	printDOT(this->name + "after_handleSELECTNodes_PartPredDFG.dot");
 
 	//exit(true);
@@ -919,32 +921,32 @@ void DFGPartPred::generateTrigDFGDOT(Function &F) {
 	insertshiftGEPsCorrect();
 	//removeDisconnetedNodes();
 	//	scheduleCleanBackedges();
-	outs() << "\n[DFGPartPred.cpp][fillCMergeMutexNodes begin]\n";
+	LLVM_DEBUG(dbgs() << "\n[DFGPartPred.cpp][fillCMergeMutexNodes begin]\n");
 	fillCMergeMutexNodes();
-	outs() << "\n[DFGPartPred.cpp][fillCMergeMutexNodes end]\n";
+	LLVM_DEBUG(dbgs() << "\n[DFGPartPred.cpp][fillCMergeMutexNodes end]\n");
 
 
-	outs() << "\n[DFGPartPred.cpp][constructCMERGETree begin]\n";
+	LLVM_DEBUG(dbgs() << "\n[DFGPartPred.cpp][constructCMERGETree begin]\n");
 	constructCMERGETree();
-	outs() << "\n[DFGPartPred.cpp][constructCMERGETree end]\n";
+	LLVM_DEBUG(dbgs() << "\n[DFGPartPred.cpp][constructCMERGETree end]\n");
 
 	//	printDOT(this->name + "_PartPredDFG.dot"); return;
-	outs() << "\n[DFGPartPred.cpp][addLoopExitStoreHyCUBE begin]\n";
+	LLVM_DEBUG(dbgs() << "\n[DFGPartPred.cpp][addLoopExitStoreHyCUBE begin]\n");
 	addLoopExitStoreHyCUBE(exitNodes);
-	outs() << "[DFGPartPred.cpp][addLoopExitStoreHyCUBE end]\n\n";
-	outs() << "\n[DFGPartPred.cpp][handlestartstop begin]\n";
+	LLVM_DEBUG(dbgs() << "[DFGPartPred.cpp][addLoopExitStoreHyCUBE end]\n\n");
+	LLVM_DEBUG(dbgs() << "\n[DFGPartPred.cpp][handlestartstop begin]\n");
 	handlestartstop();
-	outs() << "[DFGPartPred.cpp][handlestartstop end] Nodelist size:" <<NodeList.size()<<"\n\n";
+	LLVM_DEBUG(dbgs() << "[DFGPartPred.cpp][handlestartstop end] Nodelist size:" <<NodeList.size()<<"\n\n");
 
 	//	printDOT(this->name + "afterhandlestartstop_PartPredDFG.dot");
-	outs() << "\n[DFGPartPred.cpp][scheduleASAP begin]\n";
+	LLVM_DEBUG(dbgs() << "\n[DFGPartPred.cpp][scheduleASAP begin]\n");
 	scheduleASAP();
-	outs() << "[DFGPartPred.cpp][scheduleASAP end]\n\n";
+	LLVM_DEBUG(dbgs() << "[DFGPartPred.cpp][scheduleASAP end]\n\n");
 	//	printDOT(this->name + "afterscheduleASAP_PartPredDFG.dot");
 	//	return;
-	outs() << "\n[DFGPartPred.cpp][scheduleALAP begin]\n";
+	LLVM_DEBUG(dbgs() << "\n[DFGPartPred.cpp][scheduleALAP begin]\n");
 	scheduleALAP();
-	outs() << "[DFGPartPred.cpp][scheduleALAP end]\n\n";
+	LLVM_DEBUG(dbgs() << "[DFGPartPred.cpp][scheduleALAP end]\n\n");
 	// assignALAPasASAP();
 	//	balanceSched();
 
@@ -954,26 +956,26 @@ void DFGPartPred::generateTrigDFGDOT(Function &F) {
 	int baseline_node_count = NodeList.size();
 	removeAGI();
 	int post_removal_node_count = NodeList.size();
-	outs() << "-------------------------------------BASELINE NODE COUNT = " << baseline_node_count << "\n";
-	outs() << "-------------------------------------POST REMOVAL NODE COUNT = " << post_removal_node_count << "\n";
+	LLVM_DEBUG(dbgs() << "-------------------------------------BASELINE NODE COUNT = " << baseline_node_count << "\n");
+	LLVM_DEBUG(dbgs() << "-------------------------------------POST REMOVAL NODE COUNT = " << post_removal_node_count << "\n");
 
-	outs() << "\n[DFGPartPred.cpp][scheduleASAP begin]\n";
+	LLVM_DEBUG(dbgs() << "\n[DFGPartPred.cpp][scheduleASAP begin]\n");
 	scheduleASAP();
-	outs() << "[DFGPartPred.cpp][scheduleASAP end]\n\n";
-	outs() << "\n[DFGPartPred.cpp][scheduleALAP begin]\n";
+	LLVM_DEBUG(dbgs() << "[DFGPartPred.cpp][scheduleASAP end]\n\n");
+	LLVM_DEBUG(dbgs() << "\n[DFGPartPred.cpp][scheduleALAP begin]\n");
 	scheduleALAP();
-	outs() << "[DFGPartPred.cpp][scheduleALAP end]\n\n";
+	LLVM_DEBUG(dbgs() << "[DFGPartPred.cpp][scheduleALAP end]\n\n");
 
-	outs() << "\n[DFGPartPred.cpp][nameNodes begin]\n";
+	LLVM_DEBUG(dbgs() << "\n[DFGPartPred.cpp][nameNodes begin]\n");
 	nameNodes();
-	outs() << "[DFGPartPred.cpp][nameNodes end]\n\n";
+	LLVM_DEBUG(dbgs() << "[DFGPartPred.cpp][nameNodes end]\n\n");
 
-	outs() << "\n[DFGPartPred.cpp][classifyParents begin]\n";
+	LLVM_DEBUG(dbgs() << "\n[DFGPartPred.cpp][classifyParents begin]\n");
 	classifyParents();
-	outs() << "[DFGPartPred.cpp][classifyParents end]\n\n";
-	outs() << "\n[DFGPartPred.cpp][removeDisconnectedNodes begin]\n";
+	LLVM_DEBUG(dbgs() << "[DFGPartPred.cpp][classifyParents end]\n\n");
+	LLVM_DEBUG(dbgs() << "\n[DFGPartPred.cpp][removeDisconnectedNodes begin]\n");
 	removeDisconnetedNodes();
-	outs() << "[DFGPartPred.cpp][removeDisconnectedNodes end]\n\n";
+	LLVM_DEBUG(dbgs() << "[DFGPartPred.cpp][removeDisconnectedNodes end]\n\n");
 //
 //	changeTypeofSingleSourceCompNodes();
 //	removeDisconnetedNodes();
@@ -983,41 +985,41 @@ void DFGPartPred::generateTrigDFGDOT(Function &F) {
 
 #else
 
-	outs() << "\n[DFGPartPred.cpp][GEPBaseAddrCheck begin]\n";
+	LLVM_DEBUG(dbgs() << "\n[DFGPartPred.cpp][GEPBaseAddrCheck begin]\n");
 	GEPBaseAddrCheck(F);
-	outs() << "[DFGPartPred.cpp][GEPBaseAddrCheck end]\n\n";
-	outs() << "\n[DFGPartPred.cpp][nameNodes begin]\n";
+	LLVM_DEBUG(dbgs() << "[DFGPartPred.cpp][GEPBaseAddrCheck end]\n\n");
+	LLVM_DEBUG(dbgs() << "\n[DFGPartPred.cpp][nameNodes begin]\n");
 	nameNodes();
-	outs() << "[DFGPartPred.cpp][nameNodes end]\n\n";
-	outs() << "\n[DFGPartPred.cpp][classifyParents begin]\n";
+	LLVM_DEBUG(dbgs() << "[DFGPartPred.cpp][nameNodes end]\n\n");
+	LLVM_DEBUG(dbgs() << "\n[DFGPartPred.cpp][classifyParents begin]\n");
 	classifyParents();
 	// RemoveInductionControlLogic();
 
 	// RemoveBackEdgePHIs();
 	// removeOutLoopLoad();
 	//	RemoveConstantCMERGEs(); Originally on morpher
-	outs() << "[DFGPartPred.cpp][classifyParents end]\n\n";
-	outs() << "\n[DFGPartPred.cpp][removeDisconnectedNodes begin]\n";
+	LLVM_DEBUG(dbgs() << "[DFGPartPred.cpp][classifyParents end]\n\n");
+	LLVM_DEBUG(dbgs() << "\n[DFGPartPred.cpp][removeDisconnectedNodes begin]\n");
 	//removeDisconnectedNodes();
-	outs() << "[DFGPartPred.cpp][removeDisconnectedNodes end]\n\n";
-	outs() << "\n[DFGPartPred.cpp][addOrphanPseudoEdges begin]\n";
+	LLVM_DEBUG(dbgs() << "[DFGPartPred.cpp][removeDisconnectedNodes end]\n\n");
+	LLVM_DEBUG(dbgs() << "\n[DFGPartPred.cpp][addOrphanPseudoEdges begin]\n");
 	addOrphanPseudoEdges();
-	outs() << "[DFGPartPred.cpp][addOrphanPseudoEdges end]\n\n";
-	outs() << "\n[DFGPartPred.cpp][addRecConnsAsPseudo begin]\n";
+	LLVM_DEBUG(dbgs() << "[DFGPartPred.cpp][addOrphanPseudoEdges end]\n\n");
+	LLVM_DEBUG(dbgs() << "\n[DFGPartPred.cpp][addRecConnsAsPseudo begin]\n");
 	addRecConnsAsPseudo();
-	outs() << "[DFGPartPred.cpp][addRecConnsAsPseudo end]\n\n";
-	outs() << "\n[DFGPartPred.cpp][changeTypeofSingleSourceCompNodes begin]\n";
+	LLVM_DEBUG(dbgs() << "[DFGPartPred.cpp][addRecConnsAsPseudo end]\n\n");
+	LLVM_DEBUG(dbgs() << "\n[DFGPartPred.cpp][changeTypeofSingleSourceCompNodes begin]\n");
 	// printDOT(this->name + "_PartPredDFG.dot");
 	// printNewDFGXML();
 	changeTypeofSingleSourceCompNodes();
-	outs() << "[DFGPartPred.cpp][changeTypeofSingleSourceCompNodes end]\n\n";
-	outs() << "\n[DFGPartPred.cpp][removeDisconnectedNodes begin]\n";
+	LLVM_DEBUG(dbgs() << "[DFGPartPred.cpp][changeTypeofSingleSourceCompNodes end]\n\n");
+	LLVM_DEBUG(dbgs() << "\n[DFGPartPred.cpp][removeDisconnectedNodes begin]\n");
 
 
 	//function removeDisconnetedNodes() should be called at last, otherwise same idx would be reused
 	//when new instructions are added
 	removeDisconnetedNodes();
-	outs() << "[DFGPartPred.cpp][removeDisconnectedNodes end]\n\n";
+	LLVM_DEBUG(dbgs() << "[DFGPartPred.cpp][removeDisconnectedNodes end]\n\n");
 #endif
 }
 
@@ -1086,7 +1088,7 @@ bool DFGPartPred::checkPHILoop(dfgNode* node1, dfgNode* node2) {
 					break;
 				}
 			}
-			if(is2isParentOf1 & is1isParentOf2) outs() << "PHI LOOP FOUND!!!!!!\n";
+			if(is2isParentOf1 & is1isParentOf2) LLVM_DEBUG(dbgs() << "PHI LOOP FOUND!!!!!!\n");
 			return is2isParentOf1 & is1isParentOf2;
 		}
 		else{
@@ -1119,11 +1121,11 @@ bool DFGPartPred::checkBRPath(const BranchInst* BRParentBRI, const BasicBlock* c
 			}
 		}
 
-		BRParentBRI->dump();
-		outs() << BRParentBRI->getSuccessor(0)->getName() << "\n";
-		outs() << BRParentBRI->getSuccessor(1)->getName() << "\n";
-		outs() << currBB->getName() << "\n";
-		BRParentBRI->dump();
+		LLVM_DEBUG(BRParentBRI->dump());
+		LLVM_DEBUG(dbgs() << BRParentBRI->getSuccessor(0)->getName() << "\n");
+		LLVM_DEBUG(dbgs() << BRParentBRI->getSuccessor(1)->getName() << "\n");
+		LLVM_DEBUG(dbgs() << currBB->getName() << "\n");
+		LLVM_DEBUG(BRParentBRI->dump());
 		return false;
 	}
 
@@ -1167,7 +1169,7 @@ void DFGPartPred::fillCMergeMutexNodes() {
 		std::set<dfgNode*> currMutexSet;
 		if(node->getNode()!=NULL){
 			if(SelectInst* SLI = dyn_cast<SelectInst>(node->getNode())){
-				std::cout<< "SELECT instruction. No need to add SELECTPHI instruction through constructCMERGETree function\n" ;
+				LLVM_DEBUG( dbgs()<< "SELECT instruction. No need to add SELECTPHI instruction through constructCMERGETree function\n") ;
 				continue;
 			}
 		}
@@ -1204,26 +1206,26 @@ void DFGPartPred::constructCMERGETree() {
 		std::queue<dfgNode*> thisIterSet;
 		std::queue<dfgNode*> nextIterSet;
 
-		outs() << "CMERGE(ThisIter) set =";
+		LLVM_DEBUG(dbgs() << "CMERGE(ThisIter) set =");
 		for(dfgNode* cmergeNode : cmergeSet){
 			bool isBackEdge=false;
-			outs() << "CMERGE Tree children = "; 
+			LLVM_DEBUG(dbgs() << "CMERGE Tree children = ");
 			for(dfgNode* child : mutexSetCommonChildren[cmergeSet]){
-				outs() << child->getIdx();
+				LLVM_DEBUG(dbgs() << child->getIdx());
 				if(isBackEdge) assert(cmergeNode->childBackEdgeMap[child] == true);
 				if(cmergeNode->childBackEdgeMap[child]){
 					isBackEdge = true;
-					outs() << "[BE]";
+					LLVM_DEBUG(dbgs() << "[BE]");
 				}
-				outs() << ",";
+				LLVM_DEBUG(dbgs() << ",");
 			}
-			outs() << "\n";
+			LLVM_DEBUG(dbgs() << "\n");
 
 			if(mutexSetCommonChildren[cmergeSet].size() == 1){
 				dfgNode* singleChild = *mutexSetCommonChildren[cmergeSet].begin();
 				if(singleChild->getNode() && (dyn_cast<PHINode>(singleChild->getNode()) || dyn_cast<SelectInst>(singleChild->getNode()))){
 					realphi_as_selectphi.insert(singleChild);
-					outs() << "Only single child is a phi node, hence marking it as a SELECTPHI\n";
+					LLVM_DEBUG(dbgs() << "Only single child is a phi node, hence marking it as a SELECTPHI\n");
 				}
 			}
 
@@ -1232,37 +1234,37 @@ void DFGPartPred::constructCMERGETree() {
 				nextIterSet.push(cmergeNode);
 			}
 			else{
-				outs() << cmergeNode->getIdx() << ",";
+				LLVM_DEBUG(dbgs() << cmergeNode->getIdx() << ",");
 				selectPHIAncestorMap[cmergeNode]=cmergePHINodes[cmergeNode];
 				thisIterSet.push(cmergeNode);
 			}
 		}
-		outs() << "\n";
+		LLVM_DEBUG(dbgs() << "\n");
 
 		if(thisIterSet.size() + nextIterSet.size() <= 1) continue;
 
-		std::cout << "This ITER connections CMERGE Tree.\n";
+		LLVM_DEBUG(dbgs() << "This ITER connections CMERGE Tree.\n");
 		while(!thisIterSet.empty()){
 			dfgNode* cmerge_left = thisIterSet.front(); thisIterSet.pop();
-			std::cout << "CMERGE LEFT : " << cmerge_left->getIdx() << ",";
+			LLVM_DEBUG(dbgs() << "CMERGE LEFT : " << cmerge_left->getIdx() << ",");
 			if(thisIterSet.empty()){ //odd number of nodes
 
 			}
 			else{
 				dfgNode* cmerge_right = thisIterSet.front(); thisIterSet.pop();
 				//				if(thisIterSet.empty()){
-				//					std::cout << "\n";
+				//					LLVM_DEBUG(dbgs() << "\n";
 				//					continue; //no need to merge the last two;
 				//				}
 
-				std::cout << "CMERGE RIGHT : " << cmerge_right->getIdx() << ",";
+				LLVM_DEBUG(dbgs() << "CMERGE RIGHT : " << cmerge_right->getIdx() << ",");
 				dfgNode* temp = new dfgNode(this);
 				temp->setIdx(1000 + NodeList.size());
 				temp->setNameType("SELECTPHI");
 				temp->BB = cmerge_left->BB;
 				NodeList.push_back(temp);
 				selectPHIAncestorMap[temp] = selectPHIAncestorMap[cmerge_left];
-				std::cout << "CREATING NEW NODE = " << temp->getIdx() << ",";
+				LLVM_DEBUG(dbgs() << "CREATING NEW NODE = " << temp->getIdx() << ",");
 
 				//				assert(cmerge_left->getChildren().size() == cmerge_right->getChildren().size());
 				std::set<dfgNode*> cmergeLeftChildrenOrig = mutexSetCommonChildren[cmergeSet];
@@ -1293,30 +1295,30 @@ void DFGPartPred::constructCMERGETree() {
 				}
 				thisIterSet.push(temp);
 			}
-			std::cout << "\n";
+			LLVM_DEBUG(dbgs() << "\n");
 		}
 
-		std::cout << "Next ITER connections CMERGE Tree.\n";
+		LLVM_DEBUG(dbgs() << "Next ITER connections CMERGE Tree.\n");
 		while(!nextIterSet.empty()){
 			dfgNode* cmerge_left = nextIterSet.front(); nextIterSet.pop();
-			std::cout << "CMERGE LEFT : " << cmerge_left->getIdx() << ",";
+			LLVM_DEBUG(dbgs() << "CMERGE LEFT : " << cmerge_left->getIdx() << ",");
 			if(nextIterSet.empty()){ //odd number of nodes
 
 			}
 			else{
 				dfgNode* cmerge_right = nextIterSet.front(); nextIterSet.pop();
 				//				if(nextIterSet.empty()) {
-				//					std::cout << "\n";
+				//					LLVM_DEBUG(dbgs() << "\n";
 				//					continue; //no need to merge the last two;
 				//				}
 
-				std::cout << "CMERGE RIGHT : " << cmerge_right->getIdx() << ",";
+				LLVM_DEBUG(dbgs() << "CMERGE RIGHT : " << cmerge_right->getIdx() << ",");
 				dfgNode* temp = new dfgNode(this);
 				temp->setIdx(1000 + NodeList.size());
 				temp->setNameType("SELECTPHI");
 				temp->BB = cmerge_left->BB;
 				NodeList.push_back(temp);
-				std::cout << "CREATING NEW NODE = " << temp->getIdx() << ",";
+				LLVM_DEBUG(dbgs() << "CREATING NEW NODE = " << temp->getIdx() << ",");
 				selectPHIAncestorMap[temp] = selectPHIAncestorMap[cmerge_left];
 
 				//				assert(cmerge_left->getChildren().size() == cmerge_right->getChildren().size());
@@ -1338,7 +1340,7 @@ void DFGPartPred::constructCMERGETree() {
 				}
 				nextIterSet.push(temp);
 			}
-			std::cout << "\n";
+			LLVM_DEBUG(dbgs() << "\n");
 		}
 	}
 }
@@ -1369,7 +1371,7 @@ void DFGPartPred::scheduleASAP() {
 
 	std::set<dfgNode*> visitedNodes;
 
-	outs() << "Schedule ASAP ..... \n";
+	LLVM_DEBUG(dbgs() << "Schedule ASAP ..... \n");
 
 
 	while(!q.empty()){
@@ -1409,7 +1411,7 @@ void DFGPartPred::scheduleASAP() {
 		level++;
 	}
 #ifdef REMOVE_AGI
-	std::cout << "Visited nodes size : " << visitedNodes.size() << ", Nodes list size:" << NodeList.size() << endl;
+	LLVM_DEBUG(dbgs() << "Visited nodes size : " << visitedNodes.size() << ", Nodes list size:" << NodeList.size() << endl);
 #else
 	assert(visitedNodes.size() == NodeList.size());
 #endif
@@ -1442,7 +1444,7 @@ void DFGPartPred::scheduleALAP() {
 	int level = maxASAPLevel;
 	std::set<dfgNode*> visitedNodes;
 
-	outs() << "Schedule ALAP ..... \n";
+	LLVM_DEBUG(dbgs() << "Schedule ALAP ..... \n");
 
 	while(!q.empty()){
 		assert(level >= 0);
@@ -1506,9 +1508,9 @@ void DFGPartPred::balanceSched() {
 void DFGPartPred::printNewDFGXML() {
 
 
-	std::string fileName = name + "_PartPred_DFG.xml";
+	std::string fileName = kernelname + "_PartPredDFG.xml";
 #ifdef REMOVE_AGI
-	fileName = name + "_PartPred_AGI_REMOVED_DFG.xml";
+	fileName = kernelname + "_PartPred_AGI_REMOVED_DFG.xml";
 #endif
 	std::ofstream xmlFile;
 	xmlFile.open(fileName.c_str());
@@ -1692,7 +1694,7 @@ void DFGPartPred::printNewDFGXML() {
 							xmlFile << "type=\"I2\"/>\n";
 						}
 						else{
-							outs() << "node=" << node->getIdx() << ",child=" << child->getIdx() << "\n";
+							LLVM_DEBUG(dbgs() << "node=" << node->getIdx() << ",child=" << child->getIdx() << "\n");
 							assert(false);
 						}
 					}
@@ -1701,9 +1703,10 @@ void DFGPartPred::printNewDFGXML() {
 			else if(node->getNameType()=="SELECTPHI" && (child != selectPHIAncestorMap[node])){
 				if(child->getNode()){
 					written = true;
-					outs() << "SELECTPHI :: " << node->getIdx();
-					outs() << ",child = " << child->getIdx() << " | "; child->getNode()->dump();
-					outs() << ",phiancestor = " << selectPHIAncestorMap[node]->getIdx() << " | "; selectPHIAncestorMap[node]->getNode()->dump();
+					LLVM_DEBUG(dbgs() << "SELECTPHI :: " << node->getIdx());
+					LLVM_DEBUG(dbgs() << ",child = " << child->getIdx() << " | "); LLVM_DEBUG(child->getNode()->dump());
+					LLVM_DEBUG(dbgs() << ",phiancestor = " << selectPHIAncestorMap[node]->getIdx() << " | ");
+					LLVM_DEBUG(selectPHIAncestorMap[node]->getNode()->dump());
 
 					int operand_no = findOperandNumber(child,child->getNode(),selectPHIAncestorMap[node]->getNode());
 					if( operand_no == 0){
@@ -1725,7 +1728,7 @@ void DFGPartPred::printNewDFGXML() {
 						xmlFile << "type=\"I2\"/>\n";
 					}
 					else{
-						outs() << "node = " << node->getIdx() << ", child = " << child->getIdx() << "\n";
+						LLVM_DEBUG(dbgs() << "node = " << node->getIdx() << ", child = " << child->getIdx() << "\n");
 						assert(false);
 					}
 				}
@@ -1786,7 +1789,7 @@ void DFGPartPred::printNewDFGXML() {
 				}
 
 				if(!found){
-					outs() << "node = " << node->getIdx() <<"child getNameType= " << child->getNameType() << ", child = " << child->getIdx() << "\n";
+					LLVM_DEBUG(dbgs() << "node = " << node->getIdx() <<"child getNameType= " << child->getNameType() << ", child = " << child->getIdx() << "\n");
 				}
 
 				assert(found);
@@ -1832,14 +1835,14 @@ int DFGPartPred::classifyParents() {
 	for (int i = 0; i < NodeList.size(); ++i) {
 		node = NodeList[i];
 
-		outs() << "classifyParent::currentNode = " << node->getIdx() << "\n";
-		outs() << "Parents : ";
+		LLVM_DEBUG(dbgs() << "classifyParent::currentNode = " << node->getIdx() << "\n");
+		LLVM_DEBUG(dbgs() << "Parents : ");
 		parent_count=0;
 		for (dfgNode* parent : node->getAncestors()) {
-			outs() << parent->getIdx() << ",";
+			LLVM_DEBUG(dbgs() << parent->getIdx() << ",");
 			parent_count++;
 		}
-		outs() << "\n";
+		LLVM_DEBUG(dbgs() << "\n");
 
 		for (dfgNode* parent : node->getAncestors()) {
 			Instruction* ins;
@@ -2005,10 +2008,10 @@ int DFGPartPred::classifyParents() {
 
 
 			if(dyn_cast<PHINode>(ins)){
-				if(parent->getNode() != NULL) parent->getNode()->dump();
-				outs() << "node : " << node->getIdx() << "\n";
-				outs() << "Parent : " << parent->getIdx() << "\n";
-				outs() << "Parent NameType : " << parent->getNameType() << "\n";
+				if(parent->getNode() != NULL) LLVM_DEBUG(parent->getNode()->dump());
+				LLVM_DEBUG(dbgs() << "node : " << node->getIdx() << "\n");
+				LLVM_DEBUG(dbgs() << "Parent : " << parent->getIdx() << "\n");
+				LLVM_DEBUG(dbgs() << "Parent NameType : " << parent->getNameType() << "\n");
 
 				if(parent->getNode()){
 					if(dyn_cast<BranchInst>(parent->getNode())){
@@ -2026,7 +2029,7 @@ int DFGPartPred::classifyParents() {
 					node->parentClassification[2]=parent;
 				}
 				else{
-					outs() << "Extra parent : " << parent->getIdx() << ",Nametype = " << parent->getNameType() << ",par_idx = " << node->parentClassification.size()+1 << "\n";
+					LLVM_DEBUG(dbgs() << "Extra parent : " << parent->getIdx() << ",Nametype = " << parent->getNameType() << ",par_idx = " << node->parentClassification.size()+1 << "\n");
 					node->parentClassification[node->parentClassification.size()+1]=parent;
 				}
 				continue;
@@ -2034,9 +2037,9 @@ int DFGPartPred::classifyParents() {
 
 			if( dyn_cast<SelectInst>(ins) ){
 
-				outs() << "node : " << node->getIdx() << "\n";
-				outs() << "Parent : " << parent->getIdx() << "\n";
-				outs() << "Parent NameType : " << parent->getNameType() << "\n";
+				LLVM_DEBUG(dbgs() << "node : " << node->getIdx() << "\n");
+				LLVM_DEBUG(dbgs() << "Parent : " << parent->getIdx() << "\n");
+				LLVM_DEBUG(dbgs() << "Parent NameType : " << parent->getNameType() << "\n");
 
 				if(parent->getNode()){
 					if(dyn_cast<BranchInst>(parent->getNode())){
@@ -2054,7 +2057,7 @@ int DFGPartPred::classifyParents() {
 					node->parentClassification[2]=parent;
 				}
 				else{
-					outs() << "Extra parent : " << parent->getIdx() << ",Nametype = " << parent->getNameType() << ",par_idx = " << node->parentClassification.size()+1 << "\n";
+					LLVM_DEBUG(dbgs() << "Extra parent : " << parent->getIdx() << ",Nametype = " << parent->getNameType() << ",par_idx = " << node->parentClassification.size()+1 << "\n");
 					node->parentClassification[node->parentClassification.size()+1]=parent;
 				}
 				continue;
@@ -2127,25 +2130,25 @@ int DFGPartPred::classifyParents() {
 					//							node->parentClassification[2]=parent;
 					//						}
 					//						else{
-					//							outs() << "Extra parent : " << parent->getIdx() << ",Nametype = " << parent->getNameType() << ",par_idx = " << node->parentClassification.size()+1 << "\n";
+					//							LLVM_DEBUG(dbgs() << "Extra parent : " << parent->getIdx() << ",Nametype = " << parent->getNameType() << ",par_idx = " << node->parentClassification.size()+1 << "\n";
 					//							node->parentClassification[node->parentClassification.size()+1]=parent;
 					//						}
 					//						continue;
 
 					parentIns = cmergePHINodes[parent]->getNode();
-					outs() << "CMERGE Parent" << parent->getIdx() << "to non-nametype child=" << node->getIdx() << ".\n";
-					outs() << "parentIns = "; parentIns->dump();
-					outs() << "node = "; node->getNode()->dump();
-					outs() << "OpNumber = " << findOperandNumber(node, ins,parentIns) << "\n";
+					LLVM_DEBUG(dbgs() << "CMERGE Parent" << parent->getIdx() << "to non-nametype child=" << node->getIdx() << ".\n");
+					LLVM_DEBUG(dbgs() << "parentIns = "); LLVM_DEBUG(parentIns->dump());
+					LLVM_DEBUG(dbgs() << "node = "); LLVM_DEBUG(node->getNode()->dump());
+					LLVM_DEBUG(dbgs() << "OpNumber = " << findOperandNumber(node, ins,parentIns) << "\n");
 
 					assert(parentIns);
 				}
 				if(parent->getNameType().compare("SELECTPHI")==0){
 					parentIns = selectPHIAncestorMap[parent]->getNode();
-					outs() << "SELECTPHI Parent" << parent->getIdx() << "to non-nametype child=" << node->getIdx() << ".\n";
-					outs() << "parentIns = "; parentIns->dump();
-					outs() << "node = "; node->getNode()->dump();
-					outs() << "OpNumber = " << findOperandNumber(node, ins,parentIns) << "\n";
+					LLVM_DEBUG(dbgs() << "SELECTPHI Parent" << parent->getIdx() << "to non-nametype child=" << node->getIdx() << ".\n");
+					LLVM_DEBUG(dbgs() << "parentIns = "); LLVM_DEBUG(parentIns->dump());
+					LLVM_DEBUG(dbgs() << "node = "); LLVM_DEBUG(node->getNode()->dump());
+					LLVM_DEBUG(dbgs() << "OpNumber = " << findOperandNumber(node, ins,parentIns) << "\n");
 
 					assert(parentIns);
 				}
@@ -2163,7 +2166,7 @@ int DFGPartPred::classifyParents() {
 			if(parent_count < 2 && node->hasConstantVal()==false && (HyCUBEInsStrings[node->getFinalIns()].compare("MUL")==0 || HyCUBEInsStrings[node->getFinalIns()].compare("ADD")==0 || HyCUBEInsStrings[node->getFinalIns()].compare("SUB")==0)){
 				node->parentClassification.erase(1);node->parentClassification.erase(2);
 				node->parentClassification[3]=parent;
-				outs() <<"Has Const:" <<node->hasConstantVal()<<", Single source dest node:" << node->getIdx() << ", source node:" << parent->getIdx() << "\n";
+				LLVM_DEBUG(dbgs() <<"Has Const:" <<node->hasConstantVal()<<", Single source dest node:" << node->getIdx() << ", source node:" << parent->getIdx() << "\n");
 			}
 
 
@@ -2187,7 +2190,7 @@ void DFGPartPred::addRecConnsAsPseudo() {
 
 	for(dfgNode* node : NodeList){
 		for(dfgNode* recParent : node->getRecAncestors()){
-			outs() << "Adding rec Pseudo Connection :: parent=" << recParent->getIdx() << ",to" << node->getIdx() << "\n";
+			LLVM_DEBUG(dbgs() << "Adding rec Pseudo Connection :: parent=" << recParent->getIdx() << ",to" << node->getIdx() << "\n");
 			removeEdge(findEdge(recParent,node));
 			recParent->addChildNode(node,EDGE_TYPE_PS,false,true,true);
 			node->addAncestorNode(recParent,EDGE_TYPE_PS,false,true,true);
@@ -2213,7 +2216,7 @@ void DFGPartPred::addOrphanPseudoEdges() {
 
 	for(dfgNode* node : NodeList){
 		for(dfgNode* recParent : node->getRecAncestors()){
-			outs() << "child = " << node->getIdx() << ", recparent = " << recParent->getIdx() << "\n";
+			LLVM_DEBUG(dbgs() << "child = " << node->getIdx() << ", recparent = " << recParent->getIdx() << "\n");
 			if(recParent->getALAPnumber() == recParent->getASAPnumber()) continue;
 			RecParents.insert(recParent);
 		}
@@ -2238,11 +2241,11 @@ void DFGPartPred::addOrphanPseudoEdges() {
 
 	for(dfgNode* node : RecParents){
 
-		outs() << "Searching for recParent=" << node->getIdx() << "\n";
+		LLVM_DEBUG(dbgs() << "Searching for recParent=" << node->getIdx() << "\n");
 
 		//		for(dfgNode* parCand : NodeList){
 		//			if(parCand->getASAPnumber() == node->getALAPnumber()-1 && parCand->getALAPnumber() == node->getALAPnumber()-1){
-		//				outs() << "Adding Pseudo Connection :: parent=" << parCand->getIdx() << ",to" << node->getIdx() << "\n";
+		//				LLVM_DEBUG(dbgs() << "Adding Pseudo Connection :: parent=" << parCand->getIdx() << ",to" << node->getIdx() << "\n";
 		//				parCand->addChildNode(node,EDGE_TYPE_PS,false,true,true);
 		//				node->addAncestorNode(parCand,EDGE_TYPE_PS,false,true,true);
 		//				node->parentClassification[0]=parCand;
@@ -2294,17 +2297,17 @@ void DFGPartPred::addOrphanPseudoEdges() {
 
 		if(!criticalChild){
 			if(!critCand){
-				outs() << "NO critChild and NO critCand! continue...\n";
+				LLVM_DEBUG(dbgs() << "NO critChild and NO critCand! continue...\n");
 				continue;
 			}
-			outs() << "No critChild , but critCand = " << critCand->getIdx()  << ",with startDiff = " << startdiff << "\n";
+			LLVM_DEBUG(dbgs() << "No critChild , but critCand = " << critCand->getIdx()  << ",with startDiff = " << startdiff << "\n");
 			criticalChild = critCand;
 			//			for(dfgNode* n : NodeList){
 			//				if(n == node) continue;
 			//				if(n->getALAPnumber() == node->getALAPnumber() - 1){
 			//
 			//					dfgNode* pseduoParent = n;
-			//					outs() << "Adding Pseudo Connection :: parent=" << pseduoParent->getIdx() << ",to" << node->getIdx() << "\n";
+			//					LLVM_DEBUG(dbgs() << "Adding Pseudo Connection :: parent=" << pseduoParent->getIdx() << ",to" << node->getIdx() << "\n";
 			//					pseduoParent->addChildNode(node,EDGE_TYPE_PS,false);
 			//					node->addAncestorNode(pseduoParent,EDGE_TYPE_PS,false);
 			//				}
@@ -2325,7 +2328,7 @@ void DFGPartPred::addOrphanPseudoEdges() {
 			for(dfgNode* n : curr){
 				//				if(n->getASAPnumber() == n->getALAPnumber()){
 				//					if(n->getALAPnumber() == node->getALAPnumber()){
-				outs() << "n=" << n->getIdx() << ",diff=" << n->getALAPnumber() - n->getASAPnumber() << "\n";
+				LLVM_DEBUG(dbgs() << "n=" << n->getIdx() << ",diff=" << n->getALAPnumber() - n->getASAPnumber() << "\n");
 				if(n->getALAPnumber() - n->getASAPnumber() <= startdiff &&
 						n->getALAPnumber() < node->getALAPnumber() &&
 						(n->getASAPnumber() < maxDelayASAP[node] - 1)
@@ -2337,7 +2340,7 @@ void DFGPartPred::addOrphanPseudoEdges() {
 					if(std::find(node_childs.begin(),node_childs.end(),pseduoParent) == node_childs.end()
 							&& !node->isParent(pseduoParent)){
 						//pseudoparent is not a child of the node
-						outs() << "Adding Pseudo Connection :: parent=" << pseduoParent->getIdx() << ",to" << node->getIdx() << "\n";
+						LLVM_DEBUG(dbgs() << "Adding Pseudo Connection :: parent=" << pseduoParent->getIdx() << ",to" << node->getIdx() << "\n");
 						pseduoParent->addChildNode(node,EDGE_TYPE_PS,false,true,true);
 						node->addAncestorNode(pseduoParent,EDGE_TYPE_PS,false,true,true);
 
@@ -2359,7 +2362,7 @@ void DFGPartPred::addOrphanPseudoEdges() {
 
 		assert(pseduoParent);
 
-		//		outs() << "Adding Pseudo Connection :: parent=" << pseduoParent->getIdx() << ",to" << node->getIdx() << "\n";
+		//		LLVM_DEBUG(dbgs() << "Adding Pseudo Connection :: parent=" << pseduoParent->getIdx() << ",to" << node->getIdx() << "\n";
 		//		pseduoParent->addChildNode(node,EDGE_TYPE_PS,false,true,true);
 		//		node->addAncestorNode(pseduoParent,EDGE_TYPE_PS,false,true,true);
 
@@ -2383,7 +2386,7 @@ void DFGPartPred::addOrphanPseudoEdges() {
 		//		if(!asapcousin.empty()){
 		//			dfgNode* latestCousin = (*asapcousin.rbegin()).second;
 		//
-		//			outs() << "Adding Pseudo Connection :: parent=" << latestCousin->getIdx() << ",to" << node->getIdx() << "\n";
+		//			LLVM_DEBUG(dbgs() << "Adding Pseudo Connection :: parent=" << latestCousin->getIdx() << ",to" << node->getIdx() << "\n";
 		//			latestCousin->addChildNode(node,EDGE_TYPE_PS,false,true,true);
 		//			node->addAncestorNode(latestCousin,EDGE_TYPE_PS,false,true,true);
 		//			node->parentClassification[0]=latestCousin;
@@ -2438,13 +2441,13 @@ dfgNode* DFGPartPred::addLoadParent(Value* ins, dfgNode* child) {
 	else{
 
 		if(dyn_cast<ArrayType>(ins->getType())){
-			outs() << "A\n";
+			LLVM_DEBUG(dbgs() << "A\n");
 		}
 		if(dyn_cast<StructType>(ins->getType())){
-			outs() << "S\n";
+			LLVM_DEBUG(dbgs() << "S\n");
 		}
 		if(dyn_cast<PointerType>(ins->getType())){
-			outs() << "P\n";
+			LLVM_DEBUG(dbgs() << "P\n");
 		}
 
 		//TODO:DAC18
@@ -2791,26 +2794,26 @@ void DFGPartPred::connectBBTrig() {
 			//			dfgNode* mergeNode;
 			if(BR->getAncestors().size() != 1){
 				assert(BR->getAncestors().size() == 2);
-				outs() << "Br=" << BR->getIdx() << ",Ins=";
-				BRI->dump();
-				outs() << "Ancestor Count=" << BR->getAncestors().size() << "\n";
-				outs() << "Ancestors=";
+				LLVM_DEBUG(dbgs() << "Br=" << BR->getIdx() << ",Ins=");
+				LLVM_DEBUG(BRI->dump());
+				LLVM_DEBUG(dbgs() << "Ancestor Count=" << BR->getAncestors().size() << "\n");
+				LLVM_DEBUG(dbgs() << "Ancestors=");
 				for(dfgNode* par : BR->getAncestors()){
-					outs() << par->getIdx() << ",BB=" << par->BB->getName() <<":";
-					if(par->getNode()) par->getNode()->dump();
+					LLVM_DEBUG(dbgs() << par->getIdx() << ",BB=" << par->BB->getName() <<":");
+					if(par->getNode()) LLVM_DEBUG(par->getNode()->dump());
 				}
 			}
 			assert(BR->getAncestors().size() == 1);
 			BrParentMap[parentBB]=BR->getAncestors()[0];
 			BrParentMapInv[BR->getAncestors()[0]]=parentBB;
 
-			outs() << "ConnectBB :: From=" << BrParentMap[parentBB]->getIdx() << "(" << parentBB->getName() << ")" << ",To=";
+			LLVM_DEBUG(dbgs() << "ConnectBB :: From=" << BrParentMap[parentBB]->getIdx() << "(" << parentBB->getName() << ")" << ",To=");
 			for(dfgNode* succNode : leaves){
-				outs() << succNode->getIdx() << ",";
+				LLVM_DEBUG(dbgs() << succNode->getIdx() << ",");
 				assert(succNode->getNameType() != "OutLoopLOAD");
 			}
-			outs() << ",destBB = " << childBB->getName();
-			outs() << "\n";
+			LLVM_DEBUG(dbgs() << ",destBB = " << childBB->getName());
+			LLVM_DEBUG(dbgs() << "\n");
 
 			for(dfgNode* BRParent : BR->getAncestors()){
 				for(dfgNode* succNode : leaves){
@@ -2828,7 +2831,7 @@ void DFGPartPred::connectBBTrig() {
 
 void DFGPartPred::createCtrlBROrTree() {
 
-	outs() << "createCtrlBROrTree STARTED!\n";
+	LLVM_DEBUG(dbgs() << "createCtrlBROrTree STARTED!\n");
 
 	for(dfgNode* node : NodeList){
 		std::set<dfgNode*> predicateParents;
@@ -2848,8 +2851,8 @@ void DFGPartPred::createCtrlBROrTree() {
 				if(!q.empty()){
 					dfgNode* pp2 = q.front(); q.pop();
 
-					outs() << "Connecting pp1 = " << pp1->getIdx() << ",";
-					outs() << "pp2 = " << pp2->getIdx() << ",";
+					LLVM_DEBUG(dbgs() << "Connecting pp1 = " << pp1->getIdx() << ",");
+					LLVM_DEBUG(dbgs() << "pp2 = " << pp2->getIdx() << ",");
 
 
 					dfgNode* temp = new dfgNode(this);
@@ -2858,7 +2861,7 @@ void DFGPartPred::createCtrlBROrTree() {
 					temp->BB = pp1->BB;
 					NodeList.push_back(temp);
 
-					outs() << "newNode = " << temp->getIdx() << "\n";
+					LLVM_DEBUG(dbgs() << "newNode = " << temp->getIdx() << "\n");
 
 					bool isPP1BackEdge = pp1->childBackEdgeMap[node];
 					bool isPP2BackEdge = pp2->childBackEdgeMap[node];
@@ -2879,14 +2882,14 @@ void DFGPartPred::createCtrlBROrTree() {
 					q.push(temp);
 				}
 				else{
-					outs() << "Alone node = " << pp1->getIdx() << "\n";
+					LLVM_DEBUG(dbgs() << "Alone node = " << pp1->getIdx() << "\n");
 				}
 
 			}
 		}
 	}
 
-	outs() << "createCtrlBROrTree ENDED!\n";
+	LLVM_DEBUG(dbgs() << "createCtrlBROrTree ENDED!\n");
 
 }
 
@@ -2911,7 +2914,7 @@ std::map<BasicBlock*, std::set<std::pair<BasicBlock*, CondVal> > > DFGPartPred::
 
 		while(!q.empty()){
 			BasicBlock* curr = q.front(); q.pop();
-			//			outs() << "curr=" << curr->getName() << "\n";
+			//			LLVM_DEBUG(dbgs() << "curr=" << curr->getName() << "\n";
 
 			for (auto it = pred_begin(curr), et = pred_end(curr); it != et; ++it)
 			{
@@ -2929,23 +2932,23 @@ std::map<BasicBlock*, std::set<std::pair<BasicBlock*, CondVal> > > DFGPartPred::
 
 				CondVal cv;
 				assert(predecessor->getTerminator());
-				predecessor->getTerminator()->dump();
+				LLVM_DEBUG(predecessor->getTerminator()->dump());
 				BranchInst* BRI = cast<BranchInst>(predecessor->getTerminator());
 				//			  BRI->dump();
 
 				if(!BRI->isConditional()){
-					//				  outs() << "\t0 :: ";
+					//				  LLVM_DEBUG(dbgs() << "\t0 :: ";
 					cv = UNCOND;
 				}
 				else{
 					for (int i = 0; i < BRI->getNumSuccessors(); ++i) {
 						if(BRI->getSuccessor(i) == curr){
 							if(i==0){
-								//							  outs() << "\t1 :: ";
+								//							  LLVM_DEBUG(dbgs() << "\t1 :: ";
 								cv = TRUE;
 							}
 							else if(i==1){
-								//							  outs() << "\t2 :: ";
+								//							  LLVM_DEBUG(dbgs() << "\t2 :: ";
 								cv = FALSE;
 							}
 							else{
@@ -2955,14 +2958,14 @@ std::map<BasicBlock*, std::set<std::pair<BasicBlock*, CondVal> > > DFGPartPred::
 					}
 				}
 
-				//			  outs() << "\tPred=" << predecessor->getName() << "(" << dfgNode::getCondValStr(cv) << ")\n";
+				//			  LLVM_DEBUG(dbgs() << "\tPred=" << predecessor->getName() << "(" << dfgNode::getCondValStr(cv) << ")\n";
 
 				visited[predecessor].insert(cv);
 				q.push(predecessor);
 			}
 		}
 
-		outs() << "BasicBlock : " << BB->getName() << " :: DependentCtrlBBs = ";
+		LLVM_DEBUG(dbgs() << "BasicBlock : " << BB->getName() << " :: DependentCtrlBBs = ");
 		res[BB];
 		for(std::pair<BasicBlock*,std::set<CondVal>> pair : visited){
 			BasicBlock* bb = pair.first;
@@ -2971,34 +2974,34 @@ std::map<BasicBlock*, std::set<std::pair<BasicBlock*, CondVal> > > DFGPartPred::
 
 			//			if(brOuts.size() == 1){
 			//				if(brOuts.find(UNCOND) == brOuts.end()){
-			outs() << bb->getName();
+			LLVM_DEBUG(dbgs() << bb->getName());
 			//					if(brOuts.find(UNCOND) != brOuts.end()){
 			//						res[BB].insert(std::make_pair(bb,UNCOND));
-			//						outs() << "(UNCOND),";
+			//						LLVM_DEBUG(dbgs() << "(UNCOND),";
 			//					}
 			if(brOuts.find(TRUE) != brOuts.end()){
 				res[BB].insert(std::make_pair(bb,TRUE));
-				outs() << "(TRUE),";
+				LLVM_DEBUG(dbgs() << "(TRUE),");
 			}
 			if(brOuts.find(FALSE) != brOuts.end()){
 				res[BB].insert(std::make_pair(bb,FALSE));
-				outs() << "(FALSE),";
+				LLVM_DEBUG(dbgs() << "(FALSE),");
 			}
 			//					res[BB].insert(std::make_pair(bb,cv));
 			//				}
 			//			}
 		}
-		outs() << "\n";
+		LLVM_DEBUG(dbgs() << "\n");
 	}
 
-	outs() << "###########################################################################\n";
+	LLVM_DEBUG(dbgs() << "###########################################################################\n");
 
 	std::map<BasicBlock*,std::set<std::pair<BasicBlock*,CondVal>>> temp1;
 
 	for(std::pair<BasicBlock*,std::set<std::pair<BasicBlock*,CondVal>>> pair : res){
 		std::set<std::pair<BasicBlock*,CondVal>> tobeRemoved;
 		BasicBlock* currBB = pair.first;
-		outs() << "BasicBlock : " << currBB->getName() << " :: DependentCtrlBBs = ";
+		LLVM_DEBUG(dbgs() << "BasicBlock : " << currBB->getName() << " :: DependentCtrlBBs = ");
 
 		temp1[currBB];
 		for(std::pair<BasicBlock*,CondVal> bbVal : pair.second){
@@ -3010,21 +3013,21 @@ std::map<BasicBlock*, std::set<std::pair<BasicBlock*, CondVal> > > DFGPartPred::
 
 		for(std::pair<BasicBlock*,CondVal> bbVal : pair.second){
 			if(tobeRemoved.find(bbVal)==tobeRemoved.end()){
-				outs() << bbVal.first->getName();
-				outs() << "(" << dfgNode::getCondValStr(bbVal.second) << "),";
+				LLVM_DEBUG(dbgs() << bbVal.first->getName());
+				LLVM_DEBUG(dbgs() << "(" << dfgNode::getCondValStr(bbVal.second) << "),");
 				temp1[currBB].insert(bbVal);
 			}
 		}
-		outs() << "\n";
+		LLVM_DEBUG(dbgs() << "\n");
 	}
 	//	return temp1;
 
 	std::map<BasicBlock*,std::set<std::pair<BasicBlock*,CondVal>>> temp2;
 
-	outs() << "Order=";
+	LLVM_DEBUG(dbgs() << "Order=");
 	for(std::pair<BasicBlock*,std::set<std::pair<BasicBlock*,CondVal>>> pair : temp1){
 		BasicBlock* currBB = pair.first;
-		outs() << currBB->getName() << ",";
+		LLVM_DEBUG(dbgs() << currBB->getName() << ",");
 		std::set<std::pair<BasicBlock*,CondVal>> bbValPairs = pair.second;
 
 		std::queue<std::pair<BasicBlock*,CondVal>> bbValQ;
@@ -3062,27 +3065,27 @@ std::map<BasicBlock*, std::set<std::pair<BasicBlock*, CondVal> > > DFGPartPred::
 
 		if(!bbValPairs.empty()) temp2[currBB]=bbValPairs;
 	}
-	outs() << "\n";
+	LLVM_DEBUG(dbgs() << "\n");
 
-	outs() << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n";
+	LLVM_DEBUG(dbgs() << "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n");
 
 	temp1.clear();
 	for(std::pair<BasicBlock*,std::set<std::pair<BasicBlock*,CondVal>>> pair : temp2){
 		BasicBlock* currBB = pair.first;
 		std::set<std::pair<BasicBlock*,CondVal>> bbValPairs = pair.second;
-		outs() << "BasicBlock : " << currBB->getName() << " :: DependentCtrlBBs = ";
+		LLVM_DEBUG(dbgs() << "BasicBlock : " << currBB->getName() << " :: DependentCtrlBBs = ");
 		for(std::pair<BasicBlock*,CondVal> bbVal: bbValPairs){
-			outs() << bbVal.first->getName();
-			outs() << "(" << dfgNode::getCondValStr(bbVal.second) << "),";
+			LLVM_DEBUG(dbgs() << bbVal.first->getName());
+			LLVM_DEBUG(dbgs() << "(" << dfgNode::getCondValStr(bbVal.second) << "),");
 		}
 
 		if(!bbValPairs.empty()){
 			temp1[currBB] = temp2[currBB];
 		}
 		else{
-			outs() << "Not added!";
+			LLVM_DEBUG(dbgs() << "Not added!");
 		}
-		outs() << "\n";
+		LLVM_DEBUG(dbgs() << "\n");
 	}
 	//	assert(false);
 	return temp1;
@@ -3130,8 +3133,8 @@ void DFGPartPred::RemoveInductionControlLogic() {
 		if(e->getType() == EDGE_TYPE_PS){
 			continue;
 		}
-		std::cout << "induction phi parents :: \n";
-		std::cout << par->getIdx() << ",";
+		LLVM_DEBUG(dbgs() << "induction phi parents :: \n");
+		LLVM_DEBUG(dbgs() << par->getIdx() << ",");
 		anc_count++;
 	}
 	assert(anc_count == 2);
@@ -3220,7 +3223,7 @@ void DFGPartPred::RemoveInductionControlLogic() {
 
 
 void DFGPartPred::RemoveBackEdgePHIs() {
-	cout << "removebackedge phis begin...\n";
+	LLVM_DEBUG(dbgs() << "removebackedge phis begin...\n");
 
 	for(dfgNode* n : NodeList){
 		if(n->getNode()){
@@ -3228,7 +3231,7 @@ void DFGPartPred::RemoveBackEdgePHIs() {
 
 				if(n->getAncestors().size() != 2) continue;
 
-				cout << "processing phi node = " << n->getIdx();
+				LLVM_DEBUG(dbgs()  << "processing phi node = " << n->getIdx());
 
 				dfgNode* normal_anc = NULL;
 				dfgNode* backedge_anc = NULL;
@@ -3244,14 +3247,14 @@ void DFGPartPred::RemoveBackEdgePHIs() {
 					}
 				}
 
-				cout << ",BE_anc = " << backedge_anc->getIdx() << ",normal_anc = " << normal_anc->getIdx() << "\n";
+				LLVM_DEBUG(dbgs()  << ",BE_anc = " << backedge_anc->getIdx() << ",normal_anc = " << normal_anc->getIdx() << "\n");
 
 				//process non-back edge node
 				assert(normal_anc->getNameType() == "CMERGE");
 				if(normal_anc->hasConstantVal()){
 					for(dfgNode* phiC : n->getChildren()){
 
-						cout << "adding child:" << phiC->getIdx() << ",to:" << normal_anc->getIdx() << "\n";
+						LLVM_DEBUG(dbgs()  << "adding child:" << phiC->getIdx() << ",to:" << normal_anc->getIdx() << "\n");
 						normal_anc->addChildNode(phiC,EDGE_TYPE_DATA);
 						phiC->addAncestorNode(normal_anc,EDGE_TYPE_DATA);
 						Edge2OperandIdxMap[normal_anc][phiC] = findParentClassification(n,phiC);
@@ -3277,7 +3280,7 @@ void DFGPartPred::RemoveBackEdgePHIs() {
 						bool isBackEdge = dataParent->childBackEdgeMap[normal_anc];
 
 						for(dfgNode* phiC : n->getChildren()){
-							cout << "adding child:" << phiC->getIdx() << ",to:" << dataParent->getIdx() << "\n";
+							LLVM_DEBUG(dbgs()   << "adding child:" << phiC->getIdx() << ",to:" << dataParent->getIdx() << "\n");
 							dataParent->addChildNode(phiC,EDGE_TYPE_DATA,isBackEdge);
 							phiC->addAncestorNode(dataParent,EDGE_TYPE_DATA,isBackEdge);
 							Edge2OperandIdxMap[dataParent][phiC] = findParentClassification(n,phiC);
@@ -3307,7 +3310,7 @@ void DFGPartPred::RemoveBackEdgePHIs() {
 				if(backedge_anc->hasConstantVal()){
 					for(dfgNode* phiC : n->getChildren()){
 
-						cout << "adding (with backedge) child:" << phiC->getIdx() << ",to:" << backedge_anc->getIdx() << "\n";
+						LLVM_DEBUG(dbgs()  << "adding (with backedge) child:" << phiC->getIdx() << ",to:" << backedge_anc->getIdx() << "\n");
 						backedge_anc->addChildNode(phiC,EDGE_TYPE_DATA,true);
 						phiC->addAncestorNode(backedge_anc,EDGE_TYPE_DATA,true);
 						Edge2OperandIdxMap[backedge_anc][phiC] = findParentClassification(n,phiC);
@@ -3328,7 +3331,7 @@ void DFGPartPred::RemoveBackEdgePHIs() {
 							}
 
 							if(nonbedge_child){
-								cout << "adding (with pseudo) child:" << phiC->getIdx() << ",to:" << nonbedge_child->getIdx() << "\n";
+								LLVM_DEBUG(dbgs()  << "adding (with pseudo) child:" << phiC->getIdx() << ",to:" << nonbedge_child->getIdx() << "\n");
 								nonbedge_child->addChildNode(phiC,EDGE_TYPE_PS,false,true,true);
 								phiC->addAncestorNode(nonbedge_child,EDGE_TYPE_PS,false,true,true);
 							}
@@ -3350,7 +3353,7 @@ void DFGPartPred::RemoveBackEdgePHIs() {
 
 						bool isBackEdge = dataParent->childBackEdgeMap[normal_anc];
 						for(dfgNode* phiC : n->getChildren()){
-							cout << "adding (with backedge) child:" << phiC->getIdx() << ",to:" << dataParent->getIdx() << "\n";
+							LLVM_DEBUG(dbgs()  << "adding (with backedge) child:" << phiC->getIdx() << ",to:" << dataParent->getIdx() << "\n");
 							dataParent->addChildNode(phiC,EDGE_TYPE_DATA,true);
 							phiC->addAncestorNode(dataParent,EDGE_TYPE_DATA,true);
 							Edge2OperandIdxMap[dataParent][phiC] = findParentClassification(n,phiC);
@@ -3371,7 +3374,7 @@ void DFGPartPred::RemoveBackEdgePHIs() {
 								}
 
 								if(nonbedge_child){
-									cout << "adding (with pseudo) child:" << phiC->getIdx() << ",to:" << nonbedge_child->getIdx() << "\n";
+									LLVM_DEBUG(dbgs()  << "adding (with pseudo) child:" << phiC->getIdx() << ",to:" << nonbedge_child->getIdx() << "\n");
 									nonbedge_child->addChildNode(phiC,EDGE_TYPE_PS,false,true,true);
 									phiC->addAncestorNode(nonbedge_child,EDGE_TYPE_PS,false,true,true);
 								}
@@ -3410,7 +3413,7 @@ void DFGPartPred::RemoveBackEdgePHIs() {
 		}
 	}
 
-	cout << "removebackedge phis done.!\n";
+	LLVM_DEBUG(dbgs()  << "removebackedge phis done.!\n");
 }
 
 void DFGPartPred::RemoveConstantCMERGEs(){
@@ -3462,7 +3465,7 @@ void DFGPartPred::getLoopExitConditionNodes(std::set<exitNode> &exitNodes)
 		BasicBlock *dest = it->second;
 		exitSrcs.insert(src);
 
-		outs() << "loop exit src = " << src->getName() << ", dest = " << dest->getName() << ",";
+		LLVM_DEBUG(dbgs() << "loop exit src = " << src->getName() << ", dest = " << dest->getName() << ",");
 
 		BranchInst *BRI = static_cast<BranchInst *>(src->getTerminator());
 
@@ -3476,13 +3479,13 @@ void DFGPartPred::getLoopExitConditionNodes(std::set<exitNode> &exitNodes)
 				{
 					if (j == 0)
 					{
-						outs() << "true path\n";
+						LLVM_DEBUG(dbgs() << "true path\n");
 						// exitNodes.insert(std::make_pair(ctrlNode, true));
 						exitNodes.insert(exitNode(ctrlNode, true, BRI->getParent(), dest));
 					}
 					else
 					{
-						outs() << "false path\n";
+						LLVM_DEBUG(dbgs() << "false path\n");
 						exitNodes.insert(exitNode(ctrlNode, false, BRI->getParent(), dest));
 					}
 				}
@@ -3490,14 +3493,14 @@ void DFGPartPred::getLoopExitConditionNodes(std::set<exitNode> &exitNodes)
 		}
 		else
 		{
-			outs() << "BRI BasicBlock = " << BRI->getParent()->getName() << "\n";
+			LLVM_DEBUG(dbgs() << "BRI BasicBlock = " << BRI->getParent()->getName() << "\n");
 
 			auto ThisBasicBlockDTNode = DT->getNode(BRI->getParent());
 			auto IDOM_DTNode = ThisBasicBlockDTNode->getIDom();
 			BasicBlock *IDOM = IDOM_DTNode->getBlock();
 
 			BranchInst *IDOM_BRI = static_cast<BranchInst *>(IDOM->getTerminator());
-			outs() << "IDOM BRI BasicBlock = " << IDOM_BRI->getParent()->getName() << "\n";
+			LLVM_DEBUG(dbgs() << "IDOM BRI BasicBlock = " << IDOM_BRI->getParent()->getName() << "\n");
 			assert(IDOM_BRI->isConditional());
 
 			bool isTruePath = true;
@@ -3507,13 +3510,13 @@ void DFGPartPred::getLoopExitConditionNodes(std::set<exitNode> &exitNodes)
 				{
 					if (j == 0)
 					{
-						outs() << "true path\n";
+						LLVM_DEBUG(dbgs() << "true path\n");
 						// exitNodes.insert(std::make_pair(ctrlNode, true));
 						isTruePath = true;
 					}
 					else
 					{
-						outs() << "false path\n";
+						LLVM_DEBUG(dbgs() << "false path\n");
 						isTruePath = false;
 					}
 				}
@@ -3542,7 +3545,7 @@ void DFGPartPred::getLoopExitConditionNodes(std::set<exitNode> &exitNodes)
 
 // void DFGPartPred::addLoopExitStoreHyCUBE(std::set<exitNode> &exitNodes)
 // {
-// 	outs() << "addLoopExitStoreHyCUBE begin.\n";
+// 	LLVM_DEBUG(dbgs() << "addLoopExitStoreHyCUBE begin.\n";
 // 	for (exitNode en : exitNodes)
 // 	{
 
@@ -3565,7 +3568,7 @@ void DFGPartPred::getLoopExitConditionNodes(std::set<exitNode> &exitNodes)
 // 		mov_const->addChildNode(loopexit);
 // 		loopexit->addAncestorNode(mov_const);
 // 		loopexit->parentClassification[1] = mov_const;
-// 		outs() << "Adding connection : " << mov_const->getIdx() << " to " << loopexit->getIdx() << "\n";
+// 		LLVM_DEBUG(dbgs() << "Adding connection : " << mov_const->getIdx() << " to " << loopexit->getIdx() << "\n";
 
 // 		if (en.ctrlNode)
 // 		{
@@ -3576,7 +3579,7 @@ void DFGPartPred::getLoopExitConditionNodes(std::set<exitNode> &exitNodes)
 // 			loopexit->parentClassification[0] = en.ctrlNode;
 // 			if (!isTruePath)
 // 				loopexit->setNPB(true);
-// 			outs() << "Adding connection : " << en.ctrlNode->getIdx() << " to " << loopexit->getIdx() << "\n";
+// 			LLVM_DEBUG(dbgs() << "Adding connection : " << en.ctrlNode->getIdx() << " to " << loopexit->getIdx() << "\n";
 // 		}
 // 		else
 // 		{
@@ -3585,11 +3588,11 @@ void DFGPartPred::getLoopExitConditionNodes(std::set<exitNode> &exitNodes)
 // 			sample_start_node->addChildNode(loopexit, EDGE_TYPE_PS, false, true, true);
 // 			loopexit->addAncestorNode(sample_start_node, EDGE_TYPE_PS, false, true, true);
 
-// 			outs() << "Adding connection PS : " << sample_start_node->getIdx() << " to " << loopexit->getIdx() << "\n";
+// 			LLVM_DEBUG(dbgs() << "Adding connection PS : " << sample_start_node->getIdx() << " to " << loopexit->getIdx() << "\n";
 // 		}
 // 	}
 
-// 	outs() << "addLoopExitStoreHyCUBE end.\n";
+// 	LLVM_DEBUG(dbgs() << "addLoopExitStoreHyCUBE end.\n";
 
 // 	// for(auto it = exitNodes.begin(); it != exitNodes.end(); it++){
 // 	// 	dfgNode* control_node = it->first;
@@ -3606,7 +3609,7 @@ void DFGPartPred::getLoopExitConditionNodes(std::set<exitNode> &exitNodes)
 
 void DFGPartPred::addLoopExitStoreHyCUBE(std::set<exitNode> &exitNodes)
 {
-	outs() << "addLoopExitStoreHyCUBE begin.\n";
+	LLVM_DEBUG(dbgs() << "addLoopExitStoreHyCUBE begin.\n");
 	for (exitNode en : exitNodes)
 	{
 
@@ -3629,18 +3632,18 @@ void DFGPartPred::addLoopExitStoreHyCUBE(std::set<exitNode> &exitNodes)
 		mov_const->addChildNode(loopexit);
 		loopexit->addAncestorNode(mov_const);
 		loopexit->parentClassification[1] = mov_const;
-		outs() << "Adding connection : " << mov_const->getIdx() << " to " << loopexit->getIdx() << "\n";
+		LLVM_DEBUG(dbgs() << "Adding connection : " << mov_const->getIdx() << " to " << loopexit->getIdx() << "\n");
 
 		if (en.ctrlNode)
 		{
-			en.ctrlNode->getNode()->dump();
+			LLVM_DEBUG(en.ctrlNode->getNode()->dump());
 			bool isTruePath = en.ctrlVal;
 			en.ctrlNode->addChildNode(loopexit, EDGE_TYPE_DATA, false, true, isTruePath);
 			loopexit->addAncestorNode(en.ctrlNode, EDGE_TYPE_DATA, false, true, isTruePath);
 			loopexit->parentClassification[0] = en.ctrlNode;
 			if (!isTruePath)
 				loopexit->setNPB(true);
-			outs() << "Adding connection : " << en.ctrlNode->getIdx() << " to " << loopexit->getIdx() << "\n";
+			LLVM_DEBUG(dbgs() << "Adding connection : " << en.ctrlNode->getIdx() << " to " << loopexit->getIdx() << "\n");
 		}
 		else
 		{
@@ -3649,11 +3652,11 @@ void DFGPartPred::addLoopExitStoreHyCUBE(std::set<exitNode> &exitNodes)
 			sample_start_node->addChildNode(loopexit, EDGE_TYPE_PS, false, true, true);
 			loopexit->addAncestorNode(sample_start_node, EDGE_TYPE_PS, false, true, true);
 
-			outs() << "Adding connection PS : " << sample_start_node->getIdx() << " to " << loopexit->getIdx() << "\n";
+			LLVM_DEBUG(dbgs() << "Adding connection PS : " << sample_start_node->getIdx() << " to " << loopexit->getIdx() << "\n");
 		}
 	}
 
-	outs() << "addLoopExitStoreHyCUBE end.\n";
+	LLVM_DEBUG(dbgs() << "addLoopExitStoreHyCUBE end.\n");
 
 	// for(auto it = exitNodes.begin(); it != exitNodes.end(); it++){
 	// 	dfgNode* control_node = it->first;
@@ -3690,18 +3693,18 @@ void DFGPartPred::removeAGI(){
 
 	// Create set of non AGI nodes
 	for(dfgNode* node : NodeList){
-		outs() << "Node Name Type/ ID:" << node->getNameType() << "/" << node->getIdx() << "\n";
+		LLVM_DEBUG(dbgs() << "Node Name Type/ ID:" << node->getNameType() << "/" << node->getIdx() << "\n");
 		allNodes.insert(node);
 		if(node->getNode()){
 
 			if(GetElementPtrInst* GEP = dyn_cast<GetElementPtrInst>(node->getNode())){
-				outs() << "removeAGI: found GEP instruction and goes through its child instructions ---------\n";
+				LLVM_DEBUG(dbgs() << "removeAGI: found GEP instruction and goes through its child instructions ---------\n");
 
 				for(dfgNode* child : node->getChildren()){
 					if(non_agi_NodesSet.find(child) == non_agi_NodesSet.end()){//to avoid looping
 						non_agi_NodesSet.insert(child);
 						if(child->getNameType() == "OutLoopLOAD" || child->getNameType() == "CMERGE"|| child->getNameType() == "LOOPSTART"|| child->getNameType() != ""){
-							outs() << "removeAGI: has Name Type---"<< child->getNameType() << child->getIdx()<<" ---------\n";
+							LLVM_DEBUG(dbgs() << "removeAGI: has Name Type---"<< child->getNameType() << child->getIdx()<<" ---------\n");
 							addChildsToNonAGINodes(child,non_agi_NodesSet,tempNodesSet);
 						}
 						if(StoreInst* strinst = dyn_cast<StoreInst>(child->getNode())){
@@ -3718,17 +3721,17 @@ void DFGPartPred::removeAGI(){
 	}
 
 	for(dfgNode* nagi : non_agi_NodesSet){
-		std::cout << "removeAGI: Non AGI Nodes = " << nagi->getIdx() << "\n";
+		LLVM_DEBUG(dbgs() << "removeAGI: Non AGI Nodes = " << nagi->getIdx() << "\n");
 	}
 
 	//remove AGI
 
 	for(dfgNode* node : NodeList){
-		outs() << "Node Name Type/ ID:" << node->getNameType() << "/" << node->getIdx() << "\n";
+		LLVM_DEBUG(dbgs() << "Node Name Type/ ID:" << node->getNameType() << "/" << node->getIdx() << "\n");
 		if(node->getNode()){
 
 			if(GetElementPtrInst* GEP = dyn_cast<GetElementPtrInst>(node->getNode())){
-				outs() << "removeAGI: found GEP instruction and goes through its parent instructions ---------\n";
+				LLVM_DEBUG(dbgs() << "removeAGI: found GEP instruction and goes through its parent instructions ---------\n");
 				for(dfgNode* child : node->getChildren()){
 					node->removeChild(child);
 					child->removeAncestor(node);
@@ -3755,7 +3758,7 @@ void DFGPartPred::removeAGI(){
 	removalNodes.insert(agi_rem_diff_NodesSet.begin(),agi_rem_diff_NodesSet.end());
 
 	for(dfgNode* ard : agi_rem_diff_NodesSet){
-		std::cout << "DFGAGIRemove: Difference between removal Nodes and AGI nodes = " << ard->getIdx() << "\n";
+		LLVM_DEBUG(dbgs() << "DFGAGIRemove: Difference between removal Nodes and AGI nodes = " << ard->getIdx() << "\n");
 	}
 
 	for(dfgNode* node : NodeList){
@@ -3775,10 +3778,10 @@ void DFGPartPred::removeAGI(){
 	//------------------------------------
 
 	for(dfgNode* rn : removalNodes){
-		std::cout << "removeAGI: Removing Node = " << rn->getIdx() << "\n";
+		LLVM_DEBUG(dbgs() << "removeAGI: Removing Node = " << rn->getIdx() << "\n");
 		NodeList.erase(std::remove(NodeList.begin(), NodeList.end(), rn), NodeList.end());
 	}
-	std::cout << "Nodelist size--"<< NodeList.size();
+	LLVM_DEBUG(dbgs() << "Nodelist size--"<< NodeList.size());
 
 }
 
@@ -3788,7 +3791,7 @@ void DFGPartPred::addChildsToNonAGINodes(dfgNode* node, std::set<dfgNode*> &non_
 		if(non_agi_NodesSet.find(child) == non_agi_NodesSet.end()){//to avoid loops
 			non_agi_NodesSet.insert(child);
 			if(child->getNameType() == "OutLoopLOAD" || child->getNameType() == "CMERGE"|| child->getNameType() == "LOOPSTART" || child->getNameType() != ""){
-				outs() << "DFGAGIRemove: removeAGI: has Name Type---"<< child->getNameType()<< child->getIdx() <<" ---------\n";
+				LLVM_DEBUG(dbgs() << "DFGAGIRemove: removeAGI: has Name Type---"<< child->getNameType()<< child->getIdx() <<" ---------\n");
 				addChildsToNonAGINodes(child,non_agi_NodesSet,tempNodesSet);
 			}
 			else if(StoreInst* strinst = dyn_cast<StoreInst>(child->getNode())){
@@ -3853,9 +3856,9 @@ void DFGPartPred::addParentsToRemovalNodes(dfgNode* node, std::set<dfgNode*> &re
         }
         else if(PHINode* PHI = dyn_cast<PHINode>(node->getNode())){
 
-			outs() << "DFGAGIRemove: PHI node found in parent instructions. Adding all nodes between PHI and GEP/BRI to removalNodes------ \n";
+			LLVM_DEBUG(dbgs() << "DFGAGIRemove: PHI node found in parent instructions. Adding all nodes between PHI and GEP/BRI to removalNodes------ \n";
             removalNodes.insert(tempNodesSet.begin(),tempNodesSet.end());
-            outs() << "DFGAGIRemove: Done adding\n";
+            LLVM_DEBUG(dbgs() << "DFGAGIRemove: Done adding\n";
             tempNodesSet.clear();
 		}*/
 
@@ -3876,7 +3879,7 @@ void DFGPartPred::addParentsToRemovalNodes(dfgNode* node, std::set<dfgNode*> &re
 		}
 
 	}else{
-		outs() << "DFGAGIRemove: removeAGI: No parents------"<< node->getIdx()<< "\n";
+		LLVM_DEBUG(dbgs() << "DFGAGIRemove: removeAGI: No parents------"<< node->getIdx()<< "\n");
 	}
 
 

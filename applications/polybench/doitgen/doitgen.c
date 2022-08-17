@@ -1,10 +1,11 @@
 #include <stdio.h>
 
-#define SIZE 10
+#define SIZE 4
 int n = SIZE, m = SIZE;
 int A[SIZE][SIZE][SIZE], C4[SIZE][SIZE],sum[SIZE];
 int i = 0, j = 0, np = 0, k = 0, r = 0, p = 0, q = 0, s = 0;
 
+__attribute__((noinline))
 void doitgen()
 {
     int r = 0, p = 0, q = 0, s = 0;

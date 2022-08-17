@@ -4,6 +4,8 @@
 int n = SIZE;
 
 int A[SIZE*SIZE], x[SIZE];
+
+__attribute__((noinline))
 void hpcg(){
     int i, j, sum;
 
@@ -29,7 +31,7 @@ int main() {
             A[k*SIZE+l] = k*2 + l*3 + 5;
         x[k] = k*3;
     }
-
+    
     printf("Input array\n");
     for(k=0; k<n; k++) {
         for(l=0; l<n; l++)
@@ -40,13 +42,15 @@ int main() {
     printf("Input vector\n");
     for(k=0; k<n; k++)
         printf("%d\n", x[k]);
-
+    
 
     hpcg();
-
+	
+    
     printf("Output vector\n");
     for(k=0; k<n; k++)
         printf("%d\n", x[k]);
+    
 
     return 0;
 }

@@ -27,7 +27,8 @@
   Made portable:  Malcolm Slaney 12/15/94 malcolm@interval.com
   Enhanced:  Dimitrios P. Bouras  14 Jun 2006 dbouras@ieee.org
 */
-
+#include <math.h>
+#define PI 3.141592654
 #define N_WAVE      1024    /* full length of Sinewave[] */
 #define LOG2_N_WAVE 10      /* log2(N_WAVE) */
 
@@ -148,7 +149,7 @@ short Sinewave[N_WAVE-N_WAVE/4] = {
   optimization suited to a particluar DSP processor.
   Scaling ensures that result remains 16-bit.
 */
-inline short FIX_MPY(short a, short b)
+static inline short FIX_MPY(short a, short b)
 {
 	/* shift right one less bit (i.e. 15-1) */
 	int c = ((int)a * (int)b) >> 14;
@@ -452,7 +453,7 @@ main(){
         int     i;
 
         for (i=0; i<N; i++){
-                real[i] = 500 ;;//+ 100*cos(i*2*PI/N) ;//+ 100*cos(i*4*2*PI/N) + 100*cos(i*8*2*PI/N) + 100*cos(i*16*2*PI/N);
+                real[i] = 500 + 100*cos(i*2*PI/N) ;//+ 100*cos(i*4*2*PI/N) + 100*cos(i*8*2*PI/N) + 100*cos(i*16*2*PI/N);
                 imag[i] = 0;
         }
 

@@ -30,7 +30,8 @@ enum CondVal{UNCOND,TRUE,FALSE};
 
 using namespace llvm;
 
-
+#define LV_NAME "dfg_gen" //"sfp"
+#define DEBUG_TYPE LV_NAME
 
 
 class dfgNode{
@@ -271,7 +272,7 @@ class dfgNode{
 			std::set<std::pair<BasicBlock*,CondVal>> BelongsToBr;
 
 			void setArrBasePtr(std::string abp){
-				outs() << "setting base pointer for node=" << idx << ",name = " << abp << "\n";
+				LLVM_DEBUG(dbgs() << "setting base pointer for node=" << idx << ",name = " << abp << "\n");
 				array_base_pointer = abp;
 			}
 			std::string getArrBasePtr(){return array_base_pointer;}

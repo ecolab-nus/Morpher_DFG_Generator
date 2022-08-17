@@ -5,6 +5,7 @@
 #define SIZE  20
 int A[SIZE], B[SIZE], C[SIZE];
 
+__attribute__((noinline))
 void array_add(){
 
    
@@ -19,9 +20,10 @@ void array_add(){
 
 }
 
-void main(){
+int main(){
 
 int i,j;
+
 for (i=0;i<SIZE; i++){
       A[i] = i * 2 + 5;
       B[i] = i * 3;
@@ -30,8 +32,9 @@ for (i=0;i<SIZE; i++){
     
 array_add();
 
-for (i=0;i<SIZE; i++){
-      printf("%d\n", C[i]);
-    }
+for (i=0;i<SIZE; i++) printf("%d\n", C[i]);
+    
+
+return 0;
 
 }

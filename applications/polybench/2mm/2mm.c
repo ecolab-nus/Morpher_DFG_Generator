@@ -6,6 +6,7 @@
 int n = SIZE;
 int A[SIZE][SIZE], B[SIZE][SIZE], tmp[SIZE][SIZE];
 int i = 0,j = 0 ;
+__attribute__((noinline))
 void atax(){
 
 
