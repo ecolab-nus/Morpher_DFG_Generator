@@ -1577,6 +1577,7 @@ void DFGPartPred::printNewDFGXML() {
 	xmlFile << "</MutexBB>\n";
 
 	xmlFile << "<DFG count=\"" << NodeList.size() << "\">\n";
+	std::cout << "DFG node count: " << NodeList.size() << "\n";
 
 	for(dfgNode* node : NodeList){
 		//	for (int i = 0; i < maxASAPLevel; ++i) {

@@ -10604,6 +10604,7 @@ void DFG::SetBasePointers(std::unordered_set<Value *> &outer_vals,
  *
  *
  * */
+#define DEBUG_TYPE "instrumentation"
 void DFG::InstrumentInOutVars(Function &F, std::unordered_map<Value *, int> mem_accesses, std::map<dfgNode*,Value*> &OLNodesWithPtrTyUsage, std::unordered_map<Value *, int> &spm_base_address){
 
 	LLVM_DEBUG(dbgs() << "Outloop node instructions with pointer type usage in the loop body \n");
@@ -10716,7 +10717,7 @@ void DFG::InstrumentInOutVars(Function &F, std::unordered_map<Value *, int> mem_
 		IRBuilder<> builder(NodeList[0]->getNode());
 
 		Value* ptr = it->first;
-		LLVM_DEBUG(dbgs() << "ptr_name = " << ptr->getName() << "\n");
+		LLVM_DEBUG(dbgs() << "\n---ptr_name = " << ptr->getName() << "\n");
 		LLVM_DEBUG(ptr->dump());
 
 
@@ -10745,14 +10746,15 @@ void DFG::InstrumentInOutVars(Function &F, std::unordered_map<Value *, int> mem_
 				Value* ptrs = i.second;
 				//				ptrs->dump();
 				if(ptrs == ptr){
+					LLVM_DEBUG(dbgs() << "Adding LiveInReportPtrTypeUsage() call\n");
 					GetElementPtrInst *GEP = dyn_cast<GetElementPtrInst>(ptrs);
-//					LLVM_DEBUG(dbgs() << "GEP operand 2 =  ";
+					LLVM_DEBUG(dbgs() << "GEP operand 2 =  ");
 					LLVM_DEBUG(GEP->getOperand(2)->dump());
 					LLVM_DEBUG(GEP->getOperand(0)->dump());
-//					LLVM_DEBUG(dbgs() << "array base = " << GEP->getOperand(0)->getName() << "\n";
+					LLVM_DEBUG(dbgs() << "array base = " << GEP->getOperand(0)->getName() << "\n");
 					Value* gepop0 = builder.CreateGlobalStringPtr(GEP->getOperand(0)->getName());//base ptr of array
 					Value * gepop2= GEP->getOperand(2);// array offset
-//					LLVM_DEBUG(dbgs() << "\n";
+					LLVM_DEBUG(dbgs() << "\n");
 
 					Value* ptr_spm_address_val = builder.CreateGlobalStringPtr(std::to_string(spm_base_address[GEP->getOperand(0)]));
 
@@ -10766,6 +10768,7 @@ void DFG::InstrumentInOutVars(Function &F, std::unordered_map<Value *, int> mem_
 
 			if(isOLNodewithPtrTyUsage == true){isOLNodewithPtrTyUsage = false;}
 			else if(ptr->getType()->isPointerTy()){
+				LLVM_DEBUG(dbgs() << "Adding LiveInReport() call\n");
 				Value* bitcastedptr = builder.CreateBitCast(it->first, Type::getInt8PtrTy(Ctx));
 				builder.CreateCall(live_in_report_FN,{ptr_name_val,bitcastedptr,size_val});
 			//	Value* bitcastedptr2 = builder.CreateBitCast(it->first, Type::getInt32PtrTy(Ctx));
@@ -10790,7 +10793,20 @@ void DFG::InstrumentInOutVars(Function &F, std::unordered_map<Value *, int> mem_
 		for(auto trans : loopexitBB){
 			BasicBlock* exitBB = trans.second;
 			builder.SetInsertPoint(exitBB->getTerminator());
+
+			for (auto i : OLNodesWithPtrTyUsage){
+				Value* ptrs = i.second;
+				if(ptrs == ptr){
+					LLVM_DEBUG(dbgs() << "No need to add LiveOutReport() call for outloop node with pointer type usage\n");
+					isOLNodewithPtrTyUsage = true;
+					break;
+				}
+				isOLNodewithPtrTyUsage = false;
+			}
+			if(isOLNodewithPtrTyUsage == true){isOLNodewithPtrTyUsage = false;break;}
+
 			if(ptr->getType()->isPointerTy()){
+				LLVM_DEBUG(dbgs() << "Adding LiveOutReport() call\n");
 				Value* bitcastedptr = builder.CreateBitCast(it->first, Type::getInt8PtrTy(Ctx));
 				builder.CreateCall(live_out_report_FN,{ptr_name_val,bitcastedptr,size_val});
 			}
@@ -10823,6 +10839,8 @@ void DFG::InstrumentInOutVars(Function &F, std::unordered_map<Value *, int> mem_
 //						builder.CreateCall(live_out_report_intvar_FN,{ptr_name_val,bitcastedptr});
 					}
 				}else{
+					LLVM_DEBUG(dbgs() << "Adding live_out_report_intermediatevariable() call\n");
+
 					Value* bitcastedptr = builder.CreateIntCast(it->first, Type::getInt32Ty(Ctx),true);
 					builder.CreateCall(live_out_report_intvar_FN,{ptr_name_val,bitcastedptr});
 				}
@@ -10841,6 +10859,8 @@ void DFG::InstrumentInOutVars(Function &F, std::unordered_map<Value *, int> mem_
 	}
 
 }
+#undef  DEBUG_TYPE
+#define DEBUG_TYPE LV_NAME
 
 void DFG::UpdateSPMAllocation(std::unordered_map<Value *, int> &spm_base_address,
 		std::unordered_map<Value *, SPM_BANK> &spm_base_allocation,
