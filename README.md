@@ -49,25 +49,5 @@ https://blog.csdn.net/jiaken2660/article/details/105155257
 
 # Examples:
 
-    cd applications/
-
-    Use python3 virtual environment to run the script https://linoxide.com/linux-how-to/setup-python-virtual-environment-ubuntu/
-
-    python3 -m venv morpher_env (first time)
-
-    source morpher_env/bin/activate
-
-    Set MORPHER_HOME directory as an environment variable (Ex: export MORPHER_HOME=/home/dmd/Workplace/Morphor/github_ecolab_repos)
-
-    python run_morpher_dfg_generator.py
-
-
-(for multiple SPM banks)
-
-    ./run_pass.sh hello main 2 2048 
-
-    hello: the source code file name  
-    main: function name  
-    2: the number of SPM banks. This is optional. The default value is 2.  
-    2048: the size of each bank. This is optional and the default value is 2048.  
+   Please refer the parent repository (https://github.com/ecolab-nus/morpher) 
 
