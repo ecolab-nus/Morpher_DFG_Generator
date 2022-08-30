@@ -665,6 +665,7 @@ int DFGTrMap::handleSELECTNodes() {
 	}
 
 
+	return 0;
 }
 
 dfgNode* DFGTrMap::combineConditionAND(dfgNode* brcond, dfgNode* selcond, dfgNode* child) {
@@ -1694,6 +1695,7 @@ int DFGTrMap::classifyParents() {
 		}
 	}
 
+	return 0;
 }
 
 void DFGTrMap::assignALAPasASAP() {

@@ -233,7 +233,7 @@ class DFG{
 			void eraseAlreadyMappedNodes(std::vector<ConnectedCGRANode>* candidates);
 			void backTrack(int nodeSeq);
 
-			std::vector<ConnectedCGRANode> ExpandCandidatesAddingRoutingNodes(std::vector<std::pair<Instruction*,int>>* candidateNumbers);
+			void ExpandCandidatesAddingRoutingNodes(std::vector<std::pair<Instruction*,int>>* candidateNumbers);
 			std::vector<ConnectedCGRANode> getConnectedCGRANodes(dfgNode* node);
 
 			int getConMatIdx(int t, int y, int x);

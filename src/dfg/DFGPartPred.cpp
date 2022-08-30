@@ -2174,6 +2174,7 @@ int DFGPartPred::classifyParents() {
 		}
 	}
 
+	return 0;
 }
 
 void DFGPartPred::assignALAPasASAP() {

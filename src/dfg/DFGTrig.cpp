@@ -686,6 +686,7 @@ int DFGTrig::handleSELECTNodes() {
 		}
 	}
 
+	return 0;
 
 }
 
@@ -1968,6 +1969,7 @@ int DFGTrig::classifyParents() {
 		}
 	}
 
+	return 0;
 }
 
 void DFGTrig::assignALAPasASAP() {

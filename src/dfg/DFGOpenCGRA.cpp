@@ -963,6 +963,7 @@ int DFGOpenCGRA::classifyParents() {
 		}
 	}
 
+	return 0;
 }
 
 void DFGOpenCGRA::addRecConnsAsPseudo() {

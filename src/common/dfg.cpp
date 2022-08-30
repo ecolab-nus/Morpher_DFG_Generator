@@ -492,6 +492,7 @@ int DFG::handlePHINodeFanIn()
 		workingSet[0]->addChildNode(node);
 		node->addAncestorNode(workingSet[0]);
 	}
+	return 0;
 }
 
 void DFG::printXML()
@@ -1852,6 +1853,8 @@ int DFG::AddRoutingEdges(dfgNode *node)
 		}
 
 	} while (routingPossibilities == 0);
+
+	return 0;
 }
 
 std::map<dfgNode *, std::vector<CGRANode *>> DFG::getPrimarySlots(
@@ -2920,7 +2923,7 @@ void DFG::backTrack(int nodeSeq)
 	}
 }
 
-std::vector<ConnectedCGRANode> DFG::ExpandCandidatesAddingRoutingNodes(
+void DFG::ExpandCandidatesAddingRoutingNodes(
 		std::vector<std::pair<Instruction *, int>> *candidateNumbers)
 {
 
@@ -4827,6 +4830,7 @@ int DFG::printRegStats()
 int DFG::sortPossibleDests(
 		std::vector<std::pair<CGRANode *, int>> *possibleDests)
 {
+	return 0;
 }
 
 int DFG::removeRedEdgesPHI()
@@ -4851,6 +4855,7 @@ int DFG::removeRedEdgesPHI()
 			}
 		}
 	}
+	return 0;
 }
 
 int DFG::addCMERGEtoSELECT()
@@ -5044,6 +5049,8 @@ int DFG::printJUMPLHeader(std::ofstream &binFile,
 
 	binFile << std::endl;
 	binOpNameFile << std::endl;
+
+	return 0;
 }
 
 int DFG::printMapping()
@@ -5763,6 +5770,7 @@ int DFG::printMapping()
 	insFile.close();
 	binFile.close();
 	binOpNameFile.close();
+	return 0;
 }
 
 int DFG::updateBinOp(binOp *binOpIns, Port outPort, Port inPort)
@@ -5847,6 +5855,7 @@ int DFG::updateBinOp(binOp *binOpIns, Port outPort, Port inPort)
 			assert(false);
 			break;
 	}
+	return 0;
 }
 
 int DFG::printCongestionInfo()
@@ -6592,6 +6601,7 @@ int DFG::nameNodes()
 
 		hyCUBEInsHist[node->getFinalIns()]++;
 	}
+	return 0;
 }
 
 int DFG::nameNodesCGRAME()
@@ -7023,6 +7033,7 @@ int DFG::nameNodesCGRAME()
 
 		hyCUBEInsHist[node->getFinalIns()]++;
 	}
+	return 0;
 }
 
 
@@ -7044,6 +7055,7 @@ int DFG::checkSanity()
 		}
 		assert(NodeList[i]->getAncestors().size() <= 3);
 	}
+	return 0;
 }
 
 std::string DFG::getArchName(ArchType arch)
@@ -8572,6 +8584,7 @@ void DFG::AssignOutLoopAddr()
 
 int DFG::phiselectInsert()
 {
+	return 0;
 }
 
 int DFG::PlaceMacro(DFG *mappedDFG, int XDim, int YDim, ArchType arch)
@@ -8979,6 +8992,7 @@ int DFG::classifyParents()
 			node->parentClassification[findOperandNumber(node, ins, parentIns)] = parent;
 		}
 	}
+	return 0;
 }
 
 int DFG::findOperandNumber(dfgNode *node, Instruction *child, Value *parent)
@@ -9111,6 +9125,7 @@ int DFG::findOperandNumber(dfgNode *node, Instruction *child, Value *parent)
 			assert(false);
 		}
 	}
+	return 0;
 }
 
 int DFG::treatFalsePaths()
@@ -9283,6 +9298,7 @@ int DFG::insertshiftGEPs()
 		}
 	}
 	LLVM_DEBUG(dbgs() << "insertshiftGEPs ended!\n");
+	return 0;
 }
 
 int DFG::partitionMemNodes()
@@ -9577,6 +9593,8 @@ int DFG::handlestartstop()
 			//			}
 		}
 	}
+
+	return 0;
 }
 
 int DFG::handlestartstop_munit(std::vector<munitTransition> bbTrans)
@@ -9778,6 +9796,7 @@ int DFG::handlestartstop_munit(std::vector<munitTransition> bbTrans)
 			count++;
 		}
 	}
+	return 0;
 }
 
 int DFG::nonGEPLoadStorecheck()
@@ -9900,6 +9919,7 @@ int DFG::addMaskLowBitInstructions()
 			}
 		}
 	}
+	return 0;
 }
 
 int DFG::addBreakLongerPaths()
@@ -9963,6 +9983,7 @@ int DFG::addBreakLongerPaths()
 			}
 		}
 	}
+	return 0;
 }
 
 int DFG::analyzeRTpaths()
@@ -10044,6 +10065,7 @@ int DFG::analyzeRTpaths()
 		}
 	}
 	LLVM_DEBUG(dbgs() << "analyzeRTpaths :: end\n");
+	return 0;
 }
 
 std::map<BasicBlock *, std::set<BasicBlock *>> DFG::checkMutexBBs()
@@ -10094,6 +10116,8 @@ int DFG::printHyCUBEInsHist()
 	{
 		LLVM_DEBUG(dbgs() << "Ins:" << HyCUBEInsStrings[pair.first] << "," << pair.second << "\n");
 	}
+
+	return 0;
 }
 
 void DFG::printNewDFGXML()
@@ -11037,7 +11061,7 @@ void DFG::SetBasePointers(std::unordered_set<Value *> &outer_vals,
  *
  *
  * */
-#define DEBUG_TYPE "instrumentation"
+//#define DEBUG_TYPE "instrumentation"
 void DFG::InstrumentInOutVars(Function &F, std::unordered_map<Value *, int> mem_accesses, std::map<dfgNode*,Value*> &OLNodesWithPtrTyUsage, std::unordered_map<Value *, int> &spm_base_address){
 
 	LLVM_DEBUG(dbgs() << "Outloop node instructions with pointer type usage in the loop body \n");
@@ -11292,8 +11316,8 @@ void DFG::InstrumentInOutVars(Function &F, std::unordered_map<Value *, int> mem_
 	}
 
 }
-#undef  DEBUG_TYPE
-#define DEBUG_TYPE LV_NAME
+//#undef  DEBUG_TYPE
+//#define DEBUG_TYPE LV_NAME
 
 void DFG::UpdateSPMAllocation(std::unordered_map<Value *, int> &spm_base_address,
 		std::unordered_map<Value *, SPM_BANK> &spm_base_allocation,
@@ -11498,5 +11522,6 @@ int DFG::insertshiftGEPsCorrect(){
 		NodeList.push_back(n);
 	}
 
+	return 0;
 	// assert(false);
 }

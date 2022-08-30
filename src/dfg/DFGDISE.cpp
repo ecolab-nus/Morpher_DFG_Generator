@@ -1693,6 +1693,7 @@ int DFGDISE::classifyParents() {
 		}
 	}
 
+	return 0;
 }
 
 void DFGDISE::assignALAPasASAP() {

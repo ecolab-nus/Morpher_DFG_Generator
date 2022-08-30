@@ -759,6 +759,7 @@ dfgNode* dfgNode::addCMergeParent(Instruction* phiBRAncestorIns,
 	temp->addAncestorNode(tempBR);
 	tempBR->addChildNode(temp);
 
+	return NULL;
 }
 
 dfgNode* dfgNode::addCMergeParent(Instruction* phiBRAncestorIns,

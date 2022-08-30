@@ -962,6 +962,7 @@ int DFGCgraMe::classifyParents() {
 		}
 	}
 
+	return 0;
 }
 
 void DFGCgraMe::addRecConnsAsPseudo() {
