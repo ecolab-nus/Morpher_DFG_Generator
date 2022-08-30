@@ -71,6 +71,7 @@
 #include <morpherdfggen/common/dfgnode.h>
 #include <morpherdfggen/dfg/DFGBrMap.h>
 #include <morpherdfggen/dfg/DFGCgraMe.h>
+#include <morpherdfggen/dfg/DFGOpenCGRA.h>
 #include <morpherdfggen/dfg/DFGDISE.h>
 #include <morpherdfggen/dfg/DFGFullPred.h>
 #include <morpherdfggen/dfg/DFGPartPred.h>
@@ -2271,6 +2272,13 @@ struct dfggenPass : public FunctionPass
 			{
 				LoopDFG = new DFGCgraMe(F.getName().str() + "_" + munitName, &loopNames, mappingUnitMap[munitName].lp);
 				DFGCgraMe *LoopDFG_PP = static_cast<DFGCgraMe *>(LoopDFG);
+				LoopDFG->setKernelName(F.getName().str());
+				LoopDFG_PP->SE = SE;
+			}
+			else if(dfgType == "OPENCGRA")
+			{
+				LoopDFG = new DFGOpenCGRA(F.getName().str() + "_" + munitName, &loopNames, mappingUnitMap[munitName].lp);
+				DFGOpenCGRA *LoopDFG_PP = static_cast<DFGOpenCGRA *>(LoopDFG);
 				LoopDFG->setKernelName(F.getName().str());
 				LoopDFG_PP->SE = SE;
 			}

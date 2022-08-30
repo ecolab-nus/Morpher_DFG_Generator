@@ -22,17 +22,17 @@ void DFGCgraMe::generateTrigDFGDOT(Function &F) {
 	removeAlloc();
 	connectBBTrig();
 	createCtrlBROrTree();
-	printDOT(this->name + "bef_handlePHINodes_PartPredDFG.dot");
-	LLVM_DEBUG(dbgs() << "\n[DFGCgraMe.cpp][handlePHINodes begin]\n");
+	//printDOT(this->name + "bef_handlePHINodes_PartPredDFG.dot");
+	//LLVM_DEBUG(dbgs() << "\n[DFGCgraMe.cpp][handlePHINodes begin]\n");
 	//handlePHINodes(this->loopBB);
 
-	LLVM_DEBUG(dbgs() << "\n[DFGCgraMe.cpp][handlePHINodes end]\n");
+	//LLVM_DEBUG(dbgs() << "\n[DFGCgraMe.cpp][handlePHINodes end]\n");
 	//printDOT(this->name + "after_handlePHINodes_PartPredDFG.dot");
-	LLVM_DEBUG(dbgs() << "\n[DFGCgraMe.cpp][handleSELECTNodes begin]\n");
+	//LLVM_DEBUG(dbgs() << "\n[DFGCgraMe.cpp][handleSELECTNodes begin]\n");
 	//handleSELECTNodes();
 
-	LLVM_DEBUG(dbgs() << "\n[DFGCgraMe.cpp][handleSELECTNodes end]\n");
-	printDOT(this->name + "after_handleSELECTNodes_PartPredDFG.dot");
+	//LLVM_DEBUG(dbgs() << "\n[DFGCgraMe.cpp][handleSELECTNodes end]\n");
+	//printDOT(this->name + "after_handleSELECTNodes_PartPredDFG.dot");
 
 	//exit(true);
 
@@ -41,14 +41,14 @@ void DFGCgraMe::generateTrigDFGDOT(Function &F) {
 	//insertshiftGEPsCorrect();
 	//removeDisconnetedNodes();
 	//	scheduleCleanBackedges();
-	LLVM_DEBUG(dbgs() << "\n[DFGCgraMe.cpp][fillCMergeMutexNodes begin]\n");
+	//LLVM_DEBUG(dbgs() << "\n[DFGCgraMe.cpp][fillCMergeMutexNodes begin]\n");
 	//fillCMergeMutexNodes();
-	LLVM_DEBUG(dbgs() << "\n[DFGCgraMe.cpp][fillCMergeMutexNodes end]\n");
+	//LLVM_DEBUG(dbgs() << "\n[DFGCgraMe.cpp][fillCMergeMutexNodes end]\n");
 
 
-	LLVM_DEBUG(dbgs() << "\n[DFGCgraMe.cpp][constructCMERGETree begin]\n");
+	//LLVM_DEBUG(dbgs() << "\n[DFGCgraMe.cpp][constructCMERGETree begin]\n");
 	//constructCMERGETree();
-	LLVM_DEBUG(dbgs() << "\n[DFGCgraMe.cpp][constructCMERGETree end]\n");
+	//LLVM_DEBUG(dbgs() << "\n[DFGCgraMe.cpp][constructCMERGETree end]\n");
 
 	//	printDOT(this->name + "_PartPredDFG.dot"); return;
 	LLVM_DEBUG(dbgs() << "\n[DFGCgraMe.cpp][addLoopExitStoreHyCUBE begin]\n");

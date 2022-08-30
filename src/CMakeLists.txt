@@ -23,6 +23,8 @@ add_library(dfggenPass MODULE
     dfg/DFGPartPred.cpp
     ../include/morpherdfggen/dfg/DFGCgraMe.h
     dfg/DFGCgraMe.cpp
+    ../include/morpherdfggen/dfg/DFGOpenCGRA.h
+    dfg/DFGOpenCGRA.cpp
     ../include/morpherdfggen/dfg/DFGFullPred.h
     dfg/DFGFullPred.cpp
     ../include/morpherdfggen/dfg/DFGDISE.h
