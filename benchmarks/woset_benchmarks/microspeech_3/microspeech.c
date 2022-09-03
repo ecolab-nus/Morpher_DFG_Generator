@@ -869,7 +869,7 @@ void main() {
 
   //specify directory path here
   //path_to_dir
-  dir = opendir("test_data/");
+  dir = opendir("../microspeech_test_data/");
   
   if (dir == NULL) {
     printf("Failed to open directory.\n");
@@ -881,7 +881,7 @@ void main() {
       char string[1000];
       
       //specify directory path here
-      char full_file_name[] = "test_data/";
+      char full_file_name[] = "../microspeech_test_data/";
       int ctr_fl = sizeof(full_file_name);
 
       //printf("%s\n", entry->d_name);
