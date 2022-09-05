@@ -2337,9 +2337,11 @@ struct dfggenPass : public FunctionPass
 			}
 			LLVM_DEBUG(dbgs() << "[Skeleton.cpp][traverseDefTree end]\n\n");
 
-			LLVM_DEBUG(dbgs() << "\n[Skeleton.cpp][addMemRecDepEdgesNew begin]\n");
-			LoopDFG->addMemRecDepEdgesNew(DI);
-			LLVM_DEBUG(dbgs() << "[Skeleton.cpp][addMemRecDepEdgesNew end]\n\n");
+			if(dfgType != "CGRAME"){
+				LLVM_DEBUG(dbgs() << "\n[Skeleton.cpp][addMemRecDepEdgesNew begin]\n");
+				LoopDFG->addMemRecDepEdgesNew(DI);
+				LLVM_DEBUG(dbgs() << "[Skeleton.cpp][addMemRecDepEdgesNew end]\n\n");
+			}
 
 
 			LLVM_DEBUG(dbgs() << "\n[Skeleton.cpp][generateTrigDFGDOT begin]\n");

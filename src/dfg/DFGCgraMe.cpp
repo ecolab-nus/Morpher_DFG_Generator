@@ -51,12 +51,12 @@ void DFGCgraMe::generateTrigDFGDOT(Function &F) {
 	//LLVM_DEBUG(dbgs() << "\n[DFGCgraMe.cpp][constructCMERGETree end]\n");
 
 	//	printDOT(this->name + "_PartPredDFG.dot"); return;
-	LLVM_DEBUG(dbgs() << "\n[DFGCgraMe.cpp][addLoopExitStoreHyCUBE begin]\n");
+//	LLVM_DEBUG(dbgs() << "\n[DFGCgraMe.cpp][addLoopExitStoreHyCUBE begin]\n");
 	//addLoopExitStoreHyCUBE(exitNodes);
-	LLVM_DEBUG(dbgs() << "[DFGCgraMe.cpp][addLoopExitStoreHyCUBE end]\n\n");
-	LLVM_DEBUG(dbgs() << "\n[DFGCgraMe.cpp][handlestartstop begin]\n");
+//	LLVM_DEBUG(dbgs() << "[DFGCgraMe.cpp][addLoopExitStoreHyCUBE end]\n\n");
+//	LLVM_DEBUG(dbgs() << "\n[DFGCgraMe.cpp][handlestartstop begin]\n");
 	//handlestartstop();
-	LLVM_DEBUG(dbgs() << "[DFGCgraMe.cpp][handlestartstop end] Nodelist size:" <<NodeList.size()<<"\n\n");
+//	LLVM_DEBUG(dbgs() << "[DFGCgraMe.cpp][handlestartstop end] Nodelist size:" <<NodeList.size()<<"\n\n");
 
 	//	printDOT(this->name + "afterhandlestartstop_PartPredDFG.dot");
 	LLVM_DEBUG(dbgs() << "\n[DFGCgraMe.cpp][scheduleASAP begin]\n");
@@ -72,38 +72,38 @@ void DFGCgraMe::generateTrigDFGDOT(Function &F) {
 
 
 
-	LLVM_DEBUG(dbgs() << "\n[DFGCgraMe.cpp][GEPBaseAddrCheck begin]\n");
+//	LLVM_DEBUG(dbgs() << "\n[DFGCgraMe.cpp][GEPBaseAddrCheck begin]\n");
 	//GEPBaseAddrCheck(F);
-	LLVM_DEBUG(dbgs() << "[DFGCgraMe.cpp][GEPBaseAddrCheck end]\n\n");
+//	LLVM_DEBUG(dbgs() << "[DFGCgraMe.cpp][GEPBaseAddrCheck end]\n\n");
 	LLVM_DEBUG(dbgs() << "\n[DFGCgraMe.cpp][nameNodes begin]\n");
 	nameNodesCGRAME();
 	LLVM_DEBUG(dbgs() << "[DFGCgraMe.cpp][nameNodes end]\n\n");
 	LLVM_DEBUG(dbgs() << "\n[DFGCgraMe.cpp][classifyParents begin]\n");
 	classifyParents();
+	LLVM_DEBUG(dbgs() << "[DFGCgraMe.cpp][classifyParents end]\n\n");
 	// RemoveInductionControlLogic();
 
 	// RemoveBackEdgePHIs();
 	// removeOutLoopLoad();
 	//	RemoveConstantCMERGEs(); Originally on morpher
-	LLVM_DEBUG(dbgs() << "[DFGCgraMe.cpp][classifyParents end]\n\n");
-	LLVM_DEBUG(dbgs() << "\n[DFGCgraMe.cpp][removeDisconnectedNodes begin]\n");
+//	LLVM_DEBUG(dbgs() << "\n[DFGCgraMe.cpp][removeDisconnectedNodes begin]\n");
 	//removeDisconnectedNodes();
-	LLVM_DEBUG(dbgs() << "[DFGCgraMe.cpp][removeDisconnectedNodes end]\n\n");
-	LLVM_DEBUG(dbgs() << "\n[DFGCgraMe.cpp][addOrphanPseudoEdges begin]\n");
-	addOrphanPseudoEdges();
-	LLVM_DEBUG(dbgs() << "[DFGCgraMe.cpp][addOrphanPseudoEdges end]\n\n");
-	LLVM_DEBUG(dbgs() << "\n[DFGCgraMe.cpp][addRecConnsAsPseudo begin]\n");
-	addRecConnsAsPseudo();
-	LLVM_DEBUG(dbgs() << "[DFGCgraMe.cpp][addRecConnsAsPseudo end]\n\n");
-	LLVM_DEBUG(dbgs() << "\n[DFGCgraMe.cpp][changeTypeofSingleSourceCompNodes begin]\n");
+//	LLVM_DEBUG(dbgs() << "[DFGCgraMe.cpp][removeDisconnectedNodes end]\n\n");
+//	LLVM_DEBUG(dbgs() << "\n[DFGCgraMe.cpp][addOrphanPseudoEdges begin]\n");
+//	addOrphanPseudoEdges();
+//	LLVM_DEBUG(dbgs() << "[DFGCgraMe.cpp][addOrphanPseudoEdges end]\n\n");
+//	LLVM_DEBUG(dbgs() << "\n[DFGCgraMe.cpp][addRecConnsAsPseudo begin]\n");
+//	addRecConnsAsPseudo();
+//	LLVM_DEBUG(dbgs() << "[DFGCgraMe.cpp][addRecConnsAsPseudo end]\n\n");
+//	LLVM_DEBUG(dbgs() << "\n[DFGCgraMe.cpp][changeTypeofSingleSourceCompNodes begin]\n");
 	// printDOT(this->name + "_PartPredDFG.dot");
 	// printNewDFGXML();
-	LLVM_DEBUG(dbgs() << "[DFGCgraMe.cpp][changeTypeofSingleSourceCompNodes end]\n\n");
-	LLVM_DEBUG(dbgs() << "\n[DFGCgraMe.cpp][removeDisconnectedNodes begin]\n");
+//	LLVM_DEBUG(dbgs() << "[DFGCgraMe.cpp][changeTypeofSingleSourceCompNodes end]\n\n");
 
 
 	//function removeDisconnetedNodes() should be called at last, otherwise same idx would be reused
 	//when new instructions are added
+	LLVM_DEBUG(dbgs() << "\n[DFGCgraMe.cpp][removeDisconnectedNodes begin]\n");
 	removeDisconnetedNodes();
 	LLVM_DEBUG(dbgs() << "[DFGCgraMe.cpp][removeDisconnectedNodes end]\n\n");
 
