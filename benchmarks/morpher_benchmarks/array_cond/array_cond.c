@@ -10,7 +10,7 @@ void external_fun() {C[0] = 7;}
 __attribute__((noinline))
 void array_cond(){
 
-   
+   int x;
    for (int i=0;i<SIZE; i++){
       #ifdef CGRA_COMPILER
       please_map_me();
@@ -21,6 +21,15 @@ void array_cond(){
 	else
 		C[i] = A[i] + B[i];
 
+
+/*
+	x = A[i] - B[i];
+	if (x < 0)
+		C[i] = A[i] + B[i];
+	else
+		C[i] = 4;
+
+*/
 /*
 	external_fun();
 	if (A[i] > B[i])
@@ -45,7 +54,7 @@ int i,j;
 
 for (i=0;i<SIZE; i++){
       A[i] = i * 2 + 5;
-      B[i] = i * 3;
+      B[i] = i * 3 + 8;
       C[i] = 0;
     }
     
