@@ -797,37 +797,79 @@ int DFGPartPred::handleSELECTNodes() {
 			dfgNode* mergeNode;
 			//Instruction* ins = dyn_cast<Instruction>(V)
 			Instruction* ctrlins = dyn_cast<Instruction>(SLI->getCondition());
-			Instruction* datains = dyn_cast<Instruction>(SLI->getFalseValue());
+//			Instruction* false_datains = dyn_cast<Instruction>(SLI->getFalseValue());
 			dfgNode* ctrl = findNode(ctrlins);
-			dfgNode* data = findNode(datains);
-			node->removeAncestor(data);
-			data->removeChild(node);
+//			dfgNode* falsedata = findNode(false_datains);
+//			node->removeAncestor(falsedata);
+//			falsedata->removeChild(node);
 			node->removeAncestor(ctrl);
 			ctrl->removeChild(node);
 
-			mergeNode = insertMergeNodeBeforeSEL(node,ctrl,false,data);
-			mergeNodes.push_back(mergeNode);
-			bool isBackEdge = false;
-			node->addAncestorNode(mergeNode,EDGE_TYPE_DATA,isBackEdge);
-			mergeNode->addChildNode(node,EDGE_TYPE_DATA,isBackEdge);
+//			mergeNode = insertMergeNodeBeforeSEL(node,ctrl,false,falsedata);
+//			mergeNodes.push_back(mergeNode);
+//			bool isBackEdge = false;
+//			node->addAncestorNode(mergeNode,EDGE_TYPE_DATA,isBackEdge);
+//			mergeNode->addChildNode(node,EDGE_TYPE_DATA,isBackEdge);
 
 			//Original SELECT instruction has constant,remove the constant value from instruction and supply it from
 			//CMERGE node
-			LLVM_DEBUG(dbgs() << SLI->getCondition()<<"\n");
-			LLVM_DEBUG(dbgs() << SLI->getTrueValue()<<"\n");
-			LLVM_DEBUG(dbgs() << SLI->getFalseValue()<<"\n");
-			ConstantInt* CI = dyn_cast<ConstantInt>(SLI->getTrueValue());
-			LLVM_DEBUG(dbgs() << CI<<"\n");
-			int constant = 0;
-			if(CI){
-				constant = CI->getSExtValue();
-			}
-			mergeNode = insertMergeNodeBeforeSEL(node,ctrl,true,constant);
-			isBackEdge = false;
-			node->addAncestorNode(mergeNode,EDGE_TYPE_DATA,isBackEdge);
-			mergeNode->addChildNode(node,EDGE_TYPE_DATA,isBackEdge);
+//			LLVM_DEBUG(dbgs() << SLI->getCondition()<<"\n");
+//			LLVM_DEBUG(dbgs() << SLI->getTrueValue()<<"\n");
+//			LLVM_DEBUG(dbgs() << SLI->getFalseValue()<<"\n");
+			if(ConstantInt* CI = dyn_cast<ConstantInt>(SLI->getTrueValue())){
 
-			node->removeConstantVal();
+				LLVM_DEBUG(CI->dump());
+				int constant = 0;
+				if(CI){
+					constant = CI->getSExtValue();
+				}
+				mergeNode = insertMergeNodeBeforeSEL(node,ctrl,true,constant);
+				bool isBackEdge = false;
+				node->addAncestorNode(mergeNode,EDGE_TYPE_DATA,isBackEdge);
+				mergeNode->addChildNode(node,EDGE_TYPE_DATA,isBackEdge);
+
+				node->removeConstantVal();
+			}
+			else{
+				Instruction* true_datains = dyn_cast<Instruction>(SLI->getTrueValue());
+				dfgNode* truedata = findNode(true_datains);
+				node->removeAncestor(truedata);
+				truedata->removeChild(node);
+
+				mergeNode = insertMergeNodeBeforeSEL(node,ctrl,true,truedata);
+				mergeNodes.push_back(mergeNode);
+				bool isBackEdge = false;
+				node->addAncestorNode(mergeNode,EDGE_TYPE_DATA,isBackEdge);
+				mergeNode->addChildNode(node,EDGE_TYPE_DATA,isBackEdge);
+			}
+
+
+			if(ConstantInt* CI = dyn_cast<ConstantInt>(SLI->getFalseValue())){
+
+				LLVM_DEBUG(CI->dump());
+				int constant = 0;
+				if(CI){
+					constant = CI->getSExtValue();
+				}
+				mergeNode = insertMergeNodeBeforeSEL(node,ctrl,false,constant);
+				bool isBackEdge = false;
+				node->addAncestorNode(mergeNode,EDGE_TYPE_DATA,isBackEdge);
+				mergeNode->addChildNode(node,EDGE_TYPE_DATA,isBackEdge);
+
+				node->removeConstantVal();
+			}
+			else{
+				Instruction* false_datains = dyn_cast<Instruction>(SLI->getFalseValue());
+				dfgNode* falsedata = findNode(false_datains);
+				node->removeAncestor(falsedata);
+				falsedata->removeChild(node);
+
+				mergeNode = insertMergeNodeBeforeSEL(node,ctrl,false,falsedata);
+				mergeNodes.push_back(mergeNode);
+				bool isBackEdge = false;
+				node->addAncestorNode(mergeNode,EDGE_TYPE_DATA,isBackEdge);
+				mergeNode->addChildNode(node,EDGE_TYPE_DATA,isBackEdge);
+			}
 			//node->removeChild(child);
 
 		}
