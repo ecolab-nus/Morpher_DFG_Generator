@@ -740,7 +740,11 @@ void DFGPartPred::generateTrigDFGDOT(Function &F) {
 	connectBBTrig();
 	createCtrlBROrTree();
 
+	printDOT(this->name + "bef_handlePHINodes_PartPredDFG.dot");
+	outs() << "\n[DFGPartPred.cpp][handlePHINodes begin]\n";
 	handlePHINodes(this->loopBB);
+	outs() << "\n[DFGPartPred.cpp][handlePHINodes end]\n";
+	printDOT(this->name + "after_handlePHINodes_PartPredDFG.dot");
 	// insertshiftGEPs();
 	addMaskLowBitInstructions();
 	insertshiftGEPsCorrect();
@@ -1305,7 +1309,8 @@ void DFGPartPred::balanceSched() {
 void DFGPartPred::printNewDFGXML() {
 
 
-	std::string fileName = name + "_PartPred_DFG.xml";
+//	std::string fileName = name + "_PartPred_DFG.xml";
+	std::string fileName = "DFG.xml";
 #ifdef REMOVE_AGI
 	fileName = name + "_PartPred_AGI_REMOVED_DFG.xml";
 #endif
@@ -1620,7 +1625,8 @@ void DFGPartPred::printNewDFGXML() {
 void DFGPartPred::printNewDFGXML_forclustering() {
 
 
-	std::string fileName = name + "_PartPred_DFG_forclustering.xml";
+//	std::string fileName = name + "_PartPred_DFG_forclustering.xml";
+	std::string fileName = "DFG_forclustering.xml";
 #ifdef REMOVE_AGI
 	fileName = name + "_PartPred_AGI_REMOVED_DFG.xml";
 #endif
@@ -2732,6 +2738,232 @@ void DFGPartPred::printDOT(std::string fileName) {
 			ofs << " -> ";
 			ofs << "\"" << "Op_" << recChild->getIdx() << "\"";
 			ofs << "[style = bold, color = green];\n";
+		}
+	}
+
+	ofs << "}" << std::endl;
+	ofs.close();
+}
+
+void DFGPartPred::printDOTsimple(std::string fileName) {
+	std::ofstream ofs;
+	ofs.open(fileName.c_str());
+
+	//Write the initial info
+	ofs << "digraph Region_18 {\n";
+	ofs << "\tgraph [ nslimit = \"1000.0\",\n";
+	ofs <<	"\torientation = landscape,\n";
+	ofs <<	"\t\tcenter = true,\n";
+	ofs <<	"\tpage = \"8.5,11\",\n";
+	ofs << "\tcompound=true,\n";
+	ofs <<	"\tsize = \"10,7.5\" ] ;" << std::endl;
+
+	assert(NodeList.size() != 0);
+
+	std::map<const BasicBlock*,std::set<dfgNode*>> BBNodeList;
+
+	for(dfgNode* node : NodeList){
+		BBNodeList[node->BB].insert(node);
+	}
+
+	int cluster_idx=0;
+	for(std::pair<const BasicBlock*,std::set<dfgNode*>> BBNodeSet : BBNodeList){
+		const BasicBlock* BB = BBNodeSet.first;
+
+		//		  subgraph cluster_0 {
+		//		        node [style=filled];
+		//		        "Item 1" "Item 2";
+		//		        label = "Container A";
+		//		        color=blue;
+		//		    }
+
+		//		ofs << "subgraph cluster_" << cluster_idx << " {\n";
+		//		ofs << "node [style=filled]";
+		for(dfgNode* node : BBNodeSet.second){
+			ofs << "\""; //BEGIN NODE NAME
+			ofs << "Op_" << node->getIdx();
+			ofs << "\" [ fontname = \"Helvetica\" shape = box, ";
+#ifdef CLUSTER_DFG
+			ofs << "color = ";
+			if(node->getClusterIdx()==0){
+				ofs << "red";
+			}
+			else if(node->getClusterIdx()==1){
+				ofs << "green";
+			}
+			else if(node->getClusterIdx()==2){
+				ofs << "blue";
+			}
+			else if(node->getClusterIdx()==3){
+				ofs << "yellow";
+			}
+			else if(node->getClusterIdx()==4){
+				ofs << "cyan";
+			}
+			else if(node->getClusterIdx()==5){
+				ofs << "purple";
+			}
+			else if(node->getClusterIdx()==6){
+				ofs << "orange";
+			}
+			else if(node->getClusterIdx()==7){
+				ofs << "grey";
+			}
+			else if(node->getClusterIdx()==8){
+				ofs << "brown";
+			}
+			else if(node->getClusterIdx()==9){
+				ofs << "pink";
+			}
+			else{
+				ofs << "black";
+			}
+			ofs << ", ";
+#endif
+			ofs << " label = \" ";
+			//if(node->getNode() != NULL){
+				//ofs << node->getNode()->getOpcodeName();
+				std::string operationName;
+				if (HyCUBEInsStrings[node->getFinalIns()] == "LOAD" || HyCUBEInsStrings[node->getFinalIns()] == "LOADB"){
+					operationName = "L";}
+				else if (HyCUBEInsStrings[node->getFinalIns()] == "STORE" || HyCUBEInsStrings[node->getFinalIns()] == "STOREB"){
+					operationName = "S";}
+				else if (HyCUBEInsStrings[node->getFinalIns()] == "ADD"){
+					operationName = "+";}
+				else if (HyCUBEInsStrings[node->getFinalIns()] == "SUB"){
+					operationName = "-";}
+				else if (HyCUBEInsStrings[node->getFinalIns()] == "MUL"){
+					operationName = "x";}
+				else if (HyCUBEInsStrings[node->getFinalIns()] == "LS"){
+					operationName = "<<";}
+				else if (HyCUBEInsStrings[node->getFinalIns()] == "RS"){
+					operationName = ">>";}
+				else if (HyCUBEInsStrings[node->getFinalIns()] == "ARS"){
+					operationName = ">>";}
+				else if (HyCUBEInsStrings[node->getFinalIns()] == "AND"){
+					operationName = "&";}
+				else if (HyCUBEInsStrings[node->getFinalIns()] == "OR"){
+					operationName = "||";}
+				else {
+					operationName = "C";
+				}
+				ofs << operationName;
+				//ofs << " " << node->getNode()->getName().str() << " ";
+
+//				if(node->hasConstantVal()){
+//					ofs << " C=" << "0x" << std::hex << node->getConstantVal() << std::dec;
+//				}
+//
+//				if(node->isGEP()){
+//					ofs << " C=" << "0x" << std::hex << node->getGEPbaseAddr() << std::dec;
+//				}
+
+			//}
+			//else{
+			//	ofs << "C";
+
+//				if(node->getNameType() == "OuterLoopLOAD"){
+//					ofs << " " << OutLoopNodeMapReverse[node]->getName().str() << " ";
+//				}
+//
+//				if(node->isOutLoop()){
+//					ofs << " C=" << "0x" << node->getoutloopAddr() << std::dec;
+//				}
+//
+//				if(node->hasConstantVal()){
+//					ofs << " C=" << "0x" << node->getConstantVal() << std::dec;
+//				}
+			//}
+
+			//ofs << "BB=" << node->BB->getName().str();
+
+//			if(!mutexNodes[node].empty()){
+//				ofs << ",mutex={";
+//				for(dfgNode* m : mutexNodes[node]){
+//					ofs << m->getIdx() << ",";
+//				}
+//				ofs << "}";
+//			}
+//
+//			if(node->getFinalIns() != NOP){
+//				ofs << " HyIns=" << HyCUBEInsStrings[node->getFinalIns()];
+//			}
+//			ofs << ",\n";
+//			ofs << node->getIdx() << ", ASAP=" << node->getASAPnumber();
+//			ofs << ", ALAP=" << node->getALAPnumber();
+#ifdef CLUSTER_DFG
+//			ofs << ",\n";
+//			ofs << ", TILE=" << node->getTileIdx();
+#endif
+
+			ofs << "\"]\n"; //END NODE NAME
+		}
+
+		//		ofs << "label = " << "\"" << BB->getName().str() << "\"" << ";\n";
+		//		ofs << "color = purple;\n";
+		//		ofs << "}\n";
+		cluster_idx++;
+	}
+
+
+	//The EDGES
+
+	for(dfgNode* node : NodeList){
+
+		for(dfgNode* child : node->getChildren()){
+			bool isCondtional=false;
+			bool condition=true;
+
+			isCondtional= node->childConditionalMap[child] != UNCOND;
+			condition = (node->childConditionalMap[child] == TRUE);
+
+			bool isBackEdge = node->childBackEdgeMap[child];
+
+
+			ofs << "\"" << "Op_" << node->getIdx() << "\"";
+			ofs << " -> ";
+			ofs << "\"" << "Op_" << child->getIdx() << "\"";
+			ofs << " [style = ";
+
+			if(isBackEdge){
+				ofs << "dashed";
+			}
+			else{
+				ofs << "bold";
+			}
+			ofs << ", ";
+
+			ofs << "color = ";
+			if(isCondtional){
+				if(findEdge(node,child)->getType() == EDGE_TYPE_PS){
+					ofs << "black";
+				}
+				else if(condition==true){
+					ofs << "black";
+				}
+				else{
+					ofs << "black";
+				}
+			}
+#ifdef CLUSTER_DFG
+			else if(findEdge(node,child)->getType() == EDGE_TYPE_PS){
+				ofs << "grey";
+			}
+#endif
+			else{
+				ofs << "black";
+
+			}
+
+			//			ofs << ", headport=n, tailport=s";
+			ofs << "];\n";
+		}
+
+		for(dfgNode* recChild : node->getRecChildren()){
+			ofs << "\"" << "Op_" << node->getIdx() << "\"";
+			ofs << " -> ";
+			ofs << "\"" << "Op_" << recChild->getIdx() << "\"";
+			ofs << "[style = bold, color = black];\n";
 		}
 	}
 

@@ -37,6 +37,7 @@ public :
 	int handleSELECTNodes();
 	void removeDisconnetedNodes();
 	void printDOT(std::string fileName);
+	void printDOTsimple(std::string fileName);
 	virtual void generateTrigDFGDOT(Function &F);
 #ifdef CLUSTER_DFG
 	virtual void manualClustering();
@@ -88,6 +89,7 @@ public :
 
 	void PrintOuts(){
 		printDOT(this->name + "_PartPredDFG.dot");
+		printDOTsimple(this->name + "_PartPredDFGsimple.dot");
 		printNewDFGXML();
 		printNewDFGXML_forclustering();
 	}
