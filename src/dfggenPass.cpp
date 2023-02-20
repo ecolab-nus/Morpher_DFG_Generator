@@ -1898,7 +1898,8 @@ void loopTrace(std::map<Loop *, std::string> loopNames, Function &F, LoopTree ro
 std::string getMappingUnitNameUsingTokenFunction(Function &F)
 {
 	BasicBlock *MUBB;
-	Instruction *checker_ins = NULL;
+	// Instruction *checker_ins = NULL;
+	std::vector<Instruction *> checker_ins;
 	for (auto &BB : F)
 	{
 		// BB.dump();
@@ -1914,14 +1915,20 @@ std::string getMappingUnitNameUsingTokenFunction(Function &F)
 				{
 					LLVM_DEBUG(dbgs()  << "token found in BB = " << BB.getName() << "\n");
 					MUBB = &BB;
-					checker_ins = CI;
+					checker_ins.push_back(CI);
 				}
 			}
 		}
 	}
 	assert(MUBB);
-	assert(checker_ins);
-	checker_ins->eraseFromParent();
+	for (std::vector<Instruction*>::iterator it = checker_ins.begin(); it != checker_ins.end(); ++it) {
+    	Instruction* current_instruction = *it;
+
+		assert(current_instruction);
+		current_instruction->eraseFromParent();
+	}
+	// assert(checker_ins);
+	// checker_ins->eraseFromParent();
 
 	for (auto it = mappingUnitMap.begin(); it != mappingUnitMap.end(); it++)
 	{
