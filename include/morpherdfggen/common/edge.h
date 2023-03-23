@@ -34,7 +34,6 @@
 #include "llvm/IR/GlobalVariable.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/IntrinsicInst.h"
-#include "llvm/Pass.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/raw_ostream.h"
 
@@ -46,6 +45,8 @@
 #include <sstream>
 #include <iomanip>
 #include <algorithm>
+#include <map>
+
 
 #define EDGE_TYPE_DATA 0
 #define EDGE_TYPE_CTRL 1
@@ -84,3 +85,4 @@ class Edge {
 };
 
 #endif
+

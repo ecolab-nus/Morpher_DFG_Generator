@@ -2453,9 +2453,9 @@ dfgNode* DFGPartPred::addLoadParent(Value* ins, dfgNode* child) {
 		OutLoopNodeMap[ins] = temp;
 		OutLoopNodeMapReverse[temp]=ins;
 
-		temp->setArrBasePtr(ins->getName());
+		temp->setArrBasePtr(ins->getName().str());
 		DataLayout DL = temp->BB->getParent()->getParent()->getDataLayout();
-		array_pointer_sizes[ins->getName()] = DL.getTypeAllocSize(ins->getType());
+		array_pointer_sizes[ins->getName().str()] = DL.getTypeAllocSize(ins->getType());
 
 		if(Instruction* real_ins = dyn_cast<Instruction>(ins)){
 			if(accumulatedBBs.find(real_ins->getParent())==accumulatedBBs.end()){
@@ -3925,3 +3925,4 @@ void DFGPartPred::addParentsToRemovalNodes(dfgNode* node, std::set<dfgNode*> &re
 
 }
 #endif
+

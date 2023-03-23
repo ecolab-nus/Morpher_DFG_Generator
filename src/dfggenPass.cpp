@@ -45,7 +45,7 @@
 #include "llvm/CodeGen/Passes.h"
 
 #include "llvm/Analysis/ScalarEvolution.h"
-#include "llvm/Analysis/ScalarEvolutionExpander.h"
+#include "llvm/Transforms/Utils/ScalarEvolutionExpander.h"
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
 #include "llvm/Analysis/DependenceAnalysis.h"
 #include "llvm/Analysis/CFG.h"
@@ -55,6 +55,7 @@
 #include "llvm/Analysis/TargetTransformInfo.h"
 
 #include "llvm/IR/Attributes.h"
+#include "llvm/Support/GraphWriter.h"
 
 //#include "/home/manupa/manycore/llvm-latest/llvm/lib/Transforms/Scalar/GVN.cpp"
 
@@ -88,13 +89,13 @@ static bool xmlRun = false;
 
 int MEM_SIZE;
 
-namespace llvm
-{
-void initializeSkeletonFunctionPassPass(PassRegistry &);
-void initializeSkeletonModulePassPass(PassRegistry &);
+// namespace llvm
+// {
+// void initializeSkeletonFunctionPassPass(PassRegistry &);
+// void initializeSkeletonModulePassPass(PassRegistry &);
 
-Pass *createskeleton();
-} // namespace llvm
+// Pass *createskeleton();
+// } // namespace llvm
 
 using namespace llvm;
 #define LV_NAME "dfg_gen" //"sfp"
@@ -1990,7 +1991,7 @@ void AllocateSPMBanks(std::unordered_set<Value *> &outer_vals,
 	{
 		Value *mem_value = it->first;
 		GetElementPtrInst *gep = it->second;
-		std::string gep_pointer_name = gep->getPointerOperand()->getName();
+		std::string gep_pointer_name = gep->getPointerOperand()->getName().str();
 		if (sizeArrMap.find(gep_pointer_name) != sizeArrMap.end())
 		{
 			variable_sizes_bytes[gep->getPointerOperand()] = sizeArrMap[gep_pointer_name];
@@ -2182,7 +2183,8 @@ struct dfggenPass : public FunctionPass
 		std::string Filename = ("cfg." + F.getName() + ".dot").str();
 		//errs() << "Writing '" << Filename << "'...";
 
-		raw_fd_ostream File(Filename, EC, sys::fs::F_Text);
+		// raw_fd_ostream File(Filename, EC, sys::fs::F_Text);
+		raw_fd_ostream File(Filename, EC, sys::fs::OF_Text);
 
 		if (!EC)
 		{
@@ -2457,4 +2459,4 @@ struct dfggenPass : public FunctionPass
 } // namespace
 
 char dfggenPass::ID = 1;
-static RegisterPass<dfggenPass> X("skeleton", "SkeletonFunctionPass", false, false);
+static RegisterPass<dfggenPass> X("dfggen", "Morpher DFG Generation", false, false);

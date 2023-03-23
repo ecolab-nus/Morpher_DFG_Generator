@@ -1,6 +1,7 @@
 #include <morpherdfggen/common/dfg.h>
 
 #include "llvm/Analysis/CFG.h"
+#include "llvm/IR/Instructions.h"
 #include <algorithm>
 #include <queue>
 #include <ctime>
@@ -1179,7 +1180,8 @@ void DFG::addMemDepEdges(MemoryDependenceResults *MD)
 
 			if (mRes.isNonLocal())
 			{
-				if (auto CS = CallSite(it))
+				//if (auto CS = CallSite(it))
+				if (auto *CI = dyn_cast<CallBase>(it))
 				{
 				}
 				else
@@ -9856,11 +9858,11 @@ int DFG::nonGEPLoadStorecheck()
 		int Size = DL.getTypeAllocSize(T);
 		LLVM_DEBUG(dbgs() << "Size=" << Size << ",");
 
-		if (PointerType *PT = dyn_cast<PointerType>(T))
-		{
-			LLVM_DEBUG(dbgs() << "ElementSize=" << DL.getTypeAllocSize(PT->getElementType()) << ",");
-			//			PT->is
-		}
+		// if (PointerType *PT = dyn_cast<PointerType>(T))
+		// {
+		// 	LLVM_DEBUG(dbgs() << "ElementSize=" << DL.getTypeAllocSize(PT->getPointerElementType()) << ",");
+		// 	//			PT->is
+		// }
 
 		LLVM_DEBUG(dbgs() << "S/A/I/P=" << T->isStructTy() << "/");
 		LLVM_DEBUG(dbgs() << T->isArrayTy() << "/");
@@ -10617,19 +10619,33 @@ int DFG::CalculateGEPBaseAddr(GetElementPtrInst *GEP)
 
 	int total_size = -1;
 
-	PointerType *PT = cast<PointerType>(GEP->getPointerOperand()->getType());
-	if (StructType *ST = dyn_cast<StructType>(PT->getElementType()))
+	// PointerType *PT = cast<PointerType>(GEP->getPointerOperand()->getType());
+	// if (StructType *ST = dyn_cast<StructType>(PT->getPointerElementType()))
+	// {
+	// 	LLVM_DEBUG(dbgs() << "\t");
+	// 	LLVM_DEBUG(ST->dump());
+	// 	total_size = DL.getTypeAllocSize(ST);
+	// 	// LLVM_DEBUG(dbgs() << "\t\t sample element 2 = " ; ST->getElementType(2)->dump();
+	// }
+	// else if (ArrayType *AT = dyn_cast<ArrayType>(PT->getElementType()))
+	// {
+	// 	LLVM_DEBUG(dbgs() << "\t");
+	// 	LLVM_DEBUG(AT->dump());
+	// 	total_size = DL.getTypeAllocSize(AT);
+	// }
+	// PointerType *PT = cast<PointerType>(GEP->getPointerOperand()->getType());
+	if (StructType *ST = dyn_cast<StructType>(GEP->getSourceElementType()))
 	{
-		LLVM_DEBUG(dbgs() << "\t");
-		LLVM_DEBUG(ST->dump());
-		total_size = DL.getTypeAllocSize(ST);
-		// LLVM_DEBUG(dbgs() << "\t\t sample element 2 = " ; ST->getElementType(2)->dump();
+    	LLVM_DEBUG(dbgs() << "\t");
+    	LLVM_DEBUG(ST->dump());
+    	total_size = DL.getTypeAllocSize(ST);
+    	// LLVM_DEBUG(dbgs() << "\t\t sample element 2 = " ; ST->getElementType(2)->dump();
 	}
-	else if (ArrayType *AT = dyn_cast<ArrayType>(PT->getElementType()))
+	else if (ArrayType *AT = dyn_cast<ArrayType>(GEP->getSourceElementType()))
 	{
-		LLVM_DEBUG(dbgs() << "\t");
-		LLVM_DEBUG(AT->dump());
-		total_size = DL.getTypeAllocSize(AT);
+   	 LLVM_DEBUG(dbgs() << "\t");
+    	LLVM_DEBUG(AT->dump());
+    	total_size = DL.getTypeAllocSize(AT);
 	}
 	else
 	{
@@ -10923,7 +10939,7 @@ void DFG::SetBasePointers(std::unordered_set<Value *> &outer_vals,
 			LLVM_DEBUG(OutLoopNodeMapReverse[node]->dump());
 			LLVM_DEBUG(dbgs() << "Outer LOOP name = " << OutLoopNodeMapReverse[node]->getName() << "\n");
 			LLVM_DEBUG(dbgs() << "Outer LOOP node idx = " << node->getIdx() << "\n");
-			node->setArrBasePtr(OutLoopNodeMapReverse[node]->getName());
+			node->setArrBasePtr(OutLoopNodeMapReverse[node]->getName().str());
 			/*
 			 *   %arrayidx = gep , []* @sum, ... //arrayidx is the address of sum[i]
 			 *
@@ -10954,7 +10970,7 @@ void DFG::SetBasePointers(std::unordered_set<Value *> &outer_vals,
 			}
 
 			DataLayout DL = F.getParent()->getDataLayout();
-			array_pointer_sizes[OutLoopNodeMapReverse[node]->getName()] = DL.getTypeAllocSize(OutLoopNodeMapReverse[node]->getType());
+			array_pointer_sizes[OutLoopNodeMapReverse[node]->getName().str()] = DL.getTypeAllocSize(OutLoopNodeMapReverse[node]->getType());
 		}
 		else if (node->getNode() && node->getNode()->mayReadOrWriteMemory())
 		{
@@ -10968,7 +10984,7 @@ void DFG::SetBasePointers(std::unordered_set<Value *> &outer_vals,
 				else{
 					assert(mem_ptrs.find(pointer) != mem_ptrs.end());
 
-					std::string base_ptr_name = mem_ptrs[pointer]->getPointerOperand()->getName();
+					std::string base_ptr_name = mem_ptrs[pointer]->getPointerOperand()->getName().str();
 					node->setArrBasePtr(base_ptr_name);
 
 					if (sizeArrMap.find(base_ptr_name) != sizeArrMap.end())
@@ -10979,7 +10995,8 @@ void DFG::SetBasePointers(std::unordered_set<Value *> &outer_vals,
 					{
 						DataLayout DL = LDI->getParent()->getParent()->getParent()->getDataLayout();
 						PointerType *PT = cast<PointerType>(mem_ptrs[pointer]->getPointerOperand()->getType());
-						array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(PT->getElementType());
+						// array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(PT->getElementType());
+						array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(PT->getPointerElementType());
 					}
 				}
 			}
@@ -10993,7 +11010,7 @@ void DFG::SetBasePointers(std::unordered_set<Value *> &outer_vals,
 				else{
 					assert(mem_ptrs.find(pointer) != mem_ptrs.end());
 
-					std::string base_ptr_name = mem_ptrs[pointer]->getPointerOperand()->getName();
+					std::string base_ptr_name = mem_ptrs[pointer]->getPointerOperand()->getName().str();
 					node->setArrBasePtr(base_ptr_name);
 
 					if (sizeArrMap.find(base_ptr_name) != sizeArrMap.end())
@@ -11004,7 +11021,8 @@ void DFG::SetBasePointers(std::unordered_set<Value *> &outer_vals,
 					{
 						DataLayout DL = STI->getParent()->getParent()->getParent()->getDataLayout();
 						PointerType *PT = cast<PointerType>(mem_ptrs[pointer]->getPointerOperand()->getType());
-						array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(PT->getElementType());
+						// array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(PT->getElementType());
+						array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(PT->getPointerElementType());
 					}
 				}
 			}
@@ -11019,7 +11037,7 @@ void DFG::SetBasePointers(std::unordered_set<Value *> &outer_vals,
 		else if (node->getNode() && isa<GetElementPtrInst>(node->getNode()))
 		{
 			GetElementPtrInst *GEP = cast<GetElementPtrInst>(node->getNode());
-			std::string base_ptr_name = GEP->getPointerOperand()->getName();
+			std::string base_ptr_name = GEP->getPointerOperand()->getName().str();
 			node->setArrBasePtr(base_ptr_name);
 
 			if (sizeArrMap.find(base_ptr_name) != sizeArrMap.end())
@@ -11030,7 +11048,8 @@ void DFG::SetBasePointers(std::unordered_set<Value *> &outer_vals,
 			{
 				DataLayout DL = GEP->getParent()->getParent()->getParent()->getDataLayout();
 				PointerType *PT = cast<PointerType>(GEP->getPointerOperand()->getType());
-				array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(PT->getElementType());
+				// array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(PT->getElementType());
+				array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(PT->getPointerElementType());
 			}
 		}
 
@@ -11178,8 +11197,8 @@ void DFG::InstrumentInOutVars(Function &F, std::unordered_map<Value *, int> mem_
 		LLVM_DEBUG(ptr->dump());
 
 
-		assert(array_pointer_sizes.find(ptr->getName()) != array_pointer_sizes.end());
-		int size = array_pointer_sizes[ptr->getName()];
+		assert(array_pointer_sizes.find(ptr->getName().str()) != array_pointer_sizes.end());
+		int size = array_pointer_sizes[ptr->getName().str()];
 
 		LLVM_DEBUG(dbgs() << "size = " << size << "\n");
 
@@ -11462,7 +11481,9 @@ int DFG::insertshiftGEPsCorrect(){
 				int array_size = DL.getTypeAllocSize(GEP->getSourceElementType());
 
 				/* Find total number of elements in array */
-				Type *T = cast<PointerType>(GEP->getPointerOperandType())->getElementType();
+				// Type *T = cast<PointerType>(GEP->getPointerOperandType())->getElementType();
+
+				Type *T = cast<PointerType>(GEP->getPointerOperandType())->getPointerElementType();
 				int no_of_elements;
 
 				if (isa<ArrayType>(GEP->getSourceElementType())){
@@ -11525,3 +11546,4 @@ int DFG::insertshiftGEPsCorrect(){
 	return 0;
 	// assert(false);
 }
+
