@@ -1944,7 +1944,7 @@ std::string getMappingUnitNameUsingTokenFunction(Function &F)
 
 void NameUnnamedValues(Function &F)
 {
-	std::string prefix = "manupa";
+	std::string prefix = "temp";
 
 	int ctr = 0;
 
@@ -1960,7 +1960,14 @@ void NameUnnamedValues(Function &F)
 					LLVM_DEBUG(ins->dump());
 					std::string name = prefix + std::to_string(ctr++);
 					ins->setName(name);
+					LLVM_DEBUG(dbgs()  << "name = " << name << "\n");
 				}
+				else{
+					LLVM_DEBUG(dbgs()  << "already existing name = "<< ins->getName().str());
+					LLVM_DEBUG(ins->dump());
+				}
+
+				LLVM_DEBUG(dbgs()  << "");
 			}
 		}
 	}
@@ -1998,7 +2005,7 @@ void AllocateSPMBanks(std::unordered_set<Value *> &outer_vals,
 	{
 		Value *mem_value = it->first;
 		GetElementPtrInst *gep = it->second;
-		std::string gep_pointer_name = gep->getPointerOperand()->getName().str();
+		std::string gep_pointer_name = gep->getPointerOperand()->getNameOrAsOperand();
 		if (sizeArrMap.find(gep_pointer_name) != sizeArrMap.end())
 		{
 			variable_sizes_bytes[gep->getPointerOperand()] = sizeArrMap[gep_pointer_name];
@@ -2075,7 +2082,7 @@ void AllocateSPMBanks(std::unordered_set<Value *> &outer_vals,
 		auto & bank_vars = banks_vars[i];
 		LLVM_DEBUG(dbgs() << "Bank"<<i<< " vars :: \n");
 		for(Value* v : bank_vars){
-			LLVM_DEBUG(dbgs() << "\t" << v->getName() << " :: size = " << variable_sizes_bytes[v] << ", acceses = " << acc[v] << "\n");
+			LLVM_DEBUG(dbgs() << "\t" << v->getNameOrAsOperand() << " :: size = " << variable_sizes_bytes[v] << ", acceses = " << acc[v] << "\n");
 			// spm_bank_allocation[v]=BANK0;
 			// spm_base_address[v] = bank0_addr;
 			// bank0_addr += variable_sizes_bytes[v];
@@ -2094,8 +2101,8 @@ void AllocateSPMBanks(std::unordered_set<Value *> &outer_vals,
 		Value* mem_ins = it->first;
 		GetElementPtrInst* gep = it->second;
 
-		LLVM_DEBUG(dbgs() << "pointer_ins = " << mem_ins->getName() << ",");
-		LLVM_DEBUG(dbgs()<< "gep_pointer = " << gep->getPointerOperand()->getName() << ",");
+		LLVM_DEBUG(dbgs() << "pointer_ins = " << mem_ins->getNameOrAsOperand() << ",");
+		LLVM_DEBUG(dbgs()<< "gep_pointer = " << gep->getPointerOperand()->getNameOrAsOperand() << ",");
 		LLVM_DEBUG(dbgs() << "size = " << variable_sizes_bytes[gep->getPointerOperand()] << ",");
 
 		if(value_to_BankId.find(gep->getPointerOperand()) != value_to_BankId.end()){
@@ -2157,6 +2164,8 @@ struct dfggenPass : public FunctionPass
 
 	virtual bool runOnFunction(Function &F)
 	{
+
+
 		std::map<Instruction *, int> insMap;
 		std::map<Instruction *, int> insMap2;
 		static std::set<const BasicBlock *> funcBB;
@@ -2410,7 +2419,7 @@ struct dfggenPass : public FunctionPass
 				{
 					Value *base_ptr = it->first;
 					int accesses = it->second;
-					LLVM_DEBUG(dbgs() << "base_ptr:" << base_ptr->getName() << ", accesses = " << accesses << "\n");
+					LLVM_DEBUG(dbgs() << "base_ptr:" << base_ptr->getNameOrAsOperand() << ", accesses = " << accesses << "\n");
 				}
 
 				//for hycube binary generation-----------------

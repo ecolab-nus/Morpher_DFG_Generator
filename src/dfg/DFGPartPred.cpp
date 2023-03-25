@@ -588,6 +588,8 @@ dfgNode* DFGPartPred::insertMergeNode(dfgNode* PHINode, dfgNode* ctrl, bool cont
 dfgNode* DFGPartPred::insertMergeNodeBeforeSEL(dfgNode* SELNode, dfgNode* ctrl, bool controlVal, dfgNode* data) {//for select Node
 	dfgNode* temp = new dfgNode(this);
 
+	LLVM_DEBUG(dbgs()  << "insertMergeNodeBeforeSEL  SEL node idx = " << SELNode->getIdx() << " ctrl node idx = " << ctrl->getIdx() << " data node idx = " << data->getIdx() << "\n");
+
 	SmallVector<std::pair<const BasicBlock *, const BasicBlock *>,8> BackedgeBBs;
 	//FindFunctionBackedges(*(PHINode->getNode()->getFunction()),BackedgeBBs);
 	const BasicBlock* ctrlBB = ctrl->BB;

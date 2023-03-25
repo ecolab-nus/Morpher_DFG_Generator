@@ -6506,8 +6506,16 @@ int DFG::nameNodes()
 				else
 				{
 					LLVM_DEBUG(OutLoopNodeMapReverse[node]->dump());
-					LLVM_DEBUG(dbgs() << "OutLoopLOAD size = " << node->getTypeSizeBytes() << "\n");
+					// LLVM_DEBUG(dbgs() << "OutLoopLOAD size = " << node->getTypeSizeBytes() << " type = " << OutLoopNodeMapReverse[node]->getType()->print() << "\n");
+					LLVM_DEBUG(dbgs() << "OutLoopLOAD size = " << node->getTypeSizeBytes() << " type = ";
+           			OutLoopNodeMapReverse[node]->getType()->print(dbgs());
+           			dbgs() << "\n");
 					if (OutLoopNodeMapReverse[node]->getType()->isDoubleTy())
+					{
+						//TODO : to make it compatible with double
+						node->setFinalIns(Hy_LOAD);
+					}
+					else if (OutLoopNodeMapReverse[node]->getType()->isIntegerTy())
 					{
 						//TODO : to make it compatible with double
 						node->setFinalIns(Hy_LOAD);
@@ -10721,6 +10729,27 @@ void DFG::GEPBaseAddrCheck(Function &F)
 	}
 }
 
+/*
+The checkGEPDerivatives function is a helper function that recursively traverses the users (instructions that use the value produced by the current instruction) of a given GetElementPtrInst (GEP) instruction in the
+ LLVM Intermediate Representation (IR) code. The purpose of this function is to find all the instructions that are derived from the given GEP instruction and store them in the deriv unordered_map. The function takes
+  three input arguments:
+
+    root: A pointer to the current instruction being processed.
+    GEP: A pointer to the original GetElementPtrInst (GEP) instruction for which derivatives are being searched.
+    deriv: A reference to an unordered_map that stores the GEP instructions and their corresponding derivatives.
+
+The function iterates through the users of the root instruction. For each user, it checks the following conditions:
+
+    If the user is the same as the original GEP instruction, it continues to the next user.
+    If the user is an instruction that reads or writes memory, it continues to the next user.
+    If the user is already in the deriv unordered_map, it continues to the next user.
+
+If none of these conditions are met, the function adds the instruction as a derivative of the original GEP instruction in the deriv unordered_map. Then, it calls itself recursively with the current instruction as the new root.
+
+In summary, the checkGEPDerivatives function recursively traverses the LLVM IR code to find all the instructions derived from a given GetElementPtrInst (GEP) instruction and stores them in the deriv unordered_map.
+ This helps in understanding the data flow and dependencies in the LLVM code related to the GEP instruction.
+
+*/
 void checkGEPDerivatives(Instruction *root, GetElementPtrInst *GEP, std::unordered_map<Value *, GetElementPtrInst *> &deriv)
 {
 	for (User *u : root->users())
@@ -10787,6 +10816,27 @@ void checkGEPDerivatives(Instruction *root, GetElementPtrInst *GEP, std::unorder
  * base_ptr:i.022, accesses = 1 (outloopload scalar)
  *
  *
+ * The function getTransferVariables  extracts information about transfer variables, specifically the live-in and live-out values, memory pointers, and memory access counts for arrays and scalars. 
+ * The function takes four input arguments:
+
+    outer_vals: A reference to an unordered_set that will store the live-in and live-out values.
+    mem_ptrs: A reference to an unordered_map that will store memory pointers related to GetElementPtrInst (GEP) instructions.
+    acc: A reference to an unordered_map that will store the access count of each array or scalar.
+    F: A reference to the LLVM Function that is being analyzed.
+
+The function first processes OutLoopNodeMapReverse, an unordered_map that contains information about values loaded from or stored to outer loop variables. It iterates through this map and updates 
+the outer_vals set and the access count in acc.
+
+Next, it initializes gep_derivatives, an unordered_map that stores GEP instructions for array loads and stores. It iterates through the basic blocks in the function, and for each instruction, 
+it checks if it's a GEP instruction. If it is, the function adds the GEP instruction to gep_derivatives and recursively checks its derivatives.
+
+Then, the function iterates through the NodeList, which contains the nodes in the data flow graph. For each node, it checks if it is a LoadInst or StoreInst. If it is a LoadInst or StoreInst,
+ the function updates the access count in acc and the memory pointers in mem_ptrs.
+
+In summary, this function processes an LLVM function and extracts information about transfer variables, specifically the live-in and live-out values, memory pointers, and memory access counts 
+for arrays and scalars.
+
+ * 
  * */
 
 void DFG::getTransferVariables(std::unordered_set<Value *> &outer_vals,
@@ -10932,6 +10982,7 @@ void DFG::SetBasePointers(std::unordered_set<Value *> &outer_vals,
 	for (dfgNode *node : NodeList)
 	{
 
+		LLVM_DEBUG(dbgs() << "Node ID = " << node->getIdx() << "\n");
 		if (OutLoopNodeMapReverse.find(node) != OutLoopNodeMapReverse.end())
 		{
 			assert(outer_vals.find(OutLoopNodeMapReverse[node]) != outer_vals.end());
@@ -10940,15 +10991,20 @@ void DFG::SetBasePointers(std::unordered_set<Value *> &outer_vals,
 			LLVM_DEBUG(dbgs() << "Outer LOOP name = " << OutLoopNodeMapReverse[node]->getName() << "\n");
 			LLVM_DEBUG(dbgs() << "Outer LOOP node idx = " << node->getIdx() << "\n");
 			node->setArrBasePtr(OutLoopNodeMapReverse[node]->getName().str());
+
+			DataLayout DL = F.getParent()->getDataLayout();
+			array_pointer_sizes[OutLoopNodeMapReverse[node]->getName().str()] = DL.getTypeAllocSize(OutLoopNodeMapReverse[node]->getType());
+			LLVM_DEBUG(dbgs() << "Outerloop: base_ptr_name:" << OutLoopNodeMapReverse[node]->getName().str() <<  " array pointer size:" << array_pointer_sizes[OutLoopNodeMapReverse[node]->getName().str()]<< "\n");
+
 			/*
-			 *   %arrayidx = gep , []* @sum, ... //arrayidx is the address of sum[i]
+			 *   %arrayidx = gep , []* @sum, ... //arrayidx is the address of sum[i] (&sum[i])
 			 *
 			 *   for.body
 			 *
 			 *      store i32 %x, i32* %arrayidx    // store to address arrayidx
 			 *
 			 *
-			 * Detect out loop nodes with pointer type usage in the loop body
+			 * Detect out loop nodes with pointer type usage in the loop body (i.e. out loop node passes an address)
 			 * These nodes require special treatment in instrumentation
 			 * because we need to record the local memory address, not the memory address
 			 * generated in the ./final at runtime*/
@@ -10968,23 +11024,21 @@ void DFG::SetBasePointers(std::unordered_set<Value *> &outer_vals,
 				}
 
 			}
-
-			DataLayout DL = F.getParent()->getDataLayout();
-			array_pointer_sizes[OutLoopNodeMapReverse[node]->getName().str()] = DL.getTypeAllocSize(OutLoopNodeMapReverse[node]->getType());
 		}
 		else if (node->getNode() && node->getNode()->mayReadOrWriteMemory())
 		{
+			LLVM_DEBUG(node->getNode()->dump());
 			if (LoadInst *LDI = dyn_cast<LoadInst>(node->getNode()))
 			{
 				Value *pointer = LDI->getPointerOperand();
-				if(sizeArrMap.find(pointer->getName().str()) != sizeArrMap.end()){
-					array_pointer_sizes[pointer->getName().str()] = sizeArrMap[pointer->getName().str()];
-					node->setArrBasePtr(pointer->getName().str());
+				if(sizeArrMap.find(pointer->getNameOrAsOperand()) != sizeArrMap.end()){
+					array_pointer_sizes[pointer->getNameOrAsOperand()] = sizeArrMap[pointer->getNameOrAsOperand()];
+					node->setArrBasePtr(pointer->getNameOrAsOperand());
 				}
 				else{
 					assert(mem_ptrs.find(pointer) != mem_ptrs.end());
 
-					std::string base_ptr_name = mem_ptrs[pointer]->getPointerOperand()->getName().str();
+					std::string base_ptr_name = mem_ptrs[pointer]->getPointerOperand()->getNameOrAsOperand();
 					node->setArrBasePtr(base_ptr_name);
 
 					if (sizeArrMap.find(base_ptr_name) != sizeArrMap.end())
@@ -10994,23 +11048,24 @@ void DFG::SetBasePointers(std::unordered_set<Value *> &outer_vals,
 					else
 					{
 						DataLayout DL = LDI->getParent()->getParent()->getParent()->getDataLayout();
-						PointerType *PT = cast<PointerType>(mem_ptrs[pointer]->getPointerOperand()->getType());
+						// PointerType *PT = cast<PointerType>(mem_ptrs[pointer]->getPointerOperand()->getType());
 						// array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(PT->getElementType());
-						array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(PT->getPointerElementType());
+						array_pointer_sizes[base_ptr_name] = 4;//DL.getTypeAllocSize(PT->getPointerElementType());
+						LLVM_DEBUG(dbgs() << "FIX this: base_ptr_name:" << base_ptr_name <<  "array pointer size:" << array_pointer_sizes[base_ptr_name]<< "\n");
 					}
 				}
 			}
 			else if (StoreInst *STI = dyn_cast<StoreInst>(node->getNode()))
 			{
 				Value *pointer = STI->getPointerOperand();
-				if(sizeArrMap.find(pointer->getName().str()) != sizeArrMap.end()){
-					array_pointer_sizes[pointer->getName().str()] = sizeArrMap[pointer->getName().str()];
-					node->setArrBasePtr(pointer->getName().str());
+				if(sizeArrMap.find(pointer->getNameOrAsOperand()) != sizeArrMap.end()){
+					array_pointer_sizes[pointer->getNameOrAsOperand()] = sizeArrMap[pointer->getNameOrAsOperand()];
+					node->setArrBasePtr(pointer->getNameOrAsOperand());
 				}
 				else{
 					assert(mem_ptrs.find(pointer) != mem_ptrs.end());
 
-					std::string base_ptr_name = mem_ptrs[pointer]->getPointerOperand()->getName().str();
+					std::string base_ptr_name = mem_ptrs[pointer]->getPointerOperand()->getNameOrAsOperand();
 					node->setArrBasePtr(base_ptr_name);
 
 					if (sizeArrMap.find(base_ptr_name) != sizeArrMap.end())
@@ -11020,9 +11075,11 @@ void DFG::SetBasePointers(std::unordered_set<Value *> &outer_vals,
 					else
 					{
 						DataLayout DL = STI->getParent()->getParent()->getParent()->getDataLayout();
-						PointerType *PT = cast<PointerType>(mem_ptrs[pointer]->getPointerOperand()->getType());
+						// PointerType *PT = cast<PointerType>(mem_ptrs[pointer]->getPointerOperand()->getType());
 						// array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(PT->getElementType());
-						array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(PT->getPointerElementType());
+						// array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(PT->getPointerElementType());
+						array_pointer_sizes[base_ptr_name] = 4;// DL.getTypeAllocSize(mem_ptrs[pointer]->getValueOperand()->getType());
+						LLVM_DEBUG(dbgs() << "Fix this: base_ptr_name:" << base_ptr_name <<  "array pointer size:" << array_pointer_sizes[base_ptr_name]<< "\n");
 					}
 				}
 			}
@@ -11036,8 +11093,10 @@ void DFG::SetBasePointers(std::unordered_set<Value *> &outer_vals,
 		}
 		else if (node->getNode() && isa<GetElementPtrInst>(node->getNode()))
 		{
+			LLVM_DEBUG(node->getNode()->dump());
 			GetElementPtrInst *GEP = cast<GetElementPtrInst>(node->getNode());
-			std::string base_ptr_name = GEP->getPointerOperand()->getName().str();
+			LLVM_DEBUG(GEP->getPointerOperand()->dump());
+			std::string base_ptr_name = GEP->getPointerOperand()->getNameOrAsOperand();
 			node->setArrBasePtr(base_ptr_name);
 
 			if (sizeArrMap.find(base_ptr_name) != sizeArrMap.end())
@@ -11047,9 +11106,20 @@ void DFG::SetBasePointers(std::unordered_set<Value *> &outer_vals,
 			else
 			{
 				DataLayout DL = GEP->getParent()->getParent()->getParent()->getDataLayout();
-				PointerType *PT = cast<PointerType>(GEP->getPointerOperand()->getType());
-				// array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(PT->getElementType());
-				array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(PT->getPointerElementType());
+				// PointerType *PT = cast<PointerType>(GEP->getPointerOperand()->getType());
+				// array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(PT->getPointerElementType());
+				array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(GEP->getSourceElementType());
+				LLVM_DEBUG(dbgs() << "Fix this: base_ptr_name:" << base_ptr_name <<  "array pointer size:" << array_pointer_sizes[base_ptr_name]<< "\n");
+
+				// if (auto *ET = PT->getPointerElementType()) {
+    			// 	array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(ET);
+				// } else {
+
+				// 	LLVM_DEBUG(dbgs() << "Type of the pointer operand is opaquen");
+				// 	LLVM_DEBUG(node->getNode()->dump());
+				// 	assert(false);
+    			// 	// Handle error case where the element type of the pointer operand is opaque.
+				// }
 			}
 		}
 
@@ -11193,16 +11263,16 @@ void DFG::InstrumentInOutVars(Function &F, std::unordered_map<Value *, int> mem_
 		IRBuilder<> builder(NodeList[0]->getNode());
 
 		Value* ptr = it->first;
-		LLVM_DEBUG(dbgs() << "\n---ptr_name = " << ptr->getName() << "\n");
+		LLVM_DEBUG(dbgs() << "\n---ptr_name = " << ptr->getNameOrAsOperand() << "\n");
 		LLVM_DEBUG(ptr->dump());
 
 
-		assert(array_pointer_sizes.find(ptr->getName().str()) != array_pointer_sizes.end());
-		int size = array_pointer_sizes[ptr->getName().str()];
+		assert(array_pointer_sizes.find(ptr->getNameOrAsOperand()) != array_pointer_sizes.end());
+		int size = array_pointer_sizes[ptr->getNameOrAsOperand()];
 
 		LLVM_DEBUG(dbgs() << "size = " << size << "\n");
 
-		Value* ptr_name_val = builder.CreateGlobalStringPtr(ptr->getName());
+		Value* ptr_name_val = builder.CreateGlobalStringPtr(ptr->getNameOrAsOperand());
 		Value *size_val = ConstantInt::get(Type::getInt32Ty(Ctx), size);
 		Value *size_val2 = ConstantInt::get(Type::getInt32Ty(Ctx), size/4);
 		bool isOLNodewithPtrTyUsage = false;
@@ -11227,8 +11297,8 @@ void DFG::InstrumentInOutVars(Function &F, std::unordered_map<Value *, int> mem_
 					LLVM_DEBUG(dbgs() << "GEP operand 2 =  ");
 					LLVM_DEBUG(GEP->getOperand(2)->dump());
 					LLVM_DEBUG(GEP->getOperand(0)->dump());
-					LLVM_DEBUG(dbgs() << "array base = " << GEP->getOperand(0)->getName() << "\n");
-					Value* gepop0 = builder.CreateGlobalStringPtr(GEP->getOperand(0)->getName());//base ptr of array
+					LLVM_DEBUG(dbgs() << "array base = " << GEP->getOperand(0)->getNameOrAsOperand() << "\n");
+					Value* gepop0 = builder.CreateGlobalStringPtr(GEP->getOperand(0)->getNameOrAsOperand());//base ptr of array
 					Value * gepop2= GEP->getOperand(2);// array offset
 					LLVM_DEBUG(dbgs() << "\n");
 
@@ -11366,9 +11436,9 @@ void DFG::UpdateSPMAllocation(std::unordered_map<Value *, int> &spm_base_address
 			{
 				node->setLeftAlignedMemOp(2);
 			}
-			LLVM_DEBUG(dbgs() << "\t pointer " << OutLoopNodeMapReverse[node]->getName() << "\n");
+			LLVM_DEBUG(dbgs() << "\t pointer " << OutLoopNodeMapReverse[node]->getNameOrAsOperand() << "\n");
 			LLVM_DEBUG(dbgs() << "\t to address " << spm_base_address[OutLoopNodeMapReverse[node]] << "\n");
-			var_name = OutLoopNodeMapReverse[node]->getName();
+			var_name = OutLoopNodeMapReverse[node]->getNameOrAsOperand();
 			base_addr = spm_base_address[OutLoopNodeMapReverse[node]];
 			base_address_map[var_name]=base_addr;
 		}
@@ -11382,9 +11452,9 @@ void DFG::UpdateSPMAllocation(std::unordered_map<Value *, int> &spm_base_address
 					node->setGEPbaseAddr(spm_base_address[gep_pointer]);
 					LLVM_DEBUG(dbgs() << "SetNewGEPBaseAddresses :: setting GEP base address for=");
 					LLVM_DEBUG(GEP->dump());
-					LLVM_DEBUG(dbgs() << "\t pointer " << gep_pointer->getName() << "\n");
+					LLVM_DEBUG(dbgs() << "\t pointer " << gep_pointer->getNameOrAsOperand() << "\n");
 					LLVM_DEBUG(dbgs() << "\t to address " << spm_base_address[gep_pointer] << "\n");
-					var_name = gep_pointer->getName();
+					var_name = gep_pointer->getNameOrAsOperand();
 					base_addr = spm_base_address[gep_pointer];
 					base_address_map[var_name]=base_addr;
 					//					mem_alloc_txt << var_name<<","<< base_addr<<"\n";
@@ -11396,7 +11466,7 @@ void DFG::UpdateSPMAllocation(std::unordered_map<Value *, int> &spm_base_address
 				LLVM_DEBUG(ptr->dump());
 
 				if(arr_ptrs.find(ptr) == arr_ptrs.end()){
-					LLVM_DEBUG(dbgs() << "\t pointer  " << ptr->getName() << "\n");
+					LLVM_DEBUG(dbgs() << "\t pointer  " << ptr->getNameOrAsOperand() << "\n");
 					LLVM_DEBUG(dbgs() << "\t to address " << spm_base_address[ptr] << "\n");
 				}
 
@@ -11413,9 +11483,9 @@ void DFG::UpdateSPMAllocation(std::unordered_map<Value *, int> &spm_base_address
 					node->setLeftAlignedMemOp(2);
 				}
 
-				LLVM_DEBUG(dbgs() << "\t pointer  " << gep_ptr->getName() << "\n");
+				LLVM_DEBUG(dbgs() << "\t pointer  " << gep_ptr->getNameOrAsOperand() << "\n");
 				LLVM_DEBUG(dbgs() << "\t to address " << spm_base_address[gep_ptr] << "\n");
-				var_name = gep_ptr->getName();
+				var_name = gep_ptr->getNameOrAsOperand();
 				base_addr = spm_base_address[gep_ptr];
 				base_address_map[var_name]=base_addr;
 			}
@@ -11436,9 +11506,9 @@ void DFG::UpdateSPMAllocation(std::unordered_map<Value *, int> &spm_base_address
 					node->setLeftAlignedMemOp(2);
 				}
 
-				LLVM_DEBUG(dbgs() << "\t pointer " << gep_ptr->getName() << "\n");
+				LLVM_DEBUG(dbgs() << "\t pointer " << gep_ptr->getNameOrAsOperand() << "\n");
 				LLVM_DEBUG(dbgs() << "\t to address " << spm_base_address[gep_ptr] << "\n");
-				var_name = gep_ptr->getName();
+				var_name = gep_ptr->getNameOrAsOperand();
 				base_addr = spm_base_address[gep_ptr];
 				base_address_map[var_name]=base_addr;
 			}
@@ -11483,13 +11553,20 @@ int DFG::insertshiftGEPsCorrect(){
 				/* Find total number of elements in array */
 				// Type *T = cast<PointerType>(GEP->getPointerOperandType())->getElementType();
 
-				Type *T = cast<PointerType>(GEP->getPointerOperandType())->getPointerElementType();
+				//Type *T = cast<PointerType>(GEP->getPointerOperandType())->getPointerElementType();
 				int no_of_elements;
 
 				if (isa<ArrayType>(GEP->getSourceElementType())){
-					no_of_elements = cast<ArrayType>(T)->getNumElements();
+					//no_of_elements = cast<ArrayType>(T)->getNumElements();
+					
+
+					no_of_elements = cast<ArrayType>(GEP->getSourceElementType())->getNumElements();
 					LLVM_DEBUG(dbgs() << "is an array\n");
-				}else{
+				}else if(isa<StructType>(GEP->getSourceElementType())){
+					LLVM_DEBUG(dbgs() << "is a struct\n");
+					assert(false);
+				}
+				else{
 					no_of_elements = 1;
 					LLVM_DEBUG(dbgs()<< "not an array\n");
 				}

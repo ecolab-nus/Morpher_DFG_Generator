@@ -152,6 +152,7 @@ void dfgNode::addChildNode(dfgNode* node, int type, bool isBackEdge,
 void dfgNode::addAncestorNode(dfgNode* node, int type, bool isBackEdge,
 		bool isControlDependent, bool ControlValue) {
 
+	LLVM_DEBUG(dbgs()  << "node idx = " << node->getIdx() << "\n");
 	if(std::find(AncestorNodes.begin(),AncestorNodes.end(),node)!=AncestorNodes.end()){
 		if(ancestorConditionaMap[node]!=UNCOND){
 			assert(isControlDependent);
