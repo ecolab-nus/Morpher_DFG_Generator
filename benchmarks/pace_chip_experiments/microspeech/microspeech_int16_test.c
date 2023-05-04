@@ -517,98 +517,83 @@ void microspeech_conv_layer_hycube(){
 
 
 	// execute
-/*
+    /*
+    //GEMM kernel
 	for (i=0;i<R1; i++)
 		for (j=0;j<C2/P; j++)
 			for (k=0;k<C1; k++){
 				O0[i*C2/P+j] += W0[i*C1+k]* I0[k*C2/P+j];
 			}
-*/
+    */
 
-/*i=0;j=0;k=0;
-        for (ijk=0;ijk<R1*C1*C2/(4*P); ijk++){
-           #ifdef CGRA_COMPILER
-           please_map_me();
-           #endif
-	   O0[i*C2/P+j] = O0[i*C2/P+j] + W0[i*C1+k]* I0[k*C2/P+j]+ W0[i*C1+k+1]* I0[(k+1)*C2/P+j]+ W0[i*C1+k+2]* I0[(k+2)*C2/P+j]+W0[i*C1+k+3]* I0[(k+3)*C2/P+j];
-	   k=k+4;
-			if(k+1 >= C1){
-				k=0;
-				++j;
-			}
-			if(j == C2/P){
-  				j=0;
-				++i;
-			}
-	}*/
-
-i=0;j=0;k=0;
-        for (ijk=0;ijk<R1C1C24P; ijk++){
-           #ifdef CGRA_COMPILER
-           please_map_me();
-           #endif
-	   O0[i*C2P+j] = O0[i*C2P+j] + W0[i*C1+k]* I0[k*C2P+j]+ W0[i*C1+k+1]* I0[(k+1)*C2P+j]+ W0[i*C1+k+2]* I0[(k+2)*C2P+j]+W0[i*C1+k+3]* I0[(k+3)*C2P+j];
-	   k=k+4;
-			if(k+1 >= C1){
-				k=0;
-				++j;
-			}
-			if(j == C2P){
-  				j=0;
-				++i;
-			}
+    // Flattened and Unrolled GEMM kernel
+    i=0;j=0;k=0;
+    for (ijk=0;ijk<R1C1C24P; ijk++){
+        #ifdef CGRA_COMPILER
+        please_map_me();
+        #endif
+	    O0[i*C2P+j] = O0[i*C2P+j] + W0[i*C1+k]* I0[k*C2P+j]+ W0[i*C1+k+1]* I0[(k+1)*C2P+j]+ W0[i*C1+k+2]* I0[(k+2)*C2P+j]+W0[i*C1+k+3]* I0[(k+3)*C2P+j];
+	    k=k+4;
+	    if(k+1 >= C1){
+		  k=0;
+		  ++j;
+	    }
+	    if(j == C2P){
+  		  j=0;
+	      ++i;
+	    }
 	}
 
 
-i=0;j=0;k=0;
-        for (ijk=0;ijk<R1*C1*C2/(4*P); ijk++){
-           //#ifdef CGRA_COMPILER
-           //please_map_me();
-           //#endif
-	   O1[i*C2/P+j] = O1[i*C2/P+j] + W1[i*C1+k]* I1[k*C2/P+j]+ W1[i*C1+k+1]* I1[(k+1)*C2/P+j]+ W1[i*C1+k+2]* I1[(k+2)*C2/P+j]+W1[i*C1+k+3]* I1[(k+3)*C2/P+j];
-	   k=k+4;
-			if(k+1 >= C1){
-				k=0;
-				++j;
-			}
-			if(j == C2/P){
-  				j=0;
-				++i;
-			}
+    i=0;j=0;k=0;
+    for (ijk=0;ijk<R1*C1*C2/(4*P); ijk++){
+       //#ifdef CGRA_COMPILER
+       //please_map_me();
+       //#endif
+	    O1[i*C2/P+j] = O1[i*C2/P+j] + W1[i*C1+k]* I1[k*C2/P+j]+ W1[i*C1+k+1]* I1[(k+1)*C2/P+j]+ W1[i*C1+k+2]* I1[(k+2)*C2/P+j]+W1[i*C1+k+3]* I1[(k+3)*C2/P+j];
+	    k=k+4;
+        if(k+1 >= C1){
+          k=0;
+          ++j;
+        }
+        if(j == C2/P){
+          j=0;
+          ++i;
+        }
 	}
 
-i=0;j=0;k=0;
-        for (ijk=0;ijk<R1*C1*C2/(4*P); ijk++){
-           //#ifdef CGRA_COMPILER
-           //please_map_me();
-           //#endif
-	   O2[i*C2/P+j] = O2[i*C2/P+j] + W2[i*C1+k]* I2[k*C2/P+j]+ W2[i*C1+k+1]* I2[(k+1)*C2/P+j]+ W2[i*C1+k+2]* I2[(k+2)*C2/P+j]+W2[i*C1+k+3]* I2[(k+3)*C2/P+j];
-	   k=k+4;
-			if(k+1 >= C1){
-				k=0;
-				++j;
-			}
-			if(j == C2/P){
-  				j=0;
-				++i;
-			}
+    i=0;j=0;k=0;
+    for (ijk=0;ijk<R1*C1*C2/(4*P); ijk++){
+       //#ifdef CGRA_COMPILER
+       //please_map_me();
+       //#endif
+	    O2[i*C2/P+j] = O2[i*C2/P+j] + W2[i*C1+k]* I2[k*C2/P+j]+ W2[i*C1+k+1]* I2[(k+1)*C2/P+j]+ W2[i*C1+k+2]* I2[(k+2)*C2/P+j]+W2[i*C1+k+3]* I2[(k+3)*C2/P+j];
+	    k=k+4;
+        if(k+1 >= C1){
+          k=0;
+          ++j;
+        }
+        if(j == C2/P){
+          j=0;
+          ++i;
+        }
 	}
 
-i=0;j=0;k=0;
-        for (ijk=0;ijk<R1*C1*C2/(4*P); ijk++){
-           //#ifdef CGRA_COMPILER
-           //please_map_me();
-           //#endif
-	   O3[i*C2/P+j] = O3[i*C2/P+j] + W3[i*C1+k]* I3[k*C2/P+j]+ W3[i*C1+k+1]* I3[(k+1)*C2/P+j]+ W3[i*C1+k+2]* I3[(k+2)*C2/P+j]+W3[i*C1+k+3]* I3[(k+3)*C2/P+j];
-	   k=k+4;
-			if(k+1 >= C1){
-				k=0;
-				++j;
-			}
-			if(j == C2/P){
-  				j=0;
-				++i;
-			}
+    i=0;j=0;k=0;
+    for (ijk=0;ijk<R1*C1*C2/(4*P); ijk++){
+       //#ifdef CGRA_COMPILER
+       //please_map_me();
+       //#endif
+	    O3[i*C2/P+j] = O3[i*C2/P+j] + W3[i*C1+k]* I3[k*C2/P+j]+ W3[i*C1+k+1]* I3[(k+1)*C2/P+j]+ W3[i*C1+k+2]* I3[(k+2)*C2/P+j]+W3[i*C1+k+3]* I3[(k+3)*C2/P+j];
+	    k=k+4;
+        if(k+1 >= C1){
+          k=0;
+          ++j;
+        }
+        if(j == C2/P){
+          j=0;
+          ++i;
+        }
 	}
 
 
@@ -657,72 +642,72 @@ i=0;j=0;k=0;
 
 	// execute
 
-i=0;j=0;k=0;
-        for (ijk=0;ijk<R1*C1*C2/(4*P); ijk++){
-           //#ifdef CGRA_COMPILER
-           //please_map_me();
-           //#endif
+    i=0;j=0;k=0;
+    for (ijk=0;ijk<R1*C1*C2/(4*P); ijk++){
+       //#ifdef CGRA_COMPILER
+       //please_map_me();
+       //#endif
 	   O0[i*C2/P+j] = O0[i*C2/P+j] + W0[i*C1+k]* I0[k*C2/P+j]+ W0[i*C1+k+1]* I0[(k+1)*C2/P+j]+ W0[i*C1+k+2]* I0[(k+2)*C2/P+j]+W0[i*C1+k+3]* I0[(k+3)*C2/P+j];
 	   k=k+4;
-			if(k+1 >= C1){
-				k=0;
-				++j;
-			}
-			if(j == C2/P){
-  				j=0;
-				++i;
-			}
+	   if(k+1 >= C1){
+	   	k=0;
+	   	++j;
+	   }
+	   if(j == C2/P){
+  	   	j=0;
+	   	++i;
+	   }
 	}
 
-i=0;j=0;k=0;
-        for (ijk=0;ijk<R1*C1*C2/(4*P); ijk++){
-           //#ifdef CGRA_COMPILER
-           //please_map_me();
-           //#endif
+    i=0;j=0;k=0;
+    for (ijk=0;ijk<R1*C1*C2/(4*P); ijk++){
+       //#ifdef CGRA_COMPILER
+       //please_map_me();
+       //#endif
 	   O1[i*C2/P+j] = O1[i*C2/P+j] + W1[i*C1+k]* I1[k*C2/P+j]+ W1[i*C1+k+1]* I1[(k+1)*C2/P+j]+ W1[i*C1+k+2]* I1[(k+2)*C2/P+j]+W1[i*C1+k+3]* I1[(k+3)*C2/P+j];
 	   k=k+4;
-			if(k+1 >= C1){
-				k=0;
-				++j;
-			}
-			if(j == C2/P){
-  				j=0;
-				++i;
-			}
+	   if(k+1 >= C1){
+	   	k=0;
+	   	++j;
+	   }
+	   if(j == C2/P){
+  	   	j=0;
+	   	++i;
+	   }
 	}
 
-i=0;j=0;k=0;
-        for (ijk=0;ijk<R1*C1*C2/(4*P); ijk++){
-           //#ifdef CGRA_COMPILER
-           //please_map_me();
-           //#endif
+    i=0;j=0;k=0;
+    for (ijk=0;ijk<R1*C1*C2/(4*P); ijk++){
+       //#ifdef CGRA_COMPILER
+       //please_map_me();
+       //#endif
 	   O2[i*C2/P+j] = O2[i*C2/P+j] + W2[i*C1+k]* I2[k*C2/P+j]+ W2[i*C1+k+1]* I2[(k+1)*C2/P+j]+ W2[i*C1+k+2]* I2[(k+2)*C2/P+j]+W2[i*C1+k+3]* I2[(k+3)*C2/P+j];
 	   k=k+4;
-			if(k+1 >= C1){
-				k=0;
-				++j;
-			}
-			if(j == C2/P){
-  				j=0;
-				++i;
-			}
+	   if(k+1 >= C1){
+	   	k=0;
+	   	++j;
+	   }
+	   if(j == C2/P){
+  	   	j=0;
+	   	++i;
+	   }
 	}
 
-i=0;j=0;k=0;
-        for (ijk=0;ijk<R1*C1*C2/(4*P); ijk++){
-           //#ifdef CGRA_COMPILER
-           //please_map_me();
-           //#endif
+    i=0;j=0;k=0;
+    for (ijk=0;ijk<R1*C1*C2/(4*P); ijk++){
+       //#ifdef CGRA_COMPILER
+       //please_map_me();
+       //#endif
 	   O3[i*C2/P+j] = O3[i*C2/P+j] + W3[i*C1+k]* I3[k*C2/P+j]+ W3[i*C1+k+1]* I3[(k+1)*C2/P+j]+ W3[i*C1+k+2]* I3[(k+2)*C2/P+j]+W3[i*C1+k+3]* I3[(k+3)*C2/P+j];
 	   k=k+4;
-			if(k+1 >= C1){
-				k=0;
-				++j;
-			}
-			if(j == C2/P){
-  				j=0;
-				++i;
-			}
+	   if(k+1 >= C1){
+	   	k=0;
+	   	++j;
+	   }
+	   if(j == C2/P){
+  	   	j=0;
+	   	++i;
+	   }
 	}
 
 
@@ -741,7 +726,7 @@ i=0;j=0;k=0;
 	//printf("Second four blocks done\n");
 
     // 3rd four blocks
-//First four blocks
+    //First four blocks
 	//initialize O
 	for(int h=0; h<R1; h++)
 		for(int w=0; w<C2/P; w++){
@@ -769,73 +754,73 @@ i=0;j=0;k=0;
 		}
 
 	// execute
-i=0;j=0;k=0;
-        for (ijk=0;ijk<R1*C1*C2/(4*P); ijk++){
-           //#ifdef CGRA_COMPILER
-           //please_map_me();
-           //#endif
+    i=0;j=0;k=0;
+    for (ijk=0;ijk<R1*C1*C2/(4*P); ijk++){
+       //#ifdef CGRA_COMPILER
+       //please_map_me();
+       //#endif
 	   O0[i*C2/P+j] = O0[i*C2/P+j] + W0[i*C1+k]* I0[k*C2/P+j]+ W0[i*C1+k+1]* I0[(k+1)*C2/P+j]+ W0[i*C1+k+2]* I0[(k+2)*C2/P+j]+W0[i*C1+k+3]* I0[(k+3)*C2/P+j];
 	   k=k+4;
-			if(k+1 >= C1){
-				k=0;
-				++j;
-			}
-			if(j == C2/P){
-  				j=0;
-				++i;
-			}
+	   if(k+1 >= C1){
+	   	k=0;
+	   	++j;
+	   }
+	   if(j == C2/P){
+  	   	j=0;
+	   	++i;
+	   }
 	}
 
-i=0;j=0;k=0;
-        for (ijk=0;ijk<R1*C1*C2/(4*P); ijk++){
-           //#ifdef CGRA_COMPILER
-           //please_map_me();
-           //#endif
+    i=0;j=0;k=0;
+    for (ijk=0;ijk<R1*C1*C2/(4*P); ijk++){
+       //#ifdef CGRA_COMPILER
+       //please_map_me();
+       //#endif
 	   O1[i*C2/P+j] = O1[i*C2/P+j] + W1[i*C1+k]* I1[k*C2/P+j]+ W1[i*C1+k+1]* I1[(k+1)*C2/P+j]+ W1[i*C1+k+2]* I1[(k+2)*C2/P+j]+W1[i*C1+k+3]* I1[(k+3)*C2/P+j];
 	   k=k+4;
-			if(k+1 >= C1){
-				k=0;
-				++j;
-			}
-			if(j == C2/P){
-  				j=0;
-				++i;
-			}
+	   if(k+1 >= C1){
+	   	k=0;
+	   	++j;
+	   }
+	   if(j == C2/P){
+  	   	j=0;
+	   	++i;
+	   }
 	}
 
 
-i=0;j=0;k=0;
-        for (ijk=0;ijk<R1*C1*C2/(4*P); ijk++){
-           //#ifdef CGRA_COMPILER
-           //please_map_me();
-           //#endif
+    i=0;j=0;k=0;
+    for (ijk=0;ijk<R1*C1*C2/(4*P); ijk++){
+       //#ifdef CGRA_COMPILER
+       //please_map_me();
+       //#endif
 	   O2[i*C2/P+j] = O2[i*C2/P+j] + W2[i*C1+k]* I2[k*C2/P+j]+ W2[i*C1+k+1]* I2[(k+1)*C2/P+j]+ W2[i*C1+k+2]* I2[(k+2)*C2/P+j]+W2[i*C1+k+3]* I2[(k+3)*C2/P+j];
 	   k=k+4;
-			if(k+1 >= C1){
-				k=0;
-				++j;
-			}
-			if(j == C2/P){
-  				j=0;
-				++i;
-			}
+	   if(k+1 >= C1){
+	   	k=0;
+	   	++j;
+	   }
+	   if(j == C2/P){
+  	   	j=0;
+	   	++i;
+	   }
 	}
 
-i=0;j=0;k=0;
-        for (ijk=0;ijk<R1*C1*C2/(4*P); ijk++){
-           //#ifdef CGRA_COMPILER
-           //please_map_me();
-           //#endif
+    i=0;j=0;k=0;
+    for (ijk=0;ijk<R1*C1*C2/(4*P); ijk++){
+       //#ifdef CGRA_COMPILER
+       //please_map_me();
+       //#endif
 	   O3[i*C2/P+j] = O3[i*C2/P+j] + W3[i*C1+k]* I3[k*C2/P+j]+ W3[i*C1+k+1]* I3[(k+1)*C2/P+j]+ W3[i*C1+k+2]* I3[(k+2)*C2/P+j]+W3[i*C1+k+3]* I3[(k+3)*C2/P+j];
 	   k=k+4;
-			if(k+1 >= C1){
-				k=0;
-				++j;
-			}
-			if(j == C2/P){
-  				j=0;
-				++i;
-			}
+	   if(k+1 >= C1){
+	   	k=0;
+	   	++j;
+	   }
+	   if(j == C2/P){
+  	   	j=0;
+	   	++i;
+	   }
 	}
 
 

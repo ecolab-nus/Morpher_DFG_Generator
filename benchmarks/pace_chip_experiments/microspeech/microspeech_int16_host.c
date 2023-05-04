@@ -941,9 +941,9 @@ int32_t ALL_EIGHT_MEMS[4*8192];
 void conv_layer_pace(){
 	printf("# Calling PACE convolution #\n");
 	int i,j,k,ijk;
-    uint8_t wdata[210000], rdata[210000];
-    uint8_t databyte1,databyte2,databyte3,databyte4,databyte5,databyte6,databyte7,databyte8;
-    uint8_t addrbyte1,addrbyte2;
+        uint8_t wdata[210000], rdata[210000];
+        uint8_t databyte1,databyte2,databyte3,databyte4,databyte5,databyte6,databyte7,databyte8;
+        uint8_t addrbyte1,addrbyte2;
 	//First four blocks
 	//initialize O
 	for(int h=0; h<R1; h++)
@@ -955,8 +955,8 @@ void conv_layer_pace(){
 
 		}
 	//copy weight_m to W
-    int uint_weight = 0;
-    int uint_input = 0;
+        int uint_weight = 0;
+        int uint_input = 0;
 	for(int h=0; h<R1; h++)
 		for(int w=0; w<C1; w++){
 			W0[h*C1+w] = WEIGHT_MATRIX[h*C1+w];
@@ -977,35 +977,30 @@ void conv_layer_pace(){
 
 
     //remove this after finding the start address
-	    send_loopstart_and_cluster_enable();
+	send_loopstart_and_cluster_enable();
 	
 
 
 	//SEND Weights
-		if(alreadysent == false){
-			printf("Writing Weights\n");
-			for (int i = 0; i < R1*C1; i=i+1)
-			{
-				
-        	    int addr = (i*2+CLUSTER0_BASE_ADDRESS_W0);// 16 bit address
-        	    send_data_1_spi(&W0[i], addr);
-        	    addr = (i*2+CLUSTER1_BASE_ADDRESS_W1);// 16 bit address
-        	    send_data_1_spi(&W1[i], addr);
-        	    addr = (i*2+CLUSTER2_BASE_ADDRESS_W2);// 16 bit address
-        	    send_data_1_spi(&W2[i], addr);
-        	    addr = (i*2+CLUSTER3_BASE_ADDRESS_W3);// 16 bit address
-        	    send_data_1_spi(&W3[i], addr);
-        	}
-        
-
-			alreadysent = true;
-		}
+	if(alreadysent == false){
+		printf("Writing Weights\n");
+		for (int i = 0; i < R1*C1; i=i+1)
+		{		
+        	int addr = (i*2+CLUSTER0_BASE_ADDRESS_W0);// 16 bit address
+        	send_data_1_spi(&W0[i], addr);
+        	addr = (i*2+CLUSTER1_BASE_ADDRESS_W1);// 16 bit address
+        	send_data_1_spi(&W1[i], addr);
+        	addr = (i*2+CLUSTER2_BASE_ADDRESS_W2);// 16 bit address
+        	send_data_1_spi(&W2[i], addr);
+        	addr = (i*2+CLUSTER3_BASE_ADDRESS_W3);// 16 bit address
+        	send_data_1_spi(&W3[i], addr);
+        }
+		alreadysent = true;
+	}
 
 	//SEND Inputs
-		for (int i = 0; i < R2*C2/P; i=i+1)
-		{
-			//
-			int addr = (i*2+CLUSTER0_BASE_ADDRESS_I0);// 16 bit address
+	for (int i = 0; i < R2*C2/P; i=i+1){
+	    int addr = (i*2+CLUSTER0_BASE_ADDRESS_I0);// 16 bit address
             send_data_1_spi(&I0[i], addr);
             addr = (i*2+CLUSTER1_BASE_ADDRESS_I1);// 16 bit address
             send_data_1_spi(&I1[i], addr);
@@ -1017,11 +1012,9 @@ void conv_layer_pace(){
         }
 
 
-    	//Initialize Outputs
-		for (int i = 0; i < R1*C2/P; i=i+1)
-		{
-			//
-			int addr = (i*2+CLUSTER0_BASE_ADDRESS_O0);// 16 bit address
+    //Initialize Outputs
+	for (int i = 0; i < R1*C2/P; i=i+1){
+	    int addr = (i*2+CLUSTER0_BASE_ADDRESS_O0);// 16 bit address
             send_data_1_spi(&O0[i], addr);
             addr = (i*2+CLUSTER1_BASE_ADDRESS_O1);// 16 bit address
             send_data_1_spi(&O1[i], addr);
@@ -1029,7 +1022,6 @@ void conv_layer_pace(){
             send_data_1_spi(&O2[i], addr);
             addr = (i*2+CLUSTER3_BASE_ADDRESS_O3);// 16 bit address
             send_data_1_spi(&O3[i], addr);
-
         }
 
         
@@ -1039,18 +1031,13 @@ void conv_layer_pace(){
 	// printf("Writing SPI live data done\n");
 
     start_execution_and_wait();
-
-        //read_spi_data();
 	
 	
+    //READ Outputs
 	read_spi_data_range((int)CLUSTER0_BASE_ADDRESS_O0, R1*(C2/P), O0_PACE);
 	read_spi_data_range((int)CLUSTER1_BASE_ADDRESS_O1, R1*(C2/P), O1_PACE);
 	read_spi_data_range((int)CLUSTER2_BASE_ADDRESS_O2, R1*(C2/P), O2_PACE);
 	read_spi_data_range((int)CLUSTER3_BASE_ADDRESS_O3, R1*(C2/P), O3_PACE);
-	// read_spi_data_range((int)CLUSTER1_BASE_ADDRESS_W1, R1*C1, W1_PACE);
-	// read_spi_data_range((int)CLUSTER1_BASE_ADDRESS_I1, R2*(C2/P), I1_PACE);
-	// // read_spi_data_range(0, 8192, FIRST_TWO_MEMS);
-	// read_spi_data_range(0, 4*8192, ALL_EIGHT_MEMS);
     // printf("Reading SPI live data done\n\n");
 
 
@@ -1058,10 +1045,10 @@ void conv_layer_pace(){
 	//copy data back from O
 	for(int h=0; h<R1; h++)
 		for(int w=0; w<C2/P; w++){
-			OUTPUT_MATRIX_[h*(C2)+w] = O0_PACE[h*(C2/P)+w];//O0[h*(C2/P)+w];
-			OUTPUT_MATRIX_[h*(C2)+w+ (C2/P)] = O1_PACE[h*(C2/P)+w];//O1_PACE[h*(C2/P)+w];//O1[h*(C2/P)+w];
-			OUTPUT_MATRIX_[h*(C2)+w+ (2*C2/P)] = O2_PACE[h*(C2/P)+w];//O2_PACE[h*(C2/P)+w];//O2[h*(C2/P)+w];
-			OUTPUT_MATRIX_[h*(C2)+w+ (3*C2/P)] = O3_PACE[h*(C2/P)+w];//O3_PACE[h*(C2/P)+w];//O3[h*(C2/P)+w];
+			OUTPUT_MATRIX_[h*(C2)+w] = O0_PACE[h*(C2/P)+w];
+			OUTPUT_MATRIX_[h*(C2)+w+ (C2/P)] = O1_PACE[h*(C2/P)+w];
+			OUTPUT_MATRIX_[h*(C2)+w+ (2*C2/P)] = O2_PACE[h*(C2/P)+w];
+			OUTPUT_MATRIX_[h*(C2)+w+ (3*C2/P)] = O3_PACE[h*(C2/P)+w];
 		}
 
 
@@ -1089,13 +1076,11 @@ void conv_layer_pace(){
 
 
     //remove this after finding the start address
-	    send_loopstart_and_cluster_enable();
+	send_loopstart_and_cluster_enable();
 
 	//SEND Inputs
-		for (int i = 0; i < R2*C2/P; i=i+1)
-		{
-			//
-			int addr = (i*2+CLUSTER0_BASE_ADDRESS_I0);// 16 bit address
+	for (int i = 0; i < R2*C2/P; i=i+1){
+	    int addr = (i*2+CLUSTER0_BASE_ADDRESS_I0);// 16 bit address
             send_data_1_spi(&I0[i], addr);
             addr = (i*2+CLUSTER1_BASE_ADDRESS_I1);// 16 bit address
             send_data_1_spi(&I1[i], addr);
@@ -1108,10 +1093,8 @@ void conv_layer_pace(){
 
 
     	//Initialize Outputs
-		for (int i = 0; i < R1*C2/P; i=i+1)
-		{
-			//
-			int addr = (i*2+CLUSTER0_BASE_ADDRESS_O0);// 16 bit address
+	for (int i = 0; i < R1*C2/P; i=i+1){
+	    int addr = (i*2+CLUSTER0_BASE_ADDRESS_O0);// 16 bit address
             send_data_1_spi(&O0[i], addr);
             addr = (i*2+CLUSTER1_BASE_ADDRESS_O1);// 16 bit address
             send_data_1_spi(&O1[i], addr);
@@ -1125,7 +1108,6 @@ void conv_layer_pace(){
         
 
 	// execute
-
     start_execution_and_wait();
 
 
@@ -1173,38 +1155,38 @@ void conv_layer_pace(){
 
 
     //remove this after finding the start address
-	    send_loopstart_and_cluster_enable();
+	send_loopstart_and_cluster_enable();
 
-		//SEND Inputs
-		for (int i = 0; i < R2*C2/P; i=i+1)
-		{
-			//
-			int addr = (i*2+CLUSTER0_BASE_ADDRESS_I0);// 16 bit address
-            send_data_1_spi(&I0[i], addr);
-            addr = (i*2+CLUSTER1_BASE_ADDRESS_I1);// 16 bit address
-            send_data_1_spi(&I1[i], addr);
-            addr = (i*2+CLUSTER2_BASE_ADDRESS_I2);// 16 bit address
-            send_data_1_spi(&I2[i], addr);
-            addr = (i*2+CLUSTER3_BASE_ADDRESS_I3);// 16 bit address
-            send_data_1_spi(&I3[i], addr);
+    //SEND Inputs
+	for (int i = 0; i < R2*C2/P; i=i+1)
+	{
+		//
+		int addr = (i*2+CLUSTER0_BASE_ADDRESS_I0);// 16 bit address
+        send_data_1_spi(&I0[i], addr);
+        addr = (i*2+CLUSTER1_BASE_ADDRESS_I1);// 16 bit address
+        send_data_1_spi(&I1[i], addr);
+        addr = (i*2+CLUSTER2_BASE_ADDRESS_I2);// 16 bit address
+        send_data_1_spi(&I2[i], addr);
+        addr = (i*2+CLUSTER3_BASE_ADDRESS_I3);// 16 bit address
+        send_data_1_spi(&I3[i], addr);
 
-        }
+    }
 
 
-    	//Initialize Outputs
-		for (int i = 0; i < R1*C2/P; i=i+1)
-		{
-			//
-			int addr = (i*2+CLUSTER0_BASE_ADDRESS_O0);// 16 bit address
-            send_data_1_spi(&O0[i], addr);
-            addr = (i*2+CLUSTER1_BASE_ADDRESS_O1);// 16 bit address
-            send_data_1_spi(&O1[i], addr);
-            addr = (i*2+CLUSTER2_BASE_ADDRESS_O2);// 16 bit address
-            send_data_1_spi(&O2[i], addr);
-            addr = (i*2+CLUSTER3_BASE_ADDRESS_O3);// 16 bit address
-            send_data_1_spi(&O3[i], addr);
+    //Initialize Outputs
+	for (int i = 0; i < R1*C2/P; i=i+1)
+	{
+		//
+		int addr = (i*2+CLUSTER0_BASE_ADDRESS_O0);// 16 bit address
+        send_data_1_spi(&O0[i], addr);
+        addr = (i*2+CLUSTER1_BASE_ADDRESS_O1);// 16 bit address
+        send_data_1_spi(&O1[i], addr);
+        addr = (i*2+CLUSTER2_BASE_ADDRESS_O2);// 16 bit address
+        send_data_1_spi(&O2[i], addr);
+        addr = (i*2+CLUSTER3_BASE_ADDRESS_O3);// 16 bit address
+        send_data_1_spi(&O3[i], addr);
 
-        }
+    }
 
         
 
@@ -1690,11 +1672,9 @@ void main() {
     //read conv1 param
     read_conv_param();    
 
-    // //perform convolution
-    //microspeech_conv_original();
-    microspeech_conv_layer();
-
-    conv_layer_pace();
+    //perform convolution
+    microspeech_conv_layer();// executed on host
+    conv_layer_pace();// offloaded to PACE
 
     for (int i=0;i<R1; i++)
         for (int j=0; j<C2; j++) {
@@ -1703,7 +1683,7 @@ void main() {
                printf("i:%d j:%d INCORRECT %d,%d\n",i,j,OUTPUT_MATRIX_EXP[(i)*C2+(j)],OUTPUT_MATRIX_[(i)*C2+(j)]);
                incorrect++;
 	    	}else{
-        	      //  printf("i:%d j:%d CORRECT %d,%d\n",i,j,OUTPUT_MATRIX_EXP[(i)*C2+(j)],OUTPUT_MATRIX_[(i)*C2+(j)]);
+        	   //printf("i:%d j:%d CORRECT %d,%d\n",i,j,OUTPUT_MATRIX_EXP[(i)*C2+(j)],OUTPUT_MATRIX_[(i)*C2+(j)]);
         	   correct++;
 	    	}
         }
@@ -1713,7 +1693,6 @@ void main() {
 			OUTPUT_MATRIX[(i)*500+(j)] =OUTPUT_MATRIX_[(i)*C2+(j)];// OUTPUT_MATRIX_[(i)*C2+(j)];
 		}
     quantize_conv_layer();
-
     microspeech_bias_ReLu();
     requantize_conv();
     reshape_conv_output();
