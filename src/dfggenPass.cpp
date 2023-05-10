@@ -79,7 +79,7 @@
 #include <morpherdfggen/dfg/DFGTrig.h>
 #include <morpherdfggen/dfg/DFGTrMap.h>
 #include <morpherdfggen/common/edge.h>
-
+#include <morpherdfggen/util/tinyxml2.h>
 //#define CDFG
 #define DEFAULT_DATA_PLACEMENT
 
@@ -1349,6 +1349,49 @@ int getOptimumDim(unsigned int *dimX, unsigned int *dimY, int numNodes, int numM
 	return bestWastage;
 }
 
+
+std::map<std::string, int> readInterfaceXMLFile(const std::string& kernel) {
+    std::string xmlFile = "cgra_" + kernel + "_interface.xml";
+    tinyxml2::XMLDocument xmlDoc;
+    tinyxml2::XMLError eResult = xmlDoc.LoadFile(xmlFile.c_str());
+
+    if (eResult != tinyxml2::XML_SUCCESS) {
+        throw std::runtime_error("Error loading Interface XML file: " + xmlFile);
+    }
+
+    tinyxml2::XMLElement* moduleElement = xmlDoc.FirstChildElement("module");
+    if (moduleElement == nullptr) {
+        throw std::runtime_error("No 'module' element found in the XML file");
+    }
+
+    tinyxml2::XMLElement* functionElement = moduleElement->FirstChildElement("function");
+    if (functionElement == nullptr) {
+        throw std::runtime_error("No 'function' element found in the XML file");
+    }
+
+    tinyxml2::XMLElement* argElement = functionElement->FirstChildElement("arg");
+    if (argElement == nullptr) {
+        throw std::runtime_error("No 'arg' element found in the XML file");
+    }
+
+    std::map<std::string, int> argMap;
+
+    while (argElement != nullptr) {
+        const char* argID = argElement->Attribute("id");
+        int argSize = argElement->IntAttribute("size");
+
+        if (argID != nullptr) {
+            argMap[argID] = argSize;
+        }
+
+        argElement = argElement->NextSiblingElement("arg");
+    }
+
+    return argMap;
+}
+
+
+
 void ParseSizeAttr(Function &F, std::map<std::string, int> *sizeArrMap)
 {
 	auto global_annos = F.getParent()->getNamedGlobal("llvm.global.annotations");
@@ -1389,7 +1432,31 @@ void ParseSizeAttr(Function &F, std::map<std::string, int> *sizeArrMap)
 	{
 		LLVM_DEBUG(dbgs() << F.getName() << " has my attribute!\n");
 	}
+
+	//std::string kernel = "cgra_generic_0";
+    std::map<std::string, int> argMap;
+
+    try {
+        argMap = readInterfaceXMLFile(F.getName().str());
+    } catch (const std::runtime_error& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return;
+    }
+
+    // Print the argMap 
+    for (const auto& arg : argMap) {
+        std::cout << "Arg ID: " << arg.first << ", Size: " << arg.second << std::endl;
+    }
+
+	LLVM_DEBUG(llvm::dbgs() << "Setting size array map for function arguments in " << F.getName() << ":\n";);
+	for (auto arg_iter = F.arg_begin(); arg_iter != F.arg_end(); ++arg_iter) {
+    	LLVM_DEBUG(llvm::dbgs() << "Set sizeArrMap[" << arg_iter->getName() << "]= "<< argMap[arg_iter->getName().str()]<<"\n";);
+		(*sizeArrMap)[arg_iter->getName().str()] = argMap[arg_iter->getName().str()];
+	}
 }
+
+
+
 
 void RemoveSelectLeafs(Function &F)
 {
@@ -1971,6 +2038,16 @@ void NameUnnamedValues(Function &F)
 			}
 		}
 	}
+    
+	//set the name for unnamed function arguments
+	int argCounter = 0;
+    for (auto &arg : F.args()) {
+    	if (arg.getName().empty()) {
+      		std::string newName = "P" + std::to_string(argCounter);
+      		arg.setName(newName);
+    	}
+    	argCounter++;
+    }
 }
 void AllocateSPMBanks(std::unordered_set<Value *> &outer_vals,
 		std::unordered_map<Value *, GetElementPtrInst *> &mem_ptrs,
@@ -2195,6 +2272,7 @@ struct dfggenPass : public FunctionPass
 		InsertORtoSingularConditionalBB(F);
 		NameUnnamedValues(F);
 		ParseSizeAttr(F, &sizeArrMap);
+
 
 		std::string Filename = ("cfg." + F.getName() + ".dot").str();
 		//errs() << "Writing '" << Filename << "'...";
