@@ -11047,11 +11047,15 @@ void DFG::SetBasePointers(std::unordered_set<Value *> &outer_vals,
 					}
 					else
 					{
-						DataLayout DL = LDI->getParent()->getParent()->getParent()->getDataLayout();
+						// DataLayout DL = LDI->getParent()->getParent()->getParent()->getDataLayout();
 						// PointerType *PT = cast<PointerType>(mem_ptrs[pointer]->getPointerOperand()->getType());
-						// array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(PT->getElementType());
-						array_pointer_sizes[base_ptr_name] = 4;//DL.getTypeAllocSize(PT->getPointerElementType());
-						LLVM_DEBUG(dbgs() << "FIX this: base_ptr_name:" << base_ptr_name <<  "array pointer size:" << array_pointer_sizes[base_ptr_name]<< "\n");
+						// // array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(PT->getElementType());
+						// array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(PT->getPointerElementType());
+						// LLVM_DEBUG(dbgs() << "FIX this: base_ptr_name:" << base_ptr_name <<  "array pointer size:" << array_pointer_sizes[base_ptr_name]<< "\n");
+					    DataLayout DL = LDI->getParent()->getParent()->getParent()->getDataLayout();
+						PointerType *PT = cast<PointerType>(mem_ptrs[pointer]->getPointerOperand()->getType());
+						array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(PT->getPointerElementType());
+					
 					}
 				}
 			}
@@ -11074,12 +11078,15 @@ void DFG::SetBasePointers(std::unordered_set<Value *> &outer_vals,
 					}
 					else
 					{
-						DataLayout DL = STI->getParent()->getParent()->getParent()->getDataLayout();
-						// PointerType *PT = cast<PointerType>(mem_ptrs[pointer]->getPointerOperand()->getType());
-						// array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(PT->getElementType());
-						// array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(PT->getPointerElementType());
-						array_pointer_sizes[base_ptr_name] = 4;// DL.getTypeAllocSize(mem_ptrs[pointer]->getValueOperand()->getType());
-						LLVM_DEBUG(dbgs() << "Fix this: base_ptr_name:" << base_ptr_name <<  "array pointer size:" << array_pointer_sizes[base_ptr_name]<< "\n");
+						// DataLayout DL = STI->getParent()->getParent()->getParent()->getDataLayout();
+						// // PointerType *PT = cast<PointerType>(mem_ptrs[pointer]->getPointerOperand()->getType());
+						// // array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(PT->getElementType());
+						// // array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(PT->getPointerElementType());
+						// array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(mem_ptrs[pointer]->getValueOperand()->getType());
+						// LLVM_DEBUG(dbgs() << "Fix this: base_ptr_name:" << base_ptr_name <<  "array pointer size:" << array_pointer_sizes[base_ptr_name]<< "\n");
+					    DataLayout DL = STI->getParent()->getParent()->getParent()->getDataLayout();
+						PointerType *PT = cast<PointerType>(mem_ptrs[pointer]->getPointerOperand()->getType());
+						array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(PT->getPointerElementType());
 					}
 				}
 			}
@@ -11105,11 +11112,11 @@ void DFG::SetBasePointers(std::unordered_set<Value *> &outer_vals,
 			}
 			else
 			{
-				DataLayout DL = GEP->getParent()->getParent()->getParent()->getDataLayout();
-				// PointerType *PT = cast<PointerType>(GEP->getPointerOperand()->getType());
-				// array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(PT->getPointerElementType());
-				array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(GEP->getSourceElementType());
-				LLVM_DEBUG(dbgs() << "Fix this: base_ptr_name:" << base_ptr_name <<  "array pointer size:" << array_pointer_sizes[base_ptr_name]<< "\n");
+				// DataLayout DL = GEP->getParent()->getParent()->getParent()->getDataLayout();
+				// // PointerType *PT = cast<PointerType>(GEP->getPointerOperand()->getType());
+				// // array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(PT->getPointerElementType());
+				// array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(GEP->getSourceElementType());
+				// LLVM_DEBUG(dbgs() << "Fix this: base_ptr_name:" << base_ptr_name <<  "array pointer size:" << array_pointer_sizes[base_ptr_name]<< "\n");
 
 				// if (auto *ET = PT->getPointerElementType()) {
     			// 	array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(ET);
@@ -11120,6 +11127,9 @@ void DFG::SetBasePointers(std::unordered_set<Value *> &outer_vals,
 				// 	assert(false);
     			// 	// Handle error case where the element type of the pointer operand is opaque.
 				// }
+				DataLayout DL = GEP->getParent()->getParent()->getParent()->getDataLayout();
+				PointerType *PT = cast<PointerType>(GEP->getPointerOperand()->getType());
+				array_pointer_sizes[base_ptr_name] = DL.getTypeAllocSize(PT->getPointerElementType());
 			}
 		}
 
