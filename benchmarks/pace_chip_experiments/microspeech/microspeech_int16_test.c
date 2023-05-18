@@ -871,7 +871,7 @@ void main() {
 
   //specify directory path here
   //path_to_dir
-  dir = opendir("/home/angela/Desktop/prototype/Morpher_DFG_Generator/applications/hycube_v3_design_app_test/Microspeech16/test_data/");
+  dir = opendir("/home/zhaoying/pace/pace88_16/Morpher/Morpher_DFG_Generator/benchmarks/pace_chip_experiments/microspeech/test_data/");
   
   if (dir == NULL) {
     printf("Failed to open directory.\n");
@@ -883,7 +883,7 @@ void main() {
       char string[1000];
       
       //specify directory path here
-      char full_file_name[] = "/home/angela/Desktop/prototype/Morpher_DFG_Generator/applications/hycube_v3_design_app_test/Microspeech16/test_data/";
+      char full_file_name[] = "/home/zhaoying/pace/pace88_16/Morpher/Morpher_DFG_Generator/benchmarks/pace_chip_experiments/microspeech/test_data/";
       int ctr_fl = sizeof(full_file_name);
 
       //printf("%s\n", entry->d_name);
