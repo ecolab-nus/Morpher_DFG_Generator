@@ -2095,10 +2095,11 @@ void AllocateSPMBanks(std::unordered_set<Value *> &outer_vals,
 #ifdef ARCHI_16BIT
 			assert(size/2 <= bank_size);
 #else
+			LLVM_DEBUG(dbgs() << gep_pointer_name << ", size = " << size << "\n");
+			LLVM_DEBUG(dbgs() << "bank_size: " << bank_size<< ", size: " << size << "\n");
 			assert(size <= bank_size);
 #endif
 			variable_sizes_bytes[gep->getPointerOperand()] = size;
-			LLVM_DEBUG(dbgs() << gep_pointer_name << ", size = " << size << "\n");
 		}
 	}
 

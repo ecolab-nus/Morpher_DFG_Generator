@@ -10816,7 +10816,8 @@ void checkGEPDerivatives(Instruction *root, GetElementPtrInst *GEP, std::unorder
  * base_ptr:i.022, accesses = 1 (outloopload scalar)
  *
  *
- * The function getTransferVariables  extracts information about transfer variables, specifically the live-in and live-out values, memory pointers, and memory access counts for arrays and scalars. 
+ * The function getTransferVariables  extracts information about transfer variables, specifically the live-in and 
+ * live-out values, memory pointers, and memory access counts for arrays and scalars. 
  * The function takes four input arguments:
 
     outer_vals: A reference to an unordered_set that will store the live-in and live-out values.
@@ -10824,16 +10825,21 @@ void checkGEPDerivatives(Instruction *root, GetElementPtrInst *GEP, std::unorder
     acc: A reference to an unordered_map that will store the access count of each array or scalar.
     F: A reference to the LLVM Function that is being analyzed.
 
-The function first processes OutLoopNodeMapReverse, an unordered_map that contains information about values loaded from or stored to outer loop variables. It iterates through this map and updates 
+The function first processes OutLoopNodeMapReverse, an unordered_map that contains information about values loaded from or stored
+ to outer loop variables. It iterates through this map and updates 
 the outer_vals set and the access count in acc.
 
-Next, it initializes gep_derivatives, an unordered_map that stores GEP instructions for array loads and stores. It iterates through the basic blocks in the function, and for each instruction, 
-it checks if it's a GEP instruction. If it is, the function adds the GEP instruction to gep_derivatives and recursively checks its derivatives.
+Next, it initializes gep_derivatives, an unordered_map that stores GEP instructions for array loads and stores. It iterates through 
+the basic blocks in the function, and for each instruction, 
+it checks if it's a GEP instruction. If it is, the function adds the GEP instruction to gep_derivatives and recursively checks its 
+derivatives.
 
-Then, the function iterates through the NodeList, which contains the nodes in the data flow graph. For each node, it checks if it is a LoadInst or StoreInst. If it is a LoadInst or StoreInst,
+Then, the function iterates through the NodeList, which contains the nodes in the data flow graph. For each node, it checks if it 
+is a LoadInst or StoreInst. If it is a LoadInst or StoreInst,
  the function updates the access count in acc and the memory pointers in mem_ptrs.
 
-In summary, this function processes an LLVM function and extracts information about transfer variables, specifically the live-in and live-out values, memory pointers, and memory access counts 
+In summary, this function processes an LLVM function and extracts information about transfer variables, specifically the live-in 
+and live-out values, memory pointers, and memory access counts 
 for arrays and scalars.
 
  * 
