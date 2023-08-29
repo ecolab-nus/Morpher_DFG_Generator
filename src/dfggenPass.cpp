@@ -2114,7 +2114,11 @@ void AllocateSPMBanks(std::unordered_set<Value *> &outer_vals,
 				LLVM_DEBUG(dbgs() << "bank="<<bank_id<<",");
 				spm_base_address[gep->getPointerOperand()] = bank_base_address[bank_id];
 				assert(variable_sizes_bytes.find(gep->getPointerOperand()) != variable_sizes_bytes.end());
+#ifdef ARCHI_16BIT
+				bank_base_address[bank_id] += variable_sizes_bytes[gep->getPointerOperand()]/2;				
+#else
 				bank_base_address[bank_id] += variable_sizes_bytes[gep->getPointerOperand()];
+#endif
 				LLVM_DEBUG(dbgs() << "addr=" << spm_base_address[gep->getPointerOperand()] << "\n");
 			}
 			else{
@@ -2136,8 +2140,12 @@ void AllocateSPMBanks(std::unordered_set<Value *> &outer_vals,
 			spm_bank_allocation[outer_value_mem] = SPMBANKOfIndex(bank_id);
 			spm_base_address[outer_value_mem] = bank_base_address[bank_id];
 			assert(variable_sizes_bytes.find(outer_value_mem) != variable_sizes_bytes.end());
+#ifdef ARCHI_16BIT
+			bank_base_address[bank_id] += variable_sizes_bytes[outer_value_mem]/2;
+#else
 			bank_base_address[bank_id] += variable_sizes_bytes[outer_value_mem];
 
+#endif
 			LLVM_DEBUG(dbgs() << "bank="<<bank_id<<",");
 			LLVM_DEBUG(dbgs() << "addr=" << spm_base_address[outer_value_mem] << "\n");
 		}
