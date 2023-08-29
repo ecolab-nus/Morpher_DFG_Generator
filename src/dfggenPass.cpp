@@ -2033,10 +2033,17 @@ void AllocateSPMBanks(std::unordered_set<Value *> &outer_vals,
 	/*assign acc (arrays and scalars) to memories. It balances the data amount (size) of each bank.
 	Currently don't consider number of accesses for each array. */
 	{
-
-		int desired_bank = 0;
+		std::vector<std::pair<int,Value *>> acc_vec; 
 		for(auto it = acc.begin(); it != acc.end(); it++){
-			int size = variable_sizes_bytes[it->first];
+			acc_vec.push_back(std::make_pair(variable_sizes_bytes[it->first],it->first));
+		}
+		std::sort(acc_vec.rbegin(),acc_vec.rend());
+		
+		int desired_bank = 0;
+		//for(auto it = acc.begin(); it != acc.end(); it++){
+			//int size = variable_sizes_bytes[it->first];
+		for(auto it:acc_vec){
+			int size = it.first;
 			int least_data = data_in_bank[0];
 			if(dp_policy ==0){ //Data placement policy 0 : balances the data amount (size) of each bank.
 				desired_bank = 0;
@@ -2057,8 +2064,11 @@ void AllocateSPMBanks(std::unordered_set<Value *> &outer_vals,
 			}
 
 			LLVM_DEBUG(dbgs()<<"assign"<< size << "to bank"<<desired_bank<<"\n");
-			banks_vars[desired_bank].insert(it->first);
-			value_to_BankId[it->first] = desired_bank;
+			//banks_vars[desired_bank].insert(it->first);
+			//value_to_BankId[it->first] = desired_bank;
+			banks_vars[desired_bank].insert(it.second);
+			value_to_BankId[it.second] = desired_bank;
+			
 			data_in_bank[desired_bank] = size + data_in_bank[desired_bank];
 #ifdef ARCHI_16BIT
 			assert(data_in_bank[desired_bank]/2 < bank_size);
