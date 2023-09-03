@@ -14,7 +14,7 @@ void array_add(){
       please_map_me();
       #endif
 
-      C[i] = A[i]+B[i];
+      C[i] += A[i]+B[i];
    }
 
 

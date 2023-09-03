@@ -2082,7 +2082,13 @@ void AllocateSPMBanks(std::unordered_set<Value *> &outer_vals,
 	{
 		Value *mem_value = it->first;
 		GetElementPtrInst *gep = it->second;
-		std::string gep_pointer_name = gep->getPointerOperand()->getNameOrAsOperand();
+		// std::string gep_pointer_name = gep->getPointerOperand()->getNameOrAsOperand();
+		// Get the name or fallback to a representation if the name is empty
+    	std::string gep_pointer_name = gep->getPointerOperand()->getName().str();
+    	if (gep_pointer_name.empty()) {
+        	gep_pointer_name = "<unnamed>";
+    	}
+
 		if (sizeArrMap.find(gep_pointer_name) != sizeArrMap.end())
 		{
 			variable_sizes_bytes[gep->getPointerOperand()] = sizeArrMap[gep_pointer_name];
@@ -2102,6 +2108,7 @@ void AllocateSPMBanks(std::unordered_set<Value *> &outer_vals,
 			variable_sizes_bytes[gep->getPointerOperand()] = size;
 		}
 	}
+
 
 
 
@@ -2160,7 +2167,7 @@ void AllocateSPMBanks(std::unordered_set<Value *> &outer_vals,
 		auto & bank_vars = banks_vars[i];
 		LLVM_DEBUG(dbgs() << "Bank"<<i<< " vars :: \n");
 		for(Value* v : bank_vars){
-			LLVM_DEBUG(dbgs() << "\t" << v->getNameOrAsOperand() << " :: size = " << variable_sizes_bytes[v] << ", acceses = " << acc[v] << "\n");
+			// LLVM_DEBUG(dbgs() << "\t" << v->getNameOrAsOperand() << " :: size = " << variable_sizes_bytes[v] << ", acceses = " << acc[v] << "\n");
 			// spm_bank_allocation[v]=BANK0;
 			// spm_base_address[v] = bank0_addr;
 			// bank0_addr += variable_sizes_bytes[v];
@@ -2179,8 +2186,8 @@ void AllocateSPMBanks(std::unordered_set<Value *> &outer_vals,
 		Value* mem_ins = it->first;
 		GetElementPtrInst* gep = it->second;
 
-		LLVM_DEBUG(dbgs() << "pointer_ins = " << mem_ins->getNameOrAsOperand() << ",");
-		LLVM_DEBUG(dbgs()<< "gep_pointer = " << gep->getPointerOperand()->getNameOrAsOperand() << ",");
+		// LLVM_DEBUG(dbgs() << "pointer_ins = " << mem_ins->getNameOrAsOperand() << ",");
+		// LLVM_DEBUG(dbgs()<< "gep_pointer = " << gep->getPointerOperand()->getNameOrAsOperand() << ",");
 		LLVM_DEBUG(dbgs() << "size = " << variable_sizes_bytes[gep->getPointerOperand()] << ",");
 
 		if(value_to_BankId.find(gep->getPointerOperand()) != value_to_BankId.end()){
@@ -2498,7 +2505,7 @@ struct dfggenPass : public FunctionPass
 				{
 					Value *base_ptr = it->first;
 					int accesses = it->second;
-					LLVM_DEBUG(dbgs() << "base_ptr:" << base_ptr->getNameOrAsOperand() << ", accesses = " << accesses << "\n");
+					// LLVM_DEBUG(dbgs() << "base_ptr:" << base_ptr->getNameOrAsOperand() << ", accesses = " << accesses << "\n");
 				}
 
 				//for hycube binary generation-----------------
