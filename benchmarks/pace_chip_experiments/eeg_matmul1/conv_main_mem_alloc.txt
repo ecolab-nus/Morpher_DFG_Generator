@@ -1,0 +1,8 @@
+var_name,base_addr
+data,0
+conv_1x1,8192
+kernel,282
+mul,8474
+loopstart,16383
+storestart,16383
+loopend,16382

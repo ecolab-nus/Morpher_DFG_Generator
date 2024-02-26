@@ -1,0 +1,757 @@
+{
+    "ARCH": {
+        "CGRA": {
+            "CONNECTIONS": {
+                "PE_MEM_X0_Y0.EAST_O": [
+                    "PE_X1|_Y0|.WEST_I"
+                ],
+                "PE_MEM_X0_Y0.MEMPORT": [
+                    "SPM_B0_WRAPPER_INS.MEMPORT_P0"
+                ],
+                "PE_MEM_X0_Y0.SOUTH_O": [
+                    "PE_MEM_X0_Y1.NORTH_I"
+                ],
+                "PE_MEM_X0_Y1.EAST_O": [
+                    "PE_X1|_Y1|.WEST_I"
+                ],
+                "PE_MEM_X0_Y1.MEMPORT": [
+                    "SPM_B0_WRAPPER_INS.MEMPORT_P1"
+                ],
+                "PE_MEM_X0_Y1.NORTH_O": [
+                    "PE_MEM_X0_Y0.SOUTH_I"
+                ],
+                "PE_MEM_X0_Y1.SOUTH_O": [
+                    "PE_MEM_X0_Y2.NORTH_I"
+                ],
+                "PE_MEM_X0_Y2.EAST_O": [
+                    "PE_X1|_Y2|.WEST_I"
+                ],
+                "PE_MEM_X0_Y2.MEMPORT": [
+                    "SPM_B1_WRAPPER_INS.MEMPORT_P0"
+                ],
+                "PE_MEM_X0_Y2.NORTH_O": [
+                    "PE_MEM_X0_Y1.SOUTH_I"
+                ],
+                "PE_MEM_X0_Y2.SOUTH_O": [
+                    "PE_MEM_X0_Y3.NORTH_I"
+                ],
+                "PE_MEM_X0_Y3.EAST_O": [
+                    "PE_X1|_Y3|.WEST_I"
+                ],
+                "PE_MEM_X0_Y3.MEMPORT": [
+                    "SPM_B1_WRAPPER_INS.MEMPORT_P1"
+                ],
+                "PE_MEM_X0_Y3.NORTH_O": [
+                    "PE_MEM_X0_Y2.SOUTH_I"
+                ],
+                "PE_X1|_Y0|.EAST_O": [
+                    "PE_X2|_Y0|.WEST_I"
+                ],
+                "PE_X1|_Y0|.SOUTH_O": [
+                    "PE_X1|_Y1|.NORTH_I"
+                ],
+                "PE_X1|_Y0|.WEST_O": [
+                    "PE_MEM_X0_Y0.EAST_I"
+                ],
+                "PE_X1|_Y1|.EAST_O": [
+                    "PE_X2|_Y1|.WEST_I"
+                ],
+                "PE_X1|_Y1|.NORTH_O": [
+                    "PE_X1|_Y0|.SOUTH_I"
+                ],
+                "PE_X1|_Y1|.SOUTH_O": [
+                    "PE_X1|_Y2|.NORTH_I"
+                ],
+                "PE_X1|_Y1|.WEST_O": [
+                    "PE_MEM_X0_Y1.EAST_I"
+                ],
+                "PE_X1|_Y2|.EAST_O": [
+                    "PE_X2|_Y2|.WEST_I"
+                ],
+                "PE_X1|_Y2|.NORTH_O": [
+                    "PE_X1|_Y1|.SOUTH_I"
+                ],
+                "PE_X1|_Y2|.SOUTH_O": [
+                    "PE_X1|_Y3|.NORTH_I"
+                ],
+                "PE_X1|_Y2|.WEST_O": [
+                    "PE_MEM_X0_Y2.EAST_I"
+                ],
+                "PE_X1|_Y3|.EAST_O": [
+                    "PE_X2|_Y3|.WEST_I"
+                ],
+                "PE_X1|_Y3|.NORTH_O": [
+                    "PE_X1|_Y2|.SOUTH_I"
+                ],
+                "PE_X1|_Y3|.WEST_O": [
+                    "PE_MEM_X0_Y3.EAST_I"
+                ],
+                "PE_X2|_Y0|.EAST_O": [
+                    "PE_X3|_Y0|.WEST_I"
+                ],
+                "PE_X2|_Y0|.SOUTH_O": [
+                    "PE_X2|_Y1|.NORTH_I"
+                ],
+                "PE_X2|_Y0|.WEST_O": [
+                    "PE_X1|_Y0|.EAST_I"
+                ],
+                "PE_X2|_Y1|.EAST_O": [
+                    "PE_X3|_Y1|.WEST_I"
+                ],
+                "PE_X2|_Y1|.NORTH_O": [
+                    "PE_X2|_Y0|.SOUTH_I"
+                ],
+                "PE_X2|_Y1|.SOUTH_O": [
+                    "PE_X2|_Y2|.NORTH_I"
+                ],
+                "PE_X2|_Y1|.WEST_O": [
+                    "PE_X1|_Y1|.EAST_I"
+                ],
+                "PE_X2|_Y2|.EAST_O": [
+                    "PE_X3|_Y2|.WEST_I"
+                ],
+                "PE_X2|_Y2|.NORTH_O": [
+                    "PE_X2|_Y1|.SOUTH_I"
+                ],
+                "PE_X2|_Y2|.SOUTH_O": [
+                    "PE_X2|_Y3|.NORTH_I"
+                ],
+                "PE_X2|_Y2|.WEST_O": [
+                    "PE_X1|_Y2|.EAST_I"
+                ],
+                "PE_X2|_Y3|.EAST_O": [
+                    "PE_X3|_Y3|.WEST_I"
+                ],
+                "PE_X2|_Y3|.NORTH_O": [
+                    "PE_X2|_Y2|.SOUTH_I"
+                ],
+                "PE_X2|_Y3|.WEST_O": [
+                    "PE_X1|_Y3|.EAST_I"
+                ],
+                "PE_X3|_Y0|.SOUTH_O": [
+                    "PE_X3|_Y1|.NORTH_I"
+                ],
+                "PE_X3|_Y0|.WEST_O": [
+                    "PE_X2|_Y0|.EAST_I"
+                ],
+                "PE_X3|_Y1|.NORTH_O": [
+                    "PE_X3|_Y0|.SOUTH_I"
+                ],
+                "PE_X3|_Y1|.SOUTH_O": [
+                    "PE_X3|_Y2|.NORTH_I"
+                ],
+                "PE_X3|_Y1|.WEST_O": [
+                    "PE_X2|_Y1|.EAST_I"
+                ],
+                "PE_X3|_Y2|.NORTH_O": [
+                    "PE_X3|_Y1|.SOUTH_I"
+                ],
+                "PE_X3|_Y2|.SOUTH_O": [
+                    "PE_X3|_Y3|.NORTH_I"
+                ],
+                "PE_X3|_Y2|.WEST_O": [
+                    "PE_X2|_Y2|.EAST_I"
+                ],
+                "PE_X3|_Y3|.NORTH_O": [
+                    "PE_X3|_Y2|.SOUTH_I"
+                ],
+                "PE_X3|_Y3|.WEST_O": [
+                    "PE_X2|_Y3|.EAST_I"
+                ]
+            },
+            "ISOCKETS": null,
+            "SOCKETS": null,
+            "SUBMODS": {
+                "PE": [
+                    {
+                        "X": 1,
+                        "Y": 0,
+                        "name": "PE_X1|_Y0|"
+                    },
+                    {
+                        "X": 2,
+                        "Y": 0,
+                        "name": "PE_X2|_Y0|"
+                    },
+                    {
+                        "X": 3,
+                        "Y": 0,
+                        "name": "PE_X3|_Y0|"
+                    },
+                    {
+                        "X": 1,
+                        "Y": 1,
+                        "name": "PE_X1|_Y1|"
+                    },
+                    {
+                        "X": 2,
+                        "Y": 1,
+                        "name": "PE_X2|_Y1|"
+                    },
+                    {
+                        "X": 3,
+                        "Y": 1,
+                        "name": "PE_X3|_Y1|"
+                    },
+                    {
+                        "X": 1,
+                        "Y": 2,
+                        "name": "PE_X1|_Y2|"
+                    },
+                    {
+                        "X": 2,
+                        "Y": 2,
+                        "name": "PE_X2|_Y2|"
+                    },
+                    {
+                        "X": 3,
+                        "Y": 2,
+                        "name": "PE_X3|_Y2|"
+                    },
+                    {
+                        "X": 1,
+                        "Y": 3,
+                        "name": "PE_X1|_Y3|"
+                    },
+                    {
+                        "X": 2,
+                        "Y": 3,
+                        "name": "PE_X2|_Y3|"
+                    },
+                    {
+                        "X": 3,
+                        "Y": 3,
+                        "name": "PE_X3|_Y3|"
+                    }
+                ],
+                "PE_MEM": [
+                    {
+                        "X": 0,
+                        "Y": 0,
+                        "name": "PE_MEM_X0_Y0"
+                    },
+                    {
+                        "X": 0,
+                        "Y": 1,
+                        "name": "PE_MEM_X0_Y1"
+                    },
+                    {
+                        "X": 0,
+                        "Y": 2,
+                        "name": "PE_MEM_X0_Y2"
+                    },
+                    {
+                        "X": 0,
+                        "Y": 3,
+                        "name": "PE_MEM_X0_Y3"
+                    }
+                ],
+                "SPM_B0_WRAPPER": [
+                    {
+                        "name": "SPM_B0_WRAPPER_INS"
+                    }
+                ],
+                "SPM_B1_WRAPPER": [
+                    {
+                        "name": "SPM_B1_WRAPPER_INS"
+                    }
+                ]
+            },
+            "TSOCKETS": null
+        },
+        "DP": {
+            "CONNECTIONS": {
+                "THIS.T_INT": [
+                    "THIS.T"
+                ]
+            },
+            "INPUTS": [
+                "I1",
+                "I2",
+                "P"
+            ],
+            "INTERNALS": [
+                "T_INT"
+            ],
+            "ISOCKETS": null,
+            "OUTPUTS": [
+                "T"
+            ],
+            "SOCKETS": null,
+            "SUBMODS": null,
+            "TSOCKETS": null
+        },
+        "FU": {
+            "CONNECTIONS": {
+                "DP0.T": [
+                    "THIS.DP0_T"
+                ],
+                "THIS.DP0_I1": [
+                    "DP0.I1"
+                ],
+                "THIS.DP0_I2": [
+                    "DP0.I2"
+                ],
+                "THIS.DP0_P": [
+                    "DP0.P"
+                ]
+            },
+            "INPUTS": [
+                "DP0_I1",
+                "DP0_I2",
+                "DP0_P"
+            ],
+            "ISOCKETS": null,
+            "OPS": {
+                "ADD": 1,
+                "AND": 1,
+                "ARS": 1,
+                "BR": 1,
+                "CGT": 1,
+                "CLT": 1,
+                "CMERGE": 1,
+                "CMP": 1,
+                "DIV": 1,
+                "JUMPL": 1,
+                "LS": 1,
+                "MOVC": 1,
+                "MOVCL": 1,
+                "MUL": 1,
+                "NOP": 1,
+                "OLOAD": 1,
+                "OLOADB": 1,
+                "OLOADCL": 1,
+                "OLOADH": 1,
+                "OR": 1,
+                "OSTORE": 1,
+                "OSTOREB": 1,
+                "OSTOREH": 1,
+                "RS": 1,
+                "SELECT": 1,
+                "SEXT": 1,
+                "SUB": 1,
+                "XOR": 1
+            },
+            "OUTPUTS": [
+                "DP0_T"
+            ],
+            "SOCKETS": null,
+            "SUBMODS": {
+                "DP": [
+                    {
+                        "name": "DP0"
+                    }
+                ]
+            },
+            "TSOCKETS": null
+        },
+        "FU_MEM": {
+            "CONNECTIONS": {
+                "DP0.MEMPORT": [
+                    "THIS.MEMPORT"
+                ],
+                "DP0.T": [
+                    "THIS.DP0_T"
+                ],
+                "THIS.DP0_I1": [
+                    "DP0.I1"
+                ],
+                "THIS.DP0_I2": [
+                    "DP0.I2"
+                ],
+                "THIS.DP0_P": [
+                    "DP0.P"
+                ]
+            },
+            "INPUTS": [
+                "DP0_I1",
+                "DP0_I2",
+                "DP0_P"
+            ],
+            "ISOCKETS": [
+                "MEMPORT"
+            ],
+            "OPS": {
+                "ADD": 2,
+                "AND": 2,
+                "ARS": 2,
+                "BR": 2,
+                "CGT": 2,
+                "CLT": 2,
+                "CMERGE": 2,
+                "CMP": 2,
+                "DIV": 2,
+                "JUMPL": 2,
+                "LOAD": 2,
+                "LOADB": 2,
+                "LOADCL": 2,
+                "LOADH": 2,
+                "LS": 2,
+                "MOVC": 2,
+                "MOVCL": 2,
+                "MUL": 2,
+                "NOP": 2,
+                "OLOAD": 2,
+                "OLOADB": 2,
+                "OLOADCL": 2,
+                "OLOADH": 2,
+                "OR": 2,
+                "OSTORE": 2,
+                "OSTOREB": 2,
+                "OSTOREH": 2,
+                "RS": 2,
+                "SELECT": 2,
+                "SEXT": 2,
+                "STORE": 2,
+                "STOREB": 2,
+                "STOREH": 2,
+                "SUB": 2,
+                "XOR": 2
+            },
+            "OUTPUTS": [
+                "DP0_T"
+            ],
+            "SOCKETS": null,
+            "SUBMODS": {
+                "MDP": [
+                    {
+                        "name": "DP0"
+                    }
+                ]
+            },
+            "TSOCKETS": null
+        },
+        "MDP": {
+            "CONNECTIONS": {
+                "THIS.T_INT": [
+                    "THIS.T"
+                ]
+            },
+            "INPUTS": [
+                "I1",
+                "I2",
+                "P"
+            ],
+            "INTERNALS": [
+                "T_INT"
+            ],
+            "ISOCKETS": null,
+            "OUTPUTS": [
+                "T"
+            ],
+            "SOCKETS": [
+                "MEMPORT"
+            ],
+            "SUBMODS": null,
+            "TSOCKETS": null
+        },
+        "PE": {
+            "CONNECTIONS": {
+                "FU0.DP0_T": [
+                    "THIS.NORTH_O",
+                    "THIS.EAST_O",
+                    "THIS.WEST_O",
+                    "THIS.SOUTH_O",
+                    "THIS.TREG"
+                ],
+                "THIS.EAST_I": [
+                    "THIS.ER",
+                    "THIS.EAST_XBARI"
+                ],
+                "THIS.EAST_XBARI": [
+                    "FU0.DP0_I1",
+                    "FU0.DP0_I2",
+                    "FU0.DP0_P",
+                    "THIS.NORTH_O",
+                    "THIS.WEST_O",
+                    "THIS.EAST_O",
+                    "THIS.SOUTH_O"
+                ],
+                "THIS.ER": [
+                    "THIS.EAST_XBARI"
+                ],
+                "THIS.NORTH_I": [
+                    "THIS.NR",
+                    "THIS.NORTH_XBARI"
+                ],
+                "THIS.NORTH_XBARI": [
+                    "FU0.DP0_I1",
+                    "FU0.DP0_I2",
+                    "FU0.DP0_P",
+                    "THIS.NORTH_O",
+                    "THIS.WEST_O",
+                    "THIS.EAST_O",
+                    "THIS.SOUTH_O"
+                ],
+                "THIS.NR": [
+                    "THIS.NORTH_XBARI"
+                ],
+                "THIS.SOUTH_I": [
+                    "THIS.SR",
+                    "THIS.SOUTH_XBARI"
+                ],
+                "THIS.SOUTH_XBARI": [
+                    "FU0.DP0_I1",
+                    "FU0.DP0_I2",
+                    "FU0.DP0_P",
+                    "THIS.NORTH_O",
+                    "THIS.WEST_O",
+                    "THIS.EAST_O",
+                    "THIS.SOUTH_O"
+                ],
+                "THIS.SR": [
+                    "THIS.SOUTH_XBARI"
+                ],
+                "THIS.TREG": [
+                    "FU0.DP0_I1",
+                    "FU0.DP0_I2",
+                    "FU0.DP0_P",
+                    "THIS.NORTH_O",
+                    "THIS.EAST_O",
+                    "THIS.WEST_O",
+                    "THIS.SOUTH_O"
+                ],
+                "THIS.WEST_I": [
+                    "THIS.WR",
+                    "THIS.WEST_XBARI"
+                ],
+                "THIS.WEST_XBARI": [
+                    "FU0.DP0_I1",
+                    "FU0.DP0_I2",
+                    "FU0.DP0_P",
+                    "THIS.NORTH_O",
+                    "THIS.WEST_O",
+                    "THIS.EAST_O",
+                    "THIS.SOUTH_O"
+                ],
+                "THIS.WR": [
+                    "THIS.WEST_XBARI"
+                ]
+            },
+            "INPUTS": [
+                "NORTH_I",
+                "WEST_I",
+                "EAST_I",
+                "SOUTH_I"
+            ],
+            "INTERNALS": [
+                "NORTH_XBARI",
+                "EAST_XBARI",
+                "WEST_XBARI",
+                "SOUTH_XBARI"
+            ],
+            "ISOCKETS": null,
+            "OUTPUTS": [
+                "NORTH_O",
+                "WEST_O",
+                "EAST_O",
+                "SOUTH_O"
+            ],
+            "REGS": [
+                "NR",
+                "ER",
+                "WR",
+                "SR",
+                "TREG"
+            ],
+            "SOCKETS": null,
+            "SUBMODS": {
+                "FU": [
+                    {
+                        "name": "FU0"
+                    }
+                ]
+            },
+            "TSOCKETS": null
+        },
+        "PE_MEM": {
+            "CONNECTIONS": {
+                "FU0.DP0_T": [
+                    "THIS.NORTH_O",
+                    "THIS.EAST_O",
+                    "THIS.WEST_O",
+                    "THIS.SOUTH_O",
+                    "THIS.TREG"
+                ],
+                "FU0.MEMPORT": [
+                    "THIS.MEMPORT"
+                ],
+                "THIS.EAST_I": [
+                    "THIS.ER",
+                    "THIS.EAST_XBARI"
+                ],
+                "THIS.EAST_XBARI": [
+                    "FU0.DP0_I1",
+                    "FU0.DP0_I2",
+                    "FU0.DP0_P",
+                    "THIS.NORTH_O",
+                    "THIS.WEST_O",
+                    "THIS.EAST_O",
+                    "THIS.SOUTH_O"
+                ],
+                "THIS.ER": [
+                    "THIS.EAST_XBARI"
+                ],
+                "THIS.NORTH_I": [
+                    "THIS.NR",
+                    "THIS.NORTH_XBARI"
+                ],
+                "THIS.NORTH_XBARI": [
+                    "FU0.DP0_I1",
+                    "FU0.DP0_I2",
+                    "FU0.DP0_P",
+                    "THIS.NORTH_O",
+                    "THIS.WEST_O",
+                    "THIS.EAST_O",
+                    "THIS.SOUTH_O"
+                ],
+                "THIS.NR": [
+                    "THIS.NORTH_XBARI"
+                ],
+                "THIS.SOUTH_I": [
+                    "THIS.SR",
+                    "THIS.SOUTH_XBARI"
+                ],
+                "THIS.SOUTH_XBARI": [
+                    "FU0.DP0_I1",
+                    "FU0.DP0_I2",
+                    "FU0.DP0_P",
+                    "THIS.NORTH_O",
+                    "THIS.WEST_O",
+                    "THIS.EAST_O",
+                    "THIS.SOUTH_O"
+                ],
+                "THIS.SR": [
+                    "THIS.SOUTH_XBARI"
+                ],
+                "THIS.TREG": [
+                    "FU0.DP0_I1",
+                    "FU0.DP0_I2",
+                    "FU0.DP0_P",
+                    "THIS.NORTH_O",
+                    "THIS.EAST_O",
+                    "THIS.WEST_O",
+                    "THIS.SOUTH_O"
+                ],
+                "THIS.WEST_I": [
+                    "THIS.WR",
+                    "THIS.WEST_XBARI"
+                ],
+                "THIS.WEST_XBARI": [
+                    "FU0.DP0_I1",
+                    "FU0.DP0_I2",
+                    "FU0.DP0_P",
+                    "THIS.NORTH_O",
+                    "THIS.WEST_O",
+                    "THIS.EAST_O",
+                    "THIS.SOUTH_O"
+                ],
+                "THIS.WR": [
+                    "THIS.WEST_XBARI"
+                ]
+            },
+            "INPUTS": [
+                "NORTH_I",
+                "WEST_I",
+                "EAST_I",
+                "SOUTH_I"
+            ],
+            "INTERNALS": [
+                "NORTH_XBARI",
+                "EAST_XBARI",
+                "WEST_XBARI",
+                "SOUTH_XBARI"
+            ],
+            "ISOCKETS": [
+                "MEMPORT"
+            ],
+            "OUTPUTS": [
+                "NORTH_O",
+                "WEST_O",
+                "EAST_O",
+                "SOUTH_O"
+            ],
+            "REGS": [
+                "NR",
+                "ER",
+                "WR",
+                "SR",
+                "TREG"
+            ],
+            "SOCKETS": null,
+            "SUBMODS": {
+                "FU_MEM": [
+                    {
+                        "name": "FU0"
+                    }
+                ]
+            },
+            "TSOCKETS": null
+        },
+        "SPM": {
+            "CONNECTIONS": null,
+            "ISOCKETS": null,
+            "MEM": {
+                "SIZE": 2048
+            },
+            "SOCKETS": [
+                "PORT0",
+                "PORT1"
+            ],
+            "SUBMODS": null,
+            "TSOCKETS": null
+        },
+        "SPM_B0_WRAPPER": {
+            "CONNECTIONS": {
+                "SPM0.PORT0": "THIS.MEMPORT_P0",
+                "SPM0.PORT1": "THIS.MEMPORT_P1"
+            },
+            "DATA_LAYOUT": {
+                "conv2d_nhwc": 0
+            },
+            "INIT_FILE": "../json/test_data.json",
+            "ISOCKETS": null,
+            "SOCKETS": null,
+            "SUBMODS": {
+                "SPM": [
+                    {
+                        "name": "SPM0"
+                    }
+                ]
+            },
+            "TSOCKETS": [
+                "MEMPORT_P0",
+                "MEMPORT_P1"
+            ]
+        },
+        "SPM_B1_WRAPPER": {
+            "CONNECTIONS": {
+                "SPM0.PORT0": "THIS.MEMPORT_P0",
+                "SPM0.PORT1": "THIS.MEMPORT_P1"
+            },
+            "DATA_LAYOUT": {
+                "data": 8192,
+                "kernel": 8979,
+                "loopend": 16382,
+                "loopstart": 16383,
+                "mul14": 9365,
+                "mul27": 9363,
+                "storestart": 16383
+            },
+            "INIT_FILE": "../json/test_data.json",
+            "ISOCKETS": null,
+            "SOCKETS": null,
+            "SUBMODS": {
+                "SPM": [
+                    {
+                        "name": "SPM0"
+                    }
+                ]
+            },
+            "TSOCKETS": [
+                "MEMPORT_P0",
+                "MEMPORT_P1"
+            ]
+        }
+    }
+}

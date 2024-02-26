@@ -1,0 +1,37 @@
+**********************************
+II = 6,iter = 0
+**********************************
+,22|BB=for.body29,46|BB=for.body29CONGESTION:CGRA_Ins.PE_X1|_Y3|-T5.WEST_XBARI
+HISTORY_COST :: CGRA_Ins.PE_X1|_Y3|-T5.WEST_XBARI,10000
+,8|BB=for.body29,51|BB=for.body29CONGESTION:CGRA_Ins.PE_MEM_X0_Y3-T5.EAST_XBARI
+HISTORY_COST :: CGRA_Ins.PE_MEM_X0_Y3-T5.EAST_XBARI,10000
+****************************************
+Upperbound II = 7
+On iter = 0
+****************************************
+
+noConflicts!
+**********************************
+II = 6,iter = 1
+**********************************
+,20060|BB=for.cond.cleanup28,19|BB=for.body29CONGESTION:CGRA_Ins.PE_MEM_X0_Y1-T3.EAST_XBARI
+HISTORY_COST :: CGRA_Ins.PE_MEM_X0_Y1-T3.EAST_XBARI,10000
+,8|BB=for.body29,51|BB=for.body29CONGESTION:CGRA_Ins.PE_MEM_X0_Y3-T4.EAST_XBARI
+HISTORY_COST :: CGRA_Ins.PE_MEM_X0_Y3-T4.EAST_XBARI,10000
+HISTORY_COST :: CGRA_Ins.PE_X1|_Y3|-T5.WEST_XBARI,10000
+HISTORY_COST :: CGRA_Ins.PE_MEM_X0_Y3-T5.EAST_XBARI,10000
+
+noConflicts!
+**********************************
+II = 6,iter = 2
+**********************************
+HISTORY_COST :: CGRA_Ins.PE_MEM_X0_Y1-T3.EAST_XBARI,10000
+HISTORY_COST :: CGRA_Ins.PE_MEM_X0_Y3-T4.EAST_XBARI,10000
+HISTORY_COST :: CGRA_Ins.PE_MEM_X0_Y3-T5.EAST_XBARI,10000
+****************************************
+Upperbound II = 6
+On iter = 2
+****************************************
+
+noCongestion!
+noConflicts!

@@ -1,0 +1,164 @@
+rm: cannot remove '*_looptrace.log': No such file or directory
+rm: cannot remove '*_loopinfo.log': No such file or directory
+rm: cannot remove '*_munittrace.log': No such file or directory
+rm: cannot remove 'memtraces/*': No such file or directory
+conv_nhwc_unroll4.c
+conv_nhwc_unroll4.c:48:7: warning: implicit declaration of function 'please_map_me' is invalid in C99 [-Wimplicit-function-declaration]
+      please_map_me();
+      ^
+conv_nhwc_unroll4.c:113:53: warning: incompatible pointer types passing 'int64_t [3]' to parameter of type 'int32_t *' (aka 'int *') [-Wincompatible-pointer-types]
+    create_dl_tensor(&dlt_data, data, 3, type_data, shape_data);
+                                                    ^~~~~~~~~~
+./tvm_header.h:156:32: note: passing argument to parameter 'shape' here
+                      int32_t* shape
+                               ^
+conv_nhwc_unroll4.c:127:59: warning: incompatible pointer types passing 'int64_t [4]' to parameter of type 'int32_t *' (aka 'int *') [-Wincompatible-pointer-types]
+    create_dl_tensor(&dlt_kernel, kernel, 4, type_kernel, shape_kernel);
+                                                          ^~~~~~~~~~~~
+./tvm_header.h:156:32: note: passing argument to parameter 'shape' here
+                      int32_t* shape
+                               ^
+conv_nhwc_unroll4.c:141:74: warning: incompatible pointer types passing 'int64_t [3]' to parameter of type 'int32_t *' (aka 'int *') [-Wincompatible-pointer-types]
+    create_dl_tensor(&dlt_conv2d_nhwc, conv2d_nhwc, 3, type_conv2d_nhwc, shape_conv2d_nhwc);
+                                                                         ^~~~~~~~~~~~~~~~~
+./tvm_header.h:156:32: note: passing argument to parameter 'shape' here
+                      int32_t* shape
+                               ^
+4 warnings generated.
+; Function Attrs: noinline nounwind uwtable
+define dso_local i32 @conv_main(i8* nocapture readnone %args, i32* nocapture readnone %arg_type_ids, i32 %num_args, i8* nocapture readnone %out_ret_value, i32* nocapture readnone %out_ret_tcode, i8* nocapture readnone %resource_handle) local_unnamed_addr #4 {
+entry:
+  br label %for.cond26.preheader
+
+for.cond26.preheader:                             ; preds = %for.cond.cleanup39, %entry
+  %w_outer.0227 = phi i32 [ 0, %entry ], [ %inc142, %for.cond.cleanup39 ]
+  %mul30 = mul nuw nsw i32 %w_outer.0227, 282
+  br label %for.body29
+
+for.cond.cleanup:                                 ; preds = %for.cond.cleanup39
+  ret i32 0
+
+for.cond37.preheader:                             ; preds = %for.body29
+  %mul43 = mul nuw nsw i32 %w_outer.0227, 47
+  br label %for.body40
+
+for.body29:                                       ; preds = %for.body29, %for.cond26.preheader
+  %w_inner_h_fused_oc_fused_rh_fused_rw_outer_fused_init.0220 = phi i32 [ 0, %for.cond26.preheader ], [ %inc, %for.body29 ]
+  %rem.lhs.trunc = trunc i32 %w_inner_h_fused_oc_fused_rh_fused_rw_outer_fused_init.0220 to i16
+  %rem215 = urem i16 %rem.lhs.trunc, 960
+  %div216 = udiv i16 %rem215, 192
+  %narrow = mul nuw nsw i16 %div216, 1128
+  %mul = zext i16 %narrow to i32
+  %div31217 = udiv i16 %rem.lhs.trunc, 960
+  %narrow219 = mul nuw nsw i16 %div31217, 6
+  %mul32 = zext i16 %narrow219 to i32
+  %rem34218 = urem i16 %rem.lhs.trunc, 192
+  %0 = lshr i16 %rem34218, 5
+  %1 = zext i16 %0 to i32
+  %add = add nuw i32 %mul30, %mul32
+  %add33 = add i32 %add, %1
+  %add35 = add i32 %add33, %mul
+  %idxprom = zext i32 %add35 to i64
+  %arrayidx36 = getelementptr inbounds [5640 x i8], [5640 x i8]* @conv2d_nhwc, i64 0, i64 %idxprom
+  store i8 0, i8* %arrayidx36, align 1, !tbaa !13
+  %inc = add nuw nsw i32 %w_inner_h_fused_oc_fused_rh_fused_rw_outer_fused_init.0220, 1
+  %exitcond = icmp eq i32 %inc, 45120
+  br i1 %exitcond, label %for.cond37.preheader, label %for.body29
+
+for.cond.cleanup39:                               ; preds = %for.body40
+  %inc142 = add nuw nsw i32 %w_outer.0227, 1
+  %exitcond229 = icmp eq i32 %inc142, 4
+  br i1 %exitcond229, label %for.cond.cleanup, label %for.cond26.preheader
+
+for.body40:                                       ; preds = %for.body40, %for.cond37.preheader
+  %mod_192_i.0226 = phi i32 [ 0, %for.cond37.preheader ], [ %.add116, %for.body40 ]
+  %div_192_i.0225 = phi i32 [ 0, %for.cond37.preheader ], [ %spec.select214, %for.body40 ]
+  %div_192_j.0224 = phi i32 [ 0, %for.cond37.preheader ], [ %spec.select213, %for.body40 ]
+  %w_inner_h_fused_oc_fused_rh_fused_rw_outer_fused.0223 = phi i32 [ 0, %for.cond37.preheader ], [ %inc139, %for.body40 ]
+  %mod_960_i.0222 = phi i32 [ 0, %for.cond37.preheader ], [ %spec.select212, %for.body40 ]
+  %div_960_i.0221 = phi i32 [ 0, %for.cond37.preheader ], [ %spec.select, %for.body40 ]
+  %call = tail call i32 (...) @please_map_me() #7
+  %mul41 = shl nsw i32 %mod_192_i.0226, 2
+  %mul42 = mul nsw i32 %div_192_i.0225, 315
+  %and = shl nuw nsw i32 %w_inner_h_fused_oc_fused_rh_fused_rw_outer_fused.0223, 2
+  %mul45 = and i32 %and, 124
+  %add44 = add nuw i32 %div_960_i.0221, %mul43
+  %add46 = add i32 %add44, %mul45
+  %add47 = add i32 %add46, %mul42
+  %mul48 = mul nsw i32 %div_192_i.0225, 1128
+  %mul51 = mul nsw i32 %div_960_i.0221, 6
+  %shr53 = ashr i32 %mod_192_i.0226, 5
+  %add50 = add nuw i32 %mul51, %mul30
+  %add52 = add i32 %add50, %mul48
+  %add54 = add i32 %add52, %shr53
+  %idxprom55 = sext i32 %add54 to i64
+  %arrayidx56 = getelementptr inbounds [5640 x i8], [5640 x i8]* @conv2d_nhwc, i64 0, i64 %idxprom55
+  %2 = load i8, i8* %arrayidx56, align 1, !tbaa !13
+  %idxprom57 = sext i32 %add47 to i64
+  %arrayidx58 = getelementptr inbounds [1575 x i8], [1575 x i8]* @data, i64 0, i64 %idxprom57
+  %3 = load i8, i8* %arrayidx58, align 1, !tbaa !13
+  %idxprom60 = sext i32 %mul41 to i64
+  %arrayidx61 = getelementptr inbounds [768 x i8], [768 x i8]* @kernel, i64 0, i64 %idxprom60
+  %4 = load i8, i8* %arrayidx61, align 4, !tbaa !13
+  %mul63 = mul i8 %4, %3
+  %add64 = add i8 %mul63, %2
+  %add71 = add nsw i32 %add47, 1
+  %idxprom72 = sext i32 %add71 to i64
+  %arrayidx73 = getelementptr inbounds [1575 x i8], [1575 x i8]* @data, i64 0, i64 %idxprom72
+  %5 = load i8, i8* %arrayidx73, align 1, !tbaa !13
+  %add75 = or i32 %mul41, 1
+  %idxprom76 = sext i32 %add75 to i64
+  %arrayidx77 = getelementptr inbounds [768 x i8], [768 x i8]* @kernel, i64 0, i64 %idxprom76
+  %6 = load i8, i8* %arrayidx77, align 1, !tbaa !13
+  %mul79 = mul i8 %6, %5
+  %add80 = add i8 %mul79, %add64
+  %add87 = add nsw i32 %add47, 2
+  %idxprom88 = sext i32 %add87 to i64
+  %arrayidx89 = getelementptr inbounds [1575 x i8], [1575 x i8]* @data, i64 0, i64 %idxprom88
+  %7 = load i8, i8* %arrayidx89, align 1, !tbaa !13
+  %add91 = or i32 %mul41, 2
+  %idxprom92 = sext i32 %add91 to i64
+  %arrayidx93 = getelementptr inbounds [768 x i8], [768 x i8]* @kernel, i64 0, i64 %idxprom92
+  %8 = load i8, i8* %arrayidx93, align 2, !tbaa !13
+  %mul95 = mul i8 %8, %7
+  %add96 = add i8 %mul95, %add80
+  %add103 = add nsw i32 %add47, 3
+  %idxprom104 = sext i32 %add103 to i64
+  %arrayidx105 = getelementptr inbounds [1575 x i8], [1575 x i8]* @data, i64 0, i64 %idxprom104
+  %9 = load i8, i8* %arrayidx105, align 1, !tbaa !13
+  %add107 = or i32 %mul41, 3
+  %idxprom108 = sext i32 %add107 to i64
+  %arrayidx109 = getelementptr inbounds [768 x i8], [768 x i8]* @kernel, i64 0, i64 %idxprom108
+  %10 = load i8, i8* %arrayidx109, align 1, !tbaa !13
+  %mul111 = mul i8 %10, %9
+  %add112 = add i8 %mul111, %add96
+  store i8 %add112, i8* %arrayidx56, align 1, !tbaa !13
+  %add116 = add nsw i32 %mod_192_i.0226, 1
+  %cmp117 = icmp eq i32 %add116, 192
+  %.add116 = select i1 %cmp117, i32 0, i32 %add116
+  %add122 = add nsw i32 %div_192_j.0224, 1
+  %cmp123 = icmp eq i32 %add122, 192
+  %inc126 = zext i1 %cmp123 to i32
+  %div_192_i.1 = add nsw i32 %div_192_i.0225, %inc126
+  %add130 = add nsw i32 %mod_960_i.0222, 1
+  %cmp131 = icmp eq i32 %add130, 960
+  %inc134 = zext i1 %cmp131 to i32
+  %spec.select = add nuw nsw i32 %div_960_i.0221, %inc134
+  %spec.select212 = select i1 %cmp131, i32 0, i32 %add130
+  %11 = or i1 %cmp131, %cmp123
+  %spec.select213 = select i1 %11, i32 0, i32 %add122
+  %spec.select214 = select i1 %cmp131, i32 0, i32 %div_192_i.1
+  %inc139 = add nuw nsw i32 %w_inner_h_fused_oc_fused_rh_fused_rw_outer_fused.0223, 1
+  %exitcond228 = icmp eq i32 %inc139, 45120
+  br i1 %exitcond228, label %for.cond.cleanup39, label %for.body40
+}
+
+Function name: conv_main
+============integet bitwidth 32
+============integet bitwidth 32
+byte width = 4
+============integet bitwidth 32
+============integet bitwidth 32
+byte width = 4
+DFG node count: 105
+./run_pass.sh: line 18: 417246 Aborted                 (core dumped) ./final > final_log.txt 2> final_err_log.txt

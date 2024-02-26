@@ -1,0 +1,1 @@
+final: ../../../src/instrumentation/instrumentation.cpp:259: void loopStart(const char *): Assertion `currentFiles[ln] = fopen(ss.str().c_str(),"w")' failed.

@@ -1,0 +1,206 @@
+current node = 72,op = LOADB,unmapped nodes = 95,mapped nodes = 0,freeMemNodes = 36,unmappedMemNodes = 13,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.cond26.preheader,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 18
+current node = 75,op = CMERGE,unmapped nodes = 94,mapped nodes = 1,freeMemNodes = 35,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29_29_0_53_2,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 142
+current node = 81,op = CMERGE,unmapped nodes = 93,mapped nodes = 2,freeMemNodes = 35,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29_59_0_66_2,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 141
+current node = 79,op = CMERGE,unmapped nodes = 92,mapped nodes = 3,freeMemNodes = 35,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29_53_0,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 140
+current node = 77,op = CMERGE,unmapped nodes = 91,mapped nodes = 4,freeMemNodes = 35,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29_47_0,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 139
+current node = 29,op = SELECT,unmapped nodes = 90,mapped nodes = 5,freeMemNodes = 35,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 139
+current node = 47,op = SELECT,unmapped nodes = 89,mapped nodes = 6,freeMemNodes = 35,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 15
+current node = 53,op = SELECT,unmapped nodes = 88,mapped nodes = 7,freeMemNodes = 35,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 14
+current node = 59,op = SELECT,unmapped nodes = 87,mapped nodes = 8,freeMemNodes = 35,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 13
+current node = 48,op = ADD,unmapped nodes = 86,mapped nodes = 9,freeMemNodes = 35,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 16
+current node = 54,op = ADD,unmapped nodes = 85,mapped nodes = 10,freeMemNodes = 35,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 15
+current node = 60,op = ADD,unmapped nodes = 84,mapped nodes = 11,freeMemNodes = 35,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 14
+current node = 50,op = CMP,unmapped nodes = 83,mapped nodes = 12,freeMemNodes = 35,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 16
+current node = 56,op = CMP,unmapped nodes = 82,mapped nodes = 13,freeMemNodes = 35,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 15
+current node = 61,op = CMP,unmapped nodes = 81,mapped nodes = 14,freeMemNodes = 35,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 14
+current node = 52,op = OR,unmapped nodes = 80,mapped nodes = 15,freeMemNodes = 35,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 16
+current node = 87,op = CMERGE,unmapped nodes = 79,mapped nodes = 16,freeMemNodes = 35,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29_31_0,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 15
+current node = 51,op = OR,unmapped nodes = 78,mapped nodes = 17,freeMemNodes = 35,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 14
+current node = 92,op = CMERGE,unmapped nodes = 77,mapped nodes = 18,freeMemNodes = 35,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29_55_1,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 13
+current node = 91,op = CMERGE,unmapped nodes = 76,mapped nodes = 19,freeMemNodes = 35,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29_55_0,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 12
+current node = 82,op = CMERGE,unmapped nodes = 75,mapped nodes = 20,freeMemNodes = 35,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29_59_1,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 11
+current node = 30,op = ADD,unmapped nodes = 74,mapped nodes = 21,freeMemNodes = 35,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 16
+current node = 90,op = CMERGE,unmapped nodes = 73,mapped nodes = 22,freeMemNodes = 35,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29_49_1,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 15
+current node = 89,op = CMERGE,unmapped nodes = 72,mapped nodes = 23,freeMemNodes = 35,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29_49_0,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 14
+current node = 55,op = SELECT,unmapped nodes = 71,mapped nodes = 24,freeMemNodes = 35,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 10
+current node = 88,op = CMERGE,unmapped nodes = 70,mapped nodes = 25,freeMemNodes = 35,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29_31_1,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 16
+current node = 49,op = SELECT,unmapped nodes = 69,mapped nodes = 26,freeMemNodes = 35,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 15
+current node = 80,op = CMERGE,unmapped nodes = 68,mapped nodes = 27,freeMemNodes = 35,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29_53_1,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 12
+current node = 31,op = SELECT,unmapped nodes = 67,mapped nodes = 28,freeMemNodes = 35,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 15
+current node = 78,op = CMERGE,unmapped nodes = 66,mapped nodes = 29,freeMemNodes = 35,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29_47_1,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 14
+current node = 76,op = CMERGE,unmapped nodes = 65,mapped nodes = 30,freeMemNodes = 35,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29_29_1,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 16
+current node = 69,op = OLOAD,unmapped nodes = 64,mapped nodes = 31,freeMemNodes = 35,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 17
+current node = 71,op = OLOAD,unmapped nodes = 63,mapped nodes = 32,freeMemNodes = 34,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 16
+current node = 73,op = CMERGE,unmapped nodes = 62,mapped nodes = 33,freeMemNodes = 33,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29_0_0,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 110
+current node = 83,op = CMERGE,unmapped nodes = 61,mapped nodes = 34,freeMemNodes = 33,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29_66_0,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 109
+current node = 66,op = SELECT,unmapped nodes = 60,mapped nodes = 35,freeMemNodes = 33,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 108
+current node = 0,op = SELECT,unmapped nodes = 59,mapped nodes = 36,freeMemNodes = 33,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 107
+current node = 67,op = MUL,unmapped nodes = 58,mapped nodes = 37,freeMemNodes = 33,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 106
+current node = 4,op = ARS,unmapped nodes = 57,mapped nodes = 38,freeMemNodes = 33,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 105
+current node = 63,op = LS,unmapped nodes = 56,mapped nodes = 39,freeMemNodes = 33,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 105
+current node = 34,op = MUL,unmapped nodes = 55,mapped nodes = 40,freeMemNodes = 33,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 104
+current node = 13,op = LS,unmapped nodes = 54,mapped nodes = 41,freeMemNodes = 33,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 102
+current node = 70,op = ADD,unmapped nodes = 53,mapped nodes = 42,freeMemNodes = 33,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 101
+current node = 32,op = MUL,unmapped nodes = 52,mapped nodes = 43,freeMemNodes = 33,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 101
+current node = 1,op = ADD,unmapped nodes = 51,mapped nodes = 44,freeMemNodes = 33,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 7
+current node = 64,op = AND,unmapped nodes = 50,mapped nodes = 45,freeMemNodes = 33,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 99
+current node = 68,op = ADD,unmapped nodes = 49,mapped nodes = 46,freeMemNodes = 33,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 97
+current node = 22,op = OR,unmapped nodes = 48,mapped nodes = 47,freeMemNodes = 33,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 96
+current node = 26,op = ADD,unmapped nodes = 47,mapped nodes = 48,freeMemNodes = 33,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 95
+current node = 18,op = OR,unmapped nodes = 46,mapped nodes = 49,freeMemNodes = 33,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 94
+current node = 14,op = OR,unmapped nodes = 45,mapped nodes = 50,freeMemNodes = 33,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 93
+current node = 3,op = CMP,unmapped nodes = 44,mapped nodes = 51,freeMemNodes = 33,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 6
+current node = 65,op = ADD,unmapped nodes = 43,mapped nodes = 52,freeMemNodes = 33,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 91
+current node = 57,op = OR,unmapped nodes = 42,mapped nodes = 53,freeMemNodes = 33,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 6
+current node = 85,op = CMERGE,unmapped nodes = 41,mapped nodes = 54,freeMemNodes = 33,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29_2_0,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 4
+current node = 86,op = CMERGE,unmapped nodes = 40,mapped nodes = 55,freeMemNodes = 33,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29_2_1,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 3
+current node = 33,op = ADD,unmapped nodes = 39,mapped nodes = 56,freeMemNodes = 32,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 87
+current node = 15,op = ADD,unmapped nodes = 38,mapped nodes = 57,freeMemNodes = 32,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 86
+current node = 19,op = ADD,unmapped nodes = 37,mapped nodes = 58,freeMemNodes = 32,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 85
+current node = 27,op = LOADB,unmapped nodes = 36,mapped nodes = 59,freeMemNodes = 32,unmappedMemNodes = 12,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 13
+current node = 23,op = ADD,unmapped nodes = 35,mapped nodes = 60,freeMemNodes = 31,unmappedMemNodes = 11,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 83
+current node = 35,op = ADD,unmapped nodes = 34,mapped nodes = 61,freeMemNodes = 31,unmappedMemNodes = 11,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 80
+current node = 5,op = ADD,unmapped nodes = 33,mapped nodes = 62,freeMemNodes = 31,unmappedMemNodes = 11,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 81
+current node = 24,op = LOADB,unmapped nodes = 32,mapped nodes = 63,freeMemNodes = 31,unmappedMemNodes = 11,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 14
+current node = 20,op = LOADB,unmapped nodes = 31,mapped nodes = 64,freeMemNodes = 30,unmappedMemNodes = 10,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 13
+current node = 16,op = LOADB,unmapped nodes = 30,mapped nodes = 65,freeMemNodes = 29,unmappedMemNodes = 9,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 23
+current node = 2,op = SELECT,unmapped nodes = 29,mapped nodes = 66,freeMemNodes = 28,unmappedMemNodes = 8,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 16
+current node = 58,op = ADD,unmapped nodes = 28,mapped nodes = 67,freeMemNodes = 28,unmappedMemNodes = 8,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 6
+current node = 42,op = ADD,unmapped nodes = 27,mapped nodes = 68,freeMemNodes = 28,unmappedMemNodes = 8,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 75
+current node = 45,op = ADD,unmapped nodes = 26,mapped nodes = 69,freeMemNodes = 28,unmappedMemNodes = 8,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 74
+current node = 39,op = ADD,unmapped nodes = 25,mapped nodes = 70,freeMemNodes = 28,unmappedMemNodes = 8,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 73
+current node = 6,op = ADD,unmapped nodes = 24,mapped nodes = 71,freeMemNodes = 28,unmappedMemNodes = 8,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 73
+current node = 36,op = ADD,unmapped nodes = 23,mapped nodes = 72,freeMemNodes = 28,unmappedMemNodes = 8,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 71
+current node = 74,op = CMERGE,unmapped nodes = 22,mapped nodes = 73,freeMemNodes = 28,unmappedMemNodes = 8,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29_0_1,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 8
+current node = 84,op = CMERGE,unmapped nodes = 21,mapped nodes = 74,freeMemNodes = 28,unmappedMemNodes = 8,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29_66_1,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 4
+current node = 43,op = ADD,unmapped nodes = 20,mapped nodes = 75,freeMemNodes = 28,unmappedMemNodes = 8,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 68
+current node = 46,op = LOADB,unmapped nodes = 19,mapped nodes = 76,freeMemNodes = 28,unmappedMemNodes = 8,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 11
+current node = 40,op = ADD,unmapped nodes = 18,mapped nodes = 77,freeMemNodes = 27,unmappedMemNodes = 7,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 66
+current node = 37,op = ADD,unmapped nodes = 17,mapped nodes = 78,freeMemNodes = 27,unmappedMemNodes = 7,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 66
+current node = 44,op = LOADB,unmapped nodes = 16,mapped nodes = 79,freeMemNodes = 27,unmappedMemNodes = 7,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 10
+current node = 28,op = MUL,unmapped nodes = 15,mapped nodes = 80,freeMemNodes = 26,unmappedMemNodes = 6,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 62
+current node = 8,op = LOADB,unmapped nodes = 14,mapped nodes = 81,freeMemNodes = 26,unmappedMemNodes = 6,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 17
+current node = 41,op = LOADB,unmapped nodes = 13,mapped nodes = 82,freeMemNodes = 25,unmappedMemNodes = 5,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 9
+current node = 38,op = LOADB,unmapped nodes = 12,mapped nodes = 83,freeMemNodes = 24,unmappedMemNodes = 4,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 8
+current node = 25,op = MUL,unmapped nodes = 11,mapped nodes = 84,freeMemNodes = 23,unmappedMemNodes = 3,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 6
+current node = 9,op = ADD,unmapped nodes = 10,mapped nodes = 85,freeMemNodes = 22,unmappedMemNodes = 3,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 2
+current node = 21,op = MUL,unmapped nodes = 9,mapped nodes = 86,freeMemNodes = 21,unmappedMemNodes = 3,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 5
+current node = 17,op = MUL,unmapped nodes = 8,mapped nodes = 87,freeMemNodes = 21,unmappedMemNodes = 3,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 6
+current node = 10,op = ADD,unmapped nodes = 7,mapped nodes = 88,freeMemNodes = 20,unmappedMemNodes = 3,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 4
+current node = 11,op = ADD,unmapped nodes = 6,mapped nodes = 89,freeMemNodes = 19,unmappedMemNodes = 3,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 10
+current node = 12,op = ADD,unmapped nodes = 5,mapped nodes = 90,freeMemNodes = 19,unmappedMemNodes = 3,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 6
+current node = 7,op = STOREB,unmapped nodes = 4,mapped nodes = 91,freeMemNodes = 19,unmappedMemNodes = 3,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body29,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 3
+current node = 20094,op = MOVC,unmapped nodes = 3,mapped nodes = 92,freeMemNodes = 18,unmappedMemNodes = 2,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.cond.cleanup28,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 52
+current node = 96,op = MOVC,unmapped nodes = 2,mapped nodes = 93,freeMemNodes = 18,unmappedMemNodes = 2,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.cond26.preheader,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 51
+current node = 95,op = STOREB,unmapped nodes = 1,mapped nodes = 94,freeMemNodes = 18,unmappedMemNodes = 2,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.cond26.preheader,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 5
+current node = 20093,op = STOREB,unmapped nodes = 0,mapped nodes = 95,freeMemNodes = 17,unmappedMemNodes = 1,II = 9,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.cond.cleanup28,mutexPathEn = 1,Iter = 2
+estimatedRouteInfo[node].size = 4
+Map Success!.
+,PE_X1|_Y0|-T0,,,,,,,,,,,,,,,,,,,PE_X2|_Y0|-T0,,,,,,,,,,,,,,,,,,,PE_X3|_Y0|-T0,,,,,,,,,,,,,,,,,,,PE_X1|_Y1|-T0,,,,,,,,,,,,,,,,,,,PE_X2|_Y1|-T0,,,,,,,,,,,,,,,,,,,PE_X3|_Y1|-T0,,,,,,,,,,,,,,,,,,,PE_X1|_Y2|-T0,,,,,,,,,,,,,,,,,,,PE_X2|_Y2|-T0,,,,,,,,,,,,,,,,,,,PE_X3|_Y2|-T0,,,,,,,,,,,,,,,,,,,PE_X1|_Y3|-T0,,,,,,,,,,,,,,,,,,,PE_X2|_Y3|-T0,,,,,,,,,,,,,,,,,,,PE_X3|_Y3|-T0,,,,,,,,,,,,,,,,,,,PE_MEM_X0_Y0-T0,,,,,,,,,,,,,,,,,,,PE_MEM_X0_Y1-T0,,,,,,,,,,,,,,,,,,,PE_MEM_X0_Y2-T0,,,,,,,,,,,,,,,,,,,PE_MEM_X0_Y3-T0,,,,,,,,,,,,,,,,,,,
+,FU0,,,,,,,,,,,,,,,,,,,FU0,,,,,,,,,,,,,,,,,,,FU0,,,,,,,,,,,,,,,,,,,FU0,,,,,,,,,,,,,,,,,,,FU0,,,,,,,,,,,,,,,,,,,FU0,,,,,,,,,,,,,,,,,,,FU0,,,,,,,,,,,,,,,,,,,FU0,,,,,,,,,,,,,,,,,,,FU0,,,,,,,,,,,,,,,,,,,FU0,,,,,,,,,,,,,,,,,,,FU0,,,,,,,,,,,,,,,,,,,FU0,,,,,,,,,,,,,,,,,,,FU0,,,,,,,,,,,,,,,,,,,FU0,,,,,,,,,,,,,,,,,,,FU0,,,,,,,,,,,,,,,,,,,FU0,,,,,,,,,,,,,,,,,,,
+,DP0,NORTH_I,WEST_I,EAST_I,SOUTH_I,NORTH_O,WEST_O,EAST_O,SOUTH_O,WR_RI,WR_RO,ER_RI,ER_RO,TREG_RI,TREG_RO,SR_RI,SR_RO,NR_RI,NR_RO,DP0,NORTH_I,WEST_I,EAST_I,SOUTH_I,NORTH_O,WEST_O,EAST_O,SOUTH_O,SR_RI,SR_RO,TREG_RI,TREG_RO,ER_RI,ER_RO,WR_RI,WR_RO,NR_RI,NR_RO,DP0,NORTH_I,WEST_I,EAST_I,SOUTH_I,NORTH_O,WEST_O,EAST_O,SOUTH_O,NR_RI,NR_RO,TREG_RI,TREG_RO,WR_RI,WR_RO,ER_RI,ER_RO,SR_RI,SR_RO,DP0,NORTH_I,WEST_I,EAST_I,SOUTH_I,NORTH_O,WEST_O,EAST_O,SOUTH_O,SR_RI,SR_RO,NR_RI,NR_RO,WR_RI,WR_RO,ER_RI,ER_RO,TREG_RI,TREG_RO,DP0,NORTH_I,WEST_I,EAST_I,SOUTH_I,NORTH_O,WEST_O,EAST_O,SOUTH_O,SR_RI,SR_RO,WR_RI,WR_RO,TREG_RI,TREG_RO,NR_RI,NR_RO,ER_RI,ER_RO,DP0,NORTH_I,WEST_I,EAST_I,SOUTH_I,NORTH_O,WEST_O,EAST_O,SOUTH_O,ER_RI,ER_RO,NR_RI,NR_RO,WR_RI,WR_RO,TREG_RI,TREG_RO,SR_RI,SR_RO,DP0,NORTH_I,WEST_I,EAST_I,SOUTH_I,NORTH_O,WEST_O,EAST_O,SOUTH_O,SR_RI,SR_RO,TREG_RI,TREG_RO,WR_RI,WR_RO,ER_RI,ER_RO,NR_RI,NR_RO,DP0,NORTH_I,WEST_I,EAST_I,SOUTH_I,NORTH_O,WEST_O,EAST_O,SOUTH_O,SR_RI,SR_RO,NR_RI,NR_RO,TREG_RI,TREG_RO,WR_RI,WR_RO,ER_RI,ER_RO,DP0,NORTH_I,WEST_I,EAST_I,SOUTH_I,NORTH_O,WEST_O,EAST_O,SOUTH_O,TREG_RI,TREG_RO,WR_RI,WR_RO,SR_RI,SR_RO,NR_RI,NR_RO,ER_RI,ER_RO,DP0,NORTH_I,WEST_I,EAST_I,SOUTH_I,NORTH_O,WEST_O,EAST_O,SOUTH_O,NR_RI,NR_RO,ER_RI,ER_RO,WR_RI,WR_RO,SR_RI,SR_RO,TREG_RI,TREG_RO,DP0,NORTH_I,WEST_I,EAST_I,SOUTH_I,NORTH_O,WEST_O,EAST_O,SOUTH_O,ER_RI,ER_RO,TREG_RI,TREG_RO,SR_RI,SR_RO,WR_RI,WR_RO,NR_RI,NR_RO,DP0,NORTH_I,WEST_I,EAST_I,SOUTH_I,NORTH_O,WEST_O,EAST_O,SOUTH_O,WR_RI,WR_RO,SR_RI,SR_RO,ER_RI,ER_RO,TREG_RI,TREG_RO,NR_RI,NR_RO,DP0,NORTH_I,WEST_I,EAST_I,SOUTH_I,NORTH_O,WEST_O,EAST_O,SOUTH_O,ER_RI,ER_RO,TREG_RI,TREG_RO,WR_RI,WR_RO,SR_RI,SR_RO,NR_RI,NR_RO,DP0,NORTH_I,WEST_I,EAST_I,SOUTH_I,NORTH_O,WEST_O,EAST_O,SOUTH_O,WR_RI,WR_RO,ER_RI,ER_RO,TREG_RI,TREG_RO,NR_RI,NR_RO,SR_RI,SR_RO,DP0,NORTH_I,WEST_I,EAST_I,SOUTH_I,NORTH_O,WEST_O,EAST_O,SOUTH_O,NR_RI,NR_RO,TREG_RI,TREG_RO,SR_RI,SR_RO,ER_RI,ER_RO,WR_RI,WR_RO,DP0,NORTH_I,WEST_I,EAST_I,SOUTH_I,NORTH_O,WEST_O,EAST_O,SOUTH_O,WR_RI,WR_RO,TREG_RI,TREG_RO,SR_RI,SR_RO,ER_RI,ER_RO,NR_RI,NR_RO,
+T=0,---,---,---,---,20,---,12,20,---,---,---,---,---,---,---,---,---,---,---,0:SELECT(73-74-72-|1-4-13-),---,20,---,---,---,---,20,---,---,---,74,---,---,---,---,---,---,---,---,---,20,---,---,---,---,---,20,---,---,---,---,---,---,---,---,---,---,59:SELECT(81-82-|60-63-),---,---,6,---,20,6,---,---,---,---,---,---,20,---,---,---,82,---,47:SELECT(77-78-|48-),---,---,---,6,---,6,---,37,---,---,78,---,---,---,---,---,37,---,---,20,---,---,---,---,---,---,---,---,---,---,20,---,---,---,---,---,---,29:SELECT(75-76-72-|30-32-34-),---,69,37,---,---,37,69,---,---,---,76,---,---,---,---,---,---,---,53:SELECT(79-80-75-|54-),37,69,---,---,6,37,---,---,---,---,---,---,6,---,80,69,---,---,66:SELECT(83-84-81-|58-67-70-),---,---,---,---,---,---,---,---,---,---,---,---,---,---,84,---,---,---,---,---,---,43,---,---,43,---,---,---,---,---,---,71,71,---,---,20094,20094,---,---,---,---,---,---,43,---,---,---,---,43,---,---,---,27,27,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,12,---,---,---,---,12,---,---,---,---,---,---,---,---,---,---,7:STOREB(6-12-8-|),12,---,6,---,---,---,---,---,---,---,6,6,---,---,96,96,---,---,38:LOADB(37-|17-),---,---,37,16,---,---,69,---,---,---,72,72,---,16,---,---,---,---,44:LOADB(43-|25-),---,---,43,---,16,---,---,---,---,---,16,24,---,---,---,---,---,---,
+T=1,13:LS+C(0-|14-18-22-26-),---,---,0,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,4:ARS+C(0-|5-),---,---,---,---,---,0,0,---,---,---,---,---,---,---,---,---,---,---,1:ADD+C(0-|3-86-),---,0,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,60:ADD+C(59-|61-82-),---,41,---,---,---,---,41,59,---,---,---,---,---,---,---,---,---,---,48:ADD+C(47-|50-90-),---,41,---,---,---,---,41,---,---,---,---,---,---,---,---,---,---,---,21:MUL(20-41-|11-),---,41,---,66,---,---,---,---,---,---,---,---,---,66,20,---,---,---,63:LS+C(59-|64-),59,46,66,---,---,---,46,66,---,---,---,---,---,---,---,29,---,---,54:ADD+C(53-|56-92-),---,46,66,---,---,66,---,46,---,---,---,---,69,69,---,---,---,---,67:MUL+C(66-|68-),---,---,---,---,66,66,---,---,---,---,---,---,---,---,---,---,---,---,70:ADD(71-66-|65-),66,---,---,---,---,---,---,---,20094,20094,---,---,71,---,---,---,---,---,28:MUL(27-46-|9-),46,---,---,---,---,---,---,---,---,---,27,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,8:LOADB(6-46-|9-7-),---,---,---,41,---,---,41,96,96,---,---,---,---,---,6,6,---,---,95:STOREB+C(72-96-|),96,---,---,46,41,---,46,---,---,---,---,---,---,---,16,16,72,---,---,---,---,---,---,46,---,---,---,24,24,---,---,---,---,---,---,---,---,
+T=2,22:OR+C(13-|23-),---,---,---,---,---,---,13,---,---,---,---,---,---,---,---,13,---,---,26:ADD+C(13-|27-),---,13,1,---,---,---,---,1,---,---,---,4,---,---,---,---,---,---,3:CMP+C(1-|85-86-),---,---,---,---,---,1,---,---,---,---,---,---,---,---,---,---,---,---,61:CMP+C(60-|74-76-78-80-82-84-20093-),---,6,1,---,---,1,---,---,---,60,---,---,---,---,---,6,---,---,50:CMP+C(48-|51-52-),1,---,---,54,---,1,54,---,---,48,---,---,---,---,---,---,---,---,---,---,54,---,---,---,---,---,54,---,---,66,66,---,---,---,---,---,21,34:MUL+C(29-|35-),---,---,28,70,---,28,---,63,---,---,---,70,29,29,---,---,---,---,56:CMP+C(54-|51-57-87-88-91-92-),---,---,---,28,54,28,69,---,---,---,---,---,69,---,---,---,---,---,68:ADD(69-67-|33-),54,69,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,54,64:AND+C(63-|65-),63,---,---,---,70,---,---,---,---,---,---,---,---,---,---,---,20094,20094,---,---,---,---,---,28,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,1,28,---,---,6,---,---,---,6,1,---,---,---,28,---,---,17:MUL(16-38-|12-),---,---,28,---,28,---,---,---,16,---,---,---,---,---,---,---,---,---,25:MUL(24-44-|10-),---,---,---,---,---,---,---,---,---,---,24,---,---,---,---,---,---,---,
+T=3,18:OR+C(13-|19-),---,---,3,---,---,3,13,---,---,---,---,---,---,---,---,---,13,22,14:OR+C(13-|15-),---,13,3,---,---,3,---,4,---,---,---,---,4,26,---,---,---,---,85:CMERGE+C(3-|2-),---,---,---,---,---,3,---,---,---,---,---,---,---,---,---,---,---,---,82:CMERGE(61-60-|59-),---,---,50,---,---,---,---,50,---,---,6,6,---,---,60,61,---,---,52:OR+C(50-|30-),4,---,21,56,---,50,---,---,48,48,---,21,---,---,---,56,---,4,57:OR+C(56-|58-),---,---,---,56,---,21,---,---,---,---,---,---,66,66,21,---,---,---,51:OR(50-56-|89-90-),50,---,56,---,---,34,70,56,---,---,---,---,29,29,---,---,70,---,87:CMERGE+C(56-|31-),---,70,---,---,56,56,56,70,---,---,---,---,---,---,---,---,---,---,92:CMERGE(56-54-|55-),---,56,---,---,56,---,---,---,54,---,---,---,---,---,---,---,---,68,91:CMERGE+C(56-|55-),56,---,---,---,---,---,64,---,---,---,---,---,20094,20094,---,---,---,---,65:ADD(64-70-|35-),70,64,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,86:CMERGE(3-1-|2-),---,---,3,1,---,---,---,---,---,---,---,---,---,---,---,---,---,---,9:ADD(8-28-|10-),---,---,---,---,1,---,---,---,---,---,28,---,---,---,---,---,1,---,71:OLOAD+C(|70-),---,---,34,---,---,---,---,---,---,---,---,34,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,
+T=4,19:ADD+C(18-|20-),---,---,26,---,---,---,---,26,---,---,---,---,---,---,---,---,22,22,15:ADD+C(14-|16-),---,---,---,---,---,26,---,---,---,---,---,---,---,---,---,---,26,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,85,90:CMERGE(51-48-|49-),26,---,48,51,---,26,61,61,6,6,---,---,61,82,---,---,---,---,30:ADD(29-52-|88-),---,61,---,29,---,48,---,---,48,---,4,4,21,21,---,61,56,56,58:ADD(57-66-|84-),---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,66,---,89:CMERGE+C(51-|49-),61,34,---,---,51,---,29,34,---,---,---,---,---,---,29,---,---,61,32:MUL+C(29-|33-),---,29,92,---,29,---,---,92,---,---,---,---,---,---,---,---,---,87,---,---,---,---,---,---,92,---,---,---,---,---,---,68,68,---,---,---,---,55:SELECT(91-92-|80-),34,---,92,---,---,---,34,---,---,---,---,---,---,---,---,---,20094,20094,35:ADD(34-65-|36-39-42-45-),92,34,---,---,---,92,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,26,17,---,---,---,26,---,---,---,---,---,---,---,17,---,---,27:LOADB(26-|28-),26,---,---,25,17,---,34,---,---,---,---,25,---,---,---,---,34,---,---,---,---,---,---,25,---,---,---,---,---,---,---,---,---,---,---,---,---,
+T=5,23:ADD+C(22-|24-),---,86,---,---,---,---,86,19,---,---,---,---,---,---,---,---,22,---,2:SELECT(85-86-|74-),---,86,85,61,---,---,61,15,---,---,---,---,---,---,---,---,---,---,84:CMERGE(61-58-|66-),---,61,---,58,---,85,---,---,85,---,---,---,---,---,---,---,---,---,49:SELECT(89-90-|78-),19,---,---,89,---,19,---,---,6,6,---,---,82,82,---,---,---,---,88:CMERGE(56-30-|31-),15,---,---,87,61,---,---,15,4,4,21,21,61,---,56,87,---,---,36:ADD+C(35-|37-),---,---,---,35,58,---,---,---,---,---,---,---,---,---,---,---,---,---,80:CMERGE(61-55-|53-),---,---,---,55,89,61,---,---,---,---,---,---,---,---,61,61,---,---,33:ADD(32-68-|5-),15,---,68,---,87,---,---,15,87,---,---,---,---,---,---,---,---,---,39:ADD+C(35-|40-),---,---,---,35,35,68,---,---,---,---,---,---,---,---,68,---,---,---,---,---,---,---,---,55,20094,---,---,---,---,---,---,20094,---,---,---,---,---,42:ADD+C(35-|43-),15,---,---,---,---,---,35,---,---,15,---,---,---,---,---,---,---,---,45:ADD+C(35-|46-),---,35,---,---,35,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,86,---,---,---,---,---,---,---,---,---,---,---,10:ADD(9-25-|11-),---,---,19,25,---,---,---,19,---,---,---,---,---,---,17,17,---,---,20:LOADB(19-|21-),19,---,61,---,25,---,---,61,---,71,---,---,---,---,---,---,25,---,20093:STOREB+C(20094-61-|),61,---,20094,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,
+T=6,---,---,---,---,---,---,---,---,23,---,---,---,---,---,---,---,---,---,---,74:CMERGE(61-2-|0-),---,---,---,61,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,84,---,---,---,---,---,---,---,---,---,---,78:CMERGE(61-49-|47-),23,---,---,61,---,23,61,---,---,---,---,---,6,6,---,---,82,82,31:SELECT(87-88-|76-),---,61,---,---,61,---,---,4,4,---,21,21,---,---,87,---,---,---,37:ADD+C(36-|38-),84,---,---,---,---,---,---,84,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,61,---,80,---,61,61,---,---,---,---,---,---,---,---,5:ADD(4-33-|6-),4,80,---,---,---,---,---,---,---,---,---,---,---,---,---,80,---,---,40:ADD+C(39-|41-),84,---,---,---,---,---,---,---,---,84,---,---,---,---,---,---,---,---,---,---,71,15,---,---,15,---,---,---,---,---,---,---,---,---,---,---,71,43:ADD+C(42-|44-),---,---,45,---,---,15,---,---,---,45,---,---,---,---,---,---,15,---,---,---,---,---,---,---,45,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,17,---,---,---,---,---,---,---,---,---,17,---,---,---,---,---,---,---,23,---,17,---,---,---,---,---,---,23,---,---,17,---,---,---,72:LOADB+C(|73-75-77-79-81-83-95-0-29-),---,---,---,---,---,---,---,71,---,---,---,---,---,---,71,27,---,---,16:LOADB(15-|17-),71,---,15,---,---,---,71,---,---,---,---,---,---,---,---,---,---,---,
+T=7,96:MOVC+C(|95-),---,17,---,---,---,---,---,---,---,---,---,---,---,17,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,74,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,11:ADD(10-21-|12-),---,10,21,---,---,---,78,---,---,---,---,---,6,6,---,---,82,82,---,---,78,37,---,---,21,---,31,---,---,---,---,---,---,21,37,---,78,---,---,---,---,---,---,37,---,---,---,---,---,---,---,---,---,---,---,---,76:CMERGE(61-31-|29-),---,27,31,---,---,---,---,27,---,---,61,---,---,---,---,---,---,---,6:ADD+C(5-|7-8-),31,---,40,---,---,31,---,---,---,---,---,40,80,80,---,---,---,---,---,---,---,---,---,---,40,---,---,---,---,---,---,---,---,---,---,84,84,20094:MOVC+C(|20093-),27,---,45,---,---,---,---,---,---,---,---,---,---,27,---,45,71,71,---,---,---,---,---,---,45,---,---,---,---,45,---,---,---,---,---,---,43,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,17,---,17,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,10,23,---,---,---,---,---,---,23,---,---,---,69:OLOAD+C(|68-),23,---,---,---,---,---,27,23,---,---,---,---,---,---,---,---,27,20,24:LOADB(23-|25-),23,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,
+T=8,12:ADD(11-17-|7-),---,---,---,11,---,96,---,---,---,---,---,---,---,---,---,---,17,---,73:CMERGE+C(72-|0-),---,---,---,72,---,---,---,---,---,---,---,---,---,---,74,74,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,81:CMERGE+C(72-|59-66-),---,20,---,72,11,6,72,---,---,---,---,---,6,20,---,---,82,82,77:CMERGE+C(72-|47-),---,72,---,---,72,---,---,---,---,---,---,---,---,---,37,37,78,78,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,75:CMERGE+C(72-|29-53-),---,72,40,---,72,40,72,---,---,---,---,---,---,---,---,76,---,---,79:CMERGE+C(72-|53-),---,72,---,---,---,40,72,---,---,---,40,---,80,80,---,---,---,6,83:CMERGE+C(72-|66-),---,72,---,---,---,---,---,---,---,---,---,---,---,---,---,---,84,84,---,---,---,---,---,---,45,27,---,27,---,45,---,71,71,---,---,---,20094,---,---,27,---,---,---,---,---,---,---,---,---,---,---,27,---,---,43,43,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,---,96,---,---,---,---,96,---,---,---,---,---,---,---,---,---,---,---,96,---,6,20,---,---,20,---,---,---,---,96,---,6,---,---,---,---,41:LOADB(40-|21-),---,---,40,---,20,---,72,---,---,---,---,---,---,---,---,---,20,72,46:LOADB(45-|28-8-),---,---,45,---,---,---,---,---,---,---,---,---,---,---,---,---,---,16,
+************************************

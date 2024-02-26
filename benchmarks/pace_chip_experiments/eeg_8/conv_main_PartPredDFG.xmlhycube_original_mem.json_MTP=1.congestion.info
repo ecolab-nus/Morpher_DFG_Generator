@@ -1,0 +1,23 @@
+**********************************
+II = 14,iter = 0
+**********************************
+,35|BB=for.body24,14|BB=for.body24CONGESTION:CGRA_Ins.PE_X2|_Y0|-T1.WEST_O
+HISTORY_COST :: CGRA_Ins.PE_X2|_Y0|-T1.WEST_O,10000
+,35|BB=for.body24,14|BB=for.body24CONGESTION:CGRA_Ins.PE_X1|_Y0|-T1.EAST_XBARI
+HISTORY_COST :: CGRA_Ins.PE_X1|_Y0|-T1.EAST_XBARI,10000
+,35|BB=for.body24,14|BB=for.body24CONGESTION:CGRA_Ins.PE_X1|_Y0|-T1.EAST_I
+HISTORY_COST :: CGRA_Ins.PE_X1|_Y0|-T1.EAST_I,10000
+,98|BB=for.body24,123|BB=for.body24_94_0CONGESTION:CGRA_Ins.PE_X3|_Y1|-T1.SOUTH_XBARI
+HISTORY_COST :: CGRA_Ins.PE_X3|_Y1|-T1.SOUTH_XBARI,10000
+
+noConflicts!
+**********************************
+II = 14,iter = 1
+**********************************
+HISTORY_COST :: CGRA_Ins.PE_X2|_Y0|-T1.WEST_O,10000
+HISTORY_COST :: CGRA_Ins.PE_X1|_Y0|-T1.EAST_XBARI,10000
+HISTORY_COST :: CGRA_Ins.PE_X1|_Y0|-T1.EAST_I,10000
+HISTORY_COST :: CGRA_Ins.PE_X3|_Y1|-T1.SOUTH_XBARI,10000
+
+noCongestion!
+noConflicts!

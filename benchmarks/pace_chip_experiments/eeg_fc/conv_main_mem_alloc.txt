@@ -1,0 +1,9 @@
+var_name,base_addr
+arrayidx30,8224
+fc,8222
+kernel,0
+data,8192
+j_outer.0168,8226
+loopstart,16383
+storestart,16383
+loopend,16382

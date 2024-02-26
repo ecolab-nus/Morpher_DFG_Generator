@@ -1,0 +1,400 @@
+current node = 172,op = LOADB,unmapped nodes = 199,mapped nodes = 0,freeMemNodes = 112,unmappedMemNodes = 37,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.cond30.preheader,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 56
+current node = 166,op = OLOAD,unmapped nodes = 198,mapped nodes = 1,freeMemNodes = 111,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 55
+current node = 164,op = OLOAD,unmapped nodes = 197,mapped nodes = 2,freeMemNodes = 110,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 54
+current node = 183,op = CMERGE,unmapped nodes = 196,mapped nodes = 3,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32_160_0,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 444
+current node = 177,op = CMERGE,unmapped nodes = 195,mapped nodes = 4,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32_96_0,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 443
+current node = 179,op = CMERGE,unmapped nodes = 194,mapped nodes = 5,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32_150_0_0_2_89_2,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 442
+current node = 181,op = CMERGE,unmapped nodes = 193,mapped nodes = 6,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32_156_0,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 441
+current node = 173,op = CMERGE,unmapped nodes = 192,mapped nodes = 7,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32_0_0,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 440
+current node = 185,op = CMERGE,unmapped nodes = 191,mapped nodes = 8,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32_167_0,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 439
+current node = 175,op = CMERGE,unmapped nodes = 190,mapped nodes = 9,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32_89_0,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 438
+current node = 150,op = SELECT,unmapped nodes = 189,mapped nodes = 10,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 438
+current node = 0,op = SELECT,unmapped nodes = 188,mapped nodes = 11,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 437
+current node = 160,op = SELECT,unmapped nodes = 187,mapped nodes = 12,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 436
+current node = 156,op = SELECT,unmapped nodes = 186,mapped nodes = 13,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 12
+current node = 167,op = SELECT,unmapped nodes = 185,mapped nodes = 14,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 14
+current node = 89,op = SELECT,unmapped nodes = 184,mapped nodes = 15,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 13
+current node = 96,op = SELECT,unmapped nodes = 183,mapped nodes = 16,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 9
+current node = 100,op = LS,unmapped nodes = 182,mapped nodes = 17,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 430
+current node = 154,op = MUL,unmapped nodes = 181,mapped nodes = 18,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 430
+current node = 165,op = ADD,unmapped nodes = 180,mapped nodes = 19,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 428
+current node = 25,op = LS,unmapped nodes = 179,mapped nodes = 20,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 428
+current node = 152,op = MUL,unmapped nodes = 178,mapped nodes = 21,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 427
+current node = 4,op = ARS,unmapped nodes = 177,mapped nodes = 22,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 426
+current node = 97,op = ADD,unmapped nodes = 176,mapped nodes = 23,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 10
+current node = 168,op = ADD,unmapped nodes = 175,mapped nodes = 24,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 12
+current node = 157,op = ADD,unmapped nodes = 174,mapped nodes = 25,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 9
+current node = 90,op = ADD,unmapped nodes = 173,mapped nodes = 26,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 11
+current node = 162,op = MUL,unmapped nodes = 172,mapped nodes = 27,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 421
+current node = 1,op = ADD,unmapped nodes = 171,mapped nodes = 28,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 10
+current node = 101,op = AND,unmapped nodes = 170,mapped nodes = 29,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 416
+current node = 158,op = CMP,unmapped nodes = 169,mapped nodes = 30,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 7
+current node = 155,op = ADD,unmapped nodes = 168,mapped nodes = 31,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 417
+current node = 74,op = OR,unmapped nodes = 167,mapped nodes = 32,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 416
+current node = 78,op = OR,unmapped nodes = 166,mapped nodes = 33,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 415
+current node = 58,op = OR,unmapped nodes = 165,mapped nodes = 34,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 414
+current node = 70,op = OR,unmapped nodes = 164,mapped nodes = 35,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 413
+current node = 82,op = OR,unmapped nodes = 163,mapped nodes = 36,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 412
+current node = 163,op = ADD,unmapped nodes = 162,mapped nodes = 37,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 410
+current node = 86,op = ADD,unmapped nodes = 161,mapped nodes = 38,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 410
+current node = 98,op = CMP,unmapped nodes = 160,mapped nodes = 39,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 6
+current node = 66,op = OR,unmapped nodes = 159,mapped nodes = 40,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 408
+current node = 62,op = OR,unmapped nodes = 158,mapped nodes = 41,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 407
+current node = 92,op = CMP,unmapped nodes = 157,mapped nodes = 42,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 11
+current node = 170,op = CMP,unmapped nodes = 156,mapped nodes = 43,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 10
+current node = 54,op = OR,unmapped nodes = 155,mapped nodes = 44,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 404
+current node = 50,op = OR,unmapped nodes = 154,mapped nodes = 45,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 403
+current node = 34,op = OR,unmapped nodes = 153,mapped nodes = 46,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 402
+current node = 42,op = OR,unmapped nodes = 152,mapped nodes = 47,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 401
+current node = 38,op = OR,unmapped nodes = 151,mapped nodes = 48,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 400
+current node = 30,op = OR,unmapped nodes = 150,mapped nodes = 49,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 399
+current node = 26,op = OR,unmapped nodes = 149,mapped nodes = 50,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 398
+current node = 46,op = OR,unmapped nodes = 148,mapped nodes = 51,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 397
+current node = 3,op = CMP,unmapped nodes = 147,mapped nodes = 52,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 8
+current node = 71,op = ADD,unmapped nodes = 146,mapped nodes = 53,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 395
+current node = 102,op = ADD,unmapped nodes = 145,mapped nodes = 54,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 394
+current node = 153,op = ADD,unmapped nodes = 144,mapped nodes = 55,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 393
+current node = 83,op = ADD,unmapped nodes = 143,mapped nodes = 56,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 389
+current node = 87,op = LOADB,unmapped nodes = 142,mapped nodes = 57,freeMemNodes = 109,unmappedMemNodes = 36,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 53
+current node = 79,op = ADD,unmapped nodes = 141,mapped nodes = 58,freeMemNodes = 108,unmappedMemNodes = 35,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 389
+current node = 75,op = ADD,unmapped nodes = 140,mapped nodes = 59,freeMemNodes = 108,unmappedMemNodes = 35,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 386
+current node = 67,op = ADD,unmapped nodes = 139,mapped nodes = 60,freeMemNodes = 108,unmappedMemNodes = 35,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 387
+current node = 63,op = ADD,unmapped nodes = 138,mapped nodes = 61,freeMemNodes = 108,unmappedMemNodes = 35,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 387
+current node = 94,op = OR,unmapped nodes = 137,mapped nodes = 62,freeMemNodes = 108,unmappedMemNodes = 35,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 7
+current node = 171,op = OR,unmapped nodes = 136,mapped nodes = 63,freeMemNodes = 108,unmappedMemNodes = 35,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 6
+current node = 59,op = ADD,unmapped nodes = 135,mapped nodes = 64,freeMemNodes = 108,unmappedMemNodes = 35,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 384
+current node = 178,op = CMERGE,unmapped nodes = 134,mapped nodes = 65,freeMemNodes = 108,unmappedMemNodes = 35,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32_96_1,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 6
+current node = 55,op = ADD,unmapped nodes = 133,mapped nodes = 66,freeMemNodes = 108,unmappedMemNodes = 35,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 382
+current node = 51,op = ADD,unmapped nodes = 132,mapped nodes = 67,freeMemNodes = 108,unmappedMemNodes = 35,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 381
+current node = 47,op = ADD,unmapped nodes = 131,mapped nodes = 68,freeMemNodes = 108,unmappedMemNodes = 35,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 380
+current node = 43,op = ADD,unmapped nodes = 130,mapped nodes = 69,freeMemNodes = 108,unmappedMemNodes = 35,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 379
+current node = 39,op = ADD,unmapped nodes = 129,mapped nodes = 70,freeMemNodes = 108,unmappedMemNodes = 35,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 378
+current node = 35,op = ADD,unmapped nodes = 128,mapped nodes = 71,freeMemNodes = 108,unmappedMemNodes = 35,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 377
+current node = 31,op = ADD,unmapped nodes = 127,mapped nodes = 72,freeMemNodes = 108,unmappedMemNodes = 35,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 375
+current node = 27,op = ADD,unmapped nodes = 126,mapped nodes = 73,freeMemNodes = 108,unmappedMemNodes = 35,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 374
+current node = 159,op = OR,unmapped nodes = 125,mapped nodes = 74,freeMemNodes = 108,unmappedMemNodes = 35,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 8
+current node = 191,op = CMERGE,unmapped nodes = 124,mapped nodes = 75,freeMemNodes = 108,unmappedMemNodes = 35,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32_93_0,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 3
+current node = 190,op = CMERGE,unmapped nodes = 123,mapped nodes = 76,freeMemNodes = 108,unmappedMemNodes = 35,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32_91_1,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 3
+current node = 189,op = CMERGE,unmapped nodes = 122,mapped nodes = 77,freeMemNodes = 108,unmappedMemNodes = 35,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32_91_0,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 2
+current node = 188,op = CMERGE,unmapped nodes = 121,mapped nodes = 78,freeMemNodes = 108,unmappedMemNodes = 35,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32_2_1,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 3
+current node = 187,op = CMERGE,unmapped nodes = 120,mapped nodes = 79,freeMemNodes = 107,unmappedMemNodes = 35,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32_2_0,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 2
+current node = 130,op = ADD,unmapped nodes = 119,mapped nodes = 80,freeMemNodes = 106,unmappedMemNodes = 35,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 368
+current node = 148,op = ADD,unmapped nodes = 118,mapped nodes = 81,freeMemNodes = 106,unmappedMemNodes = 35,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 367
+current node = 5,op = ADD,unmapped nodes = 117,mapped nodes = 82,freeMemNodes = 106,unmappedMemNodes = 35,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 366
+current node = 142,op = ADD,unmapped nodes = 116,mapped nodes = 83,freeMemNodes = 106,unmappedMemNodes = 35,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 365
+current node = 139,op = ADD,unmapped nodes = 115,mapped nodes = 84,freeMemNodes = 106,unmappedMemNodes = 35,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 364
+current node = 84,op = LOADB,unmapped nodes = 114,mapped nodes = 85,freeMemNodes = 106,unmappedMemNodes = 35,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 52
+current node = 136,op = ADD,unmapped nodes = 113,mapped nodes = 86,freeMemNodes = 105,unmappedMemNodes = 34,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 362
+current node = 80,op = LOADB,unmapped nodes = 112,mapped nodes = 87,freeMemNodes = 105,unmappedMemNodes = 34,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 50
+current node = 133,op = ADD,unmapped nodes = 111,mapped nodes = 88,freeMemNodes = 104,unmappedMemNodes = 33,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 360
+current node = 145,op = ADD,unmapped nodes = 110,mapped nodes = 89,freeMemNodes = 104,unmappedMemNodes = 33,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 359
+current node = 76,op = LOADB,unmapped nodes = 109,mapped nodes = 90,freeMemNodes = 104,unmappedMemNodes = 33,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 50
+current node = 72,op = LOADB,unmapped nodes = 108,mapped nodes = 91,freeMemNodes = 103,unmappedMemNodes = 32,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 49
+current node = 127,op = ADD,unmapped nodes = 107,mapped nodes = 92,freeMemNodes = 102,unmappedMemNodes = 31,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 356
+current node = 68,op = LOADB,unmapped nodes = 106,mapped nodes = 93,freeMemNodes = 102,unmappedMemNodes = 31,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 48
+current node = 124,op = ADD,unmapped nodes = 105,mapped nodes = 94,freeMemNodes = 101,unmappedMemNodes = 30,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 354
+current node = 64,op = LOADB,unmapped nodes = 104,mapped nodes = 95,freeMemNodes = 101,unmappedMemNodes = 30,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 45
+current node = 121,op = ADD,unmapped nodes = 103,mapped nodes = 96,freeMemNodes = 100,unmappedMemNodes = 29,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 352
+current node = 194,op = CMERGE,unmapped nodes = 102,mapped nodes = 97,freeMemNodes = 100,unmappedMemNodes = 29,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32_95_1,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 6
+current node = 193,op = CMERGE,unmapped nodes = 101,mapped nodes = 98,freeMemNodes = 100,unmappedMemNodes = 29,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32_95_0,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 5
+current node = 161,op = ADD,unmapped nodes = 100,mapped nodes = 99,freeMemNodes = 100,unmappedMemNodes = 29,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 4
+current node = 60,op = LOADB,unmapped nodes = 99,mapped nodes = 100,freeMemNodes = 100,unmappedMemNodes = 29,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 46
+current node = 118,op = ADD,unmapped nodes = 98,mapped nodes = 101,freeMemNodes = 99,unmappedMemNodes = 28,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 347
+current node = 56,op = LOADB,unmapped nodes = 97,mapped nodes = 102,freeMemNodes = 99,unmappedMemNodes = 28,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 45
+current node = 115,op = ADD,unmapped nodes = 96,mapped nodes = 103,freeMemNodes = 98,unmappedMemNodes = 27,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 345
+current node = 52,op = LOADB,unmapped nodes = 95,mapped nodes = 104,freeMemNodes = 98,unmappedMemNodes = 27,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 44
+current node = 112,op = ADD,unmapped nodes = 94,mapped nodes = 105,freeMemNodes = 97,unmappedMemNodes = 26,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 343
+current node = 48,op = LOADB,unmapped nodes = 93,mapped nodes = 106,freeMemNodes = 97,unmappedMemNodes = 26,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 43
+current node = 109,op = ADD,unmapped nodes = 92,mapped nodes = 107,freeMemNodes = 96,unmappedMemNodes = 25,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 341
+current node = 44,op = LOADB,unmapped nodes = 91,mapped nodes = 108,freeMemNodes = 96,unmappedMemNodes = 25,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 42
+current node = 106,op = ADD,unmapped nodes = 90,mapped nodes = 109,freeMemNodes = 95,unmappedMemNodes = 24,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 339
+current node = 40,op = LOADB,unmapped nodes = 89,mapped nodes = 110,freeMemNodes = 95,unmappedMemNodes = 24,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 41
+current node = 103,op = ADD,unmapped nodes = 88,mapped nodes = 111,freeMemNodes = 94,unmappedMemNodes = 23,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 337
+current node = 36,op = LOADB,unmapped nodes = 87,mapped nodes = 112,freeMemNodes = 94,unmappedMemNodes = 23,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 40
+current node = 32,op = LOADB,unmapped nodes = 86,mapped nodes = 113,freeMemNodes = 93,unmappedMemNodes = 22,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 39
+current node = 28,op = LOADB,unmapped nodes = 85,mapped nodes = 114,freeMemNodes = 92,unmappedMemNodes = 21,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 38
+current node = 151,op = ADD,unmapped nodes = 84,mapped nodes = 115,freeMemNodes = 91,unmappedMemNodes = 20,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 1
+current node = 91,op = SELECT,unmapped nodes = 83,mapped nodes = 116,freeMemNodes = 90,unmappedMemNodes = 20,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 4
+current node = 2,op = SELECT,unmapped nodes = 82,mapped nodes = 117,freeMemNodes = 90,unmappedMemNodes = 20,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 5
+current node = 146,op = ADD,unmapped nodes = 81,mapped nodes = 118,freeMemNodes = 90,unmappedMemNodes = 20,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 327
+current node = 184,op = CMERGE,unmapped nodes = 80,mapped nodes = 119,freeMemNodes = 90,unmappedMemNodes = 20,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32_160_1,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 6
+current node = 95,op = SELECT,unmapped nodes = 79,mapped nodes = 120,freeMemNodes = 90,unmappedMemNodes = 20,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 4
+current node = 149,op = LOADB,unmapped nodes = 78,mapped nodes = 121,freeMemNodes = 90,unmappedMemNodes = 20,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 36
+current node = 6,op = ADD,unmapped nodes = 77,mapped nodes = 122,freeMemNodes = 89,unmappedMemNodes = 19,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 326
+current node = 143,op = ADD,unmapped nodes = 76,mapped nodes = 123,freeMemNodes = 89,unmappedMemNodes = 19,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 322
+current node = 140,op = ADD,unmapped nodes = 75,mapped nodes = 124,freeMemNodes = 89,unmappedMemNodes = 19,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 323
+current node = 137,op = ADD,unmapped nodes = 74,mapped nodes = 125,freeMemNodes = 89,unmappedMemNodes = 19,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 322
+current node = 134,op = ADD,unmapped nodes = 73,mapped nodes = 126,freeMemNodes = 89,unmappedMemNodes = 19,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 321
+current node = 131,op = ADD,unmapped nodes = 72,mapped nodes = 127,freeMemNodes = 89,unmappedMemNodes = 19,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 321
+current node = 128,op = ADD,unmapped nodes = 71,mapped nodes = 128,freeMemNodes = 89,unmappedMemNodes = 19,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 319
+current node = 125,op = ADD,unmapped nodes = 70,mapped nodes = 129,freeMemNodes = 89,unmappedMemNodes = 19,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 319
+current node = 122,op = ADD,unmapped nodes = 69,mapped nodes = 130,freeMemNodes = 89,unmappedMemNodes = 19,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 317
+current node = 119,op = ADD,unmapped nodes = 68,mapped nodes = 131,freeMemNodes = 89,unmappedMemNodes = 19,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 317
+current node = 116,op = ADD,unmapped nodes = 67,mapped nodes = 132,freeMemNodes = 89,unmappedMemNodes = 19,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 315
+current node = 113,op = ADD,unmapped nodes = 66,mapped nodes = 133,freeMemNodes = 89,unmappedMemNodes = 19,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 315
+current node = 110,op = ADD,unmapped nodes = 65,mapped nodes = 134,freeMemNodes = 89,unmappedMemNodes = 19,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 314
+current node = 107,op = ADD,unmapped nodes = 64,mapped nodes = 135,freeMemNodes = 89,unmappedMemNodes = 19,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 309
+current node = 104,op = ADD,unmapped nodes = 63,mapped nodes = 136,freeMemNodes = 89,unmappedMemNodes = 19,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 310
+current node = 192,op = CMERGE,unmapped nodes = 62,mapped nodes = 137,freeMemNodes = 89,unmappedMemNodes = 19,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32_93_1,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 4
+current node = 176,op = CMERGE,unmapped nodes = 61,mapped nodes = 138,freeMemNodes = 89,unmappedMemNodes = 19,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32_89_1,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 4
+current node = 174,op = CMERGE,unmapped nodes = 60,mapped nodes = 139,freeMemNodes = 89,unmappedMemNodes = 19,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32_0_1,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 8
+current node = 147,op = LOADB,unmapped nodes = 59,mapped nodes = 140,freeMemNodes = 89,unmappedMemNodes = 19,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 35
+current node = 182,op = CMERGE,unmapped nodes = 58,mapped nodes = 141,freeMemNodes = 88,unmappedMemNodes = 18,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32_156_1,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 7
+current node = 88,op = MUL,unmapped nodes = 57,mapped nodes = 142,freeMemNodes = 88,unmappedMemNodes = 18,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 303
+current node = 8,op = LOADB,unmapped nodes = 56,mapped nodes = 143,freeMemNodes = 88,unmappedMemNodes = 18,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 54
+current node = 144,op = LOADB,unmapped nodes = 55,mapped nodes = 144,freeMemNodes = 87,unmappedMemNodes = 17,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 34
+current node = 141,op = LOADB,unmapped nodes = 54,mapped nodes = 145,freeMemNodes = 86,unmappedMemNodes = 16,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 33
+current node = 138,op = LOADB,unmapped nodes = 53,mapped nodes = 146,freeMemNodes = 85,unmappedMemNodes = 15,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 32
+current node = 135,op = LOADB,unmapped nodes = 52,mapped nodes = 147,freeMemNodes = 84,unmappedMemNodes = 14,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 31
+current node = 132,op = LOADB,unmapped nodes = 51,mapped nodes = 148,freeMemNodes = 83,unmappedMemNodes = 13,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 30
+current node = 129,op = LOADB,unmapped nodes = 50,mapped nodes = 149,freeMemNodes = 82,unmappedMemNodes = 12,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 29
+current node = 126,op = LOADB,unmapped nodes = 49,mapped nodes = 150,freeMemNodes = 81,unmappedMemNodes = 11,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 28
+current node = 123,op = LOADB,unmapped nodes = 48,mapped nodes = 151,freeMemNodes = 80,unmappedMemNodes = 10,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 27
+current node = 120,op = LOADB,unmapped nodes = 47,mapped nodes = 152,freeMemNodes = 79,unmappedMemNodes = 9,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 26
+current node = 117,op = LOADB,unmapped nodes = 46,mapped nodes = 153,freeMemNodes = 78,unmappedMemNodes = 8,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 25
+current node = 114,op = LOADB,unmapped nodes = 45,mapped nodes = 154,freeMemNodes = 77,unmappedMemNodes = 7,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 24
+current node = 111,op = LOADB,unmapped nodes = 44,mapped nodes = 155,freeMemNodes = 76,unmappedMemNodes = 6,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 23
+current node = 108,op = LOADB,unmapped nodes = 43,mapped nodes = 156,freeMemNodes = 75,unmappedMemNodes = 5,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 22
+current node = 105,op = LOADB,unmapped nodes = 42,mapped nodes = 157,freeMemNodes = 74,unmappedMemNodes = 4,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 21
+current node = 93,op = SELECT,unmapped nodes = 41,mapped nodes = 158,freeMemNodes = 73,unmappedMemNodes = 3,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 6
+current node = 85,op = MUL,unmapped nodes = 40,mapped nodes = 159,freeMemNodes = 73,unmappedMemNodes = 3,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 25
+current node = 9,op = ADD,unmapped nodes = 39,mapped nodes = 160,freeMemNodes = 73,unmappedMemNodes = 3,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 15
+current node = 81,op = MUL,unmapped nodes = 38,mapped nodes = 161,freeMemNodes = 73,unmappedMemNodes = 3,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 10
+current node = 77,op = MUL,unmapped nodes = 37,mapped nodes = 162,freeMemNodes = 73,unmappedMemNodes = 3,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 12
+current node = 73,op = MUL,unmapped nodes = 36,mapped nodes = 163,freeMemNodes = 73,unmappedMemNodes = 3,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 8
+current node = 69,op = MUL,unmapped nodes = 35,mapped nodes = 164,freeMemNodes = 73,unmappedMemNodes = 3,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 11
+current node = 65,op = MUL,unmapped nodes = 34,mapped nodes = 165,freeMemNodes = 73,unmappedMemNodes = 3,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 9
+current node = 61,op = MUL,unmapped nodes = 33,mapped nodes = 166,freeMemNodes = 73,unmappedMemNodes = 3,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 12
+current node = 57,op = MUL,unmapped nodes = 32,mapped nodes = 167,freeMemNodes = 73,unmappedMemNodes = 3,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 9
+current node = 53,op = MUL,unmapped nodes = 31,mapped nodes = 168,freeMemNodes = 73,unmappedMemNodes = 3,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 12
+current node = 49,op = MUL,unmapped nodes = 30,mapped nodes = 169,freeMemNodes = 73,unmappedMemNodes = 3,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 14
+current node = 45,op = MUL,unmapped nodes = 29,mapped nodes = 170,freeMemNodes = 73,unmappedMemNodes = 3,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 9
+current node = 41,op = MUL,unmapped nodes = 28,mapped nodes = 171,freeMemNodes = 73,unmappedMemNodes = 3,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 14
+current node = 37,op = MUL,unmapped nodes = 27,mapped nodes = 172,freeMemNodes = 73,unmappedMemNodes = 3,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 11
+current node = 33,op = MUL,unmapped nodes = 26,mapped nodes = 173,freeMemNodes = 73,unmappedMemNodes = 3,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 15
+current node = 29,op = MUL,unmapped nodes = 25,mapped nodes = 174,freeMemNodes = 73,unmappedMemNodes = 3,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 11
+current node = 180,op = CMERGE,unmapped nodes = 24,mapped nodes = 175,freeMemNodes = 73,unmappedMemNodes = 3,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32_150_1,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 9
+current node = 10,op = ADD,unmapped nodes = 23,mapped nodes = 176,freeMemNodes = 73,unmappedMemNodes = 3,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 15
+current node = 11,op = ADD,unmapped nodes = 22,mapped nodes = 177,freeMemNodes = 73,unmappedMemNodes = 3,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 16
+current node = 12,op = ADD,unmapped nodes = 21,mapped nodes = 178,freeMemNodes = 73,unmappedMemNodes = 3,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 15
+current node = 13,op = ADD,unmapped nodes = 20,mapped nodes = 179,freeMemNodes = 73,unmappedMemNodes = 3,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 16
+current node = 14,op = ADD,unmapped nodes = 19,mapped nodes = 180,freeMemNodes = 73,unmappedMemNodes = 3,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 11
+current node = 15,op = ADD,unmapped nodes = 18,mapped nodes = 181,freeMemNodes = 73,unmappedMemNodes = 3,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 8
+current node = 16,op = ADD,unmapped nodes = 17,mapped nodes = 182,freeMemNodes = 73,unmappedMemNodes = 3,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 8
+current node = 17,op = ADD,unmapped nodes = 16,mapped nodes = 183,freeMemNodes = 73,unmappedMemNodes = 3,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 5
+current node = 18,op = ADD,unmapped nodes = 15,mapped nodes = 184,freeMemNodes = 73,unmappedMemNodes = 3,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 6
+current node = 19,op = ADD,unmapped nodes = 14,mapped nodes = 185,freeMemNodes = 73,unmappedMemNodes = 3,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 3
+current node = 20,op = ADD,unmapped nodes = 13,mapped nodes = 186,freeMemNodes = 73,unmappedMemNodes = 3,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 3
+current node = 21,op = ADD,unmapped nodes = 12,mapped nodes = 187,freeMemNodes = 72,unmappedMemNodes = 3,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 9
+current node = 22,op = ADD,unmapped nodes = 11,mapped nodes = 188,freeMemNodes = 72,unmappedMemNodes = 3,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 5
+current node = 23,op = ADD,unmapped nodes = 10,mapped nodes = 189,freeMemNodes = 72,unmappedMemNodes = 3,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 3
+current node = 24,op = ADD,unmapped nodes = 9,mapped nodes = 190,freeMemNodes = 72,unmappedMemNodes = 3,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 5
+current node = 7,op = STOREB,unmapped nodes = 8,mapped nodes = 191,freeMemNodes = 72,unmappedMemNodes = 3,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 16
+current node = 196,op = CMERGE,unmapped nodes = 7,mapped nodes = 192,freeMemNodes = 71,unmappedMemNodes = 2,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32_169_1,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 2
+current node = 195,op = CMERGE,unmapped nodes = 6,mapped nodes = 193,freeMemNodes = 70,unmappedMemNodes = 2,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32_169_0,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 1
+current node = 169,op = SELECT,unmapped nodes = 5,mapped nodes = 194,freeMemNodes = 69,unmappedMemNodes = 2,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 4
+current node = 186,op = CMERGE,unmapped nodes = 4,mapped nodes = 195,freeMemNodes = 69,unmappedMemNodes = 2,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.body32_167_1,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 6
+current node = 20198,op = MOVC,unmapped nodes = 3,mapped nodes = 196,freeMemNodes = 69,unmappedMemNodes = 2,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.end265,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 252
+current node = 200,op = MOVC,unmapped nodes = 2,mapped nodes = 197,freeMemNodes = 69,unmappedMemNodes = 2,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.cond30.preheader,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 251
+current node = 199,op = STOREB,unmapped nodes = 1,mapped nodes = 198,freeMemNodes = 69,unmappedMemNodes = 2,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.cond30.preheader,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 20
+current node = 20197,op = STOREB,unmapped nodes = 0,mapped nodes = 199,freeMemNodes = 68,unmappedMemNodes = 1,II = 28,btCredits = 0,CGRA=hycube_original_mem.json,MaxHops=4,BB = for.end265,mutexPathEn = 1,Iter = 0
+estimatedRouteInfo[node].size = 17

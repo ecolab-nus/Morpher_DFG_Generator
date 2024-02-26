@@ -1,0 +1,45 @@
+**********************************
+II = 9,iter = 0
+**********************************
+,21|BB=for.body34,47|BB=for.body34CONGESTION:CGRA_Ins.PE_X1|_Y0|-T7.WEST_I
+HISTORY_COST :: CGRA_Ins.PE_X1|_Y0|-T7.WEST_I,10000
+,21|BB=for.body34,47|BB=for.body34CONGESTION:CGRA_Ins.PE_X1|_Y0|-T7.WEST_XBARI
+HISTORY_COST :: CGRA_Ins.PE_X1|_Y0|-T7.WEST_XBARI,10000
+,21|BB=for.body34,47|BB=for.body34CONGESTION:CGRA_Ins.PE_MEM_X0_Y0-T7.EAST_O
+HISTORY_COST :: CGRA_Ins.PE_MEM_X0_Y0-T7.EAST_O,10000
+****************************************
+Upperbound II = 10
+On iter = 0
+****************************************
+
+noConflicts!
+**********************************
+II = 9,iter = 1
+**********************************
+HISTORY_COST :: CGRA_Ins.PE_X1|_Y0|-T7.WEST_I,10000
+HISTORY_COST :: CGRA_Ins.PE_X1|_Y0|-T7.WEST_XBARI,10000
+,16|BB=for.body34,41|BB=for.body34CONGESTION:CGRA_Ins.PE_X1|_Y1|-T8.WEST_I
+HISTORY_COST :: CGRA_Ins.PE_X1|_Y1|-T8.WEST_I,10000
+,16|BB=for.body34,41|BB=for.body34CONGESTION:CGRA_Ins.PE_X1|_Y1|-T8.WEST_XBARI
+HISTORY_COST :: CGRA_Ins.PE_X1|_Y1|-T8.WEST_XBARI,10000
+,16|BB=for.body34,41|BB=for.body34CONGESTION:CGRA_Ins.PE_MEM_X0_Y1-T8.EAST_O
+HISTORY_COST :: CGRA_Ins.PE_MEM_X0_Y1-T8.EAST_O,10000
+HISTORY_COST :: CGRA_Ins.PE_MEM_X0_Y0-T7.EAST_O,10000
+
+noConflicts!
+**********************************
+II = 9,iter = 2
+**********************************
+HISTORY_COST :: CGRA_Ins.PE_X1|_Y0|-T7.WEST_I,10000
+HISTORY_COST :: CGRA_Ins.PE_X1|_Y0|-T7.WEST_XBARI,10000
+HISTORY_COST :: CGRA_Ins.PE_X1|_Y1|-T8.WEST_I,10000
+HISTORY_COST :: CGRA_Ins.PE_X1|_Y1|-T8.WEST_XBARI,10000
+HISTORY_COST :: CGRA_Ins.PE_MEM_X0_Y1-T8.EAST_O,10000
+HISTORY_COST :: CGRA_Ins.PE_MEM_X0_Y0-T7.EAST_O,10000
+****************************************
+Upperbound II = 9
+On iter = 2
+****************************************
+
+noCongestion!
+noConflicts!
