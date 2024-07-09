@@ -21,6 +21,8 @@ add_library(dfggenPass MODULE
     dfg/DFGTrig.cpp
     ../include/morpherdfggen/dfg/DFGPartPred.h
     dfg/DFGPartPred.cpp
+    ../include/morpherdfggen/dfg/DFGPartPredLight.h
+    dfg/DFGPartPredLight.cpp
     ../include/morpherdfggen/dfg/DFGCgraMe.h
     dfg/DFGCgraMe.cpp
     ../include/morpherdfggen/dfg/DFGOpenCGRA.h

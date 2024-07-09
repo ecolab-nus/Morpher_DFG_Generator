@@ -1,0 +1,10 @@
+digraph "CFG for 'array_add' function" {
+	label="CFG for 'array_add' function";
+
+	Node0x559a9ee83b10 [shape=record,label="{entry:\l  br label %for.body\l}"];
+	Node0x559a9ee83b10 -> Node0x559a9ee83c40;
+	Node0x559a9ee83d50 [shape=record,label="{for.cond.cleanup:                                 \l  ret void\l}"];
+	Node0x559a9ee83c40 [shape=record,label="{for.body:                                         \l  %i.08 = phi i32 [ 0, %entry ], [ %inc, %for.body ]\l  %call = tail call i32 bitcast (i32 (...)* @please_map_me to i32 ()*)() #5\l  %arrayidx = getelementptr inbounds [20 x i32], [20 x i32]* @A, i32 0, i32\l... %i.08\l  %manupa0 = load i32, i32* %arrayidx, align 4, !tbaa !3\l  %arrayidx1 = getelementptr inbounds [20 x i32], [20 x i32]* @B, i32 0, i32\l... %i.08\l  %manupa1 = load i32, i32* %arrayidx1, align 4, !tbaa !3\l  %add = add nsw i32 %manupa1, %manupa0\l  %arrayidx2 = getelementptr inbounds [20 x i32], [20 x i32]* @C, i32 0, i32\l... %i.08\l  store i32 %add, i32* %arrayidx2, align 4, !tbaa !3\l  %inc = add nuw nsw i32 %i.08, 1\l  %exitcond = icmp eq i32 %inc, 20\l  br i1 %exitcond, label %for.cond.cleanup, label %for.body\l|{<s0>T|<s1>F}}"];
+	Node0x559a9ee83c40:s0 -> Node0x559a9ee83d50;
+	Node0x559a9ee83c40:s1 -> Node0x559a9ee83c40;
+}

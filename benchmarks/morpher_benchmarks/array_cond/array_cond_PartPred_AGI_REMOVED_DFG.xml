@@ -1,0 +1,124 @@
+<MutexBB>
+<BB1 name="for.body_8_0">
+	<BB2 name="for.body_8_1"/>
+</BB1>
+<BB1 name="for.body_8_1">
+	<BB2 name="for.body_8_0"/>
+</BB1>
+</MutexBB>
+<DFG count="9">
+<Node idx="7" ASAP="0" ALAP="5"BB="for.body">
+<OP>LOAD</OP>
+<Inputs>
+</Inputs>
+<Outputs>
+	<Output idx="10" nextiter="0" type="I2"/>
+	<Output idx="11" nextiter="0" type="I2"/>
+	<Output idx="18" nextiter="0" type="I1"/>
+</Outputs>
+<RecParents>
+</RecParents>
+</Node>
+
+<Node idx="13" ASAP="0" ALAP="5"BB="for.body">
+<OP>LOAD</OP>
+<Inputs>
+</Inputs>
+<Outputs>
+	<Output idx="9" nextiter="0" type="I1"/>
+	<Output idx="11" nextiter="0" type="I1"/>
+</Outputs>
+<RecParents>
+</RecParents>
+</Node>
+
+<Node idx="10" ASAP="1" ALAP="6"BB="for.body"CONST="0">
+<OP>SUB</OP>
+<Inputs>
+	<Input idx="7"/>
+</Inputs>
+<Outputs>
+	<Output idx="17" nextiter="0" type="I1"/>
+</Outputs>
+<RecParents>
+</RecParents>
+</Node>
+
+<Node idx="11" ASAP="1" ALAP="6"BB="for.body">
+<OP>CGT</OP>
+<Inputs>
+	<Input idx="7"/>
+	<Input idx="13"/>
+</Inputs>
+<Outputs>
+	<Output idx="17" nextiter="0" NPB="0" type="P"/>
+	<Output idx="18" nextiter="0" NPB="1" type="P"/>
+</Outputs>
+<RecParents>
+</RecParents>
+</Node>
+
+<Node idx="17" ASAP="2" ALAP="7"BB="for.body_8_0">
+<OP>CMERGE</OP>
+<Inputs>
+	<Input idx="11"/>
+	<Input idx="10"/>
+</Inputs>
+<Outputs>
+	<Output idx="8" nextiter="0" type="I1"/>
+</Outputs>
+<RecParents>
+</RecParents>
+</Node>
+
+<Node idx="18" ASAP="2" ALAP="7"BB="for.body_8_1">
+<OP>CMERGE</OP>
+<Inputs>
+	<Input idx="11"/>
+	<Input idx="7"/>
+</Inputs>
+<Outputs>
+	<Output idx="8" nextiter="0" type="I2"/>
+</Outputs>
+<RecParents>
+</RecParents>
+</Node>
+
+<Node idx="8" ASAP="3" ALAP="8"BB="for.body">
+<OP>SELECT</OP>
+<Inputs>
+	<Input idx="17"/>
+	<Input idx="18"/>
+</Inputs>
+<Outputs>
+	<Output idx="9" nextiter="0" type="I2"/>
+</Outputs>
+<RecParents>
+</RecParents>
+</Node>
+
+<Node idx="9" ASAP="4" ALAP="9"BB="for.body">
+<OP>ADD</OP>
+<Inputs>
+	<Input idx="8"/>
+	<Input idx="13"/>
+</Inputs>
+<Outputs>
+	<Output idx="5" nextiter="0" type="I1"/>
+</Outputs>
+<RecParents>
+</RecParents>
+</Node>
+
+<Node idx="5" ASAP="5" ALAP="10"BB="for.body">
+<OP>STORE</OP>
+<Inputs>
+	<Input idx="9"/>
+</Inputs>
+<Outputs>
+</Outputs>
+<RecParents>
+</RecParents>
+</Node>
+
+</DFG>

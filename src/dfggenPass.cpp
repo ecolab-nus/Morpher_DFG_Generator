@@ -75,6 +75,7 @@
 #include <morpherdfggen/dfg/DFGDISE.h>
 #include <morpherdfggen/dfg/DFGFullPred.h>
 #include <morpherdfggen/dfg/DFGPartPred.h>
+#include <morpherdfggen/dfg/DFGPartPredLight.h>
 #include <morpherdfggen/dfg/DFGTrig.h>
 #include <morpherdfggen/dfg/DFGTrMap.h>
 #include <morpherdfggen/common/edge.h>
@@ -2290,6 +2291,14 @@ struct dfggenPass : public FunctionPass
 			{
 				LoopDFG = new DFGPartPred(F.getName().str() + "_" + munitName, &loopNames, mappingUnitMap[munitName].lp);
 				DFGPartPred *LoopDFG_PP = static_cast<DFGPartPred *>(LoopDFG);
+				LoopDFG->setKernelName(F.getName().str());
+				LoopDFG_PP->SE = SE;
+			}
+		   else  if (dfgType == "PartPredLight")
+			{
+                std::cout <<F.getName().str()<< "hello, I am here haha partPreLight\n";
+				LoopDFG = new DFGPartPredLight(F.getName().str() + "_" + munitName, &loopNames, mappingUnitMap[munitName].lp);
+				DFGPartPredLight *LoopDFG_PP = static_cast<DFGPartPredLight *>(LoopDFG);
 				LoopDFG->setKernelName(F.getName().str());
 				LoopDFG_PP->SE = SE;
 			}
