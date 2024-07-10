@@ -1,6 +1,0 @@
-var_name,base_addr
-WEIGHT_MATRIX,16384
-OUTPUT_MATRIX,16544
-INPUT_MATRIX,0
-loopend,16383
-loopstart,32766

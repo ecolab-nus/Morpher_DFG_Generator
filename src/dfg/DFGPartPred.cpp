@@ -1027,7 +1027,7 @@ void DFGPartPred::generateTrigDFGDOT(Function &F) {
 
 
 #else
-    cout<<"I am here, hello"<<endl;
+
 	LLVM_DEBUG(dbgs() << "\n[DFGPartPred.cpp][GEPBaseAddrCheck begin]\n");
 	GEPBaseAddrCheck(F);
 	LLVM_DEBUG(dbgs() << "[DFGPartPred.cpp][GEPBaseAddrCheck end]\n\n");

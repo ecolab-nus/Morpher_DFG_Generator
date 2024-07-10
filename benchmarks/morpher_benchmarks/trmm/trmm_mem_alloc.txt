@@ -1,4 +1,0 @@
-var_name,base_addr
-i.040,0
-loopend,16383
-loopstart,32766

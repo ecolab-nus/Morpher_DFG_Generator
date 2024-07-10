@@ -21,16 +21,12 @@ void gemm(){
         i=0;j=0;k=0;
         for (ijk=0;ijk<R1*C1*C2; ijk++){
           
- #ifdef CGRA_COMPILER
-        please_map_me();
-#endif
+
 	   OUTPUT_MATRIX[i*C2+j] += WEIGHT_MATRIX[i*C1+k]* INPUT_MATRIX[k*C2+j];
 
 			if(++k == C1){
 				k=0;
 				++j;
-
-
 			}
 			if(j == C2){
   				j=0;
