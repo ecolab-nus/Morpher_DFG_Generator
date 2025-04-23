@@ -2,7 +2,7 @@
 #include <stdio.h>
 
 
-#define SIZE  20
+#define SIZE  32
 int A[SIZE], B[SIZE], C[SIZE];
 
 __attribute__((noinline))
